@@ -1,9 +1,10 @@
+setwd("//wsl$/Ubuntu/home/hilarius/special_course_spring2026")
 library(tidyverse)
 # Data path will change from /Documents, once we have made a github repo
 
-df_table4_raw <- read_csv("Special_course/data/arrson_2009_initial.csv")
+df_table4_raw <- read_csv("data/arrson_2009_initial.csv")
 
-df_assarsson_raw <- read_csv("Special_course/data/epitope_table_export_1770817956.csv")
+df_assarsson_raw <- read_csv("data/epitope_table_export_1770817956.csv")
 
 df_assarsson_raw_clean <- df_assarsson_raw |>
   select(where(~ !all(is.na(.)))) |>
@@ -36,7 +37,7 @@ df_merged <- df_merged |>
   # Turn "?" into NA
   mutate(
     across(everything(), ~ na_if(.x, "?"))
-    ) |>
+  ) |>
   mutate(
     Infection = as.numeric(Infection),
     Immunogenic = as.numeric(Immunogenic),
@@ -95,7 +96,7 @@ ggplot(df_merged |> count(`ORF Name`),
   coord_flip()
 
 
-  
+
 
 
 
@@ -103,11 +104,10 @@ ggplot(df_merged |> count(`ORF Name`),
 
 write_csv(
   df_merged,
-  "Special_course/data/merged_assarsson_data.csv"
+  "data/merged_assarsson_data.csv"
 )
 
 
 #columns to remove: "Epitope ID - IEDB IRI"  "Epitope - Source Molecule IRI" "Epitope - Source Organism IRI" "Epitope - Species IRI" "Epitope - Source Organism" "Epitope - Species"
 
 # make a small dataframe with the links and information from: "Epitope - Source Organism IRI" "Epitope - Species IRI" "Epitope - Source Organism" "Epitope - Species"
-

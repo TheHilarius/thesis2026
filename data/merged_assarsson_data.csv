@@ -1,0 +1,106 @@
+Group,Number,Sequence,ORF Name,Affinity,Infection,Immunogenic,Processed,Classification,Starting Position,Ending Position,Source Molecule,Molecule Parent,Molecule Parent IRI,notes
+1,1,FILGIIITV,A14L (VACWR133),0.1,543,323,324,Dominant,51,59,Virion envelope protein A14,Virion membrane protein OPG140,http://www.uniprot.org/uniprot/Q76ZQ3,NA
+1,2,GLFDFVNFV,A46R (VACWR172),1,92,451,406,Dominant,142,150,Protein OPG176,Protein OPG176,http://www.uniprot.org/uniprot/P26672,NA
+1,3,FLIVSLCPT,F11L (VACWR050),1.5,50,67,9,Dominant,196,204,RhoA signalling inhibitor,Protein OPG055,http://www.uniprot.org/uniprot/Q80HX7,NA
+1,4,RVYEALYYV,D12L (VACWR117),1.5,40,179,165,Dominant,251,259,mRNA-capping enzyme regulatory subunit OPG124,mRNA-capping enzyme regulatory subunit OPG124,http://www.uniprot.org/uniprot/P04318,NA
+1,5,LMYDIINSV,B6R (VACWR188),1.8,54,463,66,Dominant,108,116,Protein B6,Protein OPG191,http://www.uniprot.org/uniprot/P68442,NA
+1,6,SLSAYIIRV,H3L (VACWR101),2,105,261,88,Dominant,184,192,Envelope protein OPG108,Envelope protein OPG108,http://www.uniprot.org/uniprot/P07240,NA
+1,7,YLPEVISTI,G7L (VACWR085),2,66,615,520,Dominant,250,258,Protein G7,Assembly protein G7,http://www.uniprot.org/uniprot/P68716,NA
+1,8,ILDDNLYKV,G5R (VACWR082),2.2,28,278,171,Dominant,18,26,unknown,Putative nuclease OPG089,http://www.uniprot.org/uniprot/Q80HX0,NA
+1,9,VLYDEFVTI,A6L (VACWR125),4.6,81,236,165,Dominant,6,14,VACAC2_136,Virion morphogenesis protein OPG132,http://www.uniprot.org/uniprot/P29192,NA
+1,10,IIIPFIAYFV,M1L (VACWR030),9.5,245,102,27,Dominant,375,384,Ankyrin repeat protein M1,Inhibitor of Apoptosis OPG037,http://www.uniprot.org/uniprot/P14356,NA
+1,11,RLYDYFTRV,I1L (VACWR070),11,130,115,105,Dominant,211,219,36 kDa late protein I1,Telomere-binding protein OPG077,http://www.uniprot.org/uniprot/P16714,NA
+1,12,QIFNIISYI,A17L (VACWR137),15,188,338,53,Dominant,138,146,Virion membrane protein A17L,Virion membrane protein OPG144 precursor,http://www.uniprot.org/uniprot/P68593,NA
+1,13,RTLLGLILFV,A17L (VACWR137),20,34,96,207,Dominant,61,70,Virion membrane protein A17L,Virion membrane protein OPG144 precursor,http://www.uniprot.org/uniprot/P68593,NA
+1,14,ILMIFISSFL,A17L (VACWR137),22,88,65,55,Dominant,81,90,Virion membrane protein A17L,Virion membrane protein OPG144 precursor,http://www.uniprot.org/uniprot/P68593,NA
+1,15,HVDGKILFV,B14R (VACWR195),39,49,274,26,Dominant,327,335,Serine proteinase inhibitor 2,Serine proteinase inhibitor 2,http://www.uniprot.org/uniprot/P15059,NA
+2,1,VMYAFTTPL,H3L (VACWR101),0.1,NA,367,NA,Cryptic,271,279,Envelope protein OPG108,Envelope protein OPG108,http://www.uniprot.org/uniprot/P07240,f
+2,2,SIMAFILGI,A14L (VACWR133),0.1,NA,361,NA,Cryptic,47,55,Virion envelope protein A14,Virion membrane protein OPG140,http://www.uniprot.org/uniprot/Q76ZQ3,NA
+2,3,YLLFNHFSV,M1L (VACWR030),0.1,NA,221,NA,Cryptic,316,324,Ankyrin repeat protein M1,Inhibitor of Apoptosis OPG037,http://www.uniprot.org/uniprot/P14356,NA
+2,4,LLWFLTGTFV,H3L (VACWR101),0.1,NA,141,NA,Cryptic,311,320,Envelope protein OPG108,Envelope protein OPG108,http://www.uniprot.org/uniprot/P07240,NA
+2,5,YQSFLFWFL,A6L (VACWR125),0.1,NA,480,NA,Cryptic,71,79,Virion morphogenesis protein OPG132,Virion morphogenesis protein OPG132,http://www.uniprot.org/uniprot/P29192,NA
+2,6,FLLPLTSLVI,A17L (VACWR137),0.1,NA,164,NA,Cryptic,89,98,Virion membrane protein A17L,Virion membrane protein OPG144 precursor,http://www.uniprot.org/uniprot/P68593,NA
+2,7,MLDDFSAGA,A17L (VACWR137),0.1,NA,16,NA,Cryptic,9,17,Virion membrane protein A17L,Virion membrane protein OPG144 precursor,http://www.uniprot.org/uniprot/P68593,e
+2,8,YLYNKYSFKL,A46R (VACWR172),0.1,NA,90,NA,Cryptic,84,93,Protein OPG176,Protein OPG176,http://www.uniprot.org/uniprot/P26672,NA
+2,9,FLLPLTSLV,A17L (VACWR137),0.1,NA,65,25,Subdominant,89,97,Virion membrane protein A17L,Virion membrane protein OPG144 precursor,http://www.uniprot.org/uniprot/P68593,NA
+2,10,LMIGNYFSGV,A14L (VACWR133),0.1,NA,114,NA,Cryptic,5,14,Virion envelope protein A14,Virion membrane protein OPG140,http://www.uniprot.org/uniprot/Q76ZQ3,NA
+2,11,LLIKTLSPA,M1L (VACWR030),0.1,NA,78,NA,Cryptic,223,231,Ankyrin repeat protein M1,Inhibitor of Apoptosis OPG037,http://www.uniprot.org/uniprot/P14356,NA
+2,12,GLLDRLYDL,O1L (VACWR068),0.1,NA,121,NA,Cryptic,482,490,unknown,Protein OPG074,http://www.uniprot.org/uniprot/Q80HX1,NA
+2,13,YLVDVETIGV,C10L (VACWR209),0.1,NA,199,NA,Cryptic,197,206,Protein C10,Protein C10,http://www.uniprot.org/uniprot/P03296,NA
+2,14,SMMNITRLEV,F12L (VACWR051),0.1,NA,54,NA,Cryptic,52,61,Protein OPG056,Protein OPG056,http://www.uniprot.org/uniprot/Q80HX6,NA
+2,15,FLPIIFDAFL,A7L (VACWR126),0.1,NA,39,NA,Cryptic,488,497,VACV-DUKE-134,Early transcription factor 82 kDa subunit,http://www.uniprot.org/uniprot/P20636,NA
+2,16,MLNGIMYRL,A3L (VACWR122),0.1,NA,220,35,Subdominant,498,506,Major core protein OPG129,Major core protein OPG129,http://www.uniprot.org/uniprot/P06440,NA
+2,17,FTSSFYNYV,B12R (VACWR194),0.1,NA,NA,ND,Negative,35,43,Probable serine/threonine-protein kinase B12,Pseudokinase OPG198,http://www.uniprot.org/uniprot/P24362,NA
+2,18,YTIERIFNA,A10L (VACWR129),0.1,NA,209,33,Subdominant,779,787,Major core protein P4a precursor,Major core protein OPG136 precursor,http://www.uniprot.org/uniprot/P16715,NA
+2,19,ILPVIFLSI,B16R (VACWR197),0.1,NA,NA,ND,Negative,3,11,Interleukin-1-binding protein precursor,Interleukin-1-binding protein,http://www.uniprot.org/uniprot/P25212,NA
+2,20,CMAFTIPSI,B16R (VACWR197),0.1,NA,NA,ND,Negative,309,317,Interleukin-1-binding protein precursor,Interleukin-1-binding protein,http://www.uniprot.org/uniprot/P25212,NA
+2,21,RLLDLFGPEV,A18R (VACWR138),0.1,NA,248,23,Subdominant,341,350,Transcript release DNA helicase,Transcript termination protein OPG145,http://www.uniprot.org/uniprot/P16712,NA
+2,22,LTLDEQIFV,O1L (VACWR068),1,NA,197,79,Subdominant,284,292,unknown,Protein OPG074,http://www.uniprot.org/uniprot/Q80HX1,NA
+2,23,NLFTFLHEI,A23R (VACWR143),1,NA,16,NA,Cryptic,3,11,Intermediate transcription factor 3 large subunit,Intermediate transcription factor 3 large subunit,http://www.uniprot.org/uniprot/Q80HV2,e
+2,24,YLIHDNIMYT,E1L (VACWR057),1,NA,NA,ND,Negative,389,398,Poly(A) polymerase catalytic subunit,Poly(A) polymerase catalytic subunit,http://www.uniprot.org/uniprot/P23371,NA
+2,25,KLFTHDIML,D12L (VACWR117),1.4,NA,353,178,Subdominant,62,70,mRNA-capping enzyme regulatory subunit OPG124,mRNA-capping enzyme regulatory subunit OPG124,http://www.uniprot.org/uniprot/P04318,NA
+2,26,FTSDYPFYV,B14R (VACWR195),1.5,NA,67,27,Subdominant,148,156,Serine proteinase inhibitor 2,Serine proteinase inhibitor 2,http://www.uniprot.org/uniprot/P15059,NA
+2,27,SLFIESSICL,F12L (VACWR051),2,NA,NA,ND,Negative,429,438,Protein OPG056,Protein OPG056,http://www.uniprot.org/uniprot/Q80HX6,NA
+2,28,FIALWIPDL,I4L (VACWR073),2,NA,222,NA,Cryptic,329,337,Ribonucleoside-diphosphate reductase large subunit,Ribonucleoside-diphosphate reductase large subunit,http://www.uniprot.org/uniprot/P12848,NA
+2,29,YLYQPCDLL,J6R (VACWR098),2,NA,NA,ND,Negative,1177,1185,DNA-directed RNA polymerase rpo147 subunit,DNA-directed RNA polymerase 147 kDa polypeptide,http://www.uniprot.org/uniprot/P07392,NA
+2,30,ILSCIFAFI,A14L (VACWR133),1.8,NA,136,NA,Cryptic,23,31,Virion envelope protein A14,Virion membrane protein OPG140,http://www.uniprot.org/uniprot/Q76ZQ3,NA
+2,31,FLFWFLKSGA,A6L (VACWR125),1.9,NA,NA,ND,Negative,74,83,Virion morphogenesis protein OPG132,Virion morphogenesis protein OPG132,http://www.uniprot.org/uniprot/P29192,NA
+2,32,YIDAYVSRL,D13L (VACWR118),2,NA,NA,ND,Negative,283,291,Rifampicin resistance protein,Scaffold protein OPG125,http://www.uniprot.org/uniprot/P68440,NA
+2,33,YLYFCSSDV,A24R (VACWR144),2,NA,NA,ND,Negative,467,475,DNA-directed RNA polymerase 133 kDa polypeptide,DNA-directed RNA polymerase 133 kDa polypeptide,http://www.uniprot.org/uniprot/Q76ZP7,NA
+2,34,SIMAFILGII,A14L (VACWR133),2.3,NA,165,NA,Cryptic,47,56,Virion envelope protein A14,Virion membrane protein OPG140,http://www.uniprot.org/uniprot/Q76ZQ3,NA
+2,35,FTFSNVCESV,A24R (VACWR144),2,NA,NA,ND,Negative,635,644,DNA-directed RNA polymerase 133 kDa polypeptide,DNA-directed RNA polymerase 133 kDa polypeptide,http://www.uniprot.org/uniprot/Q76ZP7,NA
+2,36,ALFGIKLPAL,A3L (VACWR122),3,NA,NA,ND,Negative,238,247,Major core protein OPG129,Major core protein OPG129,http://www.uniprot.org/uniprot/P06440,NA
+2,37,MLLNVQTLI,A6L (VACWR125),2.9,NA,304,NA,Cryptic,106,114,Virion morphogenesis protein OPG132,Virion morphogenesis protein OPG132,http://www.uniprot.org/uniprot/P29192,NA
+2,38,VLIAGIILL,A14L (VACWR133),3,NA,28,NA,Cryptic,14,22,Virion envelope protein A14,Virion membrane protein OPG140,http://www.uniprot.org/uniprot/Q76ZQ3,NA
+2,39,VMYAFTTPLI,H3L (VACWR101),3.1,NA,NA,ND,Negative,271,280,Envelope protein OPG108,Envelope protein OPG108,http://www.uniprot.org/uniprot/P07240,NA
+2,40,KLSCAVHLI,A38L (VACWR162),3,NA,15,NA,Cryptic,212,220,CD47-like antigen/integrin-associated protein,Protein OPG166,http://www.uniprot.org/uniprot/P24763,NA
+2,41,RLYDLTRYA,O1L (VACWR068),4,NA,NA,ND,Negative,486,494,unknown,Protein OPG074,http://www.uniprot.org/uniprot/Q80HX1,NA
+2,42,YLAKLTALV,G5R (VACWR082),4.1,NA,69,NA,Cryptic,229,237,unknown,Putative nuclease OPG089,http://www.uniprot.org/uniprot/Q80HX0,NA
+2,43,MMKTYIEFV,F4L (VACWR043),5,NA,195,NA,Cryptic,250,258,Ribonucleoside-diphosphate reductase small chain,Ribonucleoside-diphosphate reductase small chain,http://www.uniprot.org/uniprot/P11158,NA
+2,44,RTCSNWVPL,C10L (VACWR209),5,NA,NA,ND,Negative,86,94,Protein C10,Protein C10,http://www.uniprot.org/uniprot/P03296,NA
+2,45,YLLPGFVLT,F15L (VACWR054),6,NA,NA,ND,Negative,93,101,Protein F15,Protein OPG060,http://www.uniprot.org/uniprot/Q80HX4,NA
+2,46,NIAEYIAGL,G7L (VACWR085),6.2,NA,55,19,Cryptic,231,239,Protein G7,Assembly protein G7,http://www.uniprot.org/uniprot/P68716,NA
+2,47,KLNKMTVEL,J6R (VACWR098),7,NA,73,NA,Cryptic,1120,1128,DNA-directed RNA polymerase 147 kDa polypeptide,DNA-directed RNA polymerase 147 kDa polypeptide,http://www.uniprot.org/uniprot/P07392,NA
+2,48,FIVVATAAV,A28L (VACWR151),7,NA,32,NA,Cryptic,8,16,16.3k IMV membrane protein,Envelope protein OPG155,http://www.uniprot.org/uniprot/P68633,NA
+2,49,QLFKYVPSA,G5R (VACWR082),7,NA,17,NA,Cryptic,217,225,VACAC2_093,Putative nuclease OPG089,http://www.uniprot.org/uniprot/Q80HX0,e
+2,50,YLAIPDLYGI,B12R (VACWR194),8,NA,NA,ND,Negative,81,90,Probable serine/threonine-protein kinase B12,Pseudokinase OPG198,http://www.uniprot.org/uniprot/P24362,NA
+2,51,ATFRDMLLNV,A6L (VACWR125),8.3,NA,NA,ND,Negative,101,110,Virion morphogenesis protein OPG132,Virion morphogenesis protein OPG132,http://www.uniprot.org/uniprot/P29192,NA
+2,52,KLLWFLTGT,H3L (VACWR101),8.8,NA,30,NA,Cryptic,310,318,Envelope protein OPG108,Envelope protein OPG108,http://www.uniprot.org/uniprot/P07240,NA
+2,53,FVDTMSIYI,G5R (VACWR082),9.6,NA,NA,ND,Negative,31,39,unknown,Putative nuclease OPG089,http://www.uniprot.org/uniprot/Q80HX0,NA
+2,54,IISYIILFI,A17L (VACWR137),12,NA,44,NA,Cryptic,142,150,Virion membrane protein A17L,Virion membrane protein OPG144 precursor,http://www.uniprot.org/uniprot/P68593,NA
+2,55,YLDDHRYLFI,C9L (VACWR019),12,NA,83,NA,Cryptic,491,500,Ankyrin repeat protein C9,Ankyrin repeat protein OPG025,http://www.uniprot.org/uniprot/P17372,NA
+2,56,GLADAFILL,I4L (VACWR073),13,NA,NA,ND,Negative,506,514,Ribonucleoside-diphosphate reductase large subunit,Ribonucleoside-diphosphate reductase large subunit,http://www.uniprot.org/uniprot/P12848,NA
+2,57,YLLAVCGCI,F5L (VACWR044),13,NA,NA,ND,Negative,13,21,36 kDa major membrane protein precursor,Protein OPG049,http://www.uniprot.org/uniprot/P24358,NA
+2,58,IMLNGIMYRL,A3L (VACWR122),14,NA,261,NA,Cryptic,NA,NA,NA,NA,NA,NA
+2,59,FLTGTFVTA,H3L (VACWR101),15,NA,30,NA,Cryptic,NA,NA,NA,NA,NA,NA
+2,60,VLPFDIKYI,F12: (VACWR051),15,NA,NA,ND,Negative,NA,NA,NA,NA,NA,NA
+2,61,HLTENNLYI,D12L (VACWR117),15,NA,NA,ND,Negative,NA,NA,NA,NA,NA,NA
+2,62,MLTFDVFRPL,D12L (VACWR117),17,NA,109,NA,Cryptic,NA,NA,NA,NA,NA,NA
+2,63,EQEFLTAAL,F4L (VACWR043),17,NA,NA,ND,Negative,NA,NA,NA,NA,NA,NA
+2,64,KVFFGPIYYL,A24R (VACWR144),18,NA,NA,ND,Negative,NA,NA,NA,NA,NA,NA
+2,65,MMCYFLTATL,A18R (VACWR138),18,NA,NA,ND,Negative,NA,NA,NA,NA,NA,NA
+2,66,ETDDYMFFV,B12R (VACWR194),20,NA,NA,ND,Negative,NA,NA,NA,NA,NA,NA
+2,67,LQYDLWNVV,I4L (VACWR073),22,NA,188,NA,Cryptic,NA,NA,NA,NA,NA,NA
+2,68,SLNLTIVSV,B16R (VACWR197),26,NA,283,NA,Cryptic,NA,NA,NA,NA,NA,NA
+2,69,IIMAINVFT,A17L (VACWR137),27,NA,96,NA,Cryptic,NA,NA,NA,NA,NA,NA
+2,70,KIIETYLGRV,E1L (VACWR057),30,NA,NA,ND,Negative,NA,NA,NA,NA,NA,NA
+2,71,ALCKVTVPT,F12L (VACWR051),31,NA,107,NA,Cryptic,NA,NA,NA,NA,NA,NA
+2,72,ILSNKLLYA,G7L (VACWR085),36,NA,200,NA,Cryptic,NA,NA,NA,NA,NA,NA
+2,73,FQYLLPGFVL,F15L (VACWR054),37,NA,NA,ND,Negative,NA,NA,NA,NA,NA,NA
+2,74,AAAATCALV,B14R (VACWR195),41,NA,NA,ND,Negative,NA,NA,NA,NA,NA,NA
+2,75,YLSGTDDEV,M1L (VACWR030),42,NA,69,NA,Cryptic,NA,NA,NA,NA,NA,NA
+2,76,RIEDMFLTSV,F12L (VACWR051),48,NA,56,NA,Cryptic,NA,NA,NA,NA,NA,NA
+2,77,FQQPQFQYL,F15L (VACWR054),48,NA,29,NA,Cryptic,NA,NA,NA,NA,NA,NA
+2,78,DTVFDYYVL,C10L (VACWR209),54,NA,NA,ND,Negative,NA,NA,NA,NA,NA,NA
+2,79,VLALYSPPLI,A17L (VACWR137),55,NA,NA,ND,Negative,NA,NA,NA,NA,NA,NA
+2,80,TLISLNSMYT,A6L (VACWR125),62,NA,NA,ND,Negative,NA,NA,NA,NA,NA,NA
+2,81,ILPDKIDGL,B14R (VACWR195),62,NA,NA,ND,Negative,NA,NA,NA,NA,NA,NA
+2,82,TLPELNLSL,D12L (VACWR117),62,NA,NA,ND,Negative,NA,NA,NA,NA,NA,NA
+2,83,DMLLNVQTLI,A6L (VACWR125),80,NA,167,NA,Cryptic,NA,NA,NA,NA,NA,NA
+2,84,SLNSMYTRL,A6L (VACWR125),84,NA,NA,ND,Negative,NA,NA,NA,NA,NA,NA
+2,85,SMSQELAEL,G7L (VACWR085),84,NA,NA,ND,Negative,NA,NA,NA,NA,NA,NA
+2,86,SMMSMYGKA,B14R (VACWR195),92,NA,NA,ND,Negative,NA,NA,NA,NA,NA,NA
+2,87,KVTRFYFNM,C10L (VACWR209),95,NA,NA,ND,Negative,NA,NA,NA,NA,NA,NA
+2,88,LLEIHQYPA,J6R (VACWR098),98,NA,NA,ND,Negative,NA,NA,NA,NA,NA,NA
+2,89,SLLDEDSKI,A23R (VACWR143),99,NA,NA,ND,Negative,NA,NA,NA,NA,NA,NA
+2,90,IMYTYFSNTI,E1L (VACWR057),99,NA,233,NA,Cryptic,NA,NA,NA,NA,NA,NA
