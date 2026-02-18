@@ -1,13 +1,23 @@
 # ----------------------------
 # Setup
 # ----------------------------
-setwd("//wsl$/Ubuntu/home/hilarius/special_course_spring2026")
+#setwd("//wsl$/Ubuntu/home/hilarius/special_course_spring2026")
 library(tidyverse)
 library(patchwork)
 library(corrplot)
 library(ggseqlogo)
 library(Peptides)
 library(factoextra)
+
+current_user <- Sys.info()[["user"]]
+
+if (current_user == "olive") {
+  setwd("C:/Users/olive/Documents/R/special_course_spring2026")
+} else if (current_user == "friend_username") {
+  setwd("//wsl$/Ubuntu/home/hilarius/special_course_spring2026")
+} else {
+  stop("Unknown user. Please set working directory manually.")
+}
 
 df_table4_raw <- read_csv("data/arrson_2009_initial.csv")
 
