@@ -111,6 +111,24 @@ df_merged <- df_merged |>
     )
   )
 
+colnames(df_assarsson_raw) <- sub("^Epitope - ", "", colnames(df_assarsson_raw))
+df_protein_info <- df_assarsson_raw |>
+  rename_with(tolower) |>
+  rename(
+    mol_source = `source molecule`,
+    mol_source_iri = `source molecule iri`,
+    mol_parent = `molecule parent`,
+    mol_parent_iri = `molecule parent iri`,
+  ) |>
+  select(c(mol_source,mol_source_iri,mol_parent,mol_parent_iri)) |>
+  mutate(protein_id = str_extract(mol_parent_iri, "[^/]+$")) |>
+  distinct(protein_id, .keep_all = TRUE)
+
+write_csv(df_protein_info,"data/assarsson_protein_info.csv")
+
+#df_merged |> summarize(unique_count = n_distinct(mol_parent))
+#df_merged_assarsson72 |> summarize(unique_count = n_distinct(mol_parent))
+
 write_csv(
   df_merged,
   "data/merged_assarsson_data.csv"
