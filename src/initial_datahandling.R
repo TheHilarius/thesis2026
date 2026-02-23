@@ -1,13 +1,10 @@
-# ----------------------------
-# Setup
-# ----------------------------
-#setwd("//wsl$/Ubuntu/home/hilarius/special_course_spring2026")
 library(tidyverse)
 library(patchwork)
 library(corrplot)
 library(ggseqlogo)
 library(Peptides)
 library(factoextra)
+source("src/functions.R")
 
 current_user <- Sys.info()[["user"]]
 
@@ -107,9 +104,8 @@ df_merged <- df_merged |>
   mutate(
     dc_processed = if_else(
       classification %in% c("Dominant", "Subdominant"),
-      "Processed by DC", "Not processed"
+      "Processed by DC", "Not processed")
     )
-  )
 
 colnames(df_assarsson_raw) <- sub("^Epitope - ", "", colnames(df_assarsson_raw))
 df_protein_info <- df_assarsson_raw |>
@@ -149,6 +145,17 @@ df_merged_assarsson72 <- df_merged |>
 df_merged_leftover <-df_merged |>
   filter(is.na(start_pos) & is.na(end_pos))
 
+df_merged_assarsson72 |>
+  rename(epitope = sequence) |> 
+  export_epitopes(
+    file = "data/assarson72_aff100_epitopes.txt",
+    separator = "comma")
+
+df_merged_assarsson72 |>
+  rename(epitope = sequence) |> 
+  export_epitopes(
+    file = "data/iedb_assarson72_aff100_epitopes.txt",
+    separator = "newline")
 
 # --- 1.1 Classification Distribution: Full vs Mapped vs Leftover ---
 p_class_full <- ggplot(df_merged, aes(x = classification, fill = classification)) +
