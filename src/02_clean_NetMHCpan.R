@@ -9,6 +9,8 @@ if (current_user == "olive") {
   setwd("C:/Users/olive/Documents/R/special_course_spring2026")
 } else if (current_user == "mj607") {
   setwd("//wsl$/Ubuntu/home/hilarius/special_course_spring2026")
+} else if (current_user == "hilarius") {
+  setwd("/Users/hilarius/Desktop/DTU/special_course_spring2026")
 } else {
   stop("Unknown user. Please set working directory manually.")
 }
