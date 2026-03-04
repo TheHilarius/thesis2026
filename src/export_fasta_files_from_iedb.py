@@ -8,8 +8,8 @@ import sys
 import time
 
 
-INPUT_FILE = "../data/iedb_522_EL_epitopes.csv"
-OUTPUT_DIR = Path("fasta_files")
+INPUT_FILE = "/mnt/c/Users/Hilarius/OneDrive - Danmarks Tekniske Universitet/Skrivebord/special_course_spring2026/special_course_spring2026/data/iedb_522_EL_epitopes.csv"
+OUTPUT_DIR = Path("/mnt/c/Users/Hilarius/OneDrive - Danmarks Tekniske Universitet/Skrivebord/special_course_spring2026/special_course_spring2026/data/fasta_files")
 
 
 def extract_uniprot_id(iri):
@@ -49,12 +49,16 @@ def main():
         print(f"Error reading CSV: {e}")
         sys.exit(1)
 
-    if "Epitope...Molecule.Parent.IRI" not in df.columns:
-        print("Column 'Epitope...Molecule.Parent.IRI' not found in CSV.")
+    COLUMN_NAME = "Epitope - Molecule Parent IRI"
+    
+    if COLUMN_NAME not in df.columns:
+        print(f"Column '{COLUMN_NAME}' not found in CSV.")
+        print("Available columns:")
+        print(df.columns.tolist())
         sys.exit(1)
 
     print("Extracting UniProt IDs...")
-    df["uniprot_id"] = df["Epitope...Molecule.Parent.IRI"].apply(extract_uniprot_id)
+    df["uniprot_id"] = df[COLUMN_NAME].apply(extract_uniprot_id)
 
     unique_ids = df["uniprot_id"].dropna().unique()
 
