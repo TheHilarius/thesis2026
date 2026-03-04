@@ -1,0 +1,408 @@
+peptide,start,end,protein,protein_iri,organism,pep_length,uniprot_id,label
+DLLSALQQL,1069,1077,Large tegument protein deneddylase,http://www.uniprot.org/uniprot/Q6SW84,Human betaherpesvirus 5,9,Q6SW84,1
+ILSPFLPLL,382,390,Large envelope protein,http://www.uniprot.org/uniprot/Q76R62,Hepatitis B virus,9,Q76R62,1
+SLSAYIIRV,184,192,Envelope protein OPG108,http://www.uniprot.org/uniprot/P07240,Vaccinia virus Copenhagen,9,P07240,1
+MPAYIRNTL,303,311,DNA-directed RNA polymerase 147 kDa polypeptide,http://www.uniprot.org/uniprot/P07392,Vaccinia virus Ankara,9,P07392,1
+ELNAELSDKL,436,445,A-type inclusion protein A25,http://www.uniprot.org/uniprot/P24759,Vaccinia virus WR,10,P24759,1
+GIWDGEEEFHV,357,367,Polymerase basic protein 2,http://www.uniprot.org/uniprot/Q9QLL6,Influenza B virus,11,Q9QLL6,1
+LLINTGITV,116,124,Transmembrane protein US18,http://www.uniprot.org/uniprot/F5HE69,Human betaherpesvirus 5,9,F5HE69,1
+LLIDPTSGLLGA,240,251,Alkaline nuclease,http://www.uniprot.org/uniprot/F5HF49,Human betaherpesvirus 5,12,F5HF49,1
+KVSPYLFTV,477,485,Hemagglutinin glycoprotein,http://www.uniprot.org/uniprot/Q786F2,Measles virus strain Edmonston-B,9,Q786F2,1
+TLEDLLMGT,78,86,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,9,P03129,1
+KVDDTFYYV,74,82,Interferon antagonist OPG027,http://www.uniprot.org/uniprot/P68600,Vaccinia virus Copenhagen,9,P68600,1
+KLIIDREVV,212,220,Protein OPG079,http://www.uniprot.org/uniprot/P12923,Vaccinia virus Copenhagen,9,P12923,1
+FVDVIIIKV,13,21,Semaphorin-like protein A39,http://www.uniprot.org/uniprot/P24764,Vaccinia virus WR,9,P24764,1
+ALDEKLFLI,273,281,Intermediate transcription factor 3 large subunit,http://www.uniprot.org/uniprot/Q80HV2,Vaccinia virus Ankara,9,Q80HV2,1
+YILNSLTKGL,717,726,DNA-directed RNA polymerase 147 kDa polypeptide,http://www.uniprot.org/uniprot/P07392,Vaccinia virus Copenhagen,10,P07392,1
+AIMDKNIIL,122,130,Non-structural protein 1,http://www.uniprot.org/uniprot/P03496,Influenza A virus (A/Ann Arbor/6/1960(H2N2)),9,P03496,1
+ALDYPGQDRL,39,48,Non-structural protein 1,http://www.uniprot.org/uniprot/P03502,Influenza B virus,10,P03502,1
+FLLPSLATV,3644,3652,Replicase polyprotein 1ab,http://www.uniprot.org/uniprot/P0DTD1,Severe acute respiratory syndrome coronavirus 2,9,P0DTD1,1
+FIFLKKNEL,703,711,Protein OPG064,http://www.uniprot.org/uniprot/P21604,Vaccinia virus Copenhagen,9,P21604,1
+TLHEYMLDL,7,15,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,9,P03129,1
+GVAALGIKNI,421,430,RNA-directed RNA polymerase catalytic subunit,http://www.uniprot.org/uniprot/P07832,Influenza B virus,10,P07832,1
+RVYEALYYV,251,259,mRNA-capping enzyme regulatory subunit OPG124,http://www.uniprot.org/uniprot/P04318,Vaccinia virus Ankara,9,P04318,1
+FLDENFKQL,40,48,Tegument protein UL51 homolog,http://www.uniprot.org/uniprot/F5HEA3,Human betaherpesvirus 5,9,F5HEA3,1
+ELLNILTEL,39,47,Protein OPG058,http://www.uniprot.org/uniprot/P68707,Vaccinia virus Copenhagen,9,P68707,1
+SMYRVFEV,250,257,Hemagglutinin glycoprotein,http://www.uniprot.org/uniprot/Q786F2,Measles virus strain Edmonston-B,8,Q786F2,1
+LILDPKINV,254,262,Soluble interferon alpha/beta receptor OPG204,http://www.uniprot.org/uniprot/P25213,Vaccinia virus WR,9,P25213,1
+GLISLILQI,18,26,Neuraminidase,http://www.uniprot.org/uniprot/P03468,Influenza A virus (A/Puerto Rico/8/1934(H1N1)),9,P03468,1
+SYYKLGASQRVAGDSG,177,192,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,16,P0DTC5,1
+GIWDGEEEFHV + OX(W3),357,367,Polymerase basic protein 2,http://www.uniprot.org/uniprot/Q9QLL6,Influenza B virus,20,Q9QLL6,1
+YVLDPDIVGV,426,435,Tegument protein US24,http://www.uniprot.org/uniprot/F5H8S6,Human betaherpesvirus 5,10,F5H8S6,1
+TIINKFFEV,168,176,mRNA-decapping protein OPG122,http://www.uniprot.org/uniprot/P04312,Vaccinia virus Copenhagen,9,P04312,1
+KVKDKITKV,207,215,RNA-directed RNA polymerase catalytic subunit,http://www.uniprot.org/uniprot/P07832,Influenza B virus,9,P07832,1
+MLDLQPETT + OX(M1),12,20,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,18,P03129,1
+LLWDTVTGVNM + OX(M11),454,464,Neuraminidase,http://www.uniprot.org/uniprot/P03474,Influenza B virus,21,P03474,1
+QVSIIQEKL,134,142,Intermediate transcription factor 3 small subunit,http://www.uniprot.org/uniprot/P68720,Vaccinia virus WR,9,P68720,1
+RTLSYYKLGASQRVAG,174,189,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,16,P0DTC5,1
+GNAFIGKKMFQI + DEAM(N2),514,525,Nucleoprotein,http://www.uniprot.org/uniprot/P04665,Influenza B virus,23,P04665,1
+MLDLQPET + OX(M1),12,19,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,17,P03129,1
+EIINNITAV,124,132,Kelch repeat protein C2,http://www.uniprot.org/uniprot/P17371,Vaccinia virus Copenhagen,9,P17371,1
+TLHEYMLDLQP + OX(M6),7,17,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,20,P03129,1
+FVEPEELNL,1074,1082,DNA-directed RNA polymerase 147 kDa polypeptide,http://www.uniprot.org/uniprot/P07392,Vaccinia virus Copenhagen,9,P07392,1
+YMLDLQPET + OX(M2),11,19,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,18,P03129,1
+QLLSPMYQL + OX(P5),428,436,Polymerase basic protein 2,http://www.uniprot.org/uniprot/Q9QLL6,Influenza B virus,18,Q9QLL6,1
+KIEDLINQL,155,163,Telomere-binding protein OPG077,http://www.uniprot.org/uniprot/P16714,Vaccinia virus WR,9,P16714,1
+YMLDLQPETTD + OX(M2),11,21,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,20,P03129,1
+IVIEAIHTV,210,218,Thymidylate kinase,http://www.uniprot.org/uniprot/Q80HT9,Vaccinia virus WR,9,Q80HT9,1
+QVKDEKLNL,114,122,Viral late gene transcription factor 3,http://www.uniprot.org/uniprot/P68319,Vaccinia virus WR,9,P68319,1
+GQISCSPVFAV,460,470,Nucleoprotein,http://www.uniprot.org/uniprot/P04665,Influenza B virus,11,P04665,1
+KLFSDISAI,117,125,Protein OPG067,http://www.uniprot.org/uniprot/P21606,Vaccinia virus WR,9,P21606,1
+KLIIHNPEL,207,215,Soluble interferon alpha/beta receptor OPG204,http://www.uniprot.org/uniprot/P25213,Vaccinia virus Ankara,9,P25213,1
+TLYEMKDVV + OX(M5),106,114,Nuclear export protein,http://www.uniprot.org/uniprot/P03511,Influenza B virus,18,P03511,1
+SQFGQEHRL,266,274,Non-structural protein 1,http://www.uniprot.org/uniprot/P03502,Influenza B virus,9,P03502,1
+QLPEATFMV,211,219,Matrix protein,http://www.uniprot.org/uniprot/Q9W850,Measles morbillivirus,9,Q9W850,1
+YIIKKNDIV,764,772,mRNA-capping enzyme catalytic subunit,http://www.uniprot.org/uniprot/P04298,Vaccinia virus Copenhagen,9,P04298,1
+GQYSGFARA + ACET(G1),591,599,Polymerase basic protein 2,http://www.uniprot.org/uniprot/Q9QLL6,Influenza B virus,20,Q9QLL6,1
+LLFLKDVEP,77,85,Core protein OPG114,http://www.uniprot.org/uniprot/P04300,Vaccinia virus Copenhagen,9,P04300,1
+KILNVEAMHTV,150,160,Major capsid protein,http://www.uniprot.org/uniprot/F5HGT1,Human betaherpesvirus 5,11,F5HGT1,1
+FLSKQYMDL,652,660,Protein P,http://www.uniprot.org/uniprot/Q69028,Hepatitis B virus,9,Q69028,1
+TLKQRLTNL,46,54,Protein OPG154,http://www.uniprot.org/uniprot/P11258,Vaccinia virus Copenhagen,9,P11258,1
+GVLDAVWRV,74,82,Membrane glycoprotein US8,http://www.uniprot.org/uniprot/F5HB52,Human betaherpesvirus 5,9,F5HB52,1
+KLAEELQSNIGVLR,200,213,Matrix protein 1,http://www.uniprot.org/uniprot/P03489,Influenza B virus,14,P03489,1
+TLCLGHHAV,28,36,Hemagglutinin,http://www.uniprot.org/uniprot/P03452,Influenza A virus (A/X-31(H3N2)),9,P03452,1
+DLPKEITVATSRTLSYYK,163,180,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,18,P0DTC5,1
+EMQLKIDKL,124,132,Putative nuclease OPG089,http://www.uniprot.org/uniprot/Q80HX0,Vaccinia virus WR,9,Q80HX0,1
+KLNIKLLGV,3844,3852,Replicase polyprotein 1ab,http://www.uniprot.org/uniprot/P0DTD1,Severe acute respiratory syndrome coronavirus 2,9,P0DTD1,1
+LVEKVLKIL,252,260,Protein OPG067,http://www.uniprot.org/uniprot/P21606,Vaccinia virus WR,9,P21606,1
+ALSPSTSKV,293,301,Uncharacterized protein US29,http://www.uniprot.org/uniprot/F5HG95,Human betaherpesvirus 5,9,F5HG95,1
+AVWATPCLA,17,25,Envelope glycoprotein UL130,http://www.uniprot.org/uniprot/F5HCP3,Human betaherpesvirus 5,9,F5HCP3,1
+KLGEFYNQMM + DEAM(N7),85,94,Nucleoprotein,http://www.uniprot.org/uniprot/P04665,Influenza B virus,21,P04665,1
+SVGGVFTSV,430,438,Genome polyprotein,http://www.uniprot.org/uniprot/P06935,West Nile virus NY-99,9,P06935,1
+YLFLICHNL,102,110,Major core protein OPG129,http://www.uniprot.org/uniprot/P06440,Vaccinia virus Copenhagen,9,P06440,1
+KLTFLDVEV,157,165,DNA-directed RNA polymerase 35 kDa subunit,http://www.uniprot.org/uniprot/P24757,Vaccinia virus Copenhagen,9,P24757,1
+HVDGKILFV,327,335,Serine proteinase inhibitor 2,http://www.uniprot.org/uniprot/P15059,Vaccinia virus WR,9,P15059,1
+KVDDLRADT,442,450,Hemagglutinin,http://www.uniprot.org/uniprot/P03460,Influenza B virus,9,P03460,1
+TVIKTNMI,528,535,RNA-directed RNA polymerase catalytic subunit,http://www.uniprot.org/uniprot/P03431,Influenza A virus (A/duck/Vietnam/37/2007(H5N1)),8,P03431,1
+YVKPPSLAL,723,731,DNA replication helicase,http://www.uniprot.org/uniprot/F5HEN8,Human betaherpesvirus 5,9,F5HEN8,1
+ILDDNLYKV,18,26,Putative nuclease OPG089,http://www.uniprot.org/uniprot/Q80HX0,Vaccinia virus WR,9,Q80HX0,1
+FVADFDLRL,514,522,DNA primase,http://www.uniprot.org/uniprot/F5HG51,Human betaherpesvirus 5,9,F5HG51,1
+SLFYRAVAL,2,10,Uncharacterized protein UL147A,http://www.uniprot.org/uniprot/F5H8R0,Human betaherpesvirus 5,9,F5H8R0,1
+NMLSTVLGV,413,421,RNA-directed RNA polymerase catalytic subunit,http://www.uniprot.org/uniprot/P03431,Influenza A virus (A/Puerto Rico/8/1934(H1N1)),9,P03431,1
+DIMNEPMGL,318,326,DNA polymerase processivity factor,http://www.uniprot.org/uniprot/F5HC97,Human betaherpesvirus 5,9,F5HC97,1
+AAAKPLPSL,233,241,Protein UL95,http://www.uniprot.org/uniprot/Q6SW48,Human betaherpesvirus 5,9,Q6SW48,1
+MTIIFLILM,1,9,Hemagglutinin,http://www.uniprot.org/uniprot/P03452,Influenza A virus (A/mallard/Quebec/10969/2006(H2N3)),9,P03452,1
+IIADMVVSLS + OX(M5),93,102,Nuclear export protein,http://www.uniprot.org/uniprot/P03511,Influenza B virus,19,P03511,1
+YLDGQLARL,462,470,Protein OPG068,http://www.uniprot.org/uniprot/P21607,Vaccinia virus Copenhagen,9,P21607,1
+YLLMHLVSL,163,171,Protein OPG191,http://www.uniprot.org/uniprot/P68442,Orthopoxvirus vaccinia,9,P68442,1
+CLGGLLTMV,294,302,Latent membrane protein 2,http://www.uniprot.org/uniprot/P13285,human gammaherpesvirus 4,9,P13285,1
+RLDESPHSA,444,452,DNA primase,http://www.uniprot.org/uniprot/F5HG51,Human betaherpesvirus 5,9,F5HG51,1
+ILNDEQLNL,224,232,Early transcription factor 82 kDa subunit,http://www.uniprot.org/uniprot/P20636,Vaccinia virus WR,9,P20636,1
+YINNNIEEI,99,107,Protein OPG030,http://www.uniprot.org/uniprot/P17367,Vaccinia virus Copenhagen,9,P17367,1
+VLSQFGQEHRL,264,274,Non-structural protein 1,http://www.uniprot.org/uniprot/P03502,Influenza B virus,11,P03502,1
+YMLDLQPETT + OX(M2),11,20,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,19,P03129,1
+GIINSEDEHLL,465,475,Hemagglutinin,http://www.uniprot.org/uniprot/P03460,Influenza B virus,11,P03460,1
+KLFNIQVKEV,316,325,Capsid protein VP1,http://www.uniprot.org/uniprot/P03135,Adeno-associated virus 9,10,P03135,1
+TLRVLQDQL,458,466,DNA ligase,http://www.uniprot.org/uniprot/P16272,Vaccinia virus Copenhagen,9,P16272,1
+SVGDRVFYV,1092,1100,DNA polymerase catalytic subunit,http://www.uniprot.org/uniprot/Q6SW77,Human betaherpesvirus 5,9,Q6SW77,1
+YLLPEPALA,417,425,DNA primase,http://www.uniprot.org/uniprot/F5HG51,Human betaherpesvirus 5,9,F5HG51,1
+HLLDAIYNV,310,318,Uncharacterized protein UL116,http://www.uniprot.org/uniprot/Q6SW34,Human betaherpesvirus 5,9,Q6SW34,1
+ILSDENYLL,172,180,Virion morphogenesis protein OPG132,http://www.uniprot.org/uniprot/P29192,Vaccinia virus Copenhagen,9,P29192,1
+PVAGGTSSIYI,219,229,Polymerase basic protein 2,http://www.uniprot.org/uniprot/P03428,Influenza A virus (A/ferret/Maryland/P10-UMD/2008(H9N2)),11,P03428,1
+FLGGPPVCL,2,10,Large envelope protein,http://www.uniprot.org/uniprot/Q76R62,Hepatitis B virus,9,Q76R62,1
+YLPLSVFII,153,161,Protein OPG165,http://www.uniprot.org/uniprot/P24762,Vaccinia virus WR,9,P24762,1
+EINNELELV,33,41,mRNA-capping enzyme catalytic subunit,http://www.uniprot.org/uniprot/P04298,Vaccinia virus Copenhagen,9,P04298,1
+KLAEAIFKL,3054,3062,Genome polyprotein,http://www.uniprot.org/uniprot/P17763,Dengue virus 2 Thailand/16681/84,9,P17763,1
+VMAPRTLILTV,15,25,Protein UL40,http://www.uniprot.org/uniprot/Q6SW92,Human betaherpesvirus 5,11,Q6SW92,1
+TLEDLLMGT + OX(M7),78,86,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,18,P03129,1
+ILMRHLKNL,22,30,Protein OPG034,http://www.uniprot.org/uniprot/P17368,Vaccinia virus Copenhagen,9,P17368,1
+KIDTTHVSKV,1117,1126,DNA-directed RNA polymerase 133 kDa polypeptide,http://www.uniprot.org/uniprot/Q76ZP7,Vaccinia virus Copenhagen,10,Q76ZP7,1
+DIDEILEKV,430,438,RNA helicase NPH-II,http://www.uniprot.org/uniprot/P12927,Vaccinia virus WR,9,P12927,1
+AIMEKNIML,122,130,Non-structural protein 1,http://www.uniprot.org/uniprot/P03496,Influenza A virus (A/Wisconsin/67/2005(H3N2)),9,P03496,1
+ALFGIKLPAL,238,247,Major core protein OPG129,http://www.uniprot.org/uniprot/P06440,Orthopoxvirus vaccinia,10,P06440,1
+LPSDFFPSV,48,56,External core antigen,http://www.uniprot.org/uniprot/P0C767,Hepatitis B virus,9,P0C767,1
+ALGFVSEV,645,652,Major DNA-binding protein,http://www.uniprot.org/uniprot/F5HDQ6,Human betaherpesvirus 5,8,F5HDQ6,1
+LLDDVPPHV,92,100,Uncharacterized protein UL21A,http://www.uniprot.org/uniprot/F5HH39,Human betaherpesvirus 5,9,F5HH39,1
+GLDQYLESV,147,155,Envelope glycoprotein B,http://www.uniprot.org/uniprot/F5HB53,Human betaherpesvirus 5,9,F5HB53,1
+RLYDYFTRV,211,219,Telomere-binding protein OPG077,http://www.uniprot.org/uniprot/P16714,Vaccinia virus WR,9,P16714,1
+YINTALLNA,451,459,Polymerase acidic protein,http://www.uniprot.org/uniprot/P03433,Influenza A virus (A/Cygnus olor/Czech Republic/10732/07(H5N1)),9,P03433,1
+SLSVALPLNI,52,61,Capsid scaffolding protein,http://www.uniprot.org/uniprot/Q6SW62,Human betaherpesvirus 5,10,Q6SW62,1
+AINVEKIEL,593,601,DNA-directed RNA polymerase 147 kDa polypeptide,http://www.uniprot.org/uniprot/P07392,Vaccinia virus Copenhagen,9,P07392,1
+ILRSFIPLL,208,216,Large envelope protein,http://www.uniprot.org/uniprot/Q76R62,Hepatitis B virus,9,Q76R62,1
+LLMGTLGIV,82,90,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,9,P03129,1
+KIIQRVQDL,192,200,Early transcription factor 82 kDa subunit,http://www.uniprot.org/uniprot/P20636,Vaccinia virus Copenhagen,9,P20636,1
+LMIDRPYVL,30,38,Hemagglutinin glycoprotein,http://www.uniprot.org/uniprot/Q786F2,Measles virus strain Edmonston-B,9,Q786F2,1
+RRYPDAVYL,438,446,Fusion glycoprotein F0,http://www.uniprot.org/uniprot/Q786F3,Measles virus strain Edmonston,9,Q786F3,1
+MPQMKKILK,133,141,Semaphorin-like protein VACWR164,http://www.uniprot.org/uniprot/Q76ZN8,Vaccinia virus WR,9,Q76ZN8,1
+ITVGISSSLL,57,66,Membrane glycoprotein UL142,http://www.uniprot.org/uniprot/F5HHH2,Human betaherpesvirus 5,10,F5HHH2,1
+KLGKIPTV,160,167,Neuraminidase,http://www.uniprot.org/uniprot/P03474,Influenza B virus,8,P03474,1
+FLHTTFIDV,292,300,Serine proteinase inhibitor 1,http://www.uniprot.org/uniprot/P15058,Vaccinia virus WR,9,P15058,1
+ALYPEYIYTV,1752,1761,Large tegument protein deneddylase,http://www.uniprot.org/uniprot/Q6SW84,Human betaherpesvirus 5,10,Q6SW84,1
+RLRDGVSGL,521,529,DNA primase,http://www.uniprot.org/uniprot/F5HG51,Human betaherpesvirus 5,9,F5HG51,1
+DLLMGTLGIV + OX(M4),81,90,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,19,P03129,1
+ELQTTIHDI,25,33,Protein E6,http://www.uniprot.org/uniprot/P03126,Human papillomavirus 16,9,P03126,1
+MLDLQPETT,12,20,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,9,P03129,1
+FLDEEGKAYTA,53,63,Polymerase acidic protein,http://www.uniprot.org/uniprot/Q9QLI9,Influenza B virus,11,Q9QLI9,1
+FQIGHTDSV,249,257,Transcriptional regulator UL34,http://www.uniprot.org/uniprot/F5HC16,Human betaherpesvirus 5,9,F5HC16,1
+QIDVEKKIV,462,470,Early transcription factor 82 kDa subunit,http://www.uniprot.org/uniprot/P20636,Vaccinia virus Copenhagen,9,P20636,1
+SLYNLVKSSV,61,70,Virion membrane protein OPG139,http://www.uniprot.org/uniprot/Q76ZQ4,Vaccinia virus WR,10,Q76ZQ4,1
+KINIFMAFL,251,259,Late transcription factor 1,http://www.uniprot.org/uniprot/P68613,Vaccinia virus WR,9,P68613,1
+RTLEDLLMGTL,77,87,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,11,P03129,1
+ALWDVALLEV,152,161,Uncharacterized protein UL150A,http://www.uniprot.org/uniprot/F7V998,Human betaherpesvirus 5,10,F7V998,1
+LIDNPDNNL,NA,NA,NA,NA,Vaccinia virus Copenhagen,9,NA,1
+QMDDPNHYV,303,311,Tegument protein US24,http://www.uniprot.org/uniprot/F5H8S6,Human betaherpesvirus 5,9,F5H8S6,1
+YYKLGASQRVAGDS,178,191,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,14,P0DTC5,1
+YMLDLQPET,11,19,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,9,P03129,1
+RTLEDLLMGT,77,86,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,10,P03129,1
+KLSDSKITV,172,180,Scaffold protein OPG125,http://www.uniprot.org/uniprot/P68440,Vaccinia virus WR,9,P68440,1
+LSYYKLGASQRVAGDS,176,191,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,16,P0DTC5,1
+SLTIEVPYI,187,195,Hemagglutinin,http://www.uniprot.org/uniprot/P03460,Influenza B virus,9,P03460,1
+CLGGLLTMVA,294,303,Latent membrane protein 2,http://www.uniprot.org/uniprot/P13285,human gammaherpesvirus 4,10,P13285,1
+LTTVPAASLLA,130,140,Large envelope protein,http://www.uniprot.org/uniprot/Q76R62,Hepatitis B virus,11,Q76R62,1
+KLFTHDIML,62,70,mRNA-capping enzyme regulatory subunit OPG124,http://www.uniprot.org/uniprot/P04318,Vaccinia virus Copenhagen,9,P04318,1
+KIGPPTVTL,101,109,Soluble interferon gamma receptor OPG193,http://www.uniprot.org/uniprot/P24770,Vaccinia virus WR,9,P24770,1
+YTSHGAHGV,383,391,Hemagglutinin,http://www.uniprot.org/uniprot/P03460,Influenza B virus,9,P03460,1
+FLTSVINRV,404,412,Protein OPG056,http://www.uniprot.org/uniprot/Q80HX6,Vaccinia virus Copenhagen,9,Q80HX6,1
+LLVNEFYI,202,209,Protein C4,http://www.uniprot.org/uniprot/P17370,Vaccinia virus WR,8,P17370,1
+SLYADPFFL,713,721,DNA replication helicase,http://www.uniprot.org/uniprot/F5HEN8,Human betaherpesvirus 5,9,F5HEN8,1
+TLINGVWVV,186,194,Protein US16,http://www.uniprot.org/uniprot/Q6SVZ0,Human betaherpesvirus 5,9,Q6SVZ0,1
+NLFDIPLLTV,286,295,Protein OPG056,http://www.uniprot.org/uniprot/Q80HX6,Vaccinia virus Copenhagen,10,Q80HX6,1
+RLSDNGYYTV,164,173,Matrix protein,http://www.uniprot.org/uniprot/Q9W850,Measles virus strain Edmonston-B,10,Q9W850,1
+RQAGQEMILAV,165,175,Fusion glycoprotein F0,http://www.uniprot.org/uniprot/Q786F3,Measles virus strain Edmonston-B,11,Q786F3,1
+SLSNLDFRL,340,348,Protein OPG055,http://www.uniprot.org/uniprot/Q80HX7,Vaccinia virus WR,9,Q80HX7,1
+KLGEFYNQMM + OX(M9),85,94,Nucleoprotein,http://www.uniprot.org/uniprot/P04665,Influenza B virus,19,P04665,1
+VLYDEFVTI,6,14,Virion morphogenesis protein OPG132,http://www.uniprot.org/uniprot/P29192,Vaccinia virus WR,9,P29192,1
+YMLDLQPE,11,18,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,8,P03129,1
+SMLNSQAIDNLRA,140,152,Fusion glycoprotein F0,http://www.uniprot.org/uniprot/Q786F3,Measles virus strain Edmonston-B,13,Q786F3,1
+HARFPVAGL,537,545,Serine/threonine protein kinase UL97,http://www.uniprot.org/uniprot/Q6SW46,Human betaherpesvirus 5,9,Q6SW46,1
+GILGFVFTL,58,66,Matrix protein 1,http://www.uniprot.org/uniprot/P03485,Influenza A virus (A/Puerto Rico/8/1934(H1N1)),9,P03485,1
+TLIGNFAAHL,57,66,Glutaredoxin-2,http://www.uniprot.org/uniprot/P68460,Vaccinia virus WR,10,P68460,1
+KMVDRIQLV,491,499,Packaging protein UL32 homolog,http://www.uniprot.org/uniprot/Q6SW79,Human betaherpesvirus 5,9,Q6SW79,1
+YITALNHLV,62,70,Scaffold protein OPG125,http://www.uniprot.org/uniprot/P68440,Vaccinia virus WR,9,P68440,1
+DLLMGTLGIV,81,90,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,10,P03129,1
+KMFQISDK + OX(M2),521,528,Nucleoprotein,http://www.uniprot.org/uniprot/P04665,Influenza B virus,17,P04665,1
+KVLDIDEIL,427,435,RNA helicase NPH-II,http://www.uniprot.org/uniprot/P12927,Vaccinia virus WR,9,P12927,1
+SIIFGRQPSL,375,384,DNA-directed RNA polymerase 147 kDa polypeptide,http://www.uniprot.org/uniprot/P07392,Vaccinia virus WR,10,P07392,1
+MPQMKKILK,394,402,Semaphorin-like protein A39,http://www.uniprot.org/uniprot/P24764,Vaccinia virus Copenhagen,9,P24764,1
+YLNPGNYSMQV + OX(M9),132,142,Matrix protein 1,http://www.uniprot.org/uniprot/P03489,Influenza B virus,20,P03489,1
+MLVSQALNSV,740,749,Major core protein OPG136 precursor,http://www.uniprot.org/uniprot/P16715,Vaccinia virus WR,10,P16715,1
+ILPDMTPSI,463,471,Polymerase basic protein 2,http://www.uniprot.org/uniprot/P03428,Influenza A virus (A/Puerto Rico/8/1934(H1N1)),9,P03428,1
+KLWESPQEI,84,92,Protein C,http://www.uniprot.org/uniprot/Q9YZN9,Measles virus strain Edmonston,9,Q9YZN9,1
+NLIQNAHAV,106,114,Nucleoprotein,http://www.uniprot.org/uniprot/P04665,Influenza B virus,9,P04665,1
+LVSIPRTNIV,182,191,Protein OPG097,http://www.uniprot.org/uniprot/P07614,Vaccinia virus WR,10,P07614,1
+RIIYIIRFL,59,67,Protein C4,http://www.uniprot.org/uniprot/P17370,Vaccinia virus Copenhagen,9,P17370,1
+LLMEVYHGL,42,50,Transmembrane protein US18,http://www.uniprot.org/uniprot/F5HE69,Human betaherpesvirus 5,9,F5HE69,1
+RPMSLRSTII,335,344,Protein OPG074,http://www.uniprot.org/uniprot/Q80HX1,Vaccinia virus Ankara,10,Q80HX1,1
+DLKPDNILL,307,315,Serine/threonine-protein kinase 2,http://www.uniprot.org/uniprot/Q89121,Vaccinia virus WR,9,Q89121,1
+FLPSDFFPSV,47,56,External core antigen,http://www.uniprot.org/uniprot/P0C767,Hepatitis B virus,10,P0C767,1
+KLVGKTVKV,57,65,Protein K3,http://www.uniprot.org/uniprot/P18378,Orthopoxvirus vaccinia,9,P18378,1
+LLPEWMDAV,206,214,Protein UL136,http://www.uniprot.org/uniprot/F5HF35,Human betaherpesvirus 5,9,F5HF35,1
+ALYDVVSKL,2594,2602,Genome polyprotein,http://www.uniprot.org/uniprot/P27958,Hepacivirus hominis,9,P27958,1
+SLKDVLVSV,27,35,DNA-directed RNA polymerase 7 kDa subunit,http://www.uniprot.org/uniprot/P68317,Vaccinia virus Copenhagen,9,P68317,1
+KLRPATFGL,172,180,Protein UL40,http://www.uniprot.org/uniprot/Q6SW92,Human betaherpesvirus 5,9,Q6SW92,1
+YLLDRGADIV,288,297,Ankyrin repeat protein VACWR203,http://www.uniprot.org/uniprot/Q01223,Vaccinia virus WR,10,Q01223,1
+NVLSLRVLV,181,189,Non-structural protein 1,http://www.uniprot.org/uniprot/P03502,Influenza B virus,9,P03502,1
+PITDSLSFKL,550,559,Protein OPG074,http://www.uniprot.org/uniprot/Q80HX1,Vaccinia virus WR,10,Q80HX1,1
+FVNFNSVKNL,251,260,Protein OPG056,http://www.uniprot.org/uniprot/Q80HX6,Vaccinia virus WR,10,Q80HX6,1
+YLDNLLPSTL,155,164,Cell surface-binding protein OPG105,http://www.uniprot.org/uniprot/P04195,Vaccinia virus Copenhagen,10,P04195,1
+DVYVKIDNV,327,335,Scaffold protein OPG125,http://www.uniprot.org/uniprot/P68440,Vaccinia virus Copenhagen,9,P68440,1
+FLKEEVKTM + OX(M9),173,181,Nucleoprotein,http://www.uniprot.org/uniprot/P04665,Influenza B virus,18,P04665,1
+QLLWDTVTGV + OX(W4),453,462,Neuraminidase,http://www.uniprot.org/uniprot/P03474,Influenza B virus,19,P03474,1
+EYMLDLQPET + OX(M3),10,19,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,19,P03129,1
+SVKIDVTIL,252,260,Nuclear egress protein 1,http://www.uniprot.org/uniprot/F5HFZ4,Human betaherpesvirus 5,9,F5HFZ4,1
+LLTEVETYV,3,11,Matrix protein 1,http://www.uniprot.org/uniprot/P03485,Influenza A virus (A/Puerto Rico/8/1934(H1N1)),9,P03485,1
+EIVNLLDNKV,978,987,DNA polymerase,http://www.uniprot.org/uniprot/P06856,Vaccinia virus Copenhagen,10,P06856,1
+GASEKRFQAL,897,906,Large tegument protein deneddylase,http://www.uniprot.org/uniprot/Q6SW84,Human betaherpesvirus 5,10,Q6SW84,1
+MIKPCCERV,27,35,Protein OPG181,http://www.uniprot.org/uniprot/Q01219,Vaccinia virus Copenhagen,9,Q01219,1
+LLWDTVTGVNM + MCM(W3),454,464,Neuraminidase,http://www.uniprot.org/uniprot/P03474,Influenza B virus,21,P03474,1
+SLFGQRIEV,15,23,Genome polyprotein,http://www.uniprot.org/uniprot/P06935,West Nile virus NY-99,9,P06935,1
+IEAIHT,189,194,Thymidylate kinase,http://www.uniprot.org/uniprot/Q80HT9,Orthopoxvirus vaccinia,6,Q80HT9,1
+YLSAKITTL,66,74,Protein OPG097,http://www.uniprot.org/uniprot/P07614,Vaccinia virus Copenhagen,9,P07614,1
+LPSDFFPSI,19,27,External core antigen,http://www.uniprot.org/uniprot/P0C767,Hepatitis B virus,9,P0C767,1
+EMKYALINL,161,169,Assembly protein G7,http://www.uniprot.org/uniprot/P68716,Vaccinia virus WR,9,P68716,1
+TVSTKLCKI,307,315,Protein P,http://www.uniprot.org/uniprot/Q69028,Hepatitis B virus,9,Q69028,1
+FLKQQYMNL,652,660,Protein P,http://www.uniprot.org/uniprot/Q69028,Hepatitis B virus,9,Q69028,1
+IINSEDEHLL,466,475,Hemagglutinin,http://www.uniprot.org/uniprot/P03460,Influenza B virus,10,P03460,1
+KLGEFYNQM + OX(M9),85,93,Nucleoprotein,http://www.uniprot.org/uniprot/P04665,Influenza B virus,18,P04665,1
+KLYVGPTKV,187,195,Envelope glycoprotein O,http://www.uniprot.org/uniprot/F5HGP1,Human betaherpesvirus 5,9,F5HGP1,1
+EDLLMGTLGIV + OX(M5),80,90,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,20,P03129,1
+SQLSSPPQL,6,14,NA,NA,Human betaherpesvirus 5,9,NA,1
+FMYSDFHFI,46,54,Polymerase acidic protein,http://www.uniprot.org/uniprot/P03433,Influenza A virus (A/Puerto Rico/8/1934(H1N1)),9,P03433,1
+KMTLFKSIL,364,372,Core protease OPG083,http://www.uniprot.org/uniprot/P12926,Vaccinia virus WR,9,P12926,1
+YMLDLQPETT,11,20,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,10,P03129,1
+KLFTHDIML + OX(M8),62,70,mRNA-capping enzyme regulatory subunit OPG124,http://www.uniprot.org/uniprot/P04318,Orthopoxvirus vaccinia,18,P04318,1
+DIRTLLPILL,99,108,Entry-fusion complex protein OPG086,http://www.uniprot.org/uniprot/P68458,Vaccinia virus Copenhagen,10,P68458,1
+LSYYKLGASQRVAG,176,189,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,14,P0DTC5,1
+AINKITKNL,403,411,Hemagglutinin,http://www.uniprot.org/uniprot/P03460,Influenza B virus,9,P03460,1
+ALDPHAFHL,33,41,Envelope glycoprotein H,http://www.uniprot.org/uniprot/Q6SW67,Human betaherpesvirus 5,9,Q6SW67,1
+TIEELKQKL,96,104,Protein A52,http://www.uniprot.org/uniprot/Q01220,Vaccinia virus WR,9,Q01220,1
+TLSYYKLGASQRVA,175,188,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,14,P0DTC5,1
+KIEIERKKL,676,684,RNA polymerase-associated transcription-specificity factor RAP94,http://www.uniprot.org/uniprot/P68438,Vaccinia virus WR,9,P68438,1
+FTDNVRFSV,124,132,Tripartite terminase subunit 1,http://www.uniprot.org/uniprot/F5HC79,Human betaherpesvirus 5,9,F5HC79,1
+GLLAHIPALGV,134,144,Protein US16,http://www.uniprot.org/uniprot/Q6SVZ0,Human betaherpesvirus 5,11,Q6SVZ0,1
+GGPNLDNIL,364,372,Large envelope protein,http://www.uniprot.org/uniprot/Q76R62,Hepatitis B virus,9,Q76R62,1
+SLTSINVQA,68,76,Genome polyprotein,http://www.uniprot.org/uniprot/P06935,West Nile virus NY-99,9,P06935,1
+IRTLEDLLMGT + OX(M9),76,86,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,20,P03129,1
+KIDDMIEEV,602,610,Ankyrin repeat protein OPG025,http://www.uniprot.org/uniprot/P17372,Vaccinia virus WR,9,P17372,1
+GLNERLLSV,765,773,Inner tegument protein,http://www.uniprot.org/uniprot/Q6SW85,Human betaherpesvirus 5,9,Q6SW85,1
+EDLLMGTLGIV,80,90,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,11,P03129,1
+VSFHEAFEI,107,115,Matrix protein 1,http://www.uniprot.org/uniprot/P03489,Influenza B virus,9,P03489,1
+TLSYYKLGASQRVAGDSG,175,192,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,18,P0DTC5,1
+LLWDTVTGVNM + OX(W3),454,464,Neuraminidase,http://www.uniprot.org/uniprot/P03474,Influenza B virus,20,P03474,1
+VILERLWLA,210,218,Uncharacterized protein UL150A,http://www.uniprot.org/uniprot/F7V998,Human betaherpesvirus 5,9,F7V998,1
+YLIDTTSREL,76,85,Major core protein OPG136 precursor,http://www.uniprot.org/uniprot/P16715,Vaccinia virus WR,10,P16715,1
+FQFSYEFENV,411,420,Capsid protein VP1,http://www.uniprot.org/uniprot/P03135,Adeno-associated virus 9,10,P03135,1
+FLLTRILTI,194,202,Large envelope protein,http://www.uniprot.org/uniprot/Q76R62,Hepatitis B virus,9,Q76R62,1
+KIIDNTEQL,204,212,Matrix protein,http://www.uniprot.org/uniprot/Q9W850,Measles virus strain Edmonston-B,9,Q9W850,1
+KLTELNAEL,433,441,A-type inclusion protein A25,http://www.uniprot.org/uniprot/P24759,Vaccinia virus WR,9,P24759,1
+SIHTIKTLGV,140,149,Envelope phospholipase OPG057,http://www.uniprot.org/uniprot/P04021,Vaccinia virus WR,10,P04021,1
+SLDEEGKGRVL,161,171,Polymerase acidic protein,http://www.uniprot.org/uniprot/Q9QLI9,Influenza B virus,11,Q9QLI9,1
+QLLSPMYQL + OX(M6),428,436,Polymerase basic protein 2,http://www.uniprot.org/uniprot/Q9QLL6,Influenza B virus,18,Q9QLL6,1
+SLLETLYEM + OX(M9),102,110,Nuclear export protein,http://www.uniprot.org/uniprot/P03511,Influenza B virus,18,P03511,1
+GLNDYLHSV,247,255,Protein OPG074,http://www.uniprot.org/uniprot/Q80HX1,Vaccinia virus WR,9,Q80HX1,1
+EYMLDLQPET,10,19,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,10,P03129,1
+FLKEEVKT,173,180,Nucleoprotein,http://www.uniprot.org/uniprot/P04665,Influenza B virus,8,P04665,1
+YITNRLELL,271,279,DNA polymerase,http://www.uniprot.org/uniprot/P06856,Vaccinia virus WR,9,P06856,1
+SLNDDGLDNHTILL,535,548,Hemagglutinin,http://www.uniprot.org/uniprot/P03460,Influenza B virus,14,P03460,1
+SILHEVRPV,97,105,Hemagglutinin,http://www.uniprot.org/uniprot/P03460,Influenza B virus,9,P03460,1
+AARSSVPGV,165,173,Matrix protein 1,http://www.uniprot.org/uniprot/P03489,Influenza B virus,9,P03489,1
+KLAEELQSNIGVL,117,129,Matrix protein 1,http://www.uniprot.org/uniprot/P03489,Influenza B virus,13,P03489,1
+SLLFIPDIKL,191,200,Interferon antagonist OPG040,http://www.uniprot.org/uniprot/P04297,Vaccinia virus Copenhagen,10,P04297,1
+VLNDQYAKV,566,574,Protein OPG074,http://www.uniprot.org/uniprot/Q80HX1,Vaccinia virus WR,9,Q80HX1,1
+EVNKALYDL,42,50,RNA-binding protein OPG065,http://www.uniprot.org/uniprot/P21605,Vaccinia virus WR,9,P21605,1
+KIDYYIPYV,249,257,Protein OPG064,http://www.uniprot.org/uniprot/P21604,Vaccinia virus Copenhagen,9,P21604,1
+CLGGLLTMVAG,294,304,Latent membrane protein 2,http://www.uniprot.org/uniprot/P13285,human gammaherpesvirus 4,11,P13285,1
+KLGFEEIKGL,260,269,Protein OPG137,http://www.uniprot.org/uniprot/Q80HV8,Vaccinia virus WR,10,Q80HV8,1
+ALFYKDGKL,3,11,DNA topoisomerase 1B,http://www.uniprot.org/uniprot/P68698,Vaccinia virus Copenhagen,9,P68698,1
+KLGIGNSPV,292,300,Protein OPG137,http://www.uniprot.org/uniprot/Q80HV8,Vaccinia virus WR,9,Q80HV8,1
+KIRSDNIKKL,568,577,Uncoating factor OPG117,http://www.uniprot.org/uniprot/P04305,Vaccinia virus Copenhagen,10,P04305,1
+LSYYKLGASQRVAGDSG,176,192,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,17,P0DTC5,1
+TITEEIAVQ,3127,3135,Genome polyprotein,http://www.uniprot.org/uniprot/P17763,Dengue virus 2 Thailand/16681/84,9,P17763,1
+IRTLEDLLMGT,76,86,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,11,P03129,1
+AIMDKNIML,122,130,Non-structural protein 1,http://www.uniprot.org/uniprot/P03496,Influenza A virus (A/Victoria/3/1975(H3N2)),9,P03496,1
+VIINDDQGLFKV,323,334,Matrix protein,http://www.uniprot.org/uniprot/Q9W850,Measles virus strain Edmonston-B,12,Q9W850,1
+LLMGTLGIV + OX(M3),82,90,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,18,P03129,1
+MMLVPLITV,1,9,Protein OPG164,http://www.uniprot.org/uniprot/P68619,Vaccinia virus WR,9,P68619,1
+SAPQQKALVD,289,298,Nucleoprotein,http://www.uniprot.org/uniprot/P04665,Influenza B virus,10,P04665,1
+LSYYKLGASQRVAGD,176,190,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,15,P0DTC5,1
+KLGEFYNQMMV + DEAM(N7),85,95,Nucleoprotein,http://www.uniprot.org/uniprot/P04665,Influenza B virus,22,P04665,1
+LLAAVKVFL,448,456,Membrane protein US15,http://www.uniprot.org/uniprot/F5HFH0,Human betaherpesvirus 5,9,F5HFH0,1
+LIQEIVHEV,571,579,Early transcription factor 82 kDa subunit,http://www.uniprot.org/uniprot/P20636,Vaccinia virus Copenhagen,9,P20636,1
+TLSYYKLGASQRVAGDS,175,191,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,17,P0DTC5,1
+IIADMVVSL + MCM(D4),93,101,Nuclear export protein,http://www.uniprot.org/uniprot/P03511,Influenza B virus,19,P03511,1
+VLEDVQAAGI,159,168,Late transcription elongation factor OPG110,http://www.uniprot.org/uniprot/P07242,Vaccinia virus WR,10,P07242,1
+LSYYKLGASQRVA,176,188,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,13,P0DTC5,1
+ILGFVFTL,59,66,Matrix protein 1,http://www.uniprot.org/uniprot/P03485,Influenza A virus (A/Puerto Rico/8/1934(H1N1)),8,P03485,1
+ALLGRLYFI,493,501,Protein UL84,http://www.uniprot.org/uniprot/F5HB40,Human betaherpesvirus 5,9,F5HB40,1
+VLSLELPEV,70,78,Scaffold protein OPG125,http://www.uniprot.org/uniprot/P68440,Vaccinia virus WR,9,P68440,1
+GMGKGEDVQKL + OX(M2),191,201,Matrix protein 1,http://www.uniprot.org/uniprot/P03489,Influenza B virus,20,P03489,1
+GLLAHIPAL,134,142,Protein US16,http://www.uniprot.org/uniprot/Q6SVZ0,Human betaherpesvirus 5,9,Q6SVZ0,1
+DIEIVKLLL,264,272,Ankyrin repeat protein OPG025,http://www.uniprot.org/uniprot/P17372,Vaccinia virus Copenhagen,9,P17372,1
+VLISPVSIL,16,24,Serine proteinase inhibitor 1,http://www.uniprot.org/uniprot/P15058,Vaccinia virus Copenhagen,9,P15058,1
+YLLEQIQNL,619,627,Tripartite terminase subunit 3,http://www.uniprot.org/uniprot/F5HCU8,Human betaherpesvirus 5,9,F5HCU8,1
+VIANSSIIADMVV + OX(M11),87,99,Nuclear export protein,http://www.uniprot.org/uniprot/P03511,Influenza B virus,23,P03511,1
+SVYNMVVKL + OX(M5),78,86,Nucleoprotein,http://www.uniprot.org/uniprot/P04665,Influenza B virus,18,P04665,1
+YMLDLQPE + OX(M2),11,18,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,17,P03129,1
+TLSYYKLGASQRVAGD,175,190,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,16,P0DTC5,1
+SLMDKFAAL,1116,1124,Major DNA-binding protein,http://www.uniprot.org/uniprot/F5HDQ6,Human betaherpesvirus 5,9,F5HDQ6,1
+LLMVVTSNA + OX(M3),7,15,Hemagglutinin,http://www.uniprot.org/uniprot/P03460,Influenza B virus,18,P03460,1
+IGTQEGKLVK,617,626,Polymerase acidic protein,http://www.uniprot.org/uniprot/Q9QLI9,Influenza B virus,10,Q9QLI9,1
+CVIVWGVEL,130,138,Envelope glycoprotein US27,http://www.uniprot.org/uniprot/F5HDK1,Human betaherpesvirus 5,9,F5HDK1,1
+WLIGFDFDV,296,304,Soluble interferon alpha/beta receptor OPG204,http://www.uniprot.org/uniprot/P25213,Vaccinia virus Copenhagen,9,P25213,1
+FVLAAVYRI,65,73,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,9,P0DTC5,1
+KMLGPSAVEI + OX(M2),483,492,Hemagglutinin,http://www.uniprot.org/uniprot/P03460,Influenza B virus,19,P03460,1
+NIQTAINQV,3353,3361,Genome polyprotein,http://www.uniprot.org/uniprot/P17763,dengue virus type 2,9,P17763,1
+SLMPEETLHQV,971,981,RNA-directed RNA polymerase L,http://www.uniprot.org/uniprot/Q9WMB3,Measles virus strain Edmonston-B,11,Q9WMB3,1
+SYYKLGASQRVAGDS,177,191,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,15,P0DTC5,1
+RTLEDLLMGT + OX(M8),77,86,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,19,P03129,1
+GIWDGEEEFHV + MCM(W3),357,367,Polymerase basic protein 2,http://www.uniprot.org/uniprot/Q9QLL6,Influenza B virus,21,Q9QLL6,1
+VLMKDIQSQF + OX(M3),28,37,Nuclear export protein,http://www.uniprot.org/uniprot/P03511,Influenza B virus,19,P03511,1
+SYYKLGASQRVAG,177,189,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,13,P0DTC5,1
+RTLSYYKLGASQRVAGDS,174,191,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,18,P0DTC5,1
+AQLDCVLEAL + DEAM(Q2),83,92,RNA-directed RNA polymerase catalytic subunit,http://www.uniprot.org/uniprot/P07832,Influenza B virus,21,P07832,1
+SLLKSLLLL,145,153,Protein A47,http://www.uniprot.org/uniprot/P26673,Orthopoxvirus vaccinia,9,P26673,1
+IVLEAIHTV,NA,NA,NA,NA,Orthopoxvirus vaccinia,9,NA,1
+ALFNQLVFTA,130,139,Transcriptional regulator UL34,http://www.uniprot.org/uniprot/F5HC16,Human betaherpesvirus 5,10,F5HC16,1
+GLDNHTILL,540,548,Hemagglutinin,http://www.uniprot.org/uniprot/P03460,Influenza B virus,9,P03460,1
+IPDEQKTIIGL,91,101,Protein OPG200,http://www.uniprot.org/uniprot/P24772,Modified Vaccinia Ankara virus,11,P24772,1
+YLNPGNYSM,132,140,Matrix protein 1,http://www.uniprot.org/uniprot/P03489,Influenza B virus,9,P03489,1
+VLESCWPDV,113,121,Entry-fusion complex protein OPG094,http://www.uniprot.org/uniprot/P07611,Vaccinia virus Copenhagen,9,P07611,1
+RTLSYYKLGASQRVAGDSG,174,192,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,19,P0DTC5,1
+YLADLFDYKTK,106,116,Polymerase acidic protein,http://www.uniprot.org/uniprot/Q9QLI9,Influenza B virus,11,Q9QLI9,1
+KLGEFYNQMMV + OX(M9),85,95,Nucleoprotein,http://www.uniprot.org/uniprot/P04665,Influenza B virus,20,P04665,1
+LNIMNKLNI,129,137,Major core protein OPG129,http://www.uniprot.org/uniprot/P06440,Vaccinia virus Copenhagen,9,P06440,1
+ITFGPVERV,135,143,Polymerase basic protein 2,http://www.uniprot.org/uniprot/Q9QLL6,Influenza B virus,9,Q9QLL6,1
+ILHEVRPV,98,105,Hemagglutinin,http://www.uniprot.org/uniprot/P03460,Influenza B virus,8,P03460,1
+RGSRVGVPSL,893,902,Tegument protein pp150,http://www.uniprot.org/uniprot/Q6SW99,Human betaherpesvirus 5,10,Q6SW99,1
+FLDIWTYNA,431,439,Hemagglutinin,http://www.uniprot.org/uniprot/P03452,Influenza A virus (A/Puerto Rico/8/1934(H1N1)),9,P03452,1
+IVIEAIAEH,NA,NA,NA,NA,Orthopoxvirus vaccinia,9,NA,1
+FLDEEGKAYT,53,62,Polymerase acidic protein,http://www.uniprot.org/uniprot/Q9QLI9,Influenza B virus,10,Q9QLI9,1
+GAMDELHNEIL,427,437,Hemagglutinin,http://www.uniprot.org/uniprot/P03460,Influenza B virus,11,P03460,1
+ILFPDDVQEL,18,27,Core protein OPG114,http://www.uniprot.org/uniprot/P04300,Vaccinia virus Copenhagen,10,P04300,1
+TLLDHIRTA,178,186,Protein OPG200,http://www.uniprot.org/uniprot/P24772,Modified Vaccinia Ankara virus,9,P24772,1
+YIDISDVKV,122,130,Telomere-binding protein OPG077,http://www.uniprot.org/uniprot/P16714,Vaccinia virus WR,9,P16714,1
+KLVALGINAV,33,42,Genome polyprotein,http://www.uniprot.org/uniprot/P27958,Hepacivirus hominis,10,P27958,1
+RTLEDLLMGTL + OX(M8),77,87,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,20,P03129,1
+KISNTTFEV,306,314,3 beta-hydroxysteroid dehydrogenase/Delta 5-->4-isomerase,http://www.uniprot.org/uniprot/P26670,Vaccinia virus Copenhagen,9,P26670,1
+RLQPNVPLV,175,183,Protein UL29/28,http://www.uniprot.org/uniprot/Q6SWA3,Human betaherpesvirus 5,9,Q6SWA3,1
+TLHEYMLDLQP,7,17,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,11,P03129,1
+FAMELPSFGV + OX(M3),504,513,RNA-directed RNA polymerase catalytic subunit,http://www.uniprot.org/uniprot/P07832,Influenza B virus,19,P07832,1
+GLFDYSKNLTA,794,804,Uncharacterized protein UL87,http://www.uniprot.org/uniprot/Q6SW55,Human betaherpesvirus 5,11,Q6SW55,1
+WIGSGLNII,225,233,Uncharacterized protein US30,http://www.uniprot.org/uniprot/F5HB41,Human betaherpesvirus 5,9,F5HB41,1
+SQFGQEHRL + ACET(S1),266,274,Non-structural protein 1,http://www.uniprot.org/uniprot/P03502,Influenza B virus,20,P03502,1
+PLALYSADKV,254,263,Serine/threonine-protein kinase 2,http://www.uniprot.org/uniprot/Q89121,Vaccinia virus Copenhagen,10,Q89121,1
+RMDEEHPGL + OX(M2),94,102,RNA-directed RNA polymerase catalytic subunit,http://www.uniprot.org/uniprot/P07832,Influenza B virus,18,P07832,1
+GIADIEDLTLLAR,307,319,Nucleoprotein,http://www.uniprot.org/uniprot/P04665,Influenza B virus,13,P04665,1
+GLLRATFLV,6,14,Envelope glycoprotein UL132,http://www.uniprot.org/uniprot/F5HGU6,Human betaherpesvirus 5,9,F5HGU6,1
+LLAHIPALGV,135,144,Protein US16,http://www.uniprot.org/uniprot/Q6SVZ0,Human betaherpesvirus 5,10,Q6SVZ0,1
+SRTLSYYKLGASQRVAG,173,189,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,17,P0DTC5,1
+FQTTIIQKA,9,17,Polymerase acidic protein,http://www.uniprot.org/uniprot/Q9QLI9,Influenza B virus,9,Q9QLI9,1
+RLFDLPVYC,431,439,DNA replication helicase,http://www.uniprot.org/uniprot/F5HEN8,Human betaherpesvirus 5,9,F5HEN8,1
+YLNPGNYSM + OX(M9),132,140,Matrix protein 1,http://www.uniprot.org/uniprot/P03489,Influenza B virus,18,P03489,1
+RLDDDGNFQL,78,87,Genome polyprotein,http://www.uniprot.org/uniprot/P06935,West Nile virus NY-99,10,P06935,1
+NMATPVSILRV + OX(M2),364,374,Nucleoprotein,http://www.uniprot.org/uniprot/P04665,Influenza B virus,20,P04665,1
+FVAEEVHTV,170,178,G-protein coupled receptor homolog UL33,http://www.uniprot.org/uniprot/Q6SW98,Human betaherpesvirus 5,9,Q6SW98,1
+YTMDGEYRL,518,526,Genome polyprotein,http://www.uniprot.org/uniprot/P06935,West Nile virus NY-99,9,P06935,1
+ALFSFGVQV,207,215,Membrane glycoprotein US9,http://www.uniprot.org/uniprot/F5HC33,Human betaherpesvirus 5,9,F5HC33,1
+LTFGRETVLEN,72,82,External core antigen,http://www.uniprot.org/uniprot/P0C767,Hepatitis B virus,11,P0C767,1
+TVYDINNEV,125,133,Apoptosis regulator OPG045,http://www.uniprot.org/uniprot/P24356,Vaccinia virus Copenhagen,9,P24356,1
+TVMINNVKL,249,257,Early transcription factor 82 kDa subunit,http://www.uniprot.org/uniprot/P20636,Vaccinia virus Copenhagen,9,P20636,1
+GLFAVENFL,259,267,DNA polymerase processivity factor,http://www.uniprot.org/uniprot/F5HC97,Human betaherpesvirus 5,9,F5HC97,1
+LTDPKIGLL,261,269,Uncharacterized protein UL14,http://www.uniprot.org/uniprot/Q6SWB7,Human betaherpesvirus 5,9,Q6SWB7,1
+TVVVRDVTV,485,493,Protein UL49,http://www.uniprot.org/uniprot/Q6SW82,Human betaherpesvirus 5,9,Q6SW82,1
+RMGAVTTEV,134,142,Matrix protein 1,http://www.uniprot.org/uniprot/P03485,Influenza A virus (A/Puerto Rico/8/1934(H1N1)),9,P03485,1
+SLYEANPEL,344,352,Protein UL29/28,http://www.uniprot.org/uniprot/Q6SWA3,Human betaherpesvirus 5,9,Q6SWA3,1
+LIDQYLYYL,439,447,Capsid protein VP1,http://www.uniprot.org/uniprot/P03135,Adeno-associated virus 9,9,P03135,1
+RTLSYYKLGASQRVAGD,174,190,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,17,P0DTC5,1
+TLHEYMLDL + OX(M6),7,15,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,18,P03129,1
+NLVPMVATV,495,503,65 kDa phosphoprotein,http://www.uniprot.org/uniprot/Q6SW59,Human betaherpesvirus 5,9,Q6SW59,1
+LLFIPDIKL,192,200,Interferon antagonist OPG040,http://www.uniprot.org/uniprot/P04297,Orthopoxvirus vaccinia,9,P04297,1
+SLFKNVRLL,174,182,mRNA-capping enzyme regulatory subunit OPG124,http://www.uniprot.org/uniprot/P04318,Vaccinia virus WR,9,P04318,1
+YMLDLQPETTD,11,21,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,11,P03129,1
+RLLATSDGLYL,671,681,Serine/threonine protein kinase UL97,http://www.uniprot.org/uniprot/Q6SW46,Human betaherpesvirus 5,11,Q6SW46,1
+SLNDDGLDNHT,535,545,Hemagglutinin,http://www.uniprot.org/uniprot/P03460,Influenza B virus,11,P03460,1
+DLPKEITVATSRTLSYY,163,179,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,17,P0DTC5,1
+TLIVNLVEV,200,208,Envelope glycoprotein M,http://www.uniprot.org/uniprot/Q6SW43,Human betaherpesvirus 5,9,Q6SW43,1
+DAMLKTDTV,44,52,Nuclear egress protein 2,http://www.uniprot.org/uniprot/Q6SW81,Human betaherpesvirus 5,9,Q6SW81,1
+FMDPSAGIEGF + OX(M2),90,100,Non-structural protein 1,http://www.uniprot.org/uniprot/P03502,Influenza B virus,20,P03502,1
+GQYSGFARA,591,599,Polymerase basic protein 2,http://www.uniprot.org/uniprot/Q9QLL6,Influenza B virus,9,Q9QLL6,1
+KVVKLTPQV,142,150,Protein OPG097,http://www.uniprot.org/uniprot/P07614,Vaccinia virus Copenhagen,9,P07614,1
+ILNSLFERL,239,247,Non-structural protein 1,http://www.uniprot.org/uniprot/P03502,Influenza B virus,9,P03502,1
+TLYEMKDVVEV + OX(M5),106,116,Nuclear export protein,http://www.uniprot.org/uniprot/P03511,Influenza B virus,20,P03511,1
+TILDKILNV,146,154,Major capsid protein,http://www.uniprot.org/uniprot/F5HGT1,Human betaherpesvirus 5,9,F5HGT1,1
+RIIDLITSL,369,377,Tripartite terminase subunit 1,http://www.uniprot.org/uniprot/F5HC79,Human betaherpesvirus 5,9,F5HC79,1
+RLIDFLKDV,162,170,RNA-directed RNA polymerase catalytic subunit,http://www.uniprot.org/uniprot/P03431,Influenza A virus (A/X-31(H3N2)),9,P03431,1
+ATWAENIQV,862,870,Genome polyprotein,http://www.uniprot.org/uniprot/P06935,West Nile virus NY-99,9,P06935,1
+SLMIRLPLT,114,122,NA,NA,Human betaherpesvirus 5,9,NA,1
+VLLDKFGVVYL,310,320,Tegument protein US22,http://www.uniprot.org/uniprot/F5HDC7,Human betaherpesvirus 5,11,F5HDC7,1
+ITSSNSPHV,22,30,Hemagglutinin,http://www.uniprot.org/uniprot/P03460,Influenza B virus,9,P03460,1
+GIAKDVMEV + OX(M7),224,232,Matrix protein 1,http://www.uniprot.org/uniprot/P03489,Influenza B virus,18,P03489,1
+TLSYYKLGASQRVAG,175,189,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,15,P0DTC5,1
+AVLLSNEGII,458,467,Hemagglutinin,http://www.uniprot.org/uniprot/P03460,Influenza B virus,10,P03460,1
+LHEVRPV,99,105,Hemagglutinin,http://www.uniprot.org/uniprot/P03460,Influenza B virus,7,P03460,1
+RTLSYYKLGASQRVA,174,188,Membrane protein,http://www.uniprot.org/uniprot/P0DTC5,Severe acute respiratory syndrome coronavirus 2,15,P0DTC5,1
+SMEEPGWYSF + OX(M2),402,411,Neuraminidase,http://www.uniprot.org/uniprot/P03474,Influenza B virus,19,P03474,1
+YLFEGQYSTI,164,173,DNA primase,http://www.uniprot.org/uniprot/F5HG51,Human betaherpesvirus 5,10,F5HG51,1
+VLAELVKQI,81,89,Immediate early protein IE1,http://www.uniprot.org/uniprot/F5HCM1,Human betaherpesvirus 5,9,F5HCM1,1
+AIFSGHVWV,246,254,Transmembrane protein US18,http://www.uniprot.org/uniprot/F5HE69,Human betaherpesvirus 5,9,F5HE69,1
+VTLLCLIPTV,NA,NA,Genome polyprotein,http://www.uniprot.org/uniprot/P17763,dengue virus type 2,10,P17763,1
+RLVTEELYL,64,72,Nuclear export protein,http://www.uniprot.org/uniprot/P03511,Influenza B virus,9,P03511,1
+ALLKIKYGEA,200,209,Neuraminidase,http://www.uniprot.org/uniprot/P03474,Influenza B virus,10,P03474,1
+KITSYKFESV,18,27,Soluble interferon gamma receptor OPG193,http://www.uniprot.org/uniprot/P24770,Vaccinia virus Ankara,10,P24770,1
+SLNHLDQVL,1117,1125,Large tegument protein deneddylase,http://www.uniprot.org/uniprot/Q6SW84,Human betaherpesvirus 5,9,Q6SW84,1
+TINDLKMML,68,76,Protein OPG159,http://www.uniprot.org/uniprot/P24760,Vaccinia virus Copenhagen,9,P24760,1
+TVTGVNMAL + OX(M7),458,466,Neuraminidase,http://www.uniprot.org/uniprot/P03474,Influenza B virus,18,P03474,1
+LLDGVTVSL,183,191,Protein UL49,http://www.uniprot.org/uniprot/Q6SW82,Human betaherpesvirus 5,9,Q6SW82,1
+MLDLQPET,12,19,Protein E7,http://www.uniprot.org/uniprot/P03129,Human papillomavirus 16,8,P03129,1
+KLIDGFFPA,263,271,RNA-directed RNA polymerase L,http://www.uniprot.org/uniprot/Q9WMB3,Measles virus strain Edmonston-B,9,Q9WMB3,1
+TLVPQEHYV,5563,5571,Replicase polyprotein 1ab,http://www.uniprot.org/uniprot/P0DTD1,Severe acute respiratory syndrome coronavirus 2,9,P0DTD1,1

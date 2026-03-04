@@ -193,6 +193,9 @@ df_pos <- df_epitope |>
   distinct(peptide, uniprot_id, .keep_all = TRUE) |>
   mutate(label = 1)
 
+write_csv(df_pos, "data/pos_viral_proteins.csv")
+
+
 # === Load FASTA ===
 read_fasta_df <- function(filepath) {
   lines <- readLines(filepath)
