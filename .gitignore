@@ -7,3 +7,4 @@ data/pos_EL_cancer_epitopes_hla0201.csv
 data/pos_EL_healthy_epitopes_hla0201.csv
 data/fasta_*/
 data/fasta_batches*/
+data/pos_EL_*
