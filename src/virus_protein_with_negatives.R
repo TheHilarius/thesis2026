@@ -100,3 +100,4 @@ df_model_final <- df_model |>
          full_context, start, end, protein, organism, mhc_restriction_name)
 
 write_csv(df_model_final, "data/df_model_training.csv")
+write_csv(df_pos, "data/pos_EL_viral_epitopes_hla0201.csv")
