@@ -7,18 +7,28 @@ import sys
 import time
 
 
-def download_fasta(uniprot_id):
+def download_fasta(uniprot_id, retries=3, wait=5):
     """
-    Download FASTA from UniProt REST API
+    Download FASTA from UniProt REST API with retry logic
     """
     url = f"https://rest.uniprot.org/uniprotkb/{uniprot_id}.fasta"
-    response = requests.get(url, timeout=30)
 
-    if response.status_code == 200:
-        return response.text
-    else:
-        print(f"[WARNING] Failed to download {uniprot_id} (status {response.status_code})")
-        return None
+    for attempt in range(retries):
+        try:
+            response = requests.get(url, timeout=30)
+            if response.status_code == 200:
+                return response.text
+            else:
+                print(f"[WARNING] Failed to download {uniprot_id} (status {response.status_code})")
+                return None
+        except requests.exceptions.ConnectionError as e:
+            print(f"[WARNING] Connection error for {uniprot_id} (attempt {attempt + 1}/{retries}): {e}")
+            if attempt < retries - 1:
+                print(f"Retrying in {wait} seconds...")
+                time.sleep(wait)
+            else:
+                print(f"[ERROR] Giving up on {uniprot_id} after {retries} attempts")
+                return None
 
 
 def main():
@@ -39,11 +49,13 @@ def main():
         print(f"[ERROR] Input file must be a CSV: {input_file}")
         sys.exit(1)
 
-    # Check output dir doesn't already exist
+    # Check output dir — warn but continue if exists, skip already downloaded files
     if output_dir.exists():
-        print(f"[ERROR] Output directory already exists: {output_dir}")
-        print("Please specify a new directory name to avoid overwriting.")
-        sys.exit(1)
+        print(f"[WARNING] Output directory already exists: {output_dir}")
+        print("Will skip already downloaded files and continue.")
+    else:
+        output_dir.mkdir(parents=True)
+        print(f"Created output directory: {output_dir}")
 
     print(f"Reading: {input_file}")
 
@@ -63,14 +75,17 @@ def main():
     unique_ids = df["uniprot_id"].dropna().unique()
     print(f"Found {len(unique_ids)} unique UniProt IDs")
 
-    output_dir.mkdir(parents=True)
-    print(f"Created output directory: {output_dir}")
-
     # Track results
-    success, failed = 0, 0
+    success, failed, skipped = 0, 0, 0
 
     for uid in unique_ids:
         output_path = output_dir / f"{uid}.fasta"
+
+        # Skip already downloaded
+        if output_path.exists():
+            print(f"[SKIP] {uid} already exists")
+            skipped += 1
+            continue
 
         print(f"Downloading {uid}...")
         fasta_text = download_fasta(uid)
@@ -85,7 +100,7 @@ def main():
 
         time.sleep(0.5)
 
-    print(f"\nDone. Success: {success}, Failed: {failed}")
+    print(f"\nDone. Success: {success}, Failed: {failed}, Skipped: {skipped}")
 
 
 if __name__ == "__main__":
