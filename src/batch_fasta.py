@@ -26,7 +26,7 @@ def read_fasta_entries(filepath):
 def main():
     if len(sys.argv) != 3:
         print("Usage: python batch_fasta.py <input_fasta> <output_dir>")
-        print("Example: python batch_fasta.py data/combined.fasta data/fasta_batches")
+        print("Example: python src/batch_fasta.py data/raw/fasta/combined.fasta data/raw/fasta/fasta_batches")
         sys.exit(1)
 
     input_fasta = Path(sys.argv[1])
@@ -68,6 +68,6 @@ if __name__ == "__main__":
 
 """
 python src/batch_fasta.py \
-    data/combined_all_hla0201.fasta \
-    data/fasta_batches_hla0201
+    data/raw/fasta/combined.fasta \
+    data/raw/fasta/fasta_batches
 """

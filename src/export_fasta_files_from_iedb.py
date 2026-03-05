@@ -40,7 +40,6 @@ def main():
     input_file = Path(sys.argv[1])
     output_dir = Path(sys.argv[2])
 
-    # Validate input file
     if not input_file.exists():
         print(f"[ERROR] Input file not found: {input_file}")
         sys.exit(1)
@@ -49,7 +48,6 @@ def main():
         print(f"[ERROR] Input file must be a CSV: {input_file}")
         sys.exit(1)
 
-    # Check output dir — warn but continue if exists, skip already downloaded files
     if output_dir.exists():
         print(f"[WARNING] Output directory already exists: {output_dir}")
         print("Will skip already downloaded files and continue.")
@@ -65,7 +63,6 @@ def main():
         print(f"[ERROR] Could not read CSV: {e}")
         sys.exit(1)
 
-    # Check uniprot_id column exists
     if "uniprot_id" not in df.columns:
         print("[ERROR] Column 'uniprot_id' not found in CSV.")
         print("Available columns:")
@@ -75,13 +72,12 @@ def main():
     unique_ids = df["uniprot_id"].dropna().unique()
     print(f"Found {len(unique_ids)} unique UniProt IDs")
 
-    # Track results
-    success, failed, skipped = 0, 0, 0
+    success, skipped = 0, 0
+    failed_ids = []
 
     for uid in unique_ids:
         output_path = output_dir / f"{uid}.fasta"
 
-        # Skip already downloaded
         if output_path.exists():
             print(f"[SKIP] {uid} already exists")
             skipped += 1
@@ -96,11 +92,21 @@ def main():
             print(f"[OK] Saved to {output_path}")
             success += 1
         else:
-            failed += 1
+            failed_ids.append(uid)
 
         time.sleep(0.5)
 
-    print(f"\nDone. Success: {success}, Failed: {failed}, Skipped: {skipped}")
+    # Save failed IDs
+    failed_log = output_dir / "failed_downloads.txt"
+    if failed_ids:
+        with open(failed_log, "w") as f:
+            for uid in failed_ids:
+                f.write(f"{uid}\n")
+        print(f"\n[WARNING] {len(failed_ids)} failed downloads saved to {failed_log}")
+    else:
+        print("\nAll downloads successful — no failures.")
+
+    print(f"Done. Success: {success}, Failed: {len(failed_ids)}, Skipped: {skipped}")
 
 
 if __name__ == "__main__":

@@ -1,10 +1,9 @@
 library(tidyverse)
-library(stringr)
 source("src/functions.R")
 set_working_directory()
 
-# load and clean data
-df_raw <- read.csv("data/iedb_553_EL_epitopes.csv", stringsAsFactors = FALSE)
+# Load and clean IEDB 553 viral EL epitopes
+df_raw <- read.csv("data/raw/iedb_553_EL_epitopes.csv", stringsAsFactors = FALSE)
 colnames(df_raw) <- clean_names(colnames(df_raw))
 
 df_clean <- df_raw |>
@@ -12,16 +11,20 @@ df_clean <- df_raw |>
   mutate(across(where(is.character), ~ na_if(.x, ""))) |>
   mutate(pep_length = nchar(epitope_name))
 
-# create epitope dataframe
+# Create epitope dataframe
 df_epitope <- df_clean |>
-  select(epitope_name, epitope_molecule_parent, 
+  select(epitope_name, epitope_molecule_parent,
          epitope_molecule_parent_iri, epitope_source_organism, pep_length) |>
   distinct() |>
-  rename(peptide = epitope_name, protein = epitope_molecule_parent,
-         protein_iri = epitope_molecule_parent_iri, organism = epitope_source_organism) |>
+  rename(
+    peptide     = epitope_name,
+    protein     = epitope_molecule_parent,
+    protein_iri = epitope_molecule_parent_iri,
+    organism    = epitope_source_organism
+  ) |>
   mutate(uniprot_id = str_extract(protein_iri, "[^/]+$"))
 
-# lookup tables
+# Lookup tables
 df_protein_info <- df_epitope |>
   select(protein, protein_iri, organism, uniprot_id) |>
   distinct(uniprot_id, .keep_all = TRUE)
@@ -30,7 +33,7 @@ df_mhc_info <- df_clean |>
   select(peptide = epitope_name, mhc_restriction_name) |>
   distinct(peptide, .keep_all = TRUE)
 
-# positives
+# Positive examples
 df_pos <- df_epitope |>
   distinct(peptide, uniprot_id, .keep_all = TRUE) |>
   mutate(label = 1)
@@ -38,24 +41,24 @@ df_pos <- df_epitope |>
 cat("\nPositive peptide lengths:\n")
 print(table(df_pos |> pull(pep_length)))
 
-# load fasta
-df_fasta <- read_fasta_df("data/combined.fasta") |>
+# Load viral protein FASTA sequences
+df_fasta <- read_fasta_df("data/raw/fasta/combined.fasta") |>
   mutate(uniprot_id = str_extract(header, "(?<=\\|)[A-Z0-9]+(?=\\|)")) |>
   filter(uniprot_id %in% (df_pos |> pull(uniprot_id) |> unique()))
 
-# generate 9-mers
+# Generate all 9-mers from viral proteins
 df_all_9mers <- df_fasta |>
   mutate(peptides = map2(sequence, uniprot_id, ~ generate_kmers(.x, .y, lengths = 9))) |>
   select(peptides) |>
   unnest(peptides)
 
-# clean positives
+# Verify positives exist in FASTA sequences
 df_pos_clean <- df_pos |>
   filter(map2_lgl(peptide, uniprot_id, ~ verify_peptide_in_protein(.x, .y, df_fasta))) |>
   distinct(peptide, uniprot_id, .keep_all = TRUE) |>
   mutate(label = 1)
 
-# generate negatives (10:1 ratio)
+# Sample negatives at 10:1 ratio per protein
 df_neg_all <- df_all_9mers |>
   anti_join(df_pos_clean |> select(peptide, uniprot_id), by = c("peptide", "uniprot_id")) |>
   mutate(label = 0)
@@ -71,33 +74,31 @@ df_neg_sampled <- df_neg_all |>
   }) |>
   ungroup()
 
-# combine
+# Combine positives and negatives
 df_model <- bind_rows(
-  df_pos_clean |> select(peptide, uniprot_id, pep_length) |> mutate(label = 1),
-  df_neg_sampled |> select(peptide, uniprot_id, pep_length, label)
+  df_pos_clean    |> select(peptide, uniprot_id, pep_length) |> mutate(label = 1),
+  df_neg_sampled  |> select(peptide, uniprot_id, pep_length, label)
 )
 
-# add flanking regions
+# Add flanking regions and metadata
 df_model <- df_model |>
   add_flanking_regions(df_fasta, flank_size = 8) |>
-  filter(peptide_found)
-
-# add metadata
-df_model <- df_model |>
+  filter(peptide_found) |>
   left_join(df_protein_info |> select(uniprot_id, protein, organism), by = "uniprot_id") |>
   left_join(df_mhc_info, by = "peptide")
 
-# summary
+# Summary
 cat("\n--- Dataset Summary ---\n")
-cat("Total:", nrow(df_model), "\n")
+cat("Total:    ", nrow(df_model), "\n")
 cat("Positives:", df_model |> filter(label == 1) |> nrow(), "\n")
 cat("Negatives:", df_model |> filter(label == 0) |> nrow(), "\n")
-cat("Ratio:", (df_model |> filter(label == 0) |> nrow()) / (df_model |> filter(label == 1) |> nrow()) |> round(1), ":1\n")
+cat("Ratio:    ", (df_model |> filter(label == 0) |> nrow()) /
+      (df_model |> filter(label == 1) |> nrow()) |> round(1), ":1\n")
 
-# save
-df_model_final <- df_model |>
-  select(peptide, uniprot_id, label, pep_length, n_flank, c_flank, 
-         full_context, start, end, protein, organism, mhc_restriction_name)
+# Export
+df_model |>
+  select(peptide, uniprot_id, label, pep_length, n_flank, c_flank,
+         full_context, start, end, protein, organism, mhc_restriction_name) |>
+  write_csv("data/processed/df_model_training.csv")
 
-write_csv(df_model_final, "data/df_model_training.csv")
-write_csv(df_pos, "data/pos_EL_viral_epitopes_hla0201.csv")
+write_csv(df_pos, "data/processed/pos_EL_viral_epitopes_hla0201.csv")

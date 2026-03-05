@@ -2,14 +2,14 @@
 
 if [ "$#" -ne 3 ] && [ "$#" -ne 4 ]; then
     echo "Usage: bash run_netmhcpan.sh <fasta_batch_dir> <output_dir> <prefix> [BA]"
-    echo "Example: bash run_netmhcpan.sh data/fasta_batches_hla0201 results/netmhcpan my_run"
-    echo "Example: bash run_netmhcpan.sh data/fasta_batches_hla0201 results/netmhcpan my_run BA"
+    echo "Example: bash src/run_netmhcpan.sh data/raw/fasta/combined_batches data/processed/netmhcpan my_run"
+    echo "Example: bash src/run_netmhcpan.sh data/raw/fasta/combined_batches data/processed/netmhcpan my_run BA"
     exit 1
 fi
 
-BATCH_DIR=\$1
-OUTPUT_DIR=\$2
-PREFIX=\$3
+BATCH_DIR=$1
+OUTPUT_DIR=$2
+PREFIX=$3
 
 # Validate batch directory exists
 if [ ! -d "$BATCH_DIR" ]; then
@@ -26,7 +26,7 @@ fi
 mkdir -p "$OUTPUT_DIR"
 
 BA_FLAG=""
-if [ "\$4" == "BA" ]; then
+if [ "$4" == "BA" ]; then
     BA_FLAG="-BA"
     echo "Mode: EL + BA"
 else
@@ -58,7 +58,7 @@ done
 echo "All batches done."
 
 ### Without BA
-# bash src/run_netmhcpan.sh data/fasta_batches_hla0201 results/netmhcpan my_run
+# bash src/run_netmhcpan.sh data/raw/fasta/combined_batches data/processed/netmhcpan my_run
 
 ### With BA
-# bash src/run_netmhcpan.sh data/fasta_batches_hla0201 results/netmhcpan my_run BA
+# bash src/run_netmhcpan.sh data/raw/fasta/combined_batches data/processed/netmhcpan my_run BA
