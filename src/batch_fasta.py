@@ -24,13 +24,14 @@ def read_fasta_entries(filepath):
 
 
 def main():
-    if len(sys.argv) != 3:
-        print("Usage: python batch_fasta.py <input_fasta> <output_dir>")
-        print("Example: python src/batch_fasta.py data/raw/fasta/combined.fasta data/raw/fasta/fasta_batches")
+    if len(sys.argv) not in [3, 4]:
+        print("Usage: python batch_fasta.py <input_fasta> <output_dir> [batch_size]")
+        print("Example: python src/batch_fasta.py data/raw/fasta/combined.fasta data/raw/fasta/fasta_batches 50")
         sys.exit(1)
 
     input_fasta = Path(sys.argv[1])
     output_dir  = Path(sys.argv[2])
+    batch_size  = int(sys.argv[3]) if len(sys.argv) == 4 else 500
 
     if not input_fasta.exists():
         print(f"[ERROR] Input file not found: {input_fasta}")
@@ -46,7 +47,6 @@ def main():
     entries = read_fasta_entries(input_fasta)
     print(f"Total sequences: {len(entries)}")
 
-    batch_size = 500
     n_batches  = (len(entries) + batch_size - 1) // batch_size
 
     for i in range(n_batches):
