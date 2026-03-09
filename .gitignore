@@ -32,3 +32,5 @@ data/processed/pos_EL_healthy_epitopes_hla0201.csv
 data/processed/pos_EL_cancer_epitopes_hla0201.csv
 data/processed/pos_EL_8-to-14mers_epitopes_hla0201.csv
 data/processed/netmhcpan/
+data/processed/netmhcpan_*
+data/processed/netmhcpan_test/*
