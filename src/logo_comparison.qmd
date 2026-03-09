@@ -1,0 +1,479 @@
+---
+title: "Epitope Logo Plot Comparison"
+format: html
+editor: visual
+---
+
+## Setup
+
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(ggseqlogo)
+library(knitr)
+```
+
+## Load Data
+
+```{r}
+#| label: load-data
+#| message: false
+
+pos_viral_proteins <- read_csv("../data/pos_viral_proteins.csv")
+pos_cancer         <- read_csv("../data/pos_EL_cancer_epitopes_hla0201.csv")
+pos_healthy        <- read_csv("../data/pos_EL_healthy_epitopes_hla0201.csv")
+```
+
+## Data Descriptions
+
+All three datasets share the following filters:
+
+- **HLA restriction:** Only **HLA-A\*02:01** epitopes are included
+- **Assay type:** **Eluted ligand data only**
+
+Additional filters per dataset:
+
+| Dataset | Source |
+|---|---|
+| **Viral** | Viral antigens only, human samples only, no mouse samples |
+| **Cancer** | Epitopes associated with occurrence of cancer |
+| **Healthy** | Epitopes from healthy individuals, no immunization |
+
+---
+
+# Peptide Length Distributions
+
+```{r}
+#| label: length-table-all
+
+# Helper function to produce a length summary table
+length_summary <- function(df, label) {
+  df |>
+    count(pep_length, name = "count") |>
+    arrange(pep_length) |>
+    mutate(
+      percentage = round(count / sum(count) * 100, 2),
+      dataset    = label
+    )
+}
+
+bind_rows(
+  length_summary(pos_viral_proteins, "Viral"),
+  length_summary(pos_cancer,         "Cancer"),
+  length_summary(pos_healthy,        "Healthy")
+) |>
+  select(dataset, pep_length, count, percentage) |>
+  rename(
+    "Dataset"        = dataset,
+    "Peptide Length" = pep_length,
+    "Count"          = count,
+    "Percentage (%)" = percentage
+  ) |>
+  kable(caption = "Distribution of Peptide Lengths Across All Datasets")
+```
+
+---
+
+# Logo Plots — Viral Epitopes
+
+```{r}
+#| label: filter-viral
+
+target_lengths <- c(8, 9, 10, 11)
+
+seqs_viral <- pos_viral_proteins |>
+  filter(pep_length %in% target_lengths) |>
+  split(f = ~pep_length) |>
+  map(\(df) df$peptide)
+
+map_dfr(seqs_viral, \(seqs) tibble(n = length(seqs)), .id = "Length") |>
+  rename("Peptide Length" = Length, "Number of Sequences" = n) |>
+  kable(caption = "Sequences per Logo Plot — Viral")
+```
+
+```{r}
+#| label: logo-viral-8mer
+#| fig-width: 10
+#| fig-height: 4
+#| warning: false
+
+ggseqlogo(seqs_viral[["8"]], method = "bits") +
+  labs(
+    title    = "Viral — 8-mers",
+    subtitle = paste0("n = ", length(seqs_viral[["8"]]), " peptides"),
+    x = "Position", y = "Bits"
+  ) +
+  theme_logo() +
+  theme(
+    plot.title    = element_text(hjust = 0.5, size = 14, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 11)
+  )
+```
+
+```{r}
+#| label: logo-viral-9mer
+#| fig-width: 10
+#| fig-height: 4
+#| warning: false
+
+ggseqlogo(seqs_viral[["9"]], method = "bits") +
+  labs(
+    title    = "Viral — 9-mers",
+    subtitle = paste0("n = ", length(seqs_viral[["9"]]), " peptides"),
+    x = "Position", y = "Bits"
+  ) +
+  theme_logo() +
+  theme(
+    plot.title    = element_text(hjust = 0.5, size = 14, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 11)
+  )
+```
+
+```{r}
+#| label: logo-viral-10mer
+#| fig-width: 10
+#| fig-height: 4
+#| warning: false
+
+ggseqlogo(seqs_viral[["10"]], method = "bits") +
+  labs(
+    title    = "Viral — 10-mers",
+    subtitle = paste0("n = ", length(seqs_viral[["10"]]), " peptides"),
+    x = "Position", y = "Bits"
+  ) +
+  theme_logo() +
+  theme(
+    plot.title    = element_text(hjust = 0.5, size = 14, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 11)
+  )
+```
+
+```{r}
+#| label: logo-viral-11mer
+#| fig-width: 10
+#| fig-height: 4
+#| warning: false
+
+ggseqlogo(seqs_viral[["11"]], method = "bits") +
+  labs(
+    title    = "Viral — 11-mers",
+    subtitle = paste0("n = ", length(seqs_viral[["11"]]), " peptides"),
+    x = "Position", y = "Bits"
+  ) +
+  theme_logo() +
+  theme(
+    plot.title    = element_text(hjust = 0.5, size = 14, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 11)
+  )
+```
+
+---
+
+# Logo Plots — Cancer Epitopes
+
+```{r}
+#| label: filter-cancer
+
+seqs_cancer <- pos_cancer |>
+  filter(pep_length %in% target_lengths) |>
+  split(f = ~pep_length) |>
+  map(\(df) df$peptide)
+
+map_dfr(seqs_cancer, \(seqs) tibble(n = length(seqs)), .id = "Length") |>
+  rename("Peptide Length" = Length, "Number of Sequences" = n) |>
+  kable(caption = "Sequences per Logo Plot — Cancer")
+```
+
+```{r}
+#| label: logo-cancer-8mer
+#| fig-width: 10
+#| fig-height: 4
+#| warning: false
+
+ggseqlogo(seqs_cancer[["8"]], method = "bits") +
+  labs(
+    title    = "Cancer — 8-mers",
+    subtitle = paste0("n = ", length(seqs_cancer[["8"]]), " peptides"),
+    x = "Position", y = "Bits"
+  ) +
+  theme_logo() +
+  theme(
+    plot.title    = element_text(hjust = 0.5, size = 14, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 11)
+  )
+```
+
+```{r}
+#| label: logo-cancer-9mer
+#| fig-width: 10
+#| fig-height: 4
+#| warning: false
+
+ggseqlogo(seqs_cancer[["9"]], method = "bits") +
+  labs(
+    title    = "Cancer — 9-mers",
+    subtitle = paste0("n = ", length(seqs_cancer[["9"]]), " peptides"),
+    x = "Position", y = "Bits"
+  ) +
+  theme_logo() +
+  theme(
+    plot.title    = element_text(hjust = 0.5, size = 14, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 11)
+  )
+```
+
+```{r}
+#| label: logo-cancer-10mer
+#| fig-width: 10
+#| fig-height: 4
+#| warning: false
+
+ggseqlogo(seqs_cancer[["10"]], method = "bits") +
+  labs(
+    title    = "Cancer — 10-mers",
+    subtitle = paste0("n = ", length(seqs_cancer[["10"]]), " peptides"),
+    x = "Position", y = "Bits"
+  ) +
+  theme_logo() +
+  theme(
+    plot.title    = element_text(hjust = 0.5, size = 14, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 11)
+  )
+```
+
+```{r}
+#| label: logo-cancer-11mer
+#| fig-width: 10
+#| fig-height: 4
+#| warning: false
+
+ggseqlogo(seqs_cancer[["11"]], method = "bits") +
+  labs(
+    title    = "Cancer — 11-mers",
+    subtitle = paste0("n = ", length(seqs_cancer[["11"]]), " peptides"),
+    x = "Position", y = "Bits"
+  ) +
+  theme_logo() +
+  theme(
+    plot.title    = element_text(hjust = 0.5, size = 14, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 11)
+  )
+```
+
+---
+
+# Logo Plots — Healthy Epitopes
+
+```{r}
+#| label: filter-healthy
+
+seqs_healthy <- pos_healthy |>
+  filter(pep_length %in% target_lengths) |>
+  split(f = ~pep_length) |>
+  map(\(df) df$peptide)
+
+map_dfr(seqs_healthy, \(seqs) tibble(n = length(seqs)), .id = "Length") |>
+  rename("Peptide Length" = Length, "Number of Sequences" = n) |>
+  kable(caption = "Sequences per Logo Plot — Healthy")
+```
+
+```{r}
+#| label: logo-healthy-8mer
+#| fig-width: 10
+#| fig-height: 4
+#| warning: false
+
+ggseqlogo(seqs_healthy[["8"]], method = "bits") +
+  labs(
+    title    = "Healthy — 8-mers",
+    subtitle = paste0("n = ", length(seqs_healthy[["8"]]), " peptides"),
+    x = "Position", y = "Bits"
+  ) +
+  theme_logo() +
+  theme(
+    plot.title    = element_text(hjust = 0.5, size = 14, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 11)
+  )
+```
+
+```{r}
+#| label: logo-healthy-9mer
+#| fig-width: 10
+#| fig-height: 4
+#| warning: false
+
+ggseqlogo(seqs_healthy[["9"]], method = "bits") +
+  labs(
+    title    = "Healthy — 9-mers",
+    subtitle = paste0("n = ", length(seqs_healthy[["9"]]), " peptides"),
+    x = "Position", y = "Bits"
+  ) +
+  theme_logo() +
+  theme(
+    plot.title    = element_text(hjust = 0.5, size = 14, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 11)
+  )
+```
+
+```{r}
+#| label: logo-healthy-10mer
+#| fig-width: 10
+#| fig-height: 4
+#| warning: false
+
+ggseqlogo(seqs_healthy[["10"]], method = "bits") +
+  labs(
+    title    = "Healthy — 10-mers",
+    subtitle = paste0("n = ", length(seqs_healthy[["10"]]), " peptides"),
+    x = "Position", y = "Bits"
+  ) +
+  theme_logo() +
+  theme(
+    plot.title    = element_text(hjust = 0.5, size = 14, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 11)
+  )
+```
+
+```{r}
+#| label: logo-healthy-11mer
+#| fig-width: 10
+#| fig-height: 4
+#| warning: false
+
+ggseqlogo(seqs_healthy[["11"]], method = "bits") +
+  labs(
+    title    = "Healthy — 11-mers",
+    subtitle = paste0("n = ", length(seqs_healthy[["11"]]), " peptides"),
+    x = "Position", y = "Bits"
+  ) +
+  theme_logo() +
+  theme(
+    plot.title    = element_text(hjust = 0.5, size = 14, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 11)
+  )
+```
+
+---
+
+# Comparison — 9-mers Across All Datasets
+
+```{r}
+#| label: logo-comparison-9mer
+#| fig-width: 10
+#| fig-height: 8
+#| warning: false
+
+seqs_9mer_comparison <- list(
+  "Viral"   = seqs_viral[["9"]],
+  "Cancer"  = seqs_cancer[["9"]],
+  "Healthy" = seqs_healthy[["9"]]
+)
+
+ggseqlogo(seqs_9mer_comparison, method = "bits", ncol = 1) +
+  labs(
+    title = "9-mer Sequence Logo Comparison",
+    x     = "Position",
+    y     = "Bits"
+  ) +
+  theme_logo() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    strip.text = element_text(size = 11, face = "bold")
+  )
+```
+
+---
+
+# Difference Logo Plots — 9-mer Comparisons
+
+Difference logo plots show enrichment (positive, above line) and depletion 
+(negative, below line) of amino acids at each position relative to a reference. 
+Here each dataset is compared pairwise against the others.
+
+```{r}
+#| label: diff-logo-functions
+
+# Helper: compute position probability matrix from sequences
+get_ppm <- function(seqs) {
+  # All amino acids
+  aa <- c("A","C","D","E","F","G","H","I","K","L",
+          "M","N","P","Q","R","S","T","V","W","Y")
+  
+  seq_matrix <- do.call(rbind, strsplit(seqs, ""))
+  ppm <- apply(seq_matrix, 2, function(col) {
+    counts <- table(factor(col, levels = aa))
+    counts / sum(counts)
+  })
+  rownames(ppm) <- aa
+  ppm
+}
+
+# Helper: compute difference PPM and plot
+plot_diff_logo <- function(seqs_a, seqs_b, label_a, label_b) {
+  ppm_a    <- get_ppm(seqs_a)
+  ppm_b    <- get_ppm(seqs_b)
+  diff_ppm <- ppm_a - ppm_b
+
+  ggseqlogo(diff_ppm, method = "custom") +
+    labs(
+      title    = paste0("Difference Logo — ", label_a, " vs. ", label_b),
+      subtitle = paste0(
+        label_a, " (n = ", length(seqs_a), ") minus ",
+        label_b, " (n = ", length(seqs_b), ")"
+      ),
+      x = "Position",
+      y = "Difference in Probability"
+    ) +
+    geom_hline(yintercept = 0, linetype = "dashed", colour = "grey40") +
+    theme_logo() +
+    theme(
+      plot.title    = element_text(hjust = 0.5, size = 14, face = "bold"),
+      plot.subtitle = element_text(hjust = 0.5, size = 11)
+    )
+}
+```
+
+## Viral vs. Cancer
+
+```{r}
+#| label: diff-logo-viral-vs-cancer
+#| fig-width: 10
+#| fig-height: 4
+#| warning: false
+
+plot_diff_logo(
+  seqs_viral[["9"]], seqs_cancer[["9"]],
+  "Viral", "Cancer"
+)
+```
+
+## Viral vs. Healthy
+
+```{r}
+#| label: diff-logo-viral-vs-healthy
+#| fig-width: 10
+#| fig-height: 4
+#| warning: false
+
+plot_diff_logo(
+  seqs_viral[["9"]], seqs_healthy[["9"]],
+  "Viral", "Healthy"
+)
+```
+
+## Cancer vs. Healthy
+
+```{r}
+#| label: diff-logo-cancer-vs-healthy
+#| fig-width: 10
+#| fig-height: 4
+#| warning: false
+
+plot_diff_logo(
+  seqs_cancer[["9"]], seqs_healthy[["9"]],
+  "Cancer", "Healthy"
+)
+```
