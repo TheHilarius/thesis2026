@@ -10,15 +10,16 @@ df_iedb_comp <- read_csv("data/processed/pos_EL_all_epitopes_hla0201.csv") |>
 
 write_csv(df_iedb_comp, "data/processed/pos_EL_8-to-14mers_epitopes_hla0201.csv")
 
-df_protein_lookup <- df_iedb_comp |>
+  df_protein_lookup <- df_iedb_comp |>
   select(uniprot_id, source_molecule, molecule_parent) |>
   slice_head(n = 1, by = uniprot_id)
 
+write_csv(df_protein_lookup, "data/processed/protein_lookup.csv")
 # Next step: run src/export_fasta_files_from_iedb.py on data/processed/pos_EL_all_epitopes_hla0201.csv
 # Results will be in data/raw/fasta/fasta_all_hla0201
 
 # Load and parse NetMHCpan predictions (Assarsson proteins)
-df_netmhcpan_raw <- read_csv("data/raw/NetMHCpan_assarsson.csv",
+df_netmhcpan_raw <- read_csv("data/raw/NetMHCpan_predicted_results.csv",
                              col_names = FALSE,
                              show_col_types = FALSE)
 
