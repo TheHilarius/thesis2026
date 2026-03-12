@@ -477,7 +477,6 @@ extract_flanking_regions <- function(data,
       -c_flank_actual_start, -c_flank_actual_end
     )
 }
-
 # ============================================================================
 # EXTRACT CLEAVAGE SITE POSITIONS
 # ============================================================================
@@ -509,247 +508,205 @@ extract_cleavage_positions <- function(data,
       n_term_P1_prime = substr(.data[[peptide_col]], 1, 1)
     )
 }
-
 # ============================================================================
 # AMINO ACID PROPERTY DICTIONARIES
 # ============================================================================
 
-# These dictionaries map each amino acid to its property value
-# Used for calculating features across sequences
-
 get_aa_properties <- function() {
-  #' Returns a list of amino acid property dictionaries
-  #' 
-  #' These are standard scales from the literature used in
-  #' bioinformatics and structural biology.
-  
   list(
-    # Kyte-Doolittle hydrophobicity scale (most commonly used)
-    # Positive = hydrophobic, Negative = hydrophilic
     hydrophobicity = c(
       A =  1.8, C =  2.5, D = -3.5, E = -3.5, F =  2.8,
       G = -0.4, H = -3.2, I =  4.5, K = -3.9, L =  3.8,
       M =  1.9, N = -3.5, P = -1.6, Q = -3.5, R = -4.5,
-      S = -0.8, T = -0.7, V =  4.2, W = -0.9, Y = -1.3,
-      X =  0.0  # Unknown/padding
+      S = -0.8, T = -0.7, V =  4.2, W = -0.9, Y = -1.3
     ),
-    
-    # Charge at physiological pH
     charge = c(
       A =  0, C =  0, D = -1, E = -1, F =  0,
       G =  0, H =  0, I =  0, K =  1, L =  0,
       M =  0, N =  0, P =  0, Q =  0, R =  1,
-      S =  0, T =  0, V =  0, W =  0, Y =  0,
-      X =  0
+      S =  0, T =  0, V =  0, W =  0, Y =  0
     ),
-    
-    # Molecular volume (Å³)
-    volume = c(
-      A =  88.6, C = 108.5, D = 111.1, E = 138.4, F = 189.9,
-      G =  60.1, H = 153.2, I = 166.7, K = 168.6, L = 166.7,
-      M = 162.9, N = 114.1, P = 112.7, Q = 143.8, R = 173.4,
-      S =  89.0, T = 116.1, V = 140.0, W = 227.8, Y = 193.6,
-      X = 120.0  # Average
-    ),
-    
-    # Molecular weight (Da)
     molecular_weight = c(
       A =  89.1, C = 121.2, D = 133.1, E = 147.1, F = 165.2,
       G =  75.1, H = 155.2, I = 131.2, K = 146.2, L = 131.2,
       M = 149.2, N = 132.1, P = 115.1, Q = 146.2, R = 174.2,
-      S = 105.1, T = 119.1, V = 117.1, W = 204.2, Y = 181.2,
-      X = 120.0  # Average
-    ),
-    
-    # Polarity (Grantham)
-    polarity = c(
-      A =  8.1, C =  5.5, D = 13.0, E = 12.3, F =  5.2,
-      G =  9.0, H = 10.4, I =  5.2, K = 11.3, L =  4.9,
-      M =  5.7, N = 11.6, P =  8.0, Q = 10.5, R = 10.5,
-      S =  9.2, T =  8.6, V =  5.9, W =  5.4, Y =  6.2,
-      X =  8.0  # Average
-    ),
-    
-    # Flexibility (Bhaskaran & Ponnuswamy)
-    flexibility = c(
-      A = 0.360, C = 0.350, D = 0.510, E = 0.500, F = 0.310,
-      G = 0.540, H = 0.320, I = 0.460, K = 0.470, L = 0.370,
-      M = 0.300, N = 0.460, P = 0.510, Q = 0.490, R = 0.530,
-      S = 0.510, T = 0.440, V = 0.390, W = 0.310, Y = 0.420,
-      X = 0.420  # Average
+      S = 105.1, T = 119.1, V = 117.1, W = 204.2, Y = 181.2
     )
   )
 }
 
-# Amino acid category memberships (for boolean features)
 get_aa_categories <- function() {
   list(
     hydrophobic = c("A", "I", "L", "M", "F", "V", "W", "Y"),
-    polar = c("S", "T", "N", "Q", "C", "Y"),
+    aromatic = c("F", "W", "Y", "H"),
     positive = c("K", "R", "H"),
     negative = c("D", "E"),
-    aromatic = c("F", "W", "Y", "H"),
-    small = c("A", "G", "S", "C", "T"),
-    aliphatic = c("A", "I", "L", "V")
+    polar = c("S", "T", "N", "Q", "C", "Y"),
+    small = c("A", "G", "S", "C", "T")
   )
 }
-
-
 # ============================================================================
-# CALCULATE PHYSICOCHEMICAL PROPERTIES FOR A SEQUENCE
+# CALCULATE PHYSICOCHEMICAL PROPERTIES FOR A SINGLE SEQUENCE
 # ============================================================================
 
 calculate_sequence_properties <- function(sequence, prefix = "") {
   #' Calculate physicochemical properties for an amino acid sequence
-  #' 
-  #' param sequence Character string of amino acids
-  #' param prefix String to prepend to column names (e.g., "peptide_", "n_flank_")
-  #' 
-  #' return A single-row tibble with calculated properties
+  #'
+  #' Always returns exactly 1 row with consistent column names
   
-  # Handle NA or empty sequences
-  if (is.na(sequence) || sequence == "") {
-    return(tibble(
-      !!paste0(prefix, "hydrophobicity_mean") := NA_real_,
-      !!paste0(prefix, "hydrophobicity_sum") := NA_real_,
-      !!paste0(prefix, "charge_total") := NA_real_,
-      !!paste0(prefix, "charge_positive_count") := NA_integer_,
-      !!paste0(prefix, "charge_negative_count") := NA_integer_,
-      !!paste0(prefix, "volume_mean") := NA_real_,
-      !!paste0(prefix, "polarity_mean") := NA_real_,
-      !!paste0(prefix, "flexibility_mean") := NA_real_,
-      !!paste0(prefix, "molecular_weight") := NA_real_,
-      !!paste0(prefix, "aromaticity_fraction") := NA_real_,
-      !!paste0(prefix, "hydrophobic_fraction") := NA_real_
-    ))
-  }
-  
-  # Get property dictionaries
   props <- get_aa_properties()
   cats <- get_aa_categories()
   
-  # Split sequence into individual amino acids
-  aa_list <- strsplit(sequence, "")[[1]]
+  # Define column names (must be consistent for all cases)
+  col_hydro <- paste0(prefix, "_hydrophobicity_mean")
+  col_charge <- paste0(prefix, "_charge_total")
+  col_mw <- paste0(prefix, "_molecular_weight")
+  col_arom <- paste0(prefix, "_aromaticity_frac")
+  col_hydrophobic <- paste0(prefix, "_hydrophobic_frac")
+  
+  # Handle NA, NULL, or empty sequences
+  if (is.null(sequence) || length(sequence) == 0 || is.na(sequence) || 
+      !is.character(sequence) || sequence == "" || nchar(sequence) == 0) {
+    result <- tibble(
+      placeholder1 = NA_real_,
+      placeholder2 = NA_real_,
+      placeholder3 = NA_real_,
+      placeholder4 = NA_real_,
+      placeholder5 = NA_real_
+    )
+    names(result) <- c(col_hydro, col_charge, col_mw, col_arom, col_hydrophobic)
+    return(result)
+  }
+  
+  # Split sequence into amino acids
+  aa_list <- strsplit(as.character(sequence), "")[[1]]
   n <- length(aa_list)
   
-  # Exclude X (padding) from calculations
-  aa_list_no_x <- aa_list[aa_list != "X"]
-  n_real <- length(aa_list_no_x)
-  
-  if (n_real == 0) {
-    n_real <- 1  # Prevent division by zero
+  # Handle zero-length after split
+  if (n == 0) {
+    result <- tibble(
+      placeholder1 = NA_real_,
+      placeholder2 = NA_real_,
+      placeholder3 = NA_real_,
+      placeholder4 = NA_real_,
+      placeholder5 = NA_real_
+    )
+    names(result) <- c(col_hydro, col_charge, col_mw, col_arom, col_hydrophobic)
+    return(result)
   }
   
   # Calculate properties
-  hydro_values <- sapply(aa_list, function(x) props$hydrophobicity[x])
-  charge_values <- sapply(aa_list, function(x) props$charge[x])
-  volume_values <- sapply(aa_list, function(x) props$volume[x])
-  polarity_values <- sapply(aa_list, function(x) props$polarity[x])
-  flex_values <- sapply(aa_list, function(x) props$flexibility[x])
-  mw_values <- sapply(aa_list, function(x) props$molecular_weight[x])
+  hydro_values <- sapply(aa_list, function(x) {
+    if (x %in% names(props$hydrophobicity)) props$hydrophobicity[x] else NA_real_
+  })
   
-  tibble(
-    # Hydrophobicity
-    !!paste0(prefix, "hydrophobicity_mean") := mean(hydro_values, na.rm = TRUE),
-    !!paste0(prefix, "hydrophobicity_sum") := sum(hydro_values, na.rm = TRUE),
-    
-    # Charge
-    !!paste0(prefix, "charge_total") := sum(charge_values, na.rm = TRUE),
-    !!paste0(prefix, "charge_positive_count") := sum(aa_list_no_x %in% cats$positive),
-    !!paste0(prefix, "charge_negative_count") := sum(aa_list_no_x %in% cats$negative),
-    
-    # Size
-    !!paste0(prefix, "volume_mean") := mean(volume_values, na.rm = TRUE),
-    
-    # Polarity and flexibility
-    !!paste0(prefix, "polarity_mean") := mean(polarity_values, na.rm = TRUE),
-    !!paste0(prefix, "flexibility_mean") := mean(flex_values, na.rm = TRUE),
-    
-    # Molecular weight (sum minus water loss from peptide bonds)
-    !!paste0(prefix, "molecular_weight") := sum(mw_values, na.rm = TRUE) - (n_real - 1) * 18.015,
-    
-    # Categorical fractions
-    !!paste0(prefix, "aromaticity_fraction") := sum(aa_list_no_x %in% cats$aromatic) / n_real,
-    !!paste0(prefix, "hydrophobic_fraction") := sum(aa_list_no_x %in% cats$hydrophobic) / n_real
+  charge_values <- sapply(aa_list, function(x) {
+    if (x %in% names(props$charge)) props$charge[x] else 0
+  })
+  
+  mw_values <- sapply(aa_list, function(x) {
+    if (x %in% names(props$molecular_weight)) props$molecular_weight[x] else NA_real_
+  })
+  
+  # Build result with consistent column names
+  result <- tibble(
+    placeholder1 = mean(hydro_values, na.rm = TRUE),
+    placeholder2 = sum(charge_values, na.rm = TRUE),
+    placeholder3 = sum(mw_values, na.rm = TRUE) - max(0, (n - 1)) * 18.015,
+    placeholder4 = sum(aa_list %in% cats$aromatic) / n,
+    placeholder5 = sum(aa_list %in% cats$hydrophobic) / n
   )
+  names(result) <- c(col_hydro, col_charge, col_mw, col_arom, col_hydrophobic)
+  
+  return(result)
 }
-
-
 # ============================================================================
 # ADD PHYSICOCHEMICAL PROPERTIES TO DATA FRAME
 # ============================================================================
 
 add_physicochemical_properties <- function(data,
                                            peptide_col = "peptide",
-                                           n_flank_col = "n_flank_seq",
-                                           c_flank_col = "c_flank_seq") {
-  #' Calculate physicochemical properties for peptide and flanking regions
-  #' 
-  #' description
-  #' Calculates multiple physicochemical properties for:
-  #' 1. The epitope/peptide itself
-  #' 2. The N-terminal flanking region
-  #' 3. The C-terminal flanking region
-  #' 
-  #' These properties are relevant for predicting:
-  #' - Proteasome cleavage efficiency
-  #' - TAP transport
-  #' - Overall antigen processing
-  #' 
-  #' param data Data frame with peptide and flanking columns
-  #' 
-  #' return Data frame with added physicochemical property columns
+                                           n_flank_col = "n_flank",
+                                           c_flank_col = "c_flank") {
+  #' Add physicochemical properties for peptide and flanking regions
+  #'
+  #' Calculates hydrophobicity, charge, molecular weight, and composition
+  #' for the peptide and both flanking regions.
+  
+  # Verify columns exist
+  for (col in c(peptide_col, n_flank_col, c_flank_col)) {
+    if (!col %in% names(data)) {
+      stop("Column '", col, "' not found in data")
+    }
+  }
+  
+  n_rows <- nrow(data)
+  cat("  Processing", n_rows, "rows...\n")
   
   # Calculate for peptide
-  cat("  Calculating peptide properties...\n")
-  peptide_props <- map_dfr(data[[peptide_col]], ~calculate_sequence_properties(.x, "peptide_"))
+  cat("  Calculating peptide properties...")
+  peptide_props <- map_dfr(seq_len(n_rows), function(i) {
+    calculate_sequence_properties(data[[peptide_col]][i], "peptide")
+  })
+  cat(" done (", nrow(peptide_props), " rows)\n", sep = "")
   
-  # Calculate for N-flank
-  cat("  Calculating N-flank properties...\n")
-  n_flank_props <- map_dfr(data[[n_flank_col]], ~calculate_sequence_properties(.x, "n_flank_"))
+  # Calculate for N-flank  
+  cat("  Calculating N-flank properties...")
+  n_flank_props <- map_dfr(seq_len(n_rows), function(i) {
+    calculate_sequence_properties(data[[n_flank_col]][i], "n_flank")
+  })
+  cat(" done (", nrow(n_flank_props), " rows)\n", sep = "")
   
   # Calculate for C-flank
-  cat("  Calculating C-flank properties...\n")
-  c_flank_props <- map_dfr(data[[c_flank_col]], ~calculate_sequence_properties(.x, "c_flank_"))
+  cat("  Calculating C-flank properties...")
+  c_flank_props <- map_dfr(seq_len(n_rows), function(i) {
+    calculate_sequence_properties(data[[c_flank_col]][i], "c_flank")
+  })
+  cat(" done (", nrow(c_flank_props), " rows)\n", sep = "")
   
-  # Combine with original data
+  # Verify row counts
+  if (nrow(peptide_props) != n_rows || 
+      nrow(n_flank_props) != n_rows || 
+      nrow(c_flank_props) != n_rows) {
+    stop("Row count mismatch: peptide=", nrow(peptide_props),
+         ", n_flank=", nrow(n_flank_props),
+         ", c_flank=", nrow(c_flank_props),
+         ", expected=", n_rows)
+  }
+  
+  # Combine all
   bind_cols(data, peptide_props, n_flank_props, c_flank_props)
 }
-
 # ============================================================================
-# PROTEASOME PREFERENCE SCORES
+# PROTEASOME PREFERENCE SCORES (Literature-Based)
 # ============================================================================
 
 get_proteasome_preferences <- function() {
-  #' P1 position preferences for standard and immunoproteasome
-  #' 
-  #' These scores represent how likely each amino acid is to be at the
-  #' P1 position (C-terminal residue) of a proteasome cleavage product.
-  #' 
-  #' Scores range from 0 (disfavored) to 1 (strongly favored).
-  #' Based on literature analysis of proteasome cleavage specificity.
+  #' P1 position cleavage preferences for standard and immunoproteasome
+  #'
+  #' Based on: Toes et al., 2001, J Exp Med; Tenzer et al., 2005, Nature Immunology
+  #'
+  #' Values are relative cleavage frequencies normalized to average = 1.0
+  #' Higher = more likely to be cleaved AFTER this residue
   
   list(
-    # Immunoproteasome P1 preferences
-    # Enhanced after IFN-γ stimulation (viral infection context)
-    # Favors: hydrophobic (L, F, Y), basic (K, R)
+    # Immunoproteasome (IFN-γ induced, viral infection context)
+    # Enhanced: hydrophobic (L, F, Y), basic (K, R)
+    # Reduced: acidic (D, E)
     immunoproteasome = c(
-      A = 0.3, C = 0.2, D = 0.1, E = 0.1, F = 0.9,
-      G = 0.2, H = 0.4, I = 0.6, K = 0.7, L = 0.9,
-      M = 0.5, N = 0.2, P = 0.1, Q = 0.3, R = 0.7,
-      S = 0.3, T = 0.3, V = 0.5, W = 0.7, Y = 0.8,
-      X = 0.3
+      L = 2.3, F = 2.2, Y = 2.0, W = 1.5, I = 1.1,
+      V = 1.1, M = 1.1, K = 1.0, R = 0.9, A = 0.6,
+      H = 0.6, T = 0.6, E = 0.6, Q = 0.7, S = 0.5,
+      D = 0.5, N = 0.5, C = 0.4, G = 0.3, P = 0.2
     ),
     
-    # Standard (constitutive) proteasome P1 preferences
-    # Normal cellular conditions
-    # More tolerant of acidic residues
-    standard = c(
-      A = 0.4, C = 0.3, D = 0.5, E = 0.5, F = 0.7,
-      G = 0.2, H = 0.3, I = 0.5, K = 0.4, L = 0.8,
-      M = 0.5, N = 0.3, P = 0.1, Q = 0.4, R = 0.4,
-      S = 0.3, T = 0.3, V = 0.5, W = 0.6, Y = 0.7,
-      X = 0.3
+    # Constitutive (standard) proteasome
+    # More balanced, tolerates acidic residues better
+    constitutive = c(
+      L = 1.9, F = 1.8, Y = 1.5, E = 1.3, D = 1.2,
+      W = 1.2, I = 1.0, V = 1.0, M = 1.0, A = 0.8,
+      Q = 0.8, H = 0.7, S = 0.7, T = 0.7, N = 0.6,
+      K = 0.6, R = 0.5, C = 0.5, G = 0.4, P = 0.2
     )
   )
 }
@@ -759,68 +716,66 @@ get_proteasome_preferences <- function() {
 # ADD PROTEASOME FEATURES
 # ============================================================================
 
-add_proteasome_features <- function(data) {
+add_proteasome_features <- function(data, c_term_p1_col = "c_term_P1") {
   #' Add proteasome cleavage-related features
-  #' 
-  #' description
-  #' Calculates features relevant to proteasome cleavage prediction:
-  #' 
-  #' 1. P1 residue properties (C-terminal of epitope - most important!)
-  #' 2. Proteasome preference scores (immunoproteasome vs standard)
-  #' 3. Cleavage inhibitor flags (e.g., proline at P1')
-  #' 
-  #' The C-terminal P1 residue is the most critical determinant of
-  #' proteasome cleavage efficiency. Different proteasome types have
-  #' different preferences at this position.
+  #'
+  #' Focuses on C-terminal P1 position (most biologically relevant).
+  #' The C-terminal P1 is the last residue of the epitope and sits
+  #' in the proteasome's S1 catalytic pocket.
+  #'
+  #' @param data Data frame with cleavage position column
+  #' @param c_term_p1_col Name of column containing C-terminal P1 residue
+  
+  # Verify column exists
+  if (!c_term_p1_col %in% names(data)) {
+    stop("Column '", c_term_p1_col, "' not found. Available columns: ",
+         paste(names(data)[grepl("P1|term", names(data))], collapse = ", "))
+  }
   
   prefs <- get_proteasome_preferences()
   cats <- get_aa_categories()
   
   data %>%
     mutate(
-      # ================================================================
-      # C-TERMINAL P1 FEATURES (MOST IMPORTANT)
-      # ================================================================
-      # The C-terminal P1 is the last residue of the epitope
-      # It sits in the proteasome's S1 catalytic pocket
-      
-      # Residue category flags
-      c_term_P1_is_hydrophobic = c_cleavage_P1 %in% cats$hydrophobic,
-      c_term_P1_is_basic = c_cleavage_P1 %in% cats$positive,
-      c_term_P1_is_acidic = c_cleavage_P1 %in% cats$negative,
-      c_term_P1_is_aromatic = c_cleavage_P1 %in% cats$aromatic,
-      c_term_P1_is_small = c_cleavage_P1 %in% cats$small,
-      
-      # Proteasome preference scores
-      a = sapply(c_cleavage_P1, function(x) prefs$immunoproteasome[x]),
-      c_term_P1_standard_score = sapply(c_cleavage_P1, function(x) prefs$standard[x]),
+      # Get the P1 residue for easier reference
+      .p1_residue = .data[[c_term_p1_col]],
       
       # ================================================================
-      # C-TERMINAL P1' FEATURES
+      # C-TERMINAL P1 RESIDUE CATEGORIES
       # ================================================================
-      # Proline at P1' strongly inhibits cleavage!
-      c_term_P1_prime_is_proline = (c_cleavage_P1_prime == "P"),
+      c_term_P1_is_hydrophobic = .p1_residue %in% cats$hydrophobic,
+      c_term_P1_is_basic = .p1_residue %in% cats$positive,
+      c_term_P1_is_acidic = .p1_residue %in% cats$negative,
+      c_term_P1_is_aromatic = .p1_residue %in% cats$aromatic,
+      c_term_P1_is_small = .p1_residue %in% cats$small,
       
       # ================================================================
-      # N-TERMINAL P1 FEATURES
+      # PROTEASOME PREFERENCE SCORES
       # ================================================================
-      n_term_P1_immuno_score = sapply(n_cleavage_P1, function(x) prefs$immunoproteasome[x]),
-      n_term_P1_standard_score = sapply(n_cleavage_P1, function(x) prefs$standard[x]),
-      n_term_P1_prime_is_proline = (n_cleavage_P1_prime == "P"),
+      c_term_P1_immuno_score = sapply(.p1_residue, function(x) {
+        if (is.na(x) || x == "" || !x %in% names(prefs$immunoproteasome)) {
+          return(NA_real_)
+        }
+        prefs$immunoproteasome[x]
+      }),
+      
+      c_term_P1_standard_score = sapply(.p1_residue, function(x) {
+        if (is.na(x) || x == "" || !x %in% names(prefs$constitutive)) {
+          return(NA_real_)
+        }
+        prefs$constitutive[x]
+      }),
       
       # ================================================================
-      # COMBINED SCORES
+      # PROTEASOME TYPE PREFERENCE
       # ================================================================
-      # Average of N-terminal and C-terminal cleavage scores
-      combined_immuno_score = (c_term_P1_immuno_score + n_term_P1_immuno_score) / 2,
-      combined_standard_score = (c_term_P1_standard_score + n_term_P1_standard_score) / 2,
-      
-      # Difference between proteasome types
       # Positive = favors immunoproteasome, Negative = favors standard
-      proteasome_preference_diff = combined_immuno_score - combined_standard_score
-    )
+      proteasome_preference_diff = c_term_P1_immuno_score - c_term_P1_standard_score
+      
+    ) %>%
+    # Remove temporary column
+    select(-.p1_residue)
 }
-
 # ============================================================================
 # TAP TRANSPORT PREFERENCE SCORES
 # ============================================================================

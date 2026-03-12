@@ -35,7 +35,8 @@ cat("Total epitopes:", nrow(df_epitopes), "\n")
 cat("Epitopes with matched protein:", sum(!is.na(df_merged$sequence)), "\n")
 cat("Epitopes WITHOUT matched protein:", sum(is.na(df_merged$sequence)), "\n")
 
-# Look at which proteins are missing. Missing unitprot ID in either epitope or fasta will cause this.
+# Look at which proteins are missing. Cause by protein modifications
+
 missing_proteins <- df_merged %>%
   filter(is.na(sequence)) %>%
   distinct(uniprot_id)
@@ -259,14 +260,50 @@ print(p1_distribution)
 # ============================================================================
 # STEP 5: CALCULATE PHYSICOCHEMICAL PROPERTIES
 # ============================================================================
+cat("=== CHECKING INPUT DATA ===\n\n")
+
+# Check column exists
+cat("Column names containing 'flank':\n")
+print(names(df_with_cleavage)[grepl("flank", names(df_with_cleavage))])
+
+# Check for empty strings or NAs in c_flank
+cat("\nC-flank column summary:\n")
+cat("  Total rows:", length(df_with_cleavage$c_flank), "\n")
+cat("  NAs:", sum(is.na(df_with_cleavage$c_flank)), "\n")
+cat("  Empty strings:", sum(df_with_cleavage$c_flank == "", na.rm = TRUE), "\n")
+cat("  Zero length:", sum(nchar(df_with_cleavage$c_flank) == 0, na.rm = TRUE), "\n")
+
+# Look at some c_flank values
+cat("\nFirst 10 c_flank values:\n")
+print(head(df_with_cleavage$c_flank, 10))
+
+# Test the calculate_sequence_properties function directly
+cat("\n=== TESTING FUNCTION DIRECTLY ===\n")
+
+# Test with a normal sequence
+test1 <- calculate_sequence_properties("GILGFVFTL", "test_")
+cat("\nTest with normal sequence: ")
+cat(if(nrow(test1) == 1) "OK" else "FAILED", "\n")
+
+# Test with empty string
+test2 <- calculate_sequence_properties("", "test_")
+cat("Test with empty string: ")
+cat(if(nrow(test2) == 1) "OK" else "FAILED", "\n")
+
+# Test with NA
+test3 <- calculate_sequence_properties(NA, "test_")
+cat("Test with NA: ")
+cat(if(nrow(test3) == 1) "OK" else "FAILED", "\n")
+
+
 
 cat("\n=== CALCULATING PHYSICOCHEMICAL PROPERTIES ===\n\n")
 
 df_with_properties <- df_with_cleavage %>%
   add_physicochemical_properties(
     peptide_col = "peptide",
-    n_flank_col = "n_flank_seq",
-    c_flank_col = "c_flank_seq"
+    n_flank_col = "n_flank",
+    c_flank_col = "c_flank"
   )
 
 # Check new columns
@@ -334,3 +371,8 @@ cat("  Suboptimal (13-16):", sum(df_with_tap$tap_length_suboptimal),
     "(", round(mean(df_with_tap$tap_length_suboptimal) * 100, 1), "%)\n")
 
 cat("\n✓ Proteasome and TAP features added\n")
+
+
+write_csv(df_with_tap, "data/processed/epitopes_with_features.csv")
+
+
