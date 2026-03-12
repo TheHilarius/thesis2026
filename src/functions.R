@@ -444,20 +444,10 @@ extract_flanking_regions <- function(data,
       n_flank_actual_end = .data[[start_col]] - 1,
       
       # Extract the sequence
-      n_flank_raw = if_else(
+      n_flank = if_else(
         n_flank_actual_end >= 1,
         substr(.data[[sequence_col]], n_flank_actual_start, n_flank_actual_end),
         ""
-      ),
-      
-      # Calculate how much padding needed (if at protein start)
-      n_flank_padding_needed = n_flank_size - nchar(n_flank_raw),
-      
-      # Add padding if necessary (X represents unknown/boundary)
-      n_flank_seq = if_else(
-        n_flank_padding_needed > 0,
-        paste0(strrep("X", n_flank_padding_needed), n_flank_raw),
-        n_flank_raw
       ),
       
       # === C-TERMINAL FLANKING REGION ===
@@ -468,28 +458,14 @@ extract_flanking_regions <- function(data,
       c_flank_actual_end = pmin(protein_length, .data[[end_col]] + c_flank_size),
       
       # Extract the sequence
-      c_flank_raw = if_else(
+      c_flank = if_else(
         c_flank_actual_start <= protein_length,
         substr(.data[[sequence_col]], c_flank_actual_start, c_flank_actual_end),
         ""
       ),
       
-      # Calculate how much padding needed (if at protein end)
-      c_flank_padding_needed = c_flank_size - nchar(c_flank_raw),
-      
-      # Add padding if necessary
-      c_flank_seq = if_else(
-        c_flank_padding_needed > 0,
-        paste0(c_flank_raw, strrep("X", c_flank_padding_needed)),
-        c_flank_raw
-      ),
-      
       # === COMBINED CONTEXT ===
-      full_context = paste0(n_flank_seq, .data[[peptide_col]], c_flank_seq),
-      
-      # === POSITION FLAGS ===
-      near_n_terminus = (n_flank_padding_needed > 0),
-      near_c_terminus = (c_flank_padding_needed > 0),
+      full_context = paste0(n_flank, .data[[peptide_col]], c_flank),
       
       # Distance from termini (useful features)
       distance_from_n_terminus = .data[[start_col]] - 1,
@@ -497,8 +473,8 @@ extract_flanking_regions <- function(data,
     ) %>%
     # Remove temporary calculation columns
     select(
-      -n_flank_actual_start, -n_flank_actual_end, -n_flank_raw, -n_flank_padding_needed,
-      -c_flank_actual_start, -c_flank_actual_end, -c_flank_raw, -c_flank_padding_needed
+      -n_flank_actual_start, -n_flank_actual_end, 
+      -c_flank_actual_start, -c_flank_actual_end
     )
 }
 
@@ -508,98 +484,30 @@ extract_flanking_regions <- function(data,
 
 extract_cleavage_positions <- function(data,
                                        peptide_col = "peptide",
-                                       n_flank_col = "n_flank_seq",
-                                       c_flank_col = "c_flank_seq") {
-  #' Extract specific amino acid positions at N-terminal and C-terminal cleavage sites
-  #' 
-  #' description
-  #' Uses Schechter-Berger nomenclature to extract the amino acids at key
-  #' positions around each cleavage site. These positions are critical for
-  #' predicting proteasome cleavage efficiency.
-  #' 
-  #' NOMENCLATURE:
-  #'   P4-P3-P2-P1 | P1'-P2'-P3'-P4'
-  #'               ↑
-  #'         Cleavage site
-  #' 
-  #'   P1 = residue immediately BEFORE the cut (most important!)
-  #'   P1' = residue immediately AFTER the cut
-  #' 
-  #' For each epitope, we extract positions for BOTH cleavage events:
-  #'   1. N-terminal cleavage: where the epitope's N-terminus is created
-  #'   2. C-terminal cleavage: where the epitope's C-terminus is created
-  #' 
-  #' param data Data frame with epitopes and flanking sequences
-  #' param peptide_col Column containing the epitope sequence
-  #' param n_flank_col Column containing the N-terminal flanking sequence
-  #' param c_flank_col Column containing the C-terminal flanking sequence
-  #' 
-  #' return Data frame with added columns for each position (P4-P1, P1'-P4')
-  #'         at both N-terminal and C-terminal cleavage sites
+                                       n_flank_col = "n_flank",
+                                       c_flank_col = "c_flank") {
+  #' Extract P1 and P1' positions at cleavage sites
+  #'
+  #' P1 = residue immediately BEFORE cleavage (most important for proteasome)
+  #' P1' = residue immediately AFTER cleavage
+  #'
+  #' C-terminal P1 (last residue of epitope) is the most biologically relevant
+  #' as it sits in the proteasome's S1 catalytic pocket.
   
   data %>%
     mutate(
-      # Store peptide length for indexing
-      pep_len = nchar(.data[[peptide_col]]),
-      n_flank_len = nchar(.data[[n_flank_col]]),
-      c_flank_len = nchar(.data[[c_flank_col]]),
+      # C-terminal cleavage site (most important)
+      # P1 = last residue of epitope
+      c_term_P1 = substr(.data[[peptide_col]], nchar(.data[[peptide_col]]), nchar(.data[[peptide_col]])),
+      # P1' = first residue of C-flank
+      c_term_P1_prime = substr(.data[[c_flank_col]], 1, 1),
       
-      # ====================================================================
-      # N-TERMINAL CLEAVAGE SITE
-      # ====================================================================
-      # This is where the epitope's N-terminus is created
-      # The cleavage occurs between the N-flank and the epitope
-      #
-      # N-flank:     ...X X X X
-      # Position:       P4 P3 P2 P1 | P1' P2' P3' P4'
-      # Epitope:                    | X  X  X  X ...
-      #                             ↑
-      #                       Cleavage here
-      # ====================================================================
-      
-      # P4 through P1: Last 4 residues of N-flank (before the cut)
-      n_cleavage_P4 = substr(.data[[n_flank_col]], n_flank_len - 3, n_flank_len - 3),
-      n_cleavage_P3 = substr(.data[[n_flank_col]], n_flank_len - 2, n_flank_len - 2),
-      n_cleavage_P2 = substr(.data[[n_flank_col]], n_flank_len - 1, n_flank_len - 1),
-      n_cleavage_P1 = substr(.data[[n_flank_col]], n_flank_len, n_flank_len),
-      
-      # P1' through P4': First 4 residues of epitope (after the cut)
-      n_cleavage_P1_prime = substr(.data[[peptide_col]], 1, 1),
-      n_cleavage_P2_prime = substr(.data[[peptide_col]], 2, 2),
-      n_cleavage_P3_prime = substr(.data[[peptide_col]], 3, 3),
-      n_cleavage_P4_prime = substr(.data[[peptide_col]], 4, 4),
-      
-      # ====================================================================
-      # C-TERMINAL CLEAVAGE SITE
-      # ====================================================================
-      # This is where the epitope's C-terminus is created
-      # The cleavage occurs between the epitope and the C-flank
-      # 
-      # Epitope:     ... X X X X
-      # Position:        P4 P3 P2 P1 | P1' P2' P3' P4'
-      # C-flank:                     | X  X  X  X ...
-      #                              ↑
-      #                        Cleavage here
-      #
-      # NOTE: P1 here is the LAST residue of the epitope - this is the
-      #       MOST IMPORTANT position for proteasome specificity!
-      # ====================================================================
-      
-      # P4 through P1: Last 4 residues of epitope (before the cut)
-      c_cleavage_P4 = if_else(pep_len >= 4, substr(.data[[peptide_col]], pep_len - 3, pep_len - 3), NA_character_),
-      c_cleavage_P3 = if_else(pep_len >= 3, substr(.data[[peptide_col]], pep_len - 2, pep_len - 2), NA_character_),
-      c_cleavage_P2 = if_else(pep_len >= 2, substr(.data[[peptide_col]], pep_len - 1, pep_len - 1), NA_character_),
-      c_cleavage_P1 = substr(.data[[peptide_col]], pep_len, pep_len),  # Last residue of epitope
-      
-      # P1' through P4': First 4 residues of C-flank (after the cut)
-      c_cleavage_P1_prime = substr(.data[[c_flank_col]], 1, 1),
-      c_cleavage_P2_prime = substr(.data[[c_flank_col]], 2, 2),
-      c_cleavage_P3_prime = substr(.data[[c_flank_col]], 3, 3),
-      c_cleavage_P4_prime = substr(.data[[c_flank_col]], 4, 4)
-      
-    ) %>%
-    # Remove temporary length columns
-    select(-pep_len, -n_flank_len, -c_flank_len)
+      # N-terminal cleavage site
+      # P1 = last residue of N-flank
+      n_term_P1 = substr(.data[[n_flank_col]], nchar(.data[[n_flank_col]]), nchar(.data[[n_flank_col]])),
+      # P1' = first residue of epitope
+      n_term_P1_prime = substr(.data[[peptide_col]], 1, 1)
+    )
 }
 
 # ============================================================================

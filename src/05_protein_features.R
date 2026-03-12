@@ -10,7 +10,7 @@ my_packages <- c(
   "stringr",       # String manipulation
   "progress"       # Progress bars
 )
-load_required_packages(my_packages)
+#load_required_packages(my_packages)
 
 
 
@@ -188,26 +188,20 @@ df_with_flanks <- df_clean %>%
   )
 
 # ============================================================================
-# VERIFY THE EXTRACTION
+# FLANKING REGION SIZE VERIFICATION
 # ============================================================================
 
-cat("Verification:\n")
+cat("N-flank lengths:\n")
+n_flank_dist <- df_with_flanks %>%
+  count(n_flank_length = nchar(n_flank)) %>%
+  mutate(percent = round(n / sum(n) * 100, 2))
+print(n_flank_dist)
 
-# Check all flanks have correct length
-n_flank_lengths <- nchar(df_with_flanks$n_flank_seq)
-c_flank_lengths <- nchar(df_with_flanks$c_flank_seq)
-
-cat("  All N-flanks are", N_FLANK_SIZE, "residues:", all(n_flank_lengths == N_FLANK_SIZE), "\n")
-cat("  All C-flanks are", C_FLANK_SIZE, "residues:", all(c_flank_lengths == C_FLANK_SIZE), "\n")
-
-# Summary of terminal epitopes
-cat("\nEpitopes near protein boundaries:\n")
-cat("  Near N-terminus (start of protein):", sum(df_with_flanks$near_n_terminus), 
-    "(", round(mean(df_with_flanks$near_n_terminus) * 100, 2), "%)\n")
-cat("  Near C-terminus (end of protein):", sum(df_with_flanks$near_c_terminus),
-    "(", round(mean(df_with_flanks$near_c_terminus) * 100, 2), "%)\n")
-cat("  Internal epitopes (full context):", 
-    sum(!df_with_flanks$near_n_terminus & !df_with_flanks$near_c_terminus), "\n")
+cat("\nC-flank lengths:\n")
+c_flank_dist <- df_with_flanks %>%
+  count(c_flank_length = nchar(c_flank)) %>%
+  mutate(percent = round(n / sum(n) * 100, 2))
+print(c_flank_dist)
 
 # ============================================================================
 # EXAMINE EXAMPLES
@@ -215,21 +209,6 @@ cat("  Internal epitopes (full context):",
 df_with_flanks <- df_with_flanks %>%
   as_tibble() %>%
   mutate(across(where(is.character), as.character))  # Force character columns
-
-cat("\n=== EXAMPLE RESULTS ===\n\n")
-
-# Show a few examples
-cat("Example 1 - Internal epitope (full flanking regions):\n")
-example_internal <- df_with_flanks %>%
-  filter(!near_n_terminus & !near_c_terminus) %>%
-  head(1)
-
-cat("  Peptide:        ", example_internal$peptide[1], "\n")
-cat("  Position:       ", example_internal$start[1], "-", example_internal$end[1], 
-    " (protein length:", example_internal$protein_length[1], ")\n")
-cat("  N-flank:        ", example_internal$n_flank_seq[1], "\n")
-cat("  C-flank:        ", example_internal$c_flank_seq[1], "\n")
-cat("  Full context:   ", example_internal$full_context[1], "\n")
 
 # ============================================================================
 # STEP 4: EXTRACT CLEAVAGE SITE POSITIONS
@@ -241,50 +220,35 @@ cat("\n=== EXTRACTING CLEAVAGE SITE POSITIONS ===\n\n")
 df_with_cleavage <- df_with_flanks %>%
   extract_cleavage_positions(
     peptide_col = "peptide",
-    n_flank_col = "n_flank_seq",
-    c_flank_col = "c_flank_seq"
+    n_flank_col = "n_flank",
+    c_flank_col = "c_flank"
+  )
+# ============================================================================
+# CLEAVAGE POSITION SUMMARY
+# ============================================================================
+
+cat("\n=== RESIDUE DISTRIBUTIONS ===\n\n")
+
+position_counts <- df_with_cleavage %>%
+  summarise(
+    c_term_P1 = paste(names(sort(table(c_term_P1), decreasing = TRUE)[1:3]), collapse = ", "),
+    c_term_P1_prime = paste(names(sort(table(c_term_P1_prime), decreasing = TRUE)[1:3]), collapse = ", "),
+    n_term_P1 = paste(names(sort(table(n_term_P1), decreasing = TRUE)[1:3]), collapse = ", "),
+    n_term_P1_prime = paste(names(sort(table(n_term_P1_prime), decreasing = TRUE)[1:3]), collapse = ", ")
   )
 
-# Verify extraction
-cat("Cleavage position columns added:\n")
-cleavage_cols <- names(df_with_cleavage)[grepl("cleavage", names(df_with_cleavage))]
-cat(" ", paste(cleavage_cols, collapse = "\n  "), "\n")
-
-# Show example
-cat("\n=== EXAMPLE CLEAVAGE POSITIONS ===\n\n")
-
-example <- df_with_cleavage %>% head(1)
-
-cat("Epitope:", example$peptide[1], "\n")
-cat("N-flank:", example$n_flank_seq[1], "\n")
-cat("C-flank:", example$c_flank_seq[1], "\n")
-
-cat("\nN-terminal cleavage site (where epitope begins):\n")
-cat("  ...─", example$n_cleavage_P4[1], "─", example$n_cleavage_P3[1], "─", 
-    example$n_cleavage_P2[1], "─", example$n_cleavage_P1[1], "─┃─", 
-    example$n_cleavage_P1_prime[1], "─", example$n_cleavage_P2_prime[1], "─",
-    example$n_cleavage_P3_prime[1], "─", example$n_cleavage_P4_prime[1], "─...\n")
-cat("       P4   P3   P2   P1  ┃  P1'  P2'  P3'  P4'\n")
-cat("                         ↑\n")
-cat("                   Cut here\n")
-
-cat("\nC-terminal cleavage site (where epitope ends):\n")
-cat("  ...─", example$c_cleavage_P4[1], "─", example$c_cleavage_P3[1], "─", 
-    example$c_cleavage_P2[1], "─", example$c_cleavage_P1[1], "─┃─", 
-    example$c_cleavage_P1_prime[1], "─", example$c_cleavage_P2_prime[1], "─",
-    example$c_cleavage_P3_prime[1], "─", example$c_cleavage_P4_prime[1], "─...\n")
-cat("       P4   P3   P2   P1  ┃  P1'  P2'  P3'  P4'\n")
-cat("                         ↑\n")
-cat("                   Cut here\n")
-
-cat("\n★ C-terminal P1 =", example$c_cleavage_P1[1], "(most important for proteasome specificity)\n")
+cat("Top 3 residues at each position:\n")
+cat("  c_term_P1:       ", position_counts$c_term_P1, "\n")
+cat("  c_term_P1_prime: ", position_counts$c_term_P1_prime, "\n")
+cat("  n_term_P1:       ", position_counts$n_term_P1, "\n")
+cat("  n_term_P1_prime: ", position_counts$n_term_P1_prime, "\n")
 
 # Distribution of C-terminal P1 residues (most important position)
 cat("\n=== C-TERMINAL P1 DISTRIBUTION ===\n")
 cat("(This is the most important residue for proteasome specificity)\n\n")
 
 p1_distribution <- df_with_cleavage %>%
-  count(c_cleavage_P1) %>%
+  count(c_term_P1) %>%
   mutate(percentage = round(n / sum(n) * 100, 2)) %>%
   arrange(desc(n))
 
