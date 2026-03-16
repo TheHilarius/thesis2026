@@ -875,4 +875,125 @@ add_tap_features <- function(data, peptide_col = "peptide") {
     select(-tap_c_term_residue, -tap_pos1_residue, -tap_pos2_residue, -tap_pos3_residue)
 }
 
+
+# =========================================
+# NetSurfP - 3.0 functions
+# =========================================
+# Build lookup table: UniProt ID → NSP3 csv path
+build_nsp3_path_lookup <- function(nsp3_root = "data/processed/nsp3/") {
+  
+  csv_files <- list.files(
+    nsp3_root,
+    pattern   = "\\.csv$",
+    recursive = TRUE,
+    full.names = TRUE
+  )
+  
+  # Folder name looks like "4999_Q16678" → extract "Q16678"
+  uniprot_from_path <- function(path) {
+    folder <- basename(dirname(path))
+    sub("^[0-9]+_", "", folder)
+  }
+  
+  tibble(
+    path       = csv_files,
+    uniprot_id = uniprot_from_path(csv_files)
+  )
+}
+
+# Read a single NSP3 output csv → clean residue table
+read_nsp3_csv <- function(path, uniprot_id) {
+  df <- data.table::fread(path, header = TRUE) |>
+    as_tibble()
+  
+  names(df) <- trimws(names(df))
+  
+  # Rename bracket columns to valid R names
+  # p[q3_H] → p_q3_H
+  names(df) <- gsub("[", "_", names(df), fixed = TRUE)
+  names(df) <- gsub("]", "",  names(df), fixed = TRUE)
+  
+  df |>
+    select(
+      n, seq, rsa,
+      q3, p_q3_H, p_q3_E, p_q3_C,
+      q8, p_q8_G, p_q8_H, p_q8_I, p_q8_B, p_q8_E, p_q8_S, p_q8_T, p_q8_C,
+      disorder
+    ) |>
+    mutate(
+      n        = as.integer(n),
+      rsa      = as.numeric(rsa),
+      disorder = as.numeric(disorder),
+      q3       = as.character(q3),
+      q8       = as.character(q8),
+      across(starts_with("p_q"), as.numeric),
+      uniprot  = uniprot_id
+    )
+}
+
+# Aggregate NSP3 features over a slice of residues
+aggregate_nsp3_window <- function(res_df) {
+  if (nrow(res_df) == 0) {
+    return(tibble(
+      mean_rsa        = NA_real_,
+      mean_disorder   = NA_real_,
+      # q3
+      frac_helix      = NA_real_,
+      frac_sheet      = NA_real_,
+      frac_coil       = NA_real_,
+      mean_p_q3_H     = NA_real_,
+      mean_p_q3_E     = NA_real_,
+      mean_p_q3_C     = NA_real_,
+      # q8
+      frac_q8_G       = NA_real_,
+      frac_q8_H       = NA_real_,
+      frac_q8_I       = NA_real_,
+      frac_q8_B       = NA_real_,
+      frac_q8_E       = NA_real_,
+      frac_q8_S       = NA_real_,
+      frac_q8_T       = NA_real_,
+      frac_q8_C       = NA_real_,
+      mean_p_q8_G     = NA_real_,
+      mean_p_q8_H     = NA_real_,
+      mean_p_q8_I     = NA_real_,
+      mean_p_q8_B     = NA_real_,
+      mean_p_q8_E     = NA_real_,
+      mean_p_q8_S     = NA_real_,
+      mean_p_q8_T     = NA_real_,
+      mean_p_q8_C     = NA_real_
+    ))
+  }
+  
+  tibble(
+    mean_rsa        = mean(res_df$rsa,           na.rm = TRUE),
+    mean_disorder   = mean(res_df$disorder,      na.rm = TRUE),
+    # q3 hard assignments
+    frac_helix      = mean(res_df$q3 == "H",     na.rm = TRUE),
+    frac_sheet      = mean(res_df$q3 == "E",     na.rm = TRUE),
+    frac_coil       = mean(res_df$q3 == "C",     na.rm = TRUE),
+    # q3 probabilities
+    mean_p_q3_H     = mean(res_df$p_q3_H,        na.rm = TRUE),
+    mean_p_q3_E     = mean(res_df$p_q3_E,        na.rm = TRUE),
+    mean_p_q3_C     = mean(res_df$p_q3_C,        na.rm = TRUE),
+    # q8 hard assignments
+    frac_q8_G       = mean(res_df$q8 == "G",     na.rm = TRUE),
+    frac_q8_H       = mean(res_df$q8 == "H",     na.rm = TRUE),
+    frac_q8_I       = mean(res_df$q8 == "I",     na.rm = TRUE),
+    frac_q8_B       = mean(res_df$q8 == "B",     na.rm = TRUE),
+    frac_q8_E       = mean(res_df$q8 == "E",     na.rm = TRUE),
+    frac_q8_S       = mean(res_df$q8 == "S",     na.rm = TRUE),
+    frac_q8_T       = mean(res_df$q8 == "T",     na.rm = TRUE),
+    frac_q8_C       = mean(res_df$q8 == "C",     na.rm = TRUE),
+    # q8 probabilities
+    mean_p_q8_G     = mean(res_df$p_q8_G,        na.rm = TRUE),
+    mean_p_q8_H     = mean(res_df$p_q8_H,        na.rm = TRUE),
+    mean_p_q8_I     = mean(res_df$p_q8_I,        na.rm = TRUE),
+    mean_p_q8_B     = mean(res_df$p_q8_B,        na.rm = TRUE),
+    mean_p_q8_E     = mean(res_df$p_q8_E,        na.rm = TRUE),
+    mean_p_q8_S     = mean(res_df$p_q8_S,        na.rm = TRUE),
+    mean_p_q8_T     = mean(res_df$p_q8_T,        na.rm = TRUE),
+    mean_p_q8_C     = mean(res_df$p_q8_C,        na.rm = TRUE)
+  )
+}
+
 cat("functions.R loaded successfully.\n")
