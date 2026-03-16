@@ -9,7 +9,7 @@ set_working_directory <- function() {
   } else if (current_user == "mj607") {
     setwd("//wsl$/Ubuntu/home/hilarius/special_course_spring2026")
   } else if (current_user == "hilarius") {
-    setwd("/Users/hilarius/Desktop/DTU/special_course_spring2026")
+    setwd("/home/hilarius/special_course/special_course_spring2026")
   } else if (current_user == "Hilarius") {
     setwd("C:/Users/Hilarius/OneDrive - Danmarks Tekniske Universitet/Skrivebord/special_course_spring2026/special_course_spring2026")
   } else {
