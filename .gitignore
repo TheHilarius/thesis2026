@@ -34,3 +34,8 @@ data/processed/pos_EL_8-to-14mers_epitopes_hla0201.csv
 data/processed/netmhcpan/
 data/processed/netmhcpan_*
 data/processed/netmhcpan_test/*
+data/processed/embeddings/
+data/processed/epitopes_with_features.csv
+data/processed/nsp3/
+data/processed/protein_lookup.csv
+data/processed/structures/

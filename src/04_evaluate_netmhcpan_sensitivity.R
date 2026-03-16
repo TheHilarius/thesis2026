@@ -2,8 +2,9 @@ library(tidyverse)
 source("src/functions.R")
 set_working_directory()
 
+df_raw <- read_csv("data/processed/pos_EL_all_epitopes_hla0201.csv")
 # Load IEDB 200K EL epitopes, filter to 8-14mers
-df_iedb_comp <- read_csv("data/processed/pos_EL_all_epitopes_hla0201.csv") |>
+df_iedb_comp <- df_raw |>
   filter(pep_length >= 8, pep_length <= 14) |>
   # remove O60361 because it was deleted from SwissProt in 2026_01 and fasta missing
   filter(uniprot_id != "O60361")
