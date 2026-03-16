@@ -1,37 +1,34 @@
 library(tidyverse)
 source("src/functions.R")
 set_working_directory()
+library(ggplot2)
 
+# 1. Load IEDB positives 
 df_raw <- read_csv("data/processed/pos_EL_all_epitopes_hla0201.csv")
-# Load IEDB 200K EL epitopes, filter to 8-14mers
-df_iedb_comp <- df_raw |>
+
+df_iedb_pos <- df_raw |>
   filter(pep_length >= 8, pep_length <= 14) |>
-  # remove O60361 because it was deleted from SwissProt in 2026_01 and fasta missing
-  filter(uniprot_id != "O60361")
+  filter(uniprot_id != "O60361")  # deleted from SwissProt in 2026_01
 
-write_csv(df_iedb_comp, "data/processed/pos_EL_8-to-14mers_epitopes_hla0201.csv")
+write_csv(df_iedb_pos, "data/processed/pos_EL_8-to-14mers_epitopes_hla0201.csv")
+cat("IEDB positives:", nrow(df_iedb_pos), "\n")
 
-  df_protein_lookup <- df_iedb_comp |>
+# 2. Protein lookup table 
+df_protein_lookup <- df_iedb_pos |>
   select(uniprot_id, source_molecule, molecule_parent) |>
   slice_head(n = 1, by = uniprot_id)
 
 write_csv(df_protein_lookup, "data/processed/protein_lookup.csv")
-# Next step: run src/export_fasta_files_from_iedb.py on data/processed/pos_EL_all_epitopes_hla0201.csv
-# Results will be in data/raw/fasta/fasta_all_hla0201
+cat("Unique proteins:", nrow(df_protein_lookup), "\n")
 
-# Load and parse NetMHCpan predictions (Assarsson proteins)
-df_netmhcpan_raw <- read_csv("data/raw/NetMHCpan_predicted_results.csv",
-                             col_names = FALSE,
-                             show_col_types = FALSE)
+# 3. Load NetMHCpan predictions (binders only) 
+cat("Loading NetMHCpan binders...\n")
+df_netmhcpan_raw <- load_netmhcpan_batches(binders_only = TRUE)
+cat("Total binders loaded:", nrow(df_netmhcpan_raw), "\n")
 
-hla_name    <- df_netmhcpan_raw |> slice(1) |> pull(X4)
-real_colnames <- c("Pos", "Peptide", "ID", "core", "icore", "Score", "Rank", "Ave", "NB")
-
+# 4. Parse and clean binders 
 df_netmhcpan_binders <- df_netmhcpan_raw |>
-  slice(-(1:2)) |>
-  set_names(real_colnames) |>
-  mutate(HLA = hla_name, .before = 1) |>
-  filter(NB == 1) |>
+  mutate(HLA = "HLA-A02:01") |>
   mutate(binder = case_when(
     Rank < 0.5 ~ "SB",
     Rank < 2   ~ "WB",
@@ -47,21 +44,157 @@ df_netmhcpan_binders <- df_netmhcpan_raw |>
   ) |>
   rename(start = pos) |>
   relocate(pep_length, .after = peptide) |>
-  relocate(end, .after = start) |>
-  relocate(id, .after = binder) |>
+  relocate(end,        .after = start)   |>
+  relocate(id,         .after = binder)  |>
   select(-c(id, core, icore, score, ave)) |>
   left_join(df_protein_lookup, by = "uniprot_id")
 
-# Compare NetMHCpan predictions vs IEDB confirmed epitopes
-df_overlap        <- df_netmhcpan_binders |> semi_join(df_iedb_comp, by = c("peptide", "uniprot_id"))
-df_netmhcpan_only <- df_netmhcpan_binders |> anti_join(df_iedb_comp, by = c("peptide", "uniprot_id"))
-df_iedb_only      <- df_iedb_comp         |> anti_join(df_netmhcpan_binders, by = c("peptide", "uniprot_id"))
+cat("Parsed binders:", nrow(df_netmhcpan_binders), "\n")
 
-cat("=== Comparison Summary ===\n")
-cat("Experimentally confirmed (IEDB):          ", nrow(df_iedb_comp), "\n")
-cat("Predicted binders (netMHCpan):            ", nrow(df_netmhcpan_binders), "\n")
+# 5. Compare NetMHCpan vs IEDB 
+df_overlap        <- df_netmhcpan_binders |> semi_join(df_iedb_pos, by = c("peptide", "uniprot_id"))
+df_netmhcpan_only <- df_netmhcpan_binders |> anti_join(df_iedb_pos, by = c("peptide", "uniprot_id"))
+df_iedb_only      <- df_iedb_pos          |> anti_join(df_netmhcpan_binders, by = c("peptide", "uniprot_id"))
+
+cat("\n=== Comparison Summary ===\n")
+cat("Experimentally confirmed (IEDB):          ", nrow(df_iedb_pos), "\n")
+cat("Predicted binders (NetMHCpan):            ", nrow(df_netmhcpan_binders), "\n")
 cat("Overlap (both):                           ", nrow(df_overlap), "\n")
-cat("netMHCpan only (predicted, not confirmed):", nrow(df_netmhcpan_only), "\n")
+cat("NetMHCpan only (predicted, not confirmed):", nrow(df_netmhcpan_only), "\n")
 cat("IEDB only (confirmed, not predicted):     ", nrow(df_iedb_only), "\n")
 cat("Sensitivity (IEDB peptides recovered):    ",
-    round(nrow(df_overlap) / nrow(df_iedb_comp) * 100, 1), "%\n")
+    round(nrow(df_overlap) / nrow(df_iedb_pos) * 100, 1), "%\n")
+
+# 6. Save outputs 
+write_csv(df_netmhcpan_binders, "data/processed/netmhcpan_binders.csv")
+write_csv(df_netmhcpan_only,    "data/processed/netmhcpan_only.csv")
+write_csv(df_iedb_only,         "data/processed/iedb_only.csv")
+
+cat("\n✅ Saved:\n")
+cat("  data/processed/netmhcpan_binders.csv\n")
+cat("  data/processed/netmhcpan_only.csv\n")
+cat("  data/processed/iedb_only.csv\n")
+
+# df_netmhcpan_raw     56,614,068  ← all predictions (intentional)
+# df_netmhcpan_binders    680,723  ← NB == 1 (binders)
+# df_netmhcpan_only       646,367  ← predicted but not in IEDB
+# df_overlap               34,356  ← predicted AND in IEDB
+# df_iedb_only             18,918  ← in IEDB but not predicted
+# df_iedb_pos              53,129  ← all IEDB positives
+
+# ── 7. Build labelled dataset ─────────────────────────────────────────────────
+df_positives <- df_iedb_pos |>
+  mutate(label = 1)
+
+# Downsample negatives to 1:3 ratio
+n_pos <- nrow(df_iedb_pos)
+n_neg_target <- n_pos * 3
+
+set.seed(42)
+df_negatives <- df_netmhcpan_only |>
+  slice_sample(n = n_neg_target) |>
+  mutate(label = 0)
+
+cat("\nPositives:", nrow(df_positives), "\n")
+cat("Negatives:", nrow(df_negatives), "\n")
+cat("Ratio neg/pos:", round(nrow(df_negatives) / nrow(df_positives), 1), "\n")
+
+
+df_combined <- bind_rows(
+  df_positives          |> mutate(label = 1),
+  df_negatives |> mutate(label = 0)
+) |>
+  select(-c(rank,hla,binder))
+
+write_csv(df_combined, "data/processed/df_combined_pos_and_neg.csv")
+
+
+# ── Dataset composition plot ──────────────────────────────────────────────────
+df_composition <- tibble(
+  category = c(
+    "IEDB confirmed\n(Positives)",
+    "NetMHCpan only\n(Negatives)",
+    "IEDB only\n(not predicted)"
+  ),
+  n = c(nrow(df_iedb_pos), nrow(df_netmhcpan_only), nrow(df_iedb_only)),
+  type = c("Positive", "Negative", "Unresolved")
+)
+
+p1 <- ggplot(df_composition, aes(x = reorder(category, -n), y = n, fill = type)) +
+  geom_col(width = 0.6) +
+  geom_text(aes(label = scales::comma(n)), vjust = -0.5, size = 4) +
+  scale_fill_manual(values = c("Positive" = "#2ecc71",
+                               "Negative" = "#e74c3c",
+                               "Unresolved" = "#95a5a6")) +
+  scale_y_continuous(labels = scales::comma, expand = expansion(mult = c(0, 0.1))) +
+  labs(
+    title    = "Dataset Composition",
+    subtitle = "NetMHCpan predictions vs IEDB confirmed epitopes",
+    x        = NULL,
+    y        = "Number of peptides",
+    fill     = NULL
+  ) +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "top")
+
+p1
+
+# ── Ratio comparison plot ─────────────────────────────────────────────────────
+df_ratios <- tibble(
+  ratio    = c("1:1", "1:3", "1:5", "1:10", "Full (1:12)"),
+  n_neg    = c(1, 3, 5, 10, 12) * nrow(df_iedb_pos),
+  n_pos    = nrow(df_iedb_pos),
+  feasible = c(TRUE, TRUE, TRUE, TRUE, FALSE)
+) |>
+  mutate(
+    n_neg    = pmin(n_neg, nrow(df_netmhcpan_only)),
+    n_total  = n_pos + n_neg
+  )
+
+p2 <- ggplot(df_ratios, aes(x = ratio, y = n_total, fill = feasible)) +
+  geom_col(width = 0.6) +
+  geom_text(aes(label = scales::comma(n_total)), vjust = -0.5, size = 4) +
+  geom_hline(yintercept = nrow(df_iedb_pos), linetype = "dashed",
+             color = "#2ecc71", linewidth = 0.8) +
+  annotate("text", x = 0.6, y = nrow(df_iedb_pos) * 1.05,
+           label = "# positives", color = "#2ecc71", size = 3.5, hjust = 0) +
+  scale_fill_manual(values = c("TRUE" = "#3498db", "FALSE" = "#bdc3c7")) +
+  scale_y_continuous(labels = scales::comma, expand = expansion(mult = c(0, 0.1))) +
+  labs(
+    title    = "Training Set Size by Pos:Neg Ratio",
+    subtitle = paste0(scales::comma(nrow(df_netmhcpan_only)),
+                      " negatives available from NetMHCpan"),
+    x        = "Pos : Neg ratio",
+    y        = "Total training samples",
+    fill     = "Feasible"
+  ) +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "none")
+
+p2
+# ── Peptide length distribution ───────────────────────────────────────────────
+df_lengths <- bind_rows(
+  df_iedb_pos       |> mutate(set = "Positives (IEDB)"),
+  df_netmhcpan_only |> mutate(set = "Negatives (NetMHCpan only)")
+)
+
+p3 <- ggplot(df_lengths, aes(x = pep_length, fill = set)) +
+  geom_bar(position = "dodge") +
+  scale_fill_manual(values = c("Positives (IEDB)" = "#2ecc71",
+                               "Negatives (NetMHCpan only)" = "#e74c3c")) +
+  scale_x_continuous(breaks = 8:14) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    title = "Peptide Length Distribution",
+    x     = "Peptide length",
+    y     = "Count",
+    fill  = NULL
+  ) +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "top")
+
+p3
+# ── Save all plots ────────────────────────────────────────────────────────────
+ggsave("results/dataset_composition.png",    p1, width = 7, height = 5, dpi = 150)
+ggsave("results/training_ratio_options.png", p2, width = 7, height = 5, dpi = 150)
+ggsave("results/peptide_length_dist.png",    p3, width = 7, height = 5, dpi = 150)

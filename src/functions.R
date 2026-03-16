@@ -996,4 +996,24 @@ aggregate_nsp3_window <- function(res_df) {
   )
 }
 
+#
+# Load netmhcpan batches
+#
+# Read and combine all NetMHCpan batch CSV files
+load_netmhcpan_batches <- function(netmhcpan_dir = "data/processed/netmhcpan/",
+                                   binders_only = TRUE) {
+  
+  csv_files <- list.files(netmhcpan_dir, pattern = "\\.csv$", full.names = TRUE)
+  cat("NetMHCpan batch files found:", length(csv_files), "\n")
+  
+  real_colnames <- c("Pos", "Peptide", "ID", "core", "icore", "Score", "Rank", "Ave", "NB")
+  
+  map(csv_files, function(f) {
+    df <- read_table(f, skip = 2, col_names = real_colnames, show_col_types = FALSE)
+    if (binders_only) df <- df |> filter(NB == 1)
+    df
+  }, .progress = TRUE) |>
+    list_rbind()
+}
+
 cat("functions.R loaded successfully.\n")
