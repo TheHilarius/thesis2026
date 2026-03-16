@@ -14,7 +14,7 @@ my_packages <- c(
 
 
 
-df_epitopes <- read_csv("data/processed/pos_EL_8-to-14mers_epitopes_hla0201.csv")
+df_epitopes <- read_csv("data/processed/df_combined_pos_and_neg.csv")
 
 df_fasta <- read_fasta_df("data/raw/fasta/combined_8_to_14mer.fasta") |>
   mutate(uniprot_id = str_extract(header, "(?<=\\|)[A-Z0-9]+(?=\\|)"))
@@ -110,55 +110,6 @@ df_clean <- df_verification %>%
   select(-verify_extract, -verify_match)
 
 cat("\nFinal clean dataset:", nrow(df_clean), "epitopes\n")
-
-
-# ============================================================================
-# STEP 3: EXTRACT FLANKING REGIONS
-# ============================================================================
-
-cat("\n=== EXTRACTING FLANKING REGIONS ===\n\n")
-
-# Choose flanking region sizes
-# 10 is common in literature (captures cleavage context well)
-# MHCflurry uses 5, some studies use up to 15
-N_FLANK_SIZE <- 10
-C_FLANK_SIZE <- 10
-
-cat("Flanking region sizes:\n")
-cat("  N-terminal:", N_FLANK_SIZE, "residues\n")
-cat("  C-terminal:", C_FLANK_SIZE, "residues\n\n")
-
-# Extract flanking regions
-df_with_flanks <- df_clean %>%
-  extract_flanking_regions(
-    sequence_col = "sequence",
-    peptide_col = "peptide",
-    start_col = "start",
-    end_col = "end",
-    n_flank_size = N_FLANK_SIZE,
-    c_flank_size = C_FLANK_SIZE
-  )
-
-# Verify the extraction
-cat("Verification of flanking extraction:\n")
-cat("  Total rows:", nrow(df_with_flanks), "\n")
-cat("  Rows with valid N-flank:", sum(!is.na(df_with_flanks$n_flank_seq)), "\n")
-cat("  Rows with valid C-flank:", sum(!is.na(df_with_flanks$c_flank_seq)), "\n")
-
-# Check lengths are consistent
-n_flank_lengths <- nchar(df_with_flanks$n_flank_seq)
-c_flank_lengths <- nchar(df_with_flanks$c_flank_seq)
-
-cat("\n  N-flank length check (all should be", N_FLANK_SIZE, "):", 
-    all(n_flank_lengths == N_FLANK_SIZE), "\n")
-cat("  C-flank length check (all should be", C_FLANK_SIZE, "):", 
-    all(c_flank_lengths == C_FLANK_SIZE), "\n")
-
-# How many are near termini?
-cat("\nTerminal epitopes:\n")
-cat("  Near N-terminus (padded):", sum(df_with_flanks$near_n_terminus), "\n")
-cat("  Near C-terminus (padded):", sum(df_with_flanks$near_c_terminus), "\n")
-
 
 # ============================================================================
 # STEP 3: EXTRACT FLANKING REGIONS
@@ -257,122 +208,4 @@ print(p1_distribution)
 #The proteasome's specificity is largely determined by what residue is at P1. 
 #Immunoproteasome strongly prefers hydrophobic (L, F, Y) and basic (K, R) residues.
 
-# ============================================================================
-# STEP 5: CALCULATE PHYSICOCHEMICAL PROPERTIES
-# ============================================================================
-cat("=== CHECKING INPUT DATA ===\n\n")
-
-# Check column exists
-cat("Column names containing 'flank':\n")
-print(names(df_with_cleavage)[grepl("flank", names(df_with_cleavage))])
-
-# Check for empty strings or NAs in c_flank
-cat("\nC-flank column summary:\n")
-cat("  Total rows:", length(df_with_cleavage$c_flank), "\n")
-cat("  NAs:", sum(is.na(df_with_cleavage$c_flank)), "\n")
-cat("  Empty strings:", sum(df_with_cleavage$c_flank == "", na.rm = TRUE), "\n")
-cat("  Zero length:", sum(nchar(df_with_cleavage$c_flank) == 0, na.rm = TRUE), "\n")
-
-# Look at some c_flank values
-cat("\nFirst 10 c_flank values:\n")
-print(head(df_with_cleavage$c_flank, 10))
-
-# Test the calculate_sequence_properties function directly
-cat("\n=== TESTING FUNCTION DIRECTLY ===\n")
-
-# Test with a normal sequence
-test1 <- calculate_sequence_properties("GILGFVFTL", "test_")
-cat("\nTest with normal sequence: ")
-cat(if(nrow(test1) == 1) "OK" else "FAILED", "\n")
-
-# Test with empty string
-test2 <- calculate_sequence_properties("", "test_")
-cat("Test with empty string: ")
-cat(if(nrow(test2) == 1) "OK" else "FAILED", "\n")
-
-# Test with NA
-test3 <- calculate_sequence_properties(NA, "test_")
-cat("Test with NA: ")
-cat(if(nrow(test3) == 1) "OK" else "FAILED", "\n")
-
-
-
-cat("\n=== CALCULATING PHYSICOCHEMICAL PROPERTIES ===\n\n")
-
-df_with_properties <- df_with_cleavage %>%
-  add_physicochemical_properties(
-    peptide_col = "peptide",
-    n_flank_col = "n_flank",
-    c_flank_col = "c_flank"
-  )
-
-# Check new columns
-property_cols <- names(df_with_properties)[grepl("hydrophobicity|charge|volume|polarity|flexibility|molecular_weight|aromaticity|hydrophobic_fraction", names(df_with_properties))]
-
-cat("\n✓ Added", length(property_cols), "physicochemical property columns\n")
-cat("\nProperty columns added:\n")
-cat("  ", paste(property_cols, collapse = "\n  "), "\n")
-
-# Summary statistics
-cat("\n=== PEPTIDE PROPERTY SUMMARY ===\n\n")
-
-df_with_properties %>%
-  summarise(
-    hydrophobicity_mean = mean(peptide_hydrophobicity_mean, na.rm = TRUE),
-    hydrophobicity_sd = sd(peptide_hydrophobicity_mean, na.rm = TRUE),
-    charge_mean = mean(peptide_charge_total, na.rm = TRUE),
-    molecular_weight_mean = mean(peptide_molecular_weight, na.rm = TRUE),
-    aromaticity_mean = mean(peptide_aromaticity_fraction, na.rm = TRUE)
-  ) %>%
-  pivot_longer(everything(), names_to = "Property", values_to = "Value") %>%
-  print()
-
-# ============================================================================
-# STEP 6: ADD PROTEASOME FEATURES
-# ============================================================================
-
-cat("\n=== ADDING PROTEASOME FEATURES ===\n\n")
-
-df_with_proteasome <- df_with_properties %>%
-  add_proteasome_features()
-
-# Summary of P1 preferences
-cat("C-terminal P1 residue analysis:\n")
-cat("  Hydrophobic:", sum(df_with_proteasome$c_term_P1_is_hydrophobic), 
-    "(", round(mean(df_with_proteasome$c_term_P1_is_hydrophobic) * 100, 1), "%)\n")
-cat("  Basic:", sum(df_with_proteasome$c_term_P1_is_basic),
-    "(", round(mean(df_with_proteasome$c_term_P1_is_basic) * 100, 1), "%)\n")
-cat("  Acidic:", sum(df_with_proteasome$c_term_P1_is_acidic),
-    "(", round(mean(df_with_proteasome$c_term_P1_is_acidic) * 100, 1), "%)\n")
-
-cat("\nMean proteasome scores:\n")
-cat("  Immunoproteasome:", round(mean(df_with_proteasome$combined_immuno_score, na.rm = TRUE), 3), "\n")
-cat("  Standard:", round(mean(df_with_proteasome$combined_standard_score, na.rm = TRUE), 3), "\n")
-
-# ============================================================================
-# STEP 7: ADD TAP TRANSPORT FEATURES
-# ============================================================================
-
-cat("\n=== ADDING TAP TRANSPORT FEATURES ===\n\n")
-
-df_with_tap <- df_with_proteasome %>%
-  add_tap_features(peptide_col = "peptide")
-
-cat("TAP C-terminal analysis:\n")
-cat("  Favorable:", sum(df_with_tap$tap_c_term_favorable),
-    "(", round(mean(df_with_tap$tap_c_term_favorable) * 100, 1), "%)\n")
-cat("  Unfavorable:", sum(df_with_tap$tap_c_term_unfavorable),
-    "(", round(mean(df_with_tap$tap_c_term_unfavorable) * 100, 1), "%)\n")
-
-cat("\nLength optimality for TAP:\n")
-cat("  Optimal (8-12):", sum(df_with_tap$tap_length_optimal),
-    "(", round(mean(df_with_tap$tap_length_optimal) * 100, 1), "%)\n")
-cat("  Suboptimal (13-16):", sum(df_with_tap$tap_length_suboptimal),
-    "(", round(mean(df_with_tap$tap_length_suboptimal) * 100, 1), "%)\n")
-
-cat("\n✓ Proteasome and TAP features added\n")
-
-
-write_csv(df_with_tap, "data/processed/epitopes_with_features.csv")
-
-
+write_csv(df_with_cleavage, "data/processed/epitopes_pos_and_neg_features.csv")
