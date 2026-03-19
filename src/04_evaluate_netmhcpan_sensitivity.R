@@ -69,6 +69,114 @@ cat("IEDB only (confirmed, not predicted):     ", nrow(df_iedb_only), "\n")
 cat("Sensitivity (IEDB peptides recovered):    ",
     round(nrow(df_overlap) / nrow(df_iedb_pos) * 100, 1), "%\n")
 
+
+
+# ── Confusion Matrix ──────────────────────────────────────────────────────────
+
+# Define the four quadrants
+# TP: predicted binder AND confirmed by IEDB
+# FP: predicted binder but NOT confirmed by IEDB
+# FN: NOT predicted as binder but confirmed by IEDB
+# TN: NOT predicted as binder AND NOT in IEDB
+#     ≈ total raw predictions − all binders − IEDB-only peptides
+
+TP <- nrow(df_overlap)
+FP <- nrow(df_netmhcpan_only)
+FN <- nrow(df_iedb_only)
+TN <- nrow(df_netmhcpan_raw) - nrow(df_netmhcpan_binders) - nrow(df_iedb_only)
+
+cat("\n=== Confusion Matrix Counts ===\n")
+cat("TP:", scales::comma(TP), "\n")
+cat("FP:", scales::comma(FP), "\n")
+cat("FN:", scales::comma(FN), "\n")
+cat("TN:", scales::comma(TN), "(approximated from raw predictions)\n")
+
+# Derived metrics
+sensitivity  <- TP / (TP + FN)          # Recall
+specificity  <- TN / (TN + FP)
+precision    <- TP / (TP + FP)
+f1           <- 2 * (precision * sensitivity) / (precision + sensitivity)
+
+cat("\n=== Performance Metrics ===\n")
+cat("Sensitivity (Recall):  ", round(sensitivity * 100, 2), "%\n")
+cat("Specificity:           ", round(specificity * 100, 2), "%\n")
+cat("Precision (PPV):       ", round(precision  * 100, 2), "%\n")
+cat("F1 Score:              ", round(f1,              4), "\n")
+
+# Build a tidy data frame for ggplot
+df_cm <- tibble(
+  Predicted  = factor(
+    c("Binder",        "Binder",
+      "Non-Binder",    "Non-Binder"),
+    levels = c("Binder", "Non-Binder")
+  ),
+  Actual = factor(
+    c("IEDB Positive", "IEDB Negative",
+      "IEDB Positive", "IEDB Negative"),
+    levels = c("IEDB Positive", "IEDB Negative")   # top-left = TP
+  ),
+  Count  = c(TP, FP, FN, TN),
+  quad   = c("TP", "FP", "FN", "TN")
+)
+
+# Annotation: show both the quadrant label and the formatted count
+df_cm <- df_cm |>
+  mutate(
+    display = paste0(quad, "\n", scales::comma(Count))
+  )
+
+# Colour the tiles by quadrant type, not by raw count,
+# because TN is ~1000× larger and would wash out the other cells.
+quad_colours <- c(
+  "TP" = "#2ecc71",   # green  – correct positive
+  "TN" = "#3498db",   # blue   – correct negative
+  "FP" = "#e74c3c",   # red    – false alarm
+  "FN" = "#e67e22"    # orange – missed positive
+)
+
+p4 <- ggplot(df_cm, aes(x = Predicted, y = Actual, fill = quad)) +
+  geom_tile(colour = "white", linewidth = 2) +
+  geom_text(
+    aes(label = display),
+    size      = 5,
+    fontface  = "bold",
+    colour    = "white"
+  ) +
+  scale_fill_manual(
+    values = quad_colours,
+    labels = c(
+      "TP" = "True Positive",
+      "TN" = "True Negative",
+      "FP" = "False Positive",
+      "FN" = "False Negative"
+    )
+  ) +
+  labs(
+    title    = "Confusion Matrix: NetMHCpan vs IEDB",
+    subtitle = paste0(
+      "HLA-A*02:01  |  Binder threshold: Rank < 2%\n",
+      "Sensitivity: ", round(sensitivity * 100, 1), "%  |  ",
+      "Precision: ",   round(precision  * 100, 1), "%  |  ",
+      "F1: ",          round(f1, 3)
+    ),
+    x    = "NetMHCpan Prediction",
+    y    = "IEDB Ground Truth",
+    fill = NULL
+  ) +
+  theme_bw(base_size = 13) +
+  theme(
+    legend.position  = "top",
+    plot.subtitle    = element_text(size = 10, colour = "grey40"),
+    axis.text        = element_text(size = 12, face = "bold"),
+    panel.grid       = element_blank()
+  )
+
+p4
+
+ggsave("results/confusion_matrix.png", p4, width = 7, height = 5, dpi = 150)
+cat("  results/confusion_matrix.png\n")
+
+
 # 6. Save outputs 
 write_csv(df_netmhcpan_binders, "data/processed/netmhcpan_binders.csv")
 write_csv(df_netmhcpan_only,    "data/processed/netmhcpan_only.csv")
@@ -87,7 +195,7 @@ cat("  data/processed/iedb_only.csv\n")
 # df_iedb_pos              53,129  ← all IEDB positives
 
 # 7. Build labelled dataset 
-df_positives <- df_iedb_pos |>
+df_positives <- df_iedb_overlap |> ## Change the positive list to include only the overlapping regions. 
   mutate(label = 1)
 
 # Downsample negatives to 1:3 ratio
@@ -202,3 +310,7 @@ p3
 ggsave("results/dataset_composition.png",    p1, width = 7, height = 5, dpi = 150)
 ggsave("results/training_ratio_options.png", p2, width = 7, height = 5, dpi = 150)
 ggsave("results/peptide_length_dist.png",    p3, width = 7, height = 5, dpi = 150)
+
+
+
+
