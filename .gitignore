@@ -40,3 +40,4 @@ data/processed/nsp3/
 data/processed/protein_lookup.csv
 data/processed/structures/
 data/processed/df_combined*
+data/processed/epitopes_pos_and_neg_features.csv

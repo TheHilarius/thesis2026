@@ -516,12 +516,14 @@ build_nsp3_path_lookup <- function(nsp3_root = "data/processed/nsp3/") {
   
   csv_files <- list.files(
     nsp3_root,
-    pattern   = "\\.csv$",
-    recursive = TRUE,
+    pattern    = "\\.csv$",
+    recursive  = TRUE,
     full.names = TRUE
   )
   
-  # Folder name looks like "4999_Q16678" → extract "Q16678"
+  # Path looks like: .../batch_1/01/4999_Q16678/4999_Q16678.csv
+  # basename(dirname(path)) = "4999_Q16678"
+  # sub("^[0-9]+_", "", ...) = "Q16678"
   uniprot_from_path <- function(path) {
     folder <- basename(dirname(path))
     sub("^[0-9]+_", "", folder)
@@ -533,101 +535,188 @@ build_nsp3_path_lookup <- function(nsp3_root = "data/processed/nsp3/") {
   )
 }
 
-# Read a single NSP3 output csv → clean residue table
+# ─────────────────────────────────────────
+# Read a single NSP3 output csv
+# Returns clean per-residue tibble
+# ─────────────────────────────────────────
 read_nsp3_csv <- function(path, uniprot_id) {
+  
   df <- data.table::fread(path, header = TRUE) |>
     as_tibble()
   
+  # Trim whitespace from column names
   names(df) <- trimws(names(df))
   
-  # Rename bracket columns to valid R names
-  # p[q3_H] → p_q3_H
+  # p[q3_H] → p_q3_H  (brackets not valid in R)
   names(df) <- gsub("[", "_", names(df), fixed = TRUE)
   names(df) <- gsub("]", "",  names(df), fixed = TRUE)
   
+  # The id column has format ">Q16678" — strip the >
+  # n is the residue number (1-indexed)
   df |>
     select(
       n, seq, rsa,
       q3, p_q3_H, p_q3_E, p_q3_C,
-      q8, p_q8_G, p_q8_H, p_q8_I, p_q8_B, p_q8_E, p_q8_S, p_q8_T, p_q8_C,
+      q8, p_q8_G, p_q8_H, p_q8_I, p_q8_B,
+      p_q8_E, p_q8_S, p_q8_T, p_q8_C,
       disorder
     ) |>
     mutate(
-      n        = as.integer(n),
-      rsa      = as.numeric(rsa),
-      disorder = as.numeric(disorder),
-      q3       = as.character(q3),
-      q8       = as.character(q8),
+      n          = as.integer(n),
+      rsa        = as.numeric(rsa),
+      disorder   = as.numeric(disorder),
+      q3         = as.character(q3),
+      q8         = as.character(q8),
       across(starts_with("p_q"), as.numeric),
-      uniprot  = uniprot_id
+      uniprot    = uniprot_id
     )
 }
 
-# Aggregate NSP3 features over a slice of residues
+# ─────────────────────────────────────────
+# Aggregate NSP3 features over a window
+# of residues (peptide, nflank, cflank etc)
+# ─────────────────────────────────────────
 aggregate_nsp3_window <- function(res_df) {
+  
+  # Return NAs if window is empty
+  # (e.g. peptide at protein terminus with no flank)
   if (nrow(res_df) == 0) {
     return(tibble(
-      mean_rsa        = NA_real_,
-      mean_disorder   = NA_real_,
-      # q3
-      frac_helix      = NA_real_,
-      frac_sheet      = NA_real_,
-      frac_coil       = NA_real_,
-      mean_p_q3_H     = NA_real_,
-      mean_p_q3_E     = NA_real_,
-      mean_p_q3_C     = NA_real_,
-      # q8
-      frac_q8_G       = NA_real_,
-      frac_q8_H       = NA_real_,
-      frac_q8_I       = NA_real_,
-      frac_q8_B       = NA_real_,
-      frac_q8_E       = NA_real_,
-      frac_q8_S       = NA_real_,
-      frac_q8_T       = NA_real_,
-      frac_q8_C       = NA_real_,
-      mean_p_q8_G     = NA_real_,
-      mean_p_q8_H     = NA_real_,
-      mean_p_q8_I     = NA_real_,
-      mean_p_q8_B     = NA_real_,
-      mean_p_q8_E     = NA_real_,
-      mean_p_q8_S     = NA_real_,
-      mean_p_q8_T     = NA_real_,
-      mean_p_q8_C     = NA_real_
+      mean_rsa      = NA_real_,
+      mean_disorder = NA_real_,
+      # q3 hard calls
+      frac_helix    = NA_real_,
+      frac_sheet    = NA_real_,
+      frac_coil     = NA_real_,
+      # q3 probabilities
+      mean_p_q3_H   = NA_real_,
+      mean_p_q3_E   = NA_real_,
+      mean_p_q3_C   = NA_real_,
+      # q8 hard calls
+      frac_q8_G     = NA_real_,
+      frac_q8_H     = NA_real_,
+      frac_q8_I     = NA_real_,
+      frac_q8_B     = NA_real_,
+      frac_q8_E     = NA_real_,
+      frac_q8_S     = NA_real_,
+      frac_q8_T     = NA_real_,
+      frac_q8_C     = NA_real_,
+      # q8 probabilities
+      mean_p_q8_G   = NA_real_,
+      mean_p_q8_H   = NA_real_,
+      mean_p_q8_I   = NA_real_,
+      mean_p_q8_B   = NA_real_,
+      mean_p_q8_E   = NA_real_,
+      mean_p_q8_S   = NA_real_,
+      mean_p_q8_T   = NA_real_,
+      mean_p_q8_C   = NA_real_
     ))
   }
   
   tibble(
-    mean_rsa        = mean(res_df$rsa,           na.rm = TRUE),
-    mean_disorder   = mean(res_df$disorder,      na.rm = TRUE),
-    # q3 hard assignments
-    frac_helix      = mean(res_df$q3 == "H",     na.rm = TRUE),
-    frac_sheet      = mean(res_df$q3 == "E",     na.rm = TRUE),
-    frac_coil       = mean(res_df$q3 == "C",     na.rm = TRUE),
-    # q3 probabilities
-    mean_p_q3_H     = mean(res_df$p_q3_H,        na.rm = TRUE),
-    mean_p_q3_E     = mean(res_df$p_q3_E,        na.rm = TRUE),
-    mean_p_q3_C     = mean(res_df$p_q3_C,        na.rm = TRUE),
-    # q8 hard assignments
-    frac_q8_G       = mean(res_df$q8 == "G",     na.rm = TRUE),
-    frac_q8_H       = mean(res_df$q8 == "H",     na.rm = TRUE),
-    frac_q8_I       = mean(res_df$q8 == "I",     na.rm = TRUE),
-    frac_q8_B       = mean(res_df$q8 == "B",     na.rm = TRUE),
-    frac_q8_E       = mean(res_df$q8 == "E",     na.rm = TRUE),
-    frac_q8_S       = mean(res_df$q8 == "S",     na.rm = TRUE),
-    frac_q8_T       = mean(res_df$q8 == "T",     na.rm = TRUE),
-    frac_q8_C       = mean(res_df$q8 == "C",     na.rm = TRUE),
-    # q8 probabilities
-    mean_p_q8_G     = mean(res_df$p_q8_G,        na.rm = TRUE),
-    mean_p_q8_H     = mean(res_df$p_q8_H,        na.rm = TRUE),
-    mean_p_q8_I     = mean(res_df$p_q8_I,        na.rm = TRUE),
-    mean_p_q8_B     = mean(res_df$p_q8_B,        na.rm = TRUE),
-    mean_p_q8_E     = mean(res_df$p_q8_E,        na.rm = TRUE),
-    mean_p_q8_S     = mean(res_df$p_q8_S,        na.rm = TRUE),
-    mean_p_q8_T     = mean(res_df$p_q8_T,        na.rm = TRUE),
-    mean_p_q8_C     = mean(res_df$p_q8_C,        na.rm = TRUE)
+    mean_rsa      = mean(res_df$rsa,      na.rm = TRUE),
+    mean_disorder = mean(res_df$disorder, na.rm = TRUE),
+    # q3 hard calls — fraction of residues assigned to each class
+    frac_helix    = mean(res_df$q3 == "H", na.rm = TRUE),
+    frac_sheet    = mean(res_df$q3 == "E", na.rm = TRUE),
+    frac_coil     = mean(res_df$q3 == "C", na.rm = TRUE),
+    # q3 mean probabilities
+    mean_p_q3_H   = mean(res_df$p_q3_H,  na.rm = TRUE),
+    mean_p_q3_E   = mean(res_df$p_q3_E,  na.rm = TRUE),
+    mean_p_q3_C   = mean(res_df$p_q3_C,  na.rm = TRUE),
+    # q8 hard calls
+    frac_q8_G     = mean(res_df$q8 == "G", na.rm = TRUE),
+    frac_q8_H     = mean(res_df$q8 == "H", na.rm = TRUE),
+    frac_q8_I     = mean(res_df$q8 == "I", na.rm = TRUE),
+    frac_q8_B     = mean(res_df$q8 == "B", na.rm = TRUE),
+    frac_q8_E     = mean(res_df$q8 == "E", na.rm = TRUE),
+    frac_q8_S     = mean(res_df$q8 == "S", na.rm = TRUE),
+    frac_q8_T     = mean(res_df$q8 == "T", na.rm = TRUE),
+    frac_q8_C     = mean(res_df$q8 == "C", na.rm = TRUE),
+    # q8 mean probabilities
+    mean_p_q8_G   = mean(res_df$p_q8_G,  na.rm = TRUE),
+    mean_p_q8_H   = mean(res_df$p_q8_H,  na.rm = TRUE),
+    mean_p_q8_I   = mean(res_df$p_q8_I,  na.rm = TRUE),
+    mean_p_q8_B   = mean(res_df$p_q8_B,  na.rm = TRUE),
+    mean_p_q8_E   = mean(res_df$p_q8_E,  na.rm = TRUE),
+    mean_p_q8_S   = mean(res_df$p_q8_S,  na.rm = TRUE),
+    mean_p_q8_T   = mean(res_df$p_q8_T,  na.rm = TRUE),
+    mean_p_q8_C   = mean(res_df$p_q8_C,  na.rm = TRUE)
   )
 }
 
+# ─────────────────────────────────────────
+# Extract NSP3 features for one peptide
+# across all four windows:
+#   peptide / nflank / cflank / full_context
+# ─────────────────────────────────────────
+extract_nsp3_windows <- function(uniprot_id,
+                                 nflank_start, nflank_end,
+                                 pep_start,    pep_end,
+                                 cflank_start, cflank_end,
+                                 window_start, window_end,
+                                 nsp3_split) {
+  
+  # Helper to build empty named output when protein is missing
+  empty_window <- function(suffix) {
+    empty_df <- tibble(
+      n        = integer(),
+      seq      = character(),
+      rsa      = numeric(),
+      q3       = character(),
+      p_q3_H   = numeric(),
+      p_q3_E   = numeric(),
+      p_q3_C   = numeric(),
+      q8       = character(),
+      p_q8_G   = numeric(),
+      p_q8_H   = numeric(),
+      p_q8_I   = numeric(),
+      p_q8_B   = numeric(),
+      p_q8_E   = numeric(),
+      p_q8_S   = numeric(),
+      p_q8_T   = numeric(),
+      p_q8_C   = numeric(),
+      disorder = numeric(),
+      uniprot  = character()
+    )
+    feats <- aggregate_nsp3_window(empty_df)
+    names(feats) <- paste0(names(feats), suffix)
+    feats
+  }
+  
+  # ── Protein not in NSP3 output ──────────────────────────────────────────────
+  res <- nsp3_split[[uniprot_id]]
+  
+  if (is.null(res)) {
+    return(bind_cols(
+      empty_window("_peptide"),
+      empty_window("_nflank"),
+      empty_window("_cflank"),
+      empty_window("_full_context")
+    ))
+  }
+  
+  # ── Slice each window by residue number ─────────────────────────────────────
+  # n is 1-indexed residue number matching UniProt coordinates
+  pep_rows    <- res |> filter(n >= pep_start    & n <= pep_end)
+  nflank_rows <- res |> filter(n >= nflank_start & n <= nflank_end)
+  cflank_rows <- res |> filter(n >= cflank_start & n <= cflank_end)
+  window_rows <- res |> filter(n >= window_start & n <= window_end)
+  
+  # ── Aggregate each window ────────────────────────────────────────────────────
+  pep_feats    <- aggregate_nsp3_window(pep_rows)
+  nflank_feats <- aggregate_nsp3_window(nflank_rows)
+  cflank_feats <- aggregate_nsp3_window(cflank_rows)
+  window_feats <- aggregate_nsp3_window(window_rows)
+  
+  # ── Add suffix so columns don't clash ───────────────────────────────────────
+  names(pep_feats)    <- paste0(names(pep_feats),    "_peptide")
+  names(nflank_feats) <- paste0(names(nflank_feats), "_nflank")
+  names(cflank_feats) <- paste0(names(cflank_feats), "_cflank")
+  names(window_feats) <- paste0(names(window_feats), "_full_context")
+  
+  bind_cols(pep_feats, nflank_feats, cflank_feats, window_feats)
+}
 #
 # Load netmhcpan batches
 #

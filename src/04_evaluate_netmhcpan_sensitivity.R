@@ -55,6 +55,10 @@ cat("Parsed binders:", nrow(df_netmhcpan_binders), "\n")
 df_overlap        <- df_netmhcpan_binders |> semi_join(df_iedb_pos, by = c("peptide", "uniprot_id"))
 df_netmhcpan_only <- df_netmhcpan_binders |> anti_join(df_iedb_pos, by = c("peptide", "uniprot_id"))
 df_iedb_only      <- df_iedb_pos          |> anti_join(df_netmhcpan_binders, by = c("peptide", "uniprot_id"))
+# df_positives should be both positives by netmhcpan and iedb
+# Think confusion matrix
+
+# and possibly make 
 
 cat("\n=== Comparison Summary ===\n")
 cat("Experimentally confirmed (IEDB):          ", nrow(df_iedb_pos), "\n")
@@ -82,7 +86,7 @@ cat("  data/processed/iedb_only.csv\n")
 # df_iedb_only             18,918  ← in IEDB but not predicted
 # df_iedb_pos              53,129  ← all IEDB positives
 
-# ── 7. Build labelled dataset ─────────────────────────────────────────────────
+# 7. Build labelled dataset 
 df_positives <- df_iedb_pos |>
   mutate(label = 1)
 
@@ -109,7 +113,7 @@ df_combined <- bind_rows(
 write_csv(df_combined, "data/processed/df_combined_pos_and_neg.csv")
 
 
-# ── Dataset composition plot ──────────────────────────────────────────────────
+# Dataset composition plot 
 df_composition <- tibble(
   category = c(
     "IEDB confirmed\n(Positives)",
@@ -139,7 +143,7 @@ p1 <- ggplot(df_composition, aes(x = reorder(category, -n), y = n, fill = type))
 
 p1
 
-# ── Ratio comparison plot ─────────────────────────────────────────────────────
+# Ratio comparison plot 
 df_ratios <- tibble(
   ratio    = c("1:1", "1:3", "1:5", "1:10", "Full (1:12)"),
   n_neg    = c(1, 3, 5, 10, 12) * nrow(df_iedb_pos),
@@ -172,7 +176,7 @@ p2 <- ggplot(df_ratios, aes(x = ratio, y = n_total, fill = feasible)) +
   theme(legend.position = "none")
 
 p2
-# ── Peptide length distribution ───────────────────────────────────────────────
+# Peptide length distribution 
 df_lengths <- bind_rows(
   df_iedb_pos       |> mutate(set = "Positives (IEDB)"),
   df_netmhcpan_only |> mutate(set = "Negatives (NetMHCpan only)")
@@ -194,7 +198,7 @@ p3 <- ggplot(df_lengths, aes(x = pep_length, fill = set)) +
   theme(legend.position = "top")
 
 p3
-# ── Save all plots ────────────────────────────────────────────────────────────
+# Save all plots 
 ggsave("results/dataset_composition.png",    p1, width = 7, height = 5, dpi = 150)
 ggsave("results/training_ratio_options.png", p2, width = 7, height = 5, dpi = 150)
 ggsave("results/peptide_length_dist.png",    p3, width = 7, height = 5, dpi = 150)
