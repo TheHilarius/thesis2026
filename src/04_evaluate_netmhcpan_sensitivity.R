@@ -13,6 +13,7 @@ df_iedb_pos <- df_raw |>
 write_csv(df_iedb_pos, "data/processed/pos_EL_8-to-14mers_epitopes_hla0201.csv")
 cat("IEDB positives:", nrow(df_iedb_pos), "\n")
 
+
 # 2. Protein lookup table 
 df_protein_lookup <- df_iedb_pos |>
   select(uniprot_id, source_molecule, molecule_parent) |>
@@ -21,10 +22,12 @@ df_protein_lookup <- df_iedb_pos |>
 write_csv(df_protein_lookup, "data/processed/protein_lookup.csv")
 cat("Unique proteins:", nrow(df_protein_lookup), "\n")
 
+
 # 3. Load NetMHCpan predictions (binders only) 
 cat("Loading NetMHCpan binders...\n")
 df_netmhcpan_raw <- load_netmhcpan_batches(binders_only = TRUE)
 cat("Total binders loaded:", nrow(df_netmhcpan_raw), "\n")
+
 
 # 4. Parse and clean binders 
 df_netmhcpan_binders <- df_netmhcpan_raw |>
@@ -51,14 +54,11 @@ df_netmhcpan_binders <- df_netmhcpan_raw |>
 
 cat("Parsed binders:", nrow(df_netmhcpan_binders), "\n")
 
+
 # 5. Compare NetMHCpan vs IEDB 
 df_overlap        <- df_netmhcpan_binders |> semi_join(df_iedb_pos, by = c("peptide", "uniprot_id"))
 df_netmhcpan_only <- df_netmhcpan_binders |> anti_join(df_iedb_pos, by = c("peptide", "uniprot_id"))
 df_iedb_only      <- df_iedb_pos          |> anti_join(df_netmhcpan_binders, by = c("peptide", "uniprot_id"))
-# df_positives should be both positives by netmhcpan and iedb
-# Think confusion matrix
-
-# and possibly make 
 
 cat("\n=== Comparison Summary ===\n")
 cat("Experimentally confirmed (IEDB):          ", nrow(df_iedb_pos), "\n")
@@ -70,89 +70,79 @@ cat("Sensitivity (IEDB peptides recovered):    ",
     round(nrow(df_overlap) / nrow(df_iedb_pos) * 100, 1), "%\n")
 
 
+# 6. Save split outputs 
+write_csv(df_netmhcpan_binders, "data/processed/netmhcpan_binders.csv")
+write_csv(df_netmhcpan_only,    "data/processed/netmhcpan_only.csv")
+write_csv(df_iedb_only,         "data/processed/iedb_only.csv")
 
-# ── Confusion Matrix ──────────────────────────────────────────────────────────
+cat("\n✅ Saved split data to data/processed/\n")
 
-# Define the four quadrants
-# TP: predicted binder AND confirmed by IEDB
-# FP: predicted binder but NOT confirmed by IEDB
-# FN: NOT predicted as binder but confirmed by IEDB
-# TN: NOT predicted as binder AND NOT in IEDB
-#     ≈ total raw predictions − all binders − IEDB-only peptides
 
-TP <- nrow(df_overlap)
-FP <- nrow(df_netmhcpan_only)
-FN <- nrow(df_iedb_only)
-TN <- nrow(df_netmhcpan_raw) - nrow(df_netmhcpan_binders) - nrow(df_iedb_only)
+# 7. Confusion Matrix Calculation & Plot 
+TP <- nrow(df_overlap)         
+FP <- nrow(df_netmhcpan_only)  
+FN <- nrow(df_iedb_only)       
 
-cat("\n=== Confusion Matrix Counts ===\n")
-cat("TP:", scales::comma(TP), "\n")
-cat("FP:", scales::comma(FP), "\n")
-cat("FN:", scales::comma(FN), "\n")
-cat("TN:", scales::comma(TN), "(approximated from raw predictions)\n")
+# Calculate true negatives directly from source files to prevent memory crashes
+total_peptides <- get_netmhcpan_total()
+TN <- total_peptides - nrow(df_netmhcpan_binders) - FN
 
 # Derived metrics
-sensitivity  <- TP / (TP + FN)          # Recall
+sensitivity  <- TP / (TP + FN)          
 specificity  <- TN / (TN + FP)
 precision    <- TP / (TP + FP)
 f1           <- 2 * (precision * sensitivity) / (precision + sensitivity)
 
-cat("\n=== Performance Metrics ===\n")
-cat("Sensitivity (Recall):  ", round(sensitivity * 100, 2), "%\n")
-cat("Specificity:           ", round(specificity * 100, 2), "%\n")
-cat("Precision (PPV):       ", round(precision  * 100, 2), "%\n")
-cat("F1 Score:              ", round(f1,              4), "\n")
-
-# Build a tidy data frame for ggplot
 df_cm <- tibble(
   Predicted  = factor(
-    c("Binder",        "Binder",
-      "Non-Binder",    "Non-Binder"),
+    c("Binder", "Binder", "Non-Binder", "Non-Binder"),
     levels = c("Binder", "Non-Binder")
   ),
   Actual = factor(
-    c("IEDB Positive", "IEDB Negative",
-      "IEDB Positive", "IEDB Negative"),
-    levels = c("IEDB Positive", "IEDB Negative")   # top-left = TP
+    c("IEDB Positive", "IEDB Negative", "IEDB Positive", "IEDB Negative"),
+    levels = c("IEDB Positive", "IEDB Negative")
   ),
   Count  = c(TP, FP, FN, TN),
   quad   = c("TP", "FP", "FN", "TN")
 )
 
-# Annotation: show both the quadrant label and the formatted count
 df_cm <- df_cm |>
-  mutate(
-    display = paste0(quad, "\n", scales::comma(Count))
-  )
+  mutate(display = paste0(quad, "\n", scales::comma(Count)))
 
-# Colour the tiles by quadrant type, not by raw count,
-# because TN is ~1000× larger and would wash out the other cells.
 quad_colours <- c(
-  "TP" = "#2ecc71",   # green  – correct positive
-  "TN" = "#3498db",   # blue   – correct negative
-  "FP" = "#e74c3c",   # red    – false alarm
-  "FN" = "#e67e22"    # orange – missed positive
+  "TP" = "#2ecc71",
+  "TN" = "#3498db",
+  "FP" = "#e74c3c",
+  "FN" = "#e67e22"
 )
 
-p4 <- ggplot(df_cm, aes(x = Predicted, y = Actual, fill = quad)) +
+sum_binder     <- TP + FP
+sum_nonbinder  <- FN + TN
+sum_iedb_pos   <- TP + FN
+sum_iedb_neg   <- FP + TN
+
+col_sums <- c(
+  "Binder"     = paste0("Total: ", scales::comma(sum_binder)),
+  "Non-Binder" = paste0("Total: ", scales::comma(sum_nonbinder))
+)
+
+row_sums <- c(
+  "IEDB Positive" = paste0("Total:\n", scales::comma(sum_iedb_pos)),
+  "IEDB Negative" = paste0("Total:\n", scales::comma(sum_iedb_neg))
+)
+
+p1 <- ggplot(df_cm, aes(x = Predicted, y = Actual, fill = quad)) +
   geom_tile(colour = "white", linewidth = 2) +
-  geom_text(
-    aes(label = display),
-    size      = 5,
-    fontface  = "bold",
-    colour    = "white"
-  ) +
+  geom_text(aes(label = display), size = 5, fontface = "bold", colour = "white") +
   scale_fill_manual(
     values = quad_colours,
-    labels = c(
-      "TP" = "True Positive",
-      "TN" = "True Negative",
-      "FP" = "False Positive",
-      "FN" = "False Negative"
-    )
+    labels = c("TP" = "True Pos.", "TN" = "True Neg.", 
+               "FP" = "False Pos.", "FN" = "False Neg.")
   ) +
+  scale_x_discrete(position = "top", sec.axis = dup_axis(name = NULL, labels = col_sums)) +
+  scale_y_discrete(sec.axis = dup_axis(name = NULL, labels = row_sums)) +
   labs(
-    title    = "Confusion Matrix: NetMHCpan vs IEDB",
+    title    = "Peptide Binders: NetMHCpan vs IEDB",
     subtitle = paste0(
       "HLA-A*02:01  |  Binder threshold: Rank < 2%\n",
       "Sensitivity: ", round(sensitivity * 100, 1), "%  |  ",
@@ -160,47 +150,34 @@ p4 <- ggplot(df_cm, aes(x = Predicted, y = Actual, fill = quad)) +
       "F1: ",          round(f1, 3)
     ),
     x    = "NetMHCpan Prediction",
-    y    = "IEDB Ground Truth",
+    y    = "",
     fill = NULL
   ) +
   theme_bw(base_size = 13) +
   theme(
-    legend.position  = "top",
-    plot.subtitle    = element_text(size = 10, colour = "grey40"),
+    legend.position  = "bottom",
+    legend.box.margin = margin(r = 80),
+    plot.title       = element_text(margin = margin(l = 20, b = 5)),
+    plot.subtitle    = element_text(size = 10, colour = "grey40", margin = margin(l = 20, b = 10)),
     axis.text        = element_text(size = 12, face = "bold"),
-    panel.grid       = element_blank()
+    axis.text.x.bottom = element_text(size = 11, face = "italic", colour = "grey30"),
+    axis.text.y.right  = element_text(size = 11, face = "italic", colour = "grey30", hjust = 0),
+    axis.title.x.top   = element_text(face = "bold", margin = margin(b = 10)),
+    panel.grid       = element_blank(),
+    plot.title.position = "plot",
+    plot.margin = margin(t = 10, r = 10, b = 10, l = 5) 
   )
 
-p4
-
-ggsave("results/confusion_matrix.png", p4, width = 7, height = 5, dpi = 150)
-cat("  results/confusion_matrix.png\n")
+print(p1)
 
 
-# 6. Save outputs 
-write_csv(df_netmhcpan_binders, "data/processed/netmhcpan_binders.csv")
-write_csv(df_netmhcpan_only,    "data/processed/netmhcpan_only.csv")
-write_csv(df_iedb_only,         "data/processed/iedb_only.csv")
-
-cat("\n✅ Saved:\n")
-cat("  data/processed/netmhcpan_binders.csv\n")
-cat("  data/processed/netmhcpan_only.csv\n")
-cat("  data/processed/iedb_only.csv\n")
-
-# df_netmhcpan_raw     56,614,068  ← all predictions (intentional)
-# df_netmhcpan_binders    680,723  ← NB == 1 (binders)
-# df_netmhcpan_only       646,367  ← predicted but not in IEDB
-# df_overlap               34,356  ← predicted AND in IEDB
-# df_iedb_only             18,918  ← in IEDB but not predicted
-# df_iedb_pos              53,129  ← all IEDB positives
-
-# 7. Build labelled dataset 
-df_positives <- df_iedb_overlap |> ## Change the positive list to include only the overlapping regions. 
+# 8. Build Labelled Machine Learning Dataset 
+df_positives <- df_overlap |> 
   mutate(label = 1)
 
-# Downsample negatives to 1:3 ratio
-n_pos <- nrow(df_iedb_pos)
-n_neg_target <- n_pos * 3
+# Downsample negatives to 1:5 ratio based on the overlapping positives
+n_pos <- nrow(df_positives)
+n_neg_target <- n_pos * 5
 
 set.seed(42)
 df_negatives <- df_netmhcpan_only |>
@@ -211,106 +188,48 @@ cat("\nPositives:", nrow(df_positives), "\n")
 cat("Negatives:", nrow(df_negatives), "\n")
 cat("Ratio neg/pos:", round(nrow(df_negatives) / nrow(df_positives), 1), "\n")
 
-
-df_combined <- bind_rows(
-  df_positives          |> mutate(label = 1),
-  df_negatives |> mutate(label = 0)
-) |>
-  select(-c(rank,hla,binder))
+df_combined <- bind_rows(df_positives, df_negatives) |>
+  select(-c(rank, hla, binder))
 
 write_csv(df_combined, "data/processed/df_combined_pos_and_neg.csv")
 
 
-# Dataset composition plot 
-df_composition <- tibble(
-  category = c(
-    "IEDB confirmed\n(Positives)",
-    "NetMHCpan only\n(Negatives)",
-    "IEDB only\n(not predicted)"
-  ),
-  n = c(nrow(df_iedb_pos), nrow(df_netmhcpan_only), nrow(df_iedb_only)),
-  type = c("Positive", "Negative", "Unresolved")
-)
-
-p1 <- ggplot(df_composition, aes(x = reorder(category, -n), y = n, fill = type)) +
-  geom_col(width = 0.6) +
-  geom_text(aes(label = scales::comma(n)), vjust = -0.5, size = 4) +
-  scale_fill_manual(values = c("Positive" = "#2ecc71",
-                               "Negative" = "#e74c3c",
-                               "Unresolved" = "#95a5a6")) +
-  scale_y_continuous(labels = scales::comma, expand = expansion(mult = c(0, 0.1))) +
-  labs(
-    title    = "Dataset Composition",
-    subtitle = "NetMHCpan predictions vs IEDB confirmed epitopes",
-    x        = NULL,
-    y        = "Number of peptides",
-    fill     = NULL
-  ) +
-  theme_bw(base_size = 13) +
-  theme(legend.position = "top")
-
-p1
-
-# Ratio comparison plot 
-df_ratios <- tibble(
-  ratio    = c("1:1", "1:3", "1:5", "1:10", "Full (1:12)"),
-  n_neg    = c(1, 3, 5, 10, 12) * nrow(df_iedb_pos),
-  n_pos    = nrow(df_iedb_pos),
-  feasible = c(TRUE, TRUE, TRUE, TRUE, FALSE)
-) |>
-  mutate(
-    n_neg    = pmin(n_neg, nrow(df_netmhcpan_only)),
-    n_total  = n_pos + n_neg
-  )
-
-p2 <- ggplot(df_ratios, aes(x = ratio, y = n_total, fill = feasible)) +
-  geom_col(width = 0.6) +
-  geom_text(aes(label = scales::comma(n_total)), vjust = -0.5, size = 4) +
-  geom_hline(yintercept = nrow(df_iedb_pos), linetype = "dashed",
-             color = "#2ecc71", linewidth = 0.8) +
-  annotate("text", x = 0.6, y = nrow(df_iedb_pos) * 1.05,
-           label = "# positives", color = "#2ecc71", size = 3.5, hjust = 0) +
-  scale_fill_manual(values = c("TRUE" = "#3498db", "FALSE" = "#bdc3c7")) +
-  scale_y_continuous(labels = scales::comma, expand = expansion(mult = c(0, 0.1))) +
-  labs(
-    title    = "Training Set Size by Pos:Neg Ratio",
-    subtitle = paste0(scales::comma(nrow(df_netmhcpan_only)),
-                      " negatives available from NetMHCpan"),
-    x        = "Pos : Neg ratio",
-    y        = "Total training samples",
-    fill     = "Feasible"
-  ) +
-  theme_bw(base_size = 13) +
-  theme(legend.position = "none")
-
-p2
-# Peptide length distribution 
+# 9. Peptide Length Distribution Plot 
 df_lengths <- bind_rows(
-  df_iedb_pos       |> mutate(set = "Positives (IEDB)"),
+  df_positives      |> mutate(set = "Positives (Overlap)"),
   df_netmhcpan_only |> mutate(set = "Negatives (NetMHCpan only)")
 )
 
-p3 <- ggplot(df_lengths, aes(x = pep_length, fill = set)) +
-  geom_bar(position = "dodge") +
-  scale_fill_manual(values = c("Positives (IEDB)" = "#2ecc71",
+df_lengths_prop <- df_lengths |>
+  count(set, pep_length) |>         
+  group_by(set) |>                  
+  mutate(pct = n / sum(n)) |>       
+  ungroup()
+
+p2 <- ggplot(df_lengths_prop, aes(x = pep_length, y = pct, fill = set)) +
+  geom_col(position = "dodge", colour = "black", linewidth = 0.2) + 
+  scale_fill_manual(values = c("Positives (Overlap)" = "#2ecc71",
                                "Negatives (NetMHCpan only)" = "#e74c3c")) +
   scale_x_continuous(breaks = 8:14) +
-  scale_y_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) + 
   labs(
-    title = "Peptide Length Distribution",
-    x     = "Peptide length",
-    y     = "Count",
-    fill  = NULL
+    title    = "Peptide Length Distribution (Normalized)",
+    subtitle = "Comparing the proportion of lengths within each class",
+    x        = "Peptide Length",
+    y        = "Percentage of Class",
+    fill     = NULL
   ) +
   theme_bw(base_size = 13) +
-  theme(legend.position = "top")
+  theme(
+    legend.position  = "top",
+    panel.grid.minor = element_blank(),
+    plot.title.position = "plot"
+  )
 
-p3
-# Save all plots 
-ggsave("results/dataset_composition.png",    p1, width = 7, height = 5, dpi = 150)
-ggsave("results/training_ratio_options.png", p2, width = 7, height = 5, dpi = 150)
-ggsave("results/peptide_length_dist.png",    p3, width = 7, height = 5, dpi = 150)
-
-
+print(p2)
 
 
+# 10. Save Plots 
+ggsave("results/confusion_matrix.png",    p1, width = 7, height = 5, dpi = 150)
+ggsave("results/peptide_length_dist.png", p2, width = 7, height = 5, dpi = 150)
+cat("\n✅ Saved all plots to results/ \n")

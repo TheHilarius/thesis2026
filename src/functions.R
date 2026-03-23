@@ -737,6 +737,24 @@ load_netmhcpan_batches <- function(netmhcpan_dir = "data/processed/netmhcpan/",
     list_rbind()
 }
 
+get_netmhcpan_total <- function(netmhcpan_dir = "data/processed/netmhcpan/") {
+  csv_files <- list.files(netmhcpan_dir, pattern = "\\.csv$", full.names = TRUE)
+  cat("Counting total peptides across", length(csv_files), "NetMHCpan files...\n")
+  
+  real_colnames <- c("Pos", "Peptide", "ID", "core", "icore", "Score", "Rank", "Ave", "NB")
+  
+  total_peptides <- map_dbl(csv_files, function(f) {
+    df <- read_table(f, 
+                     skip = 2, 
+                     col_names = real_colnames, 
+                     col_types = cols_only(NB = col_integer()), 
+                     show_col_types = FALSE)
+    nrow(df)
+  }, .progress = TRUE) |> sum()
+  
+  return(total_peptides)
+}
+
 ### Alpha fold features
 # ── AlphaFold pLDDT helpers ───────────────────────────────────────────────────
 
