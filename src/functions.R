@@ -737,4 +737,117 @@ load_netmhcpan_batches <- function(netmhcpan_dir = "data/processed/netmhcpan/",
     list_rbind()
 }
 
+### Alpha fold features
+# ── AlphaFold pLDDT helpers ───────────────────────────────────────────────────
+
+#' Read one AlphaFold PDB and return a per-residue pLDDT lookup table.
+#'
+#' AlphaFold stores pLDDT in the B-factor field.
+#' We keep only CA atoms so we get exactly one row per residue.
+#'
+#' @param uniprot_id  Character. UniProt accession (= PDB file stem).
+#' @param dir         Character. Directory that holds the .pdb files.
+#' @return A tibble with columns: uniprot_id, residue_num, aa, plddt
+#'         Returns NULL (with a warning) if the file cannot be read.
+
+extract_plddt_lookup <- function(uniprot_id, dir) {
+  pdb_path <- file.path(dir, paste0(uniprot_id, ".pdb"))
+  
+  tryCatch({
+    pdb <- bio3d::read.pdb(pdb_path, verbose = FALSE)
+    
+    # One row per residue — CA atoms carry the residue number and pLDDT
+    ca <- pdb$atom[pdb$atom$elety == "CA", ]
+    
+    tibble::tibble(
+      uniprot_id  = uniprot_id,
+      residue_num = as.integer(ca$resno),
+      aa          = ca$resid,          # three-letter amino acid code
+      plddt       = as.numeric(ca$b)   # B-factor = pLDDT in AlphaFold PDBs
+    )
+  }, error = function(e) {
+    warning(sprintf("[extract_plddt_lookup] Failed for %s: %s",
+                    uniprot_id, e$message))
+    NULL
+  })
+}
+
+
+#' Build a full pLDDT lookup list from all PDB files in a directory.
+#'
+#' @param proteins_needed  Character vector of UniProt IDs to load.
+#' @param dir              Directory containing .pdb files.
+#' @return A named list (keyed by uniprot_id).
+#'         Each element is a tibble with residue_num, aa, plddt.
+
+build_plddt_lookup <- function(proteins_needed, dir) {
+  # Discover which proteins actually have a PDB file
+  af_files        <- list.files(dir, pattern = "\\.pdb$", full.names = FALSE)
+  af_uniprot_all  <- stringr::str_remove(af_files, "\\.pdb$")
+  af_uniprot_filt <- af_uniprot_all[af_uniprot_all %in% proteins_needed]
+  
+  n_found   <- length(af_uniprot_filt)
+  n_needed  <- length(proteins_needed)
+  n_missing <- n_needed - n_found
+  
+  message(sprintf(
+    "AlphaFold PDBs found: %d / %d needed  (%d missing)",
+    n_found, n_needed, n_missing
+  ))
+  
+  if (n_missing > 0 & n_missing <= 10) {
+    # Only show missing IDs if there are few of them
+    missing_ids <- setdiff(proteins_needed, af_uniprot_filt)
+    message("Missing UniProt IDs: ",
+            paste(missing_ids, collapse = ", "))
+  } else if (n_missing > 10) {
+    message(sprintf("(%d missing proteins not listed)", n_missing))
+  }
+  
+  # Load all files with progress indication
+  message("Loading pLDDT data...")
+  lookup_flat <- purrr::map(af_uniprot_filt, extract_plddt_lookup,
+                            dir = dir, .progress = TRUE) |>
+    purrr::list_rbind()
+  
+  message(sprintf(
+    "Loaded pLDDT for %d proteins, %d residues total.",
+    dplyr::n_distinct(lookup_flat$uniprot_id),
+    nrow(lookup_flat)
+  ))
+  
+  # Return as a named list (fast access by protein)
+  split(lookup_flat, lookup_flat$uniprot_id)
+}
+
+
+#' Extract per-residue pLDDT scores for one genomic window.
+#'
+#' @param uid          UniProt ID (character).
+#' @param start        Integer. First residue of the window.
+#' @param end          Integer. Last residue of the window.
+#' @param lookup_split Named list produced by build_plddt_lookup().
+#' @return A numeric vector of pLDDT scores (one per residue in order).
+#'         Returns NA_real_ if the protein is missing or the window is empty.
+
+extract_plddt_vector <- function(uid, start, end, lookup_split) {
+  lkp <- lookup_split[[uid]]
+  if (is.null(lkp) || nrow(lkp) == 0) return(NA_real_)
+  
+  vals <- lkp$plddt[lkp$residue_num >= start & lkp$residue_num <= end]
+  if (length(vals) == 0) return(NA_real_)
+  vals   # full vector, in residue order
+}
+
+
+#' Summarise a pLDDT vector to a scalar mean (safe version).
+#' Useful when you just want one number per region.
+
+mean_plddt_region <- function(uid, start, end, lookup_split) {
+  v <- extract_plddt_vector(uid, start, end, lookup_split)
+  if (all(is.na(v))) return(NA_real_)
+  mean(v, na.rm = TRUE)
+}
+###
+
 cat("functions.R loaded successfully.\n")
