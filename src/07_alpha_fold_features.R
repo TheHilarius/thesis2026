@@ -78,6 +78,12 @@ alphafold_features <- df_af |>
     mean_plddt_cflank       = map_dbl(plddt_vec_cflank,       ~ mean(.x, na.rm = TRUE)),
     mean_plddt_full_context = map_dbl(plddt_vec_full_context, ~ mean(.x, na.rm = TRUE)),
     
+    # Standard deviation of pLDDT in each region (measure of confidence variability)
+    sd_plddt_peptide             = map_dbl(plddt_vec_peptide,      ~ sd(.x,   na.rm = TRUE)),
+    sd_plddt_full_context        = map_dbl(plddt_vec_full_context, ~ sd(.x,   na.rm = TRUE)),
+    
+    frac_disordered_peptide      = map_dbl(plddt_vec_peptide,      ~ mean(.x < 70, na.rm = TRUE)),
+    frac_disordered_full_context = map_dbl(plddt_vec_full_context, ~ mean(.x < 70, na.rm = TRUE)),
     # ── Min pLDDT in peptide (weakest-confidence residue) ───────────────────
     min_plddt_peptide       = map_dbl(plddt_vec_peptide,      ~ min(.x, na.rm = TRUE))
   )
