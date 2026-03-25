@@ -21,7 +21,9 @@ df_peptides <- df_raw |>
     nflank_start = pep_start - nchar(n_flank),
     nflank_end   = pep_start - 1L,
     cflank_start = pep_end   + 1L,
-    cflank_end   = pep_end   + nchar(c_flank)
+    cflank_end   = pep_end   + nchar(c_flank),
+    window_start = pep_start - nchar(n_flank),
+    window_end   = pep_end   + nchar(c_flank)    
   )
 
 cat("Peptides loaded:", nrow(df_peptides), "\n")
@@ -39,6 +41,12 @@ plddt_lookup_split <- build_plddt_lookup(
 matched_proteins <- names(plddt_lookup_split)
 cat("Proteins with pLDDT data:", length(matched_proteins), "\n")
 
+
+# ── 3. Filter to only peptides with AlphaFold coverage ───────────────────────
+df_af <- df_peptides |>
+  filter(uniprot_id %in% matched_proteins)
+
+cat("Peptides with AlphaFold coverage:", nrow(df_af), "/", nrow(df_peptides), "\n")
 
 # ── Validate AlphaFold model coverage against known protein lengths ────────────
 protein_lengths <- df_peptides |>
@@ -110,7 +118,7 @@ cat("Peptides after removal: ", nrow(df_af_clean),              "\n")
 cat("Peptides removed:       ", nrow(df_af) - nrow(df_af_clean),"\n")
 
 
-alphafold_features <- df_af |>
+alphafold_features <- df_af_clean |>
   mutate(
     # ── Per-residue pLDDT vectors (list column) ─────────────────────────────
     # Each cell is a numeric vector of length = region length
@@ -176,24 +184,43 @@ alphafold_features |>
   print()
 
 # ── 5. Save ───────────────────────────────────────────────────────────────────
-# Save scalar-only version (list columns are not CSV-friendly)
+
+# Select only the new pLDDT scalar columns + join keys from alphafold_features
+# Exclude list columns (not CSV-friendly) and columns already in df_raw
+alphafold_scalar <- alphafold_features |>
+  select(
+    # Join keys — renamed back to match df_raw
+    peptide, uniprot_id, n_flank, c_flank, full_context,
+    pep_start, pep_end,
+    # New pLDDT features only
+    mean_plddt_peptide,      mean_plddt_full_context,
+    min_plddt_peptide,
+    sd_plddt_peptide,        sd_plddt_full_context,
+    frac_disordered_peptide, frac_disordered_full_context
+  )
+
 df_all <- df_raw |>
-  left_join(alphafold_features, by =c("   ")) |>
-  write_csv("data/processed/df_all.csv")
+  left_join(
+    alphafold_scalar,
+    by = c(
+      "peptide", "uniprot_id",
+      "n_flank", "c_flank", "full_context",
+      "start" = "pep_start",
+      "end"   = "pep_end"
+    )
+  )
 
+cat("df_raw rows:  ", nrow(df_raw),  "\n")
+cat("df_all rows:  ", nrow(df_all),  "\n")
+cat("df_all cols:  ", ncol(df_all),  "\n")
+cat("Rows with pLDDT data:", sum(!is.na(df_all$mean_plddt_peptide)), "\n")
+cat("Rows without pLDDT (removed proteins or no AF file):",
+    sum(is.na(df_all$mean_plddt_peptide)), "\n")
 
+write_csv(df_all, "data/processed/df_all.csv")
 
-df_final_nsp3 <- df_raw |>
-  left_join(netsurfp_features, by = c("peptide", "uniprot_id", 
-                                      "n_flank", "c_flank", "full_context", 
-                                      "start" = "pep_start", "end" = "pep_end"))
-
-
-# Save full version with list columns as an RDS (preserves vectors)
+# Save full version with list columns as RDS (preserves pLDDT vectors)
 saveRDS(alphafold_features,
         "data/processed/alphafold_plddt_features_with_vectors.rds")
 
-cat("\n Saved:\n  data/processed/alphafold_plddt_features.csv (scalar means)\n  data/processed/alphafold_plddt_features_with_vectors.rds (full vectors)\n")
-
-
-
+cat("\n✅ Saved:\n  data/processed/df_all.csv (all features, scalar only)\n  data/processed/alphafold_plddt_features_with_vectors.rds (full vectors)\n")
