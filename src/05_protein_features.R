@@ -175,36 +175,46 @@ df_with_cleavage <- df_with_flanks %>%
     n_flank_col = "n_flank",
     c_flank_col = "c_flank"
   )
-# ============================================================================
+
 # CLEAVAGE POSITION SUMMARY
-# ============================================================================
 
 cat("\n=== RESIDUE DISTRIBUTIONS ===\n\n")
 
-position_counts <- df_with_cleavage %>%
-  summarise(
-    c_term_P1 = paste(names(sort(table(c_term_P1), decreasing = TRUE)[1:3]), collapse = ", "),
-    c_term_P1_prime = paste(names(sort(table(c_term_P1_prime), decreasing = TRUE)[1:3]), collapse = ", "),
-    n_term_P1 = paste(names(sort(table(n_term_P1), decreasing = TRUE)[1:3]), collapse = ", "),
-    n_term_P1_prime = paste(names(sort(table(n_term_P1_prime), decreasing = TRUE)[1:3]), collapse = ", ")
-  )
+# Helper to get top 3 residues from a column
+top3 <- function(x) {
+  tbl <- sort(table(x[!is.na(x)]), decreasing = TRUE)
+  paste(names(tbl)[1:min(3, length(tbl))], collapse = ", ")
+}
 
-cat("Top 3 residues at each position:\n")
-cat("  c_term_P1:       ", position_counts$c_term_P1, "\n")
-cat("  c_term_P1_prime: ", position_counts$c_term_P1_prime, "\n")
-cat("  n_term_P1:       ", position_counts$n_term_P1, "\n")
-cat("  n_term_P1_prime: ", position_counts$n_term_P1_prime, "\n")
+# All 16 position columns
+position_cols <- c(
+  paste0("n_cleavage_P", 4:1),
+  paste0("n_cleavage_P", 1:4, "_prime"),
+  paste0("c_cleavage_P", 4:1),
+  paste0("c_cleavage_P", 1:4, "_prime")
+)
+
+cat("Top 3 residues at each position:\n\n")
+cat("--- N-terminal cleavage site ---\n")
+for (col in position_cols[1:8]) {
+  cat(sprintf("  %-22s %s\n", paste0(col, ":"), top3(df_with_cleavage[[col]])))
+}
+cat("\n--- C-terminal cleavage site ---\n")
+for (col in position_cols[9:16]) {
+  cat(sprintf("  %-22s %s\n", paste0(col, ":"), top3(df_with_cleavage[[col]])))
+}
 
 # Distribution of C-terminal P1 residues (most important position)
 cat("\n=== C-TERMINAL P1 DISTRIBUTION ===\n")
 cat("(This is the most important residue for proteasome specificity)\n\n")
 
 p1_distribution <- df_with_cleavage %>%
-  count(c_term_P1) %>%
+  count(c_cleavage_P1) %>%
   mutate(percentage = round(n / sum(n) * 100, 2)) %>%
   arrange(desc(n))
 
 print(p1_distribution)
+
 #The proteasome's specificity is largely determined by what residue is at P1. 
 #Immunoproteasome strongly prefers hydrophobic (L, F, Y) and basic (K, R) residues.
 
