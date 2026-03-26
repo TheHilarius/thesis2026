@@ -47,3 +47,4 @@ data/processed/df_all*
 env_*
 env_*
 results/*.csv
+data/processed/*.csv
