@@ -28,7 +28,7 @@ parser.add_argument('pdb_dir', help="Directory containing AlphaFold .pdb or .cif
 parser.add_argument('out_h5', help="Path to save the output HDF5 embeddings")
 args = parser.parse_args()
 
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+DEVICE = "cpu"
 Path(args.out_h5).parent.mkdir(parents=True, exist_ok=True)
 
 print(f"Device : {DEVICE}")
@@ -116,10 +116,16 @@ with torch.no_grad():
         c_end   = min(len(rep), c_end)
 
         # 3. Slice the structural embeddings and average them
-        n_emb   = rep[n_start:pep_start].mean(axis=0) if n_start < pep_start else np.zeros(EMB_DIM)
-        pep_emb = rep[pep_start:pep_end].mean(axis=0) if pep_start < pep_end else np.zeros(EMB_DIM)
-        c_emb   = rep[pep_end:c_end].mean(axis=0) if pep_end < c_end else np.zeros(EMB_DIM)
+        # 3. Safely slice the structural embeddings
+        n_slice   = rep[n_start:pep_start]
+        pep_slice = rep[pep_start:pep_end]
+        c_slice   = rep[pep_end:c_end]
 
+        # Average them, but only if the slice isn't empty (prevents NaN errors)
+        n_emb   = n_slice.mean(axis=0) if len(n_slice) > 0 else np.zeros(EMB_DIM)
+        pep_emb = pep_slice.mean(axis=0) if len(pep_slice) > 0 else np.zeros(EMB_DIM)
+        c_emb   = c_slice.mean(axis=0) if len(c_slice) > 0 else np.zeros(EMB_DIM)
+        
         peptide_embs[i] = pep_emb
         n_flank_embs[i] = n_emb
         c_flank_embs[i] = c_emb
