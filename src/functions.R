@@ -720,9 +720,10 @@ extract_nsp3_windows <- function(uniprot_id,
 #
 # Load netmhcpan batches
 #
-# Read and combine all NetMHCpan batch CSV files
+# Read and combine all NetMHCpan batch CSV files (only 9 mers NOW)
 load_netmhcpan_batches <- function(netmhcpan_dir = "data/processed/netmhcpan/",
-                                   binders_only = TRUE) {
+                                   binders_only = TRUE,
+                                   peptide_length = NULL) {
   
   csv_files <- list.files(netmhcpan_dir, pattern = "\\.csv$", full.names = TRUE)
   cat("NetMHCpan batch files found:", length(csv_files), "\n")
@@ -731,24 +732,29 @@ load_netmhcpan_batches <- function(netmhcpan_dir = "data/processed/netmhcpan/",
   
   map(csv_files, function(f) {
     df <- read_table(f, skip = 2, col_names = real_colnames, show_col_types = FALSE)
+    if (!is.null(peptide_length)) df <- df |> filter(nchar(Peptide) == peptide_length)
     if (binders_only) df <- df |> filter(NB == 1)
     df
   }, .progress = TRUE) |>
     list_rbind()
 }
 
-get_netmhcpan_total <- function(netmhcpan_dir = "data/processed/netmhcpan/") {
+get_netmhcpan_total <- function(netmhcpan_dir = "data/processed/netmhcpan/",
+                                peptide_length = NULL,
+                                valid_ids = NULL) {
   csv_files <- list.files(netmhcpan_dir, pattern = "\\.csv$", full.names = TRUE)
   cat("Counting total peptides across", length(csv_files), "NetMHCpan files...\n")
   
   real_colnames <- c("Pos", "Peptide", "ID", "core", "icore", "Score", "Rank", "Ave", "NB")
   
   total_peptides <- map_dbl(csv_files, function(f) {
-    df <- read_table(f, 
-                     skip = 2, 
-                     col_names = real_colnames, 
-                     col_types = cols_only(NB = col_integer()), 
-                     show_col_types = FALSE)
+    df <- read_table(f, skip = 2, col_names = real_colnames, show_col_types = FALSE)
+    if (!is.null(peptide_length)) df <- df |> filter(nchar(Peptide) == peptide_length)
+    if (!is.null(valid_ids)) {
+      df <- df |> 
+        mutate(uniprot_id = str_split_i(ID, "_", 2)) |>
+        filter(uniprot_id %in% valid_ids)
+    }
     nrow(df)
   }, .progress = TRUE) |> sum()
   
