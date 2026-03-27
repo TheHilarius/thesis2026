@@ -48,3 +48,4 @@ env_*
 env_*
 results/*.csv
 data/processed/*.csv
+data/processed/alphafold*.rds
