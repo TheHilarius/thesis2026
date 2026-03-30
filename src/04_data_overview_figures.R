@@ -136,7 +136,7 @@ links_neg$group <- c("discard", "keep", "discard", "keep")
 
 color_neg <- 'd3.scaleOrdinal()
   .domain(["keep", "discard", "raw"])
-  .range(["#3498db", "#e0e0e0", "#cccccc"]);'
+  .range(["#e74c3c", "#e0e0e0", "#cccccc"]);'
 
 sankey_neg <- sankeyNetwork(
   Links = links_neg, Nodes = nodes_neg, Source = "source", Target = "target",
@@ -168,7 +168,7 @@ venn_plot <- plot(
     cex = 1.1,
     side = "bottom"
   ),
-  fills = list(fill = c("#3498db", "#2ecc71"), alpha = 0.7),
+  fills = list(fill = c("#e74c3c", "#2ecc71"), alpha = 0.7),
   edges = list(col = "black", lwd = 2),
   main = "9-mer Peptides: Predicted vs. Biologically Presented"
 )
@@ -189,3 +189,114 @@ print(venn_plot)
 dev.off()
 
 cat("✅ Saved all overview figures to results/ folder\n")
+
+
+
+
+
+library(tidyverse)
+library(ggplot2)
+
+# ==============================================================================
+# 1. DEFINE NODES WITH GENEROUS SPACING
+# ==============================================================================
+# We use a much wider coordinate system (0 to 20) to give huge margins.
+
+df_nodes <- tibble(
+  id    = 1:4,
+  x     = c(2.5, 7.5, 12.5, 17.5), # Centers spread far apart
+  y     = c(2, 2, 2, 2),
+  width = c(4.2, 4.2, 4.2, 4.2),   # Much wider boxes
+  height= c(2.0, 2.0, 2.0, 2.0),   # Taller boxes for vertical padding
+  
+  # Split text into Title and Subtitle for professional typography
+  title = c(
+    "1. Source Proteins",
+    "2. Sliding Window",
+    "3. NetMHCpan 4.2",
+    "4. Predicted Binders"
+  ),
+  subtitle = c(
+    "(9,995 FASTA sequences)",
+    "(Extract all 9-mers)",
+    "(Predict EL Rank)",
+    "Rank < 2% (N = 271,428)"
+  ),
+  
+  # Colors: Clean white boxes for 1-3, Sankey-matching Blue for 4
+  fill  = c("#ffffff", "#ffffff", "#ffffff", "#3498db"),
+  color = c("#ced4da", "#ced4da", "#ced4da", "#2980b9"), # Thin elegant borders
+  
+  # Text Colors
+  title_col = c("#212529", "#212529", "#212529", "#ffffff"),
+  sub_col   = c("#6c757d", "#6c757d", "#6c757d", "#f1f5f9")
+)
+
+
+# ==============================================================================
+# 2. DEFINE ARROWS
+# ==============================================================================
+
+df_edges <- tibble(
+  x    = c(4.8, 9.8, 14.8),  # Start slightly away from box edge
+  xend = c(5.2, 10.2, 15.2), # End slightly away from next box edge
+  y    = c(2, 2, 2),
+  yend = c(2, 2, 2)
+)
+
+# ==============================================================================
+# 3. BUILD THE GGPLOT
+# ==============================================================================
+
+p_pipeline <- ggplot() +
+  
+  # 1. Drop Shadows (draw slightly offset light-grey boxes first)
+  geom_rect(data = df_nodes,
+            aes(xmin = x - width/2 + 0.08, xmax = x + width/2 + 0.08,
+                ymin = y - height/2 - 0.08, ymax = y + height/2 - 0.08),
+            fill = "#e9ecef", color = NA) +
+  
+  # 2. Draw arrows
+  geom_segment(data = df_edges, 
+               aes(x = x, y = y, xend = xend, yend = yend),
+               arrow = arrow(length = unit(0.3, "cm"), type = "closed"),
+               color = "#adb5bd", linewidth = 1.2) +
+  
+  # 3. Draw main boxes
+  geom_rect(data = df_nodes,
+            aes(xmin = x - width/2, xmax = x + width/2,
+                ymin = y - height/2, ymax = y + height/2,
+                fill = fill, color = color),
+            linewidth = 0.8) + # Thinner, cleaner border
+  
+  # 4. Draw Titles (Bold, centered upper)
+  geom_text(data = df_nodes,
+            aes(x = x, y = y + 0.25, label = title, color = title_col),
+            fontface = "bold", size = 5.5) +
+  
+  # 5. Draw Subtitles (Regular, centered lower)
+  geom_text(data = df_nodes,
+            aes(x = x, y = y - 0.35, label = subtitle, color = sub_col),
+            fontface = "plain", size = 4.5) +
+  
+  # Apply exact hex codes
+  scale_fill_identity() +
+  scale_color_identity() +
+  
+  # Set perfect aspect ratio limits (20 wide x 4 high = 5:1 ratio)
+  coord_cartesian(xlim = c(0, 20), ylim = c(0, 4)) +
+  theme_void() +
+  theme(
+    plot.background = element_rect(fill = "white", color = NA),
+    plot.margin = margin(10, 10, 10, 10)
+  )
+
+# ==============================================================================
+# 4. EXPORT
+# ==============================================================================
+# Save with a matching 5:1 aspect ratio to prevent any stretching
+ggsave("results/methods_generation_pipeline.png", p_pipeline, 
+       width = 15, height = 3, dpi = 300)
+
+cat("✅ Polished pipeline saved to results/methods_generation_pipeline.png\n")
+
