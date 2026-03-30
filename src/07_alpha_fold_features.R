@@ -111,7 +111,7 @@ proteins_to_remove <- proteins_with_outside_peptides$uniprot_id
 df_af_clean <- df_af |>
   filter(!uniprot_id %in% proteins_to_remove)
 
-cat("\n⚠️  Removing", length(proteins_to_remove), "proteins entirely,",
+cat("\n Removing", length(proteins_to_remove), "proteins entirely,",
     "as they contain at least one peptide outside AlphaFold model coverage.\n")
 cat("Peptides before removal:", nrow(df_af),                    "\n")
 cat("Peptides after removal: ", nrow(df_af_clean),              "\n")
