@@ -223,4 +223,4 @@ write_csv(df_all, "data/processed/df_all.csv")
 saveRDS(alphafold_features,
         "data/processed/alphafold_plddt_features_with_vectors.rds")
 
-cat("\n✅ Saved:\n  data/processed/df_all.csv (all features, scalar only)\n  data/processed/alphafold_plddt_features_with_vectors.rds (full vectors)\n")
+cat("\nSaved:\n  data/processed/df_all.csv (all features, scalar only)\n  data/processed/alphafold_plddt_features_with_vectors.rds (full vectors)\n")
