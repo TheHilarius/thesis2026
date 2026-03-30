@@ -68,7 +68,7 @@ netsurfp_features <- df_peptides |>
   ) |>
   unnest(feats)
 
-cat("✅ Done!\n")
+cat("Done!\n")
 cat("Rows:   ", nrow(netsurfp_features), "\n")
 cat("Columns:", ncol(netsurfp_features), "\n")
 
@@ -131,4 +131,4 @@ df_final_nsp3 <- df_raw |>
                                       "start" = "pep_start", "end" = "pep_end"))
 
 write_csv(df_final_nsp3, "data/processed/epitopes_pos_and_neg_features_with_nsp3.csv")
-cat("\n✅ Saved: data/processed/epitopes_pos_and_neg_features_with_nsp3.csv")
+cat("\n Saved: data/processed/epitopes_pos_and_neg_features_with_nsp3.csv")
