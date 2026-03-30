@@ -4,18 +4,26 @@ set_working_directory()
 library(ggplot2)
 
 
-# 1. Load IEDB positives ──────────────────────────────────────────────────────
+# 1. Load IEDB positives 
 df_raw <- read_csv("data/processed/pos_EL_all_epitopes_hla0201.csv")
 
 df_iedb_pos <- df_raw |>
   filter(pep_length == 9) |>
   filter(uniprot_id != "O60361")  # deleted from SwissProt in 2026_01
 
+
+# 1.5. Validate against FASTA database ────────────────────────────────────────
+cat("Loading FASTA database to remove obsolete isoforms...\n")
+df_fasta <- read_fasta_df("data/raw/fasta/combined_9mer.fasta") |>
+  mutate(uniprot_id = str_extract(header, "(?<=\\|)[A-Z0-9]+(?=\\|)"))
+
+df_iedb_pos <- df_iedb_pos |>
+  semi_join(df_fasta, by = "uniprot_id")
+
 write_csv(df_iedb_pos, "data/processed/pos_EL_9mers_epitopes_hla0201.csv")
 cat("IEDB positives:", nrow(df_iedb_pos), "\n")
 
-
-# 2. Protein lookup table ─────────────────────────────────────────────────────
+# 2. Protein lookup table 
 df_protein_lookup <- df_iedb_pos |>
   select(uniprot_id, source_molecule, molecule_parent) |>
   slice_head(n = 1, by = uniprot_id)
@@ -24,13 +32,13 @@ write_csv(df_protein_lookup, "data/processed/protein_lookup.csv")
 cat("Unique proteins:", nrow(df_protein_lookup), "\n")
 
 
-# 3. Load NetMHCpan predictions (9-mer binders only) ─────────────────────────
+# 3. Load NetMHCpan predictions (9-mer binders only) 
 cat("Loading NetMHCpan 9-mer binders...\n")
 df_netmhcpan_raw <- load_netmhcpan_batches(binders_only = TRUE, peptide_length = 9)
 cat("Total 9-mer binders loaded:", nrow(df_netmhcpan_raw), "\n")
 
 
-# 4. Parse, clean, and filter to valid proteins ──────────────────────────────
+# 4. Parse, clean, and filter to valid proteins 
 df_netmhcpan_binders <- df_netmhcpan_raw |>
   mutate(HLA = "HLA-A02:01") |>
   mutate(binder = case_when(
@@ -67,7 +75,7 @@ cat("The", nrow(missing_proteins), "proteins without 9-mer binders have",
     "non-binders (predicted by NetMHCpan)\n")
 
 
-# 5. Compare NetMHCpan vs IEDB ────────────────────────────────────────────────
+# 5. Compare NetMHCpan vs IEDB 
 df_iedb_pos <- df_iedb_pos |>
   left_join(
     df_netmhcpan_binders |> select(peptide, uniprot_id, rank),
@@ -90,14 +98,14 @@ cat("Sensitivity (IEDB peptides recovered):    ",
     round(nrow(df_overlap) / nrow(df_iedb_pos) * 100, 1), "%\n")
 
 
-# 6. Save split outputs ──────────────────────────────────────────────────────
+# 6. Save split outputs 
 write_csv(df_netmhcpan_binders, "data/processed/netmhcpan_9mer_binders.csv")
 write_csv(df_netmhcpan_only,    "data/processed/netmhcpan_9mer_only.csv")
 write_csv(df_iedb_only,         "data/processed/iedb_9mer_only.csv")
 cat("\n✅ Saved split data to data/processed/\n")
 
 
-# 7. Confusion matrix ────────────────────────────────────────────────────────
+# 7. Confusion matrix 
 TP <- nrow(df_overlap)
 FP <- nrow(df_netmhcpan_only)
 FN <- nrow(df_iedb_only)
@@ -176,12 +184,11 @@ p1 <- ggplot(df_cm, aes(x = Predicted, y = Actual, fill = quad)) +
     plot.margin = margin(t = 10, r = 10, b = 10, l = 5)
   )
 
-
-# 8. Define positives & pre-matching diagnostics ─────────────────────────────
+# 8. Define positives & pre-matching diagnostics 
 df_positives <- df_overlap |>
   mutate(label = 1)
 
-# ── Affinity bias check ─────────────────────────────────────────────────────
+#  Affinity bias check 
 # If positives (IEDB-confirmed) have systematically lower EL ranks than negatives
 # (predicted binders, not in IEDB), a model could classify by affinity alone.
 # We use KS D as an effect-size metric. At n > 20K, p-values are always
@@ -205,7 +212,7 @@ df_rank_pre |>
 ks_pre <- ks.test(df_positives$rank, df_netmhcpan_only$rank)
 cat("KS D (before):", round(ks_pre$statistic, 4), "→ clearly different distributions\n")
 
-# ── Granular rank breakdown ──────────────────────────────────────────────────
+#  Granular rank breakdown 
 rank_bins_granular <- c(0, 0.1, 0.2, 0.5, 1.0, 1.5, 2.0)
 
 cat("\n--- Positive rank breakdown ---\n")
@@ -222,7 +229,7 @@ df_netmhcpan_only |>
   mutate(pct = round(n / sum(n) * 100, 1)) |>
   print()
 
-# ── Pre-matching plots ───────────────────────────────────────────────────────
+#  Pre-matching plots 
 p2 <- ggplot(df_rank_pre, aes(x = rank, fill = label)) +
   geom_density(alpha = 0.5, colour = "black", linewidth = 0.3) +
   scale_fill_manual(values = c("Positive (TP)" = "#2ecc71",
@@ -234,7 +241,7 @@ p2 <- ggplot(df_rank_pre, aes(x = rank, fill = label)) +
            label = paste0("KS D = ", round(ks_pre$statistic, 4)),
            vjust = 1.5, size = 5, fontface = "bold", colour = "#e74c3c") +
   labs(
-    title    = "Affinity Bias Check: NetMHCpan EL Rank Distribution (Before Matching)",
+    title    = "Affinity Bias Check: NetMHCpan EL Rank Distribution",
     subtitle = paste0("9-mers  |  HLA-A*02:01  |  KS D = ", round(ks_pre$statistic, 4),
                       " (clearly different distributions)"),
     x = "NetMHCpan EL Rank (%)", y = "Density", fill = NULL
@@ -261,9 +268,9 @@ p3 <- ggplot(df_rank_pre, aes(x = rank, colour = label)) +
         plot.title.position = "plot")
 
 
-# 9. Rank-matched negative sampling ──────────────────────────────────────────
+# 9. Rank-matched negative sampling 
 
-# ── Helper: perform bin-matched sampling ─────────────────────────────────────
+#  Helper: perform bin-matched sampling 
 sample_bin_matched <- function(df_pos, df_neg, n_bins) {
   breaks <- seq(0, 2, length.out = n_bins + 1)
   
@@ -294,7 +301,7 @@ sample_bin_matched <- function(df_pos, df_neg, n_bins) {
     mutate(label = 0)
 }
 
-# ── Bin count sweep ──────────────────────────────────────────────────────────
+#  Bin count sweep 
 test_bins <- c(seq(5, 20, by = 1), seq(25, 200, by = 5))
 
 bin_sweep <- map_dfr(test_bins, function(nb) {
@@ -348,7 +355,7 @@ bin_sweep <- map_dfr(test_bins, function(nb) {
 cat("\n=== Bin Count Sweep: Data vs Match Quality Tradeoff ===\n")
 print(bin_sweep, n = Inf)
 
-# ── Select representative configurations for comparison plots ────────────────
+#  Select representative configurations for comparison plots 
 configs <- bind_rows(
   bin_sweep |> filter(ks_D < 0.02)               |> arrange(desc(n_neg)) |> slice_head(n = 1) |> mutate(tier = "A: Excellent (D<0.02)"),
   bin_sweep |> filter(ks_D >= 0.02, ks_D < 0.05) |> arrange(desc(n_neg)) |> slice_head(n = 1) |> mutate(tier = "B: Very good (D<0.05)"),
@@ -362,14 +369,14 @@ configs <- bind_rows(
 cat("\n=== Selected Configurations ===\n")
 configs |> select(tier, n_bins, n_neg, ratio, ks_D) |> print(n = Inf)
 
-# ── Generate matched sets for comparison plots ───────────────────────────────
+#  Generate matched sets for comparison plots 
 neg_sets <- map(configs$n_bins, function(nb) {
   sample_bin_matched(df_positives, df_netmhcpan_only, nb)
 })
 names(neg_sets) <- configs$tier
 
 
-# 10. Comparison plots across configurations ─────────────────────────────────
+# 10. Comparison plots across configurations 
 
 df_facet_density <- imap_dfr(neg_sets, function(df_neg, tier_name) {
   cfg <- configs |> filter(tier == tier_name)
@@ -425,7 +432,7 @@ p5 <- ggplot(df_facet_density, aes(x = rank, colour = label)) +
     strip.text          = element_text(size = 8, face = "bold")
   )
 
-# ── Options summary (for reference) ─────────────────────────────────────────
+#  Options summary (for reference) 
 cat("\n=== Options Summary ===\n")
 bind_rows(
   tibble(option = "Before (no matching)", n_bins = NA_real_,
@@ -436,7 +443,7 @@ bind_rows(
 ) |> print(n = Inf)
 
 
-# 11. Build final dataset (Option C: 25 bins) ────────────────────────────────
+# 11. Build final dataset (Option C: 25 bins) 
 config_chosen <- configs |> filter(tier == "C: Decent (D<0.10)")
 
 df_negatives <- neg_sets[[config_chosen$tier]]
@@ -456,11 +463,11 @@ cat("Total:    ", scales::comma(nrow(df_combined)), "\n")
 cat("Ratio:    ", round(sum(df_combined$label == 0) / sum(df_combined$label == 1), 2), ":1\n")
 
 
-# 12. Statistical validation of bias correction ──────────────────────────────
+# 12. Statistical validation of bias correction 
 # At n > 20K, p-values are always < 2.2e-16 (overpowered). Effect sizes
 # (KS D, Cliff's Δ) quantify the magnitude of distributional difference.
 
-# ── Cliff's Delta (overflow-safe, chunked computation) ───────────────────────
+#  Cliff's Delta (overflow-safe, chunked computation) 
 cliff_delta_sampled <- function(x, y, n_sample = 50000, seed = 42) {
   set.seed(seed)
   if (length(x) > n_sample) x <- sample(x, n_sample)
@@ -486,7 +493,7 @@ cliff_delta_sampled <- function(x, y, n_sample = 50000, seed = 42) {
   list(estimate = delta, magnitude = magnitude)
 }
 
-# ── Compute all tests ────────────────────────────────────────────────────────
+#  Compute all tests 
 ks_before     <- ks.test(df_positives$rank, df_netmhcpan_only$rank)
 ks_after      <- ks.test(df_positives$rank, df_negatives$rank)
 wilcox_before <- wilcox.test(df_positives$rank, df_netmhcpan_only$rank)
@@ -501,7 +508,7 @@ cat("\n", strrep("\u2550", 70), "\n")
 cat("  STATISTICAL COMPARISON: Rank Distributions\n")
 cat(strrep("\u2550", 70), "\n\n")
 
-cat("Positives vs Negatives (BEFORE matching)\n")
+cat("Positives vs Negatives\n")
 cat("  KS D:          ", round(ks_before$statistic, 4), "\n")
 cat("  KS p-value:    ", format.pval(ks_before$p.value, digits = 3), "\n")
 cat("  Wilcoxon p:    ", format.pval(wilcox_before$p.value, digits = 3), "\n")
@@ -524,7 +531,7 @@ cat("  KS D reduction: ", round(ks_before$statistic, 4), " \u2192 ",
     round(ks_after$statistic, 4),
     " (", round((1 - ks_after$statistic / ks_before$statistic) * 100, 1), "%)\n")
 
-# ── Rank distribution summary table ─────────────────────────────────────────
+#  Rank distribution summary table 
 df_rank_summary <- bind_rows(
   df_positives |>
     summarise(n = n(), median = round(median(rank), 4), mean = round(mean(rank), 4),
@@ -546,7 +553,7 @@ df_rank_summary <- bind_rows(
 cat("\n=== Complete Rank Distribution Comparison ===\n")
 print(df_rank_summary)
 
-# ── Statistical test summary table ───────────────────────────────────────────
+#  Statistical test summary table 
 df_test_summary <- tibble(
   Comparison    = c("Pos vs Neg (before)", "Pos vs Neg (after, 25 bins)"),
   n_pos         = c(nrow(df_positives), nrow(df_positives)),
@@ -565,7 +572,7 @@ df_test_summary <- tibble(
 cat("\n=== Statistical Test Summary ===\n")
 print(df_test_summary)
 
-# ── Boxplot + violin (before-group downsampled for rendering) ────────────────
+#  Boxplot + violin (before-group downsampled for rendering) 
 set.seed(42)
 df_stat_compare <- bind_rows(
   df_positives |>
@@ -645,7 +652,7 @@ p6 <- ggplot(df_stat_compare, aes(x = group, y = rank, fill = group)) +
   )
 
 
-# 13. Save all outputs ───────────────────────────────────────────────────────
+# 13. Save all outputs 
 ggsave("results/confusion_matrix_9mer.png",              p1, width = 7,  height = 5,  dpi = 150)
 ggsave("results/affinity_bias_density_before.png",       p2, width = 7,  height = 5,  dpi = 150)
 ggsave("results/affinity_bias_ecdf_before.png",          p3, width = 7,  height = 5,  dpi = 150)
