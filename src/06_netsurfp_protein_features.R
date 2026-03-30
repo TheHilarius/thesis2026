@@ -79,8 +79,6 @@ netsurfp_features <- netsurfp_features |>
     
     # Peptide window
     mean_rsa_peptide, mean_disorder_peptide,
-    frac_helix_peptide, frac_sheet_peptide, frac_coil_peptide,
-    mean_p_q3_H_peptide, mean_p_q3_E_peptide, mean_p_q3_C_peptide,
     frac_q8_G_peptide, frac_q8_H_peptide, frac_q8_I_peptide,
     frac_q8_B_peptide, frac_q8_E_peptide, frac_q8_S_peptide,
     frac_q8_T_peptide, frac_q8_C_peptide,
@@ -90,8 +88,6 @@ netsurfp_features <- netsurfp_features |>
     
     # N-flank window
     mean_rsa_nflank, mean_disorder_nflank,
-    frac_helix_nflank, frac_sheet_nflank, frac_coil_nflank,
-    mean_p_q3_H_nflank, mean_p_q3_E_nflank, mean_p_q3_C_nflank,
     frac_q8_G_nflank, frac_q8_H_nflank, frac_q8_I_nflank,
     frac_q8_B_nflank, frac_q8_E_nflank, frac_q8_S_nflank,
     frac_q8_T_nflank, frac_q8_C_nflank,
@@ -101,8 +97,6 @@ netsurfp_features <- netsurfp_features |>
     
     # C-flank window
     mean_rsa_cflank, mean_disorder_cflank,
-    frac_helix_cflank, frac_sheet_cflank, frac_coil_cflank,
-    mean_p_q3_H_cflank, mean_p_q3_E_cflank, mean_p_q3_C_cflank,
     frac_q8_G_cflank, frac_q8_H_cflank, frac_q8_I_cflank,
     frac_q8_B_cflank, frac_q8_E_cflank, frac_q8_S_cflank,
     frac_q8_T_cflank, frac_q8_C_cflank,
@@ -112,8 +106,6 @@ netsurfp_features <- netsurfp_features |>
     
     # Full context window
     mean_rsa_full_context, mean_disorder_full_context,
-    frac_helix_full_context, frac_sheet_full_context, frac_coil_full_context,
-    mean_p_q3_H_full_context, mean_p_q3_E_full_context, mean_p_q3_C_full_context,
     frac_q8_G_full_context, frac_q8_H_full_context, frac_q8_I_full_context,
     frac_q8_B_full_context, frac_q8_E_full_context, frac_q8_S_full_context,
     frac_q8_T_full_context, frac_q8_C_full_context,
