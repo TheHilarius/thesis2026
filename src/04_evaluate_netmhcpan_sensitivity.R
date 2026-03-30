@@ -651,7 +651,6 @@ p6 <- ggplot(df_stat_compare, aes(x = group, y = rank, fill = group)) +
     plot.margin         = margin(t = 10, r = 15, b = 10, l = 10)
   )
 
-
 # 13. Save all outputs 
 ggsave("results/confusion_matrix_9mer.png",              p1, width = 7,  height = 5,  dpi = 150)
 ggsave("results/affinity_bias_density_before.png",       p2, width = 7,  height = 5,  dpi = 150)
