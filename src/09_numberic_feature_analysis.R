@@ -27,31 +27,99 @@ print(table(df_raw$label))
 # -----------------------------------------------------------------------------
 # 1. IDENTIFY NETSURFP FEATURES & CORRELATION HEATMAP
 # -----------------------------------------------------------------------------
-message("Generating Correlation Heatmap for NetSurfP features...")
 
-netsurfp_cols <- df_raw |>
-  select(matches("frac_|mean_p_q3|mean_p_q8|mean_rsa|mean_disorder")) |>
-  names()
+message("Generating per-window Correlation Heatmaps for NetSurfP features...")
 
-cor_matrix <- cor(df_raw[netsurfp_cols], use = "pairwise.complete.obs")
+nsp3_windows <- list(
+  peptide = c(
+    "mean_rsa_peptide", "mean_disorder_peptide",
+    "frac_q8_G_peptide", "frac_q8_H_peptide", "frac_q8_I_peptide",
+    "frac_q8_B_peptide", "frac_q8_E_peptide", "frac_q8_S_peptide",
+    "frac_q8_T_peptide", "frac_q8_C_peptide",
+    "mean_p_q8_G_peptide", "mean_p_q8_H_peptide", "mean_p_q8_I_peptide",
+    "mean_p_q8_B_peptide", "mean_p_q8_E_peptide", "mean_p_q8_S_peptide",
+    "mean_p_q8_T_peptide", "mean_p_q8_C_peptide",
+    # AlphaFold pLDDT & disorder — peptide
+    "mean_plddt_peptide", "min_plddt_peptide", "sd_plddt_peptide",
+    "frac_disordered_peptide",
+    # AlphaFold pLDDT & disorder — full context
+    "mean_plddt_full_context", "sd_plddt_full_context",
+    "frac_disordered_full_context"
+  ),
+  nflank = c(
+    "mean_rsa_nflank", "mean_disorder_nflank",
+    "frac_q8_G_nflank", "frac_q8_H_nflank", "frac_q8_I_nflank",
+    "frac_q8_B_nflank", "frac_q8_E_nflank", "frac_q8_S_nflank",
+    "frac_q8_T_nflank", "frac_q8_C_nflank",
+    "mean_p_q8_G_nflank", "mean_p_q8_H_nflank", "mean_p_q8_I_nflank",
+    "mean_p_q8_B_nflank", "mean_p_q8_E_nflank", "mean_p_q8_S_nflank",
+    "mean_p_q8_T_nflank", "mean_p_q8_C_nflank",
+    # AlphaFold pLDDT & disorder — full context
+    "mean_plddt_full_context", "sd_plddt_full_context",
+    "frac_disordered_full_context"
+  ),
+  cflank = c(
+    "mean_rsa_cflank", "mean_disorder_cflank",
+    "frac_q8_G_cflank", "frac_q8_H_cflank", "frac_q8_I_cflank",
+    "frac_q8_B_cflank", "frac_q8_E_cflank", "frac_q8_S_cflank",
+    "frac_q8_T_cflank", "frac_q8_C_cflank",
+    "mean_p_q8_G_cflank", "mean_p_q8_H_cflank", "mean_p_q8_I_cflank",
+    "mean_p_q8_B_cflank", "mean_p_q8_E_cflank", "mean_p_q8_S_cflank",
+    "mean_p_q8_T_cflank", "mean_p_q8_C_cflank",
+    # AlphaFold pLDDT & disorder — full context
+    "mean_plddt_full_context", "sd_plddt_full_context",
+    "frac_disordered_full_context"
+  )
+)
 
-cor_df <- as.data.frame(as.table(cor_matrix)) |>
-  rename(Feature_1 = Var1, Feature_2 = Var2, Correlation = Freq) |>
-  filter(!is.na(Correlation))
+window_titles <- c(
+  peptide = "Peptide Window",
+  nflank  = "N-Flank Window",
+  cflank  = "C-Flank Window"
+)
 
-p_heat <- ggplot(cor_df, aes(x = Feature_1, y = Feature_2, fill = Correlation)) +
-  geom_tile() +
-  scale_fill_gradient2(low = "#2ecc71", high = "#e74c3c", mid = "white", midpoint = 0, limit = c(-1, 1)) +
-  theme_minimal() +
-  theme(
-    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 5),
-    axis.text.y = element_text(size = 5),
-    axis.title = element_blank()
-  ) +
-  labs(title = "Correlation Heatmap of NetSurfP Features")
+for (win in names(nsp3_windows)) {
+  
+  cols <- intersect(nsp3_windows[[win]], names(df_raw))
+  
+  if (length(cols) < 2) {
+    message("  Skipping ", win, " — fewer than 2 columns found.")
+    next
+  }
+  
+  # Strip the window suffix for cleaner axis labels
+  short_labels <- sub(paste0("_", win, "$"), "", cols)
+  
+  cor_mat <- cor(df_raw[cols], use = "pairwise.complete.obs")
+  rownames(cor_mat) <- short_labels
+  colnames(cor_mat) <- short_labels
+  
+  cor_long <- as.data.frame(as.table(cor_mat)) |>
+    rename(Feature_1 = Var1, Feature_2 = Var2, Correlation = Freq) |>
+    filter(!is.na(Correlation))
+  
+  p_heat <- ggplot(cor_long, aes(x = Feature_1, y = Feature_2, fill = Correlation)) +
+    geom_tile() +
+    scale_fill_gradient2(
+      low = "#2ecc71", high = "#e74c3c", mid = "white",
+      midpoint = 0, limit = c(-1, 1)
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 7),
+      axis.text.y = element_text(size = 7),
+      axis.title  = element_blank()
+    ) +
+    labs(title = paste("Correlation Heatmap —", window_titles[win]))
+  
+  out_file <- file.path(figures_dir, paste0("netsurfp_correlation_heatmap_", win, ".png"))
+  ggsave(out_file, plot = p_heat, width = 10, height = 9, dpi = 300)
+  message("  Saved: ", out_file)
+}
 
-ggsave(file.path(figures_dir, "netsurfp_correlation_heatmap.png"), plot = p_heat, width = 12, height = 10, dpi = 300)
-
+netsurfp_cols <- c(nsp3_windows$peptide, nsp3_windows$nflank, nsp3_windows$cflank)
+netsurfp_cols <- unique(netsurfp_cols)
+netsurfp_cols <- intersect(netsurfp_cols, names(df_raw))
 # -----------------------------------------------------------------------------
 # 2. PCA: COMBINING COMPOSITIONAL FEATURES
 # -----------------------------------------------------------------------------
