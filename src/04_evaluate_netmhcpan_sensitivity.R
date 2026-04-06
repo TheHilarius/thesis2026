@@ -400,36 +400,44 @@ p4 <- ggplot(df_facet_density, aes(x = rank, fill = label)) +
   geom_density(alpha = 0.5, colour = "black", linewidth = 0.3) +
   scale_fill_manual(values = c("Positive (TP)" = "#2ecc71", "Negative" = "#e74c3c")) +
   geom_vline(xintercept = 0.5, linetype = "dashed", colour = "grey40", linewidth = 0.3) +
-  facet_wrap(~facet, ncol = 2, scales = "free_y") +
+  facet_wrap(~facet, ncol = 3, scales = "free_y") +
   labs(
     title    = "Affinity Bias Correction: Matching Quality Across Options",
     subtitle = "Each panel shows positives vs negatives at different bin-matching resolutions\nD < 0.02 excellent | D < 0.05 very good | D < 0.10 decent | D < 0.15 acceptable | D < 0.20 alright | D \u2265 0.20 marginal",
     x = "NetMHCpan EL Rank (%)", y = "Density", fill = NULL
   ) +
-  theme_bw(base_size = 11) +
+  theme_bw(base_size = 16) +
   theme(
     legend.position     = "top",
     panel.grid.minor    = element_blank(),
     plot.title.position = "plot",
-    strip.text          = element_text(size = 8, face = "bold")
+    panel.spacing = unit(0.6, "lines"),
+    plot.margin = margin(8, 12, 8, 8),
+    plot.title = element_text(size = 20, face = "bold"),
+    plot.subtitle = element_text(size = 13),
+    strip.text = element_text(size = 11, face = "bold")
   )
 
 p5 <- ggplot(df_facet_density, aes(x = rank, colour = label)) +
   stat_ecdf(linewidth = 0.7) +
   scale_colour_manual(values = c("Positive (TP)" = "#2ecc71", "Negative" = "#e74c3c")) +
   geom_vline(xintercept = 0.5, linetype = "dashed", colour = "grey40", linewidth = 0.3) +
-  facet_wrap(~facet, ncol = 2) +
+  facet_wrap(~facet, ncol = 3) +
   labs(
     title    = "Cumulative Rank Distribution: Matching Quality Across Options",
     subtitle = "Curve overlap = bias removed | Separation = residual bias",
     x = "NetMHCpan EL Rank (%)", y = "Cumulative Proportion", colour = NULL
   ) +
-  theme_bw(base_size = 11) +
+  theme_bw(base_size = 16) +
   theme(
     legend.position     = "top",
     panel.grid.minor    = element_blank(),
     plot.title.position = "plot",
-    strip.text          = element_text(size = 8, face = "bold")
+    panel.spacing = unit(0.6, "lines"),
+    plot.margin = margin(8, 12, 8, 8),
+    plot.title = element_text(size = 20, face = "bold"),
+    plot.subtitle = element_text(size = 13),
+    strip.text = element_text(size = 11, face = "bold")
   )
 
 #  Options summary (for reference) 
@@ -655,8 +663,8 @@ p6 <- ggplot(df_stat_compare, aes(x = group, y = rank, fill = group)) +
 ggsave("results/confusion_matrix_9mer.png",              p1, width = 7,  height = 5,  dpi = 150)
 ggsave("results/affinity_bias_density_before.png",       p2, width = 7,  height = 5,  dpi = 150)
 ggsave("results/affinity_bias_ecdf_before.png",          p3, width = 7,  height = 5,  dpi = 150)
-ggsave("results/affinity_bias_options_density.png",      p4, width = 10, height = 14, dpi = 150)
-ggsave("results/affinity_bias_options_ecdf.png",         p5, width = 10, height = 14, dpi = 150)
+ggsave("results/affinity_bias_options_ecdf.png", p5, width = 13.33, height = 7.5, dpi = 200)
+ggsave("results/affinity_bias_options_density.png", p4, width = 13.33, height = 7.5, dpi = 200)
 ggsave("results/affinity_bias_boxplot_comparison.png",   p6, width = 9,  height = 7,  dpi = 150)
 
 write_csv(df_rank_summary,  "data/processed/rank_distribution_summary.csv")

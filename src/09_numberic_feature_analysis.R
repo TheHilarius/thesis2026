@@ -30,75 +30,158 @@ df_raw <- df_raw |>
 message("Label counts:")
 print(table(df_raw$label))
 
-# -----------------------------------------------------------------------------
-# 1. IDENTIFY NETSURFP FEATURES & CORRELATION HEATMAP
-# -----------------------------------------------------------------------------
+# pretty feature labels for Wilcoxon
+pretty_feature_label <- function(x) {
+  x |>
+    str_replace("_nflank$", "") |>
+    str_replace("_peptide$", "") |>
+    str_replace("_cflank$", "") |>
+    str_replace("_full_context$", "") |>
+    
+    # Q8 fractions
+    str_replace("^frac_q8_G$", "Frac. 3-10 helix") |>
+    str_replace("^frac_q8_H$", "Frac. alpha helix") |>
+    str_replace("^frac_q8_I$", "Frac. pi helix") |>
+    str_replace("^frac_q8_B$", "Frac. beta bridge") |>
+    str_replace("^frac_q8_E$", "Frac. beta strand") |>
+    str_replace("^frac_q8_S$", "Frac. bend") |>
+    str_replace("^frac_q8_T$", "Frac. turn") |>
+    str_replace("^frac_q8_C$", "Frac. coil") |>
+    
+    # Q8 mean probabilities
+    str_replace("^mean_p_q8_G$", "Mean Q8 3-10 helix prob.") |>
+    str_replace("^mean_p_q8_H$", "Mean Q8 alpha helix prob.") |>
+    str_replace("^mean_p_q8_I$", "Mean Q8 pi helix prob.") |>
+    str_replace("^mean_p_q8_B$", "Mean Q8 beta bridge prob.") |>
+    str_replace("^mean_p_q8_E$", "Mean Q8 beta strand prob.") |>
+    str_replace("^mean_p_q8_S$", "Mean Q8 bend prob.") |>
+    str_replace("^mean_p_q8_T$", "Mean Q8 turn prob.") |>
+    str_replace("^mean_p_q8_C$", "Mean Q8 coil prob.") |>
+    
+    # Q3 mean probabilities
+    str_replace("^mean_p_q3_H$", "Mean Q3 helix prob.") |>
+    str_replace("^mean_p_q3_E$", "Mean Q3 sheet prob.") |>
+    str_replace("^mean_p_q3_C$", "Mean Q3 coil prob.") |>
+    
+    # Other structural features
+    str_replace("^mean_rsa$", "Mean RSA") |>
+    str_replace("^mean_disorder$", "Mean disorder") |>
+    str_replace("^frac_disordered$", "Frac. disordered") |>
+    str_replace("^frac_helix$", "Frac. helix") |>
+    str_replace("^frac_sheet$", "Frac. sheet") |>
+    str_replace("^frac_coil$", "Frac. coil") |>
+    str_replace("^mean_plddt$", "Mean pLDDT") |>
+    str_replace("^min_plddt$", "Minimum pLDDT") |>
+    str_replace("^sd_plddt$", "SD pLDDT") |>
+    
+    # General features
+    str_replace("^distance_from_n_terminus$", "Dist. from N terminus") |>
+    str_replace("^distance_from_c_terminus$", "Dist. from C terminus") |>
+    str_replace("^protein_length$", "Protein length") |>
+    str_replace("^pep_length$", "Peptide length")
+}
 
-message("Generating per-window Correlation Heatmaps for NetSurfP features...")
-
-nsp3_windows <- list(
-  peptide = c(
-    "mean_rsa_peptide", "mean_disorder_peptide",
-    "frac_q8_G_peptide", "frac_q8_H_peptide", "frac_q8_I_peptide",
-    "frac_q8_B_peptide", "frac_q8_E_peptide", "frac_q8_S_peptide",
-    "frac_q8_T_peptide", "frac_q8_C_peptide",
-    "mean_p_q8_G_peptide", "mean_p_q8_H_peptide", "mean_p_q8_I_peptide",
-    "mean_p_q8_B_peptide", "mean_p_q8_E_peptide", "mean_p_q8_S_peptide",
-    "mean_p_q8_T_peptide", "mean_p_q8_C_peptide",
-    # AlphaFold pLDDT & disorder — peptide
-    "mean_plddt_peptide", "min_plddt_peptide", "sd_plddt_peptide",
-    "frac_disordered_peptide",
-    # AlphaFold pLDDT & disorder — full context
-    "mean_plddt_full_context", "sd_plddt_full_context",
-    "frac_disordered_full_context"
-  ),
-  nflank = c(
-    "mean_rsa_nflank", "mean_disorder_nflank",
-    "frac_q8_G_nflank", "frac_q8_H_nflank", "frac_q8_I_nflank",
-    "frac_q8_B_nflank", "frac_q8_E_nflank", "frac_q8_S_nflank",
-    "frac_q8_T_nflank", "frac_q8_C_nflank",
-    "mean_p_q8_G_nflank", "mean_p_q8_H_nflank", "mean_p_q8_I_nflank",
-    "mean_p_q8_B_nflank", "mean_p_q8_E_nflank", "mean_p_q8_S_nflank",
-    "mean_p_q8_T_nflank", "mean_p_q8_C_nflank",
-    # AlphaFold pLDDT & disorder — full context
-    "mean_plddt_full_context", "sd_plddt_full_context",
-    "frac_disordered_full_context"
-  ),
-  cflank = c(
-    "mean_rsa_cflank", "mean_disorder_cflank",
-    "frac_q8_G_cflank", "frac_q8_H_cflank", "frac_q8_I_cflank",
-    "frac_q8_B_cflank", "frac_q8_E_cflank", "frac_q8_S_cflank",
-    "frac_q8_T_cflank", "frac_q8_C_cflank",
-    "mean_p_q8_G_cflank", "mean_p_q8_H_cflank", "mean_p_q8_I_cflank",
-    "mean_p_q8_B_cflank", "mean_p_q8_E_cflank", "mean_p_q8_S_cflank",
-    "mean_p_q8_T_cflank", "mean_p_q8_C_cflank",
-    # AlphaFold pLDDT & disorder — full context
-    "mean_plddt_full_context", "sd_plddt_full_context",
-    "frac_disordered_full_context"
+wilcox_feature_groups <- list(
+  n_flank = names(df_raw)[
+    str_detect(names(df_raw), "_nflank$") &
+      !str_detect(names(df_raw), "^mean_p_q3_") &
+      !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_")
+  ],
+  peptide = names(df_raw)[
+    str_detect(names(df_raw), "_peptide$") &
+      !str_detect(names(df_raw), "^mean_p_q3_") &
+      !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_")
+  ],
+  c_flank = names(df_raw)[
+    str_detect(names(df_raw), "_cflank$") &
+      !str_detect(names(df_raw), "^mean_p_q3_") &
+      !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_")
+  ],
+  general = intersect(
+    c(
+      names(df_raw)[
+        str_detect(names(df_raw), "_full_context$") &
+          !str_detect(names(df_raw), "^mean_p_q3_") &
+          !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_")
+      ],
+      "distance_from_n_terminus",
+      "distance_from_c_terminus",
+      "protein_length",
+      "pep_length"
+    ),
+    names(df_raw)
   )
 )
 
-window_titles <- c(
-  peptide = "Peptide Window",
-  nflank  = "N-Flank Window",
-  cflank  = "C-Flank Window"
+numeric_cols <- names(df_raw)[sapply(df_raw, is.numeric)]
+wilcox_feature_groups <- purrr::map(wilcox_feature_groups, ~ intersect(.x, numeric_cols))
+
+
+# -----------------------------------------------------------------------------
+# 1. IDENTIFY NETSURFP FEATURES & CORRELATION HEATMAP
+# -----------------------------------------------------------------------------
+message("Generating correlation heatmaps by group...")
+
+heatmap_feature_groups <- list(
+  n_flank = names(df_raw)[
+    str_detect(names(df_raw), "_nflank$") &
+      !str_detect(names(df_raw), "^mean_p_q3_") &
+      !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_") &
+      !str_detect(names(df_raw), "^frac_q8_")
+  ],
+  peptide = names(df_raw)[
+    str_detect(names(df_raw), "_peptide$") &
+      !str_detect(names(df_raw), "^mean_p_q3_") &
+      !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_") &
+      !str_detect(names(df_raw), "^frac_q8_")
+  ],
+  c_flank = names(df_raw)[
+    str_detect(names(df_raw), "_cflank$") &
+      !str_detect(names(df_raw), "^mean_p_q3_") &
+      !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_") &
+      !str_detect(names(df_raw), "^frac_q8_")
+  ],
+  general = intersect(
+    c(
+      names(df_raw)[
+        str_detect(names(df_raw), "_full_context$") &
+          !str_detect(names(df_raw), "^mean_p_q3_") &
+          !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_") &
+          !str_detect(names(df_raw), "^frac_q8_")
+      ],
+      "distance_from_n_terminus",
+      "distance_from_c_terminus",
+      "protein_length",
+      "pep_length"
+    ),
+    names(df_raw)
+  )
 )
 
-for (win in names(nsp3_windows)) {
+numeric_cols <- names(df_raw)[sapply(df_raw, is.numeric)]
+heatmap_feature_groups <- purrr::map(heatmap_feature_groups, ~ intersect(.x, numeric_cols))
+
+heatmap_titles <- c(
+  peptide = "Correlation Heatmap — Peptide",
+  n_flank = "Correlation Heatmap — N-flank",
+  c_flank = "Correlation Heatmap — C-flank",
+  general = "Correlation Heatmap — General"
+)
+
+for (group_name in names(heatmap_feature_groups)) {
   
-  cols <- intersect(nsp3_windows[[win]], names(df_raw))
+  cols <- heatmap_feature_groups[[group_name]]
   
   if (length(cols) < 2) {
-    message("  Skipping ", win, " — fewer than 2 columns found.")
+    message("  Skipping ", group_name, " — fewer than 2 columns found.")
     next
   }
   
-  # Strip the window suffix for cleaner axis labels
-  short_labels <- sub(paste0("_", win, "$"), "", cols)
-  
   cor_mat <- cor(df_raw[cols], use = "pairwise.complete.obs")
-  rownames(cor_mat) <- short_labels
-  colnames(cor_mat) <- short_labels
+  
+  pretty_labels <- pretty_feature_label(cols)
+  rownames(cor_mat) <- pretty_labels
+  colnames(cor_mat) <- pretty_labels
   
   cor_long <- as.data.frame(as.table(cor_mat)) |>
     rename(Feature_1 = Var1, Feature_2 = Var2, Correlation = Freq) |>
@@ -107,30 +190,44 @@ for (win in names(nsp3_windows)) {
   p_heat <- ggplot(cor_long, aes(x = Feature_1, y = Feature_2, fill = Correlation)) +
     geom_tile() +
     scale_fill_gradient2(
-      low = "#2ecc71", high = "#e74c3c", mid = "white",
-      midpoint = 0, limit = c(-1, 1)
+      low = "#2ecc71",
+      mid = "white",
+      high = "#e74c3c",
+      midpoint = 0,
+      limits = c(-1, 1)
+    ) +
+    labs(
+      title = heatmap_titles[group_name],
+      subtitle = "Pearson correlation across features",
+      x = NULL,
+      y = NULL,
+      fill = "Correlation"
     ) +
     theme_minimal() +
     theme(
-      axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 7),
-      axis.text.y = element_text(size = 7),
-      axis.title  = element_blank()
-    ) +
-    labs(title = paste("Correlation Heatmap —", window_titles[win]))
+      axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 8),
+      axis.text.y = element_text(size = 8),
+      panel.grid = element_blank(),
+      plot.title.position = "plot"
+    )
   
-  out_file <- file.path(figures_dir, paste0("netsurfp_correlation_heatmap_", win, ".png"))
+  out_file <- file.path(figures_dir, paste0("correlation_heatmap_", group_name, ".png"))
   ggsave(out_file, plot = p_heat, width = 10, height = 9, dpi = 300)
   message("  Saved: ", out_file)
 }
 
-netsurfp_cols <- c(nsp3_windows$peptide, nsp3_windows$nflank, nsp3_windows$cflank)
-netsurfp_cols <- unique(netsurfp_cols)
-netsurfp_cols <- intersect(netsurfp_cols, names(df_raw))
+
 # -----------------------------------------------------------------------------
 # 2. PCA: COMBINING COMPOSITIONAL FEATURES
 # -----------------------------------------------------------------------------
 message("Running PCA to combine compositional NetSurfP features...")
-
+netsurfp_cols <- unique(c(
+  heatmap_feature_groups$peptide,
+  heatmap_feature_groups$n_flank,
+  heatmap_feature_groups$c_flank,
+  heatmap_feature_groups$general
+))
+netsurfp_cols <- intersect(netsurfp_cols, names(df_raw))
 df_pca_input <- df_raw |> select(all_of(netsurfp_cols))
 
 # Temporary median imputation for PCA calculation only
@@ -239,6 +336,7 @@ safe_wilcox <- function(data, feature) {
       feature = feature, n_0 = length(x0), n_1 = length(x1),
       mean_0 = NA_real_, mean_1 = NA_real_, median_0 = NA_real_, median_1 = NA_real_,
       sd_0 = NA_real_, sd_1 = NA_real_, pooled_sd = NA_real_, smd = NA_real_,
+      smd_se = NA_real_, smd_ci_low = NA_real_, smd_ci_high = NA_real_,
       wilcox_statistic = NA_real_, p_value = NA_real_, median_diff = NA_real_, mean_diff = NA_real_
     ))
   }
@@ -256,10 +354,24 @@ safe_wilcox <- function(data, feature) {
   pooled_sd <- sqrt(((length(x0) - 1) * sd_0^2 + (length(x1) - 1) * sd_1^2) / (length(x0) + length(x1) - 2))
   smd <- ifelse(is.finite(pooled_sd) && pooled_sd > 0, (mean_1 - mean_0) / pooled_sd, NA_real_)
   
+  n0 <- length(x0)
+  n1 <- length(x1)
+  
+  # Approximate SE and 95% CI for Cohen's d
+  smd_se <- ifelse(
+    is.finite(smd),
+    sqrt((n0 + n1) / (n0 * n1) + (smd^2) / (2 * (n0 + n1 - 2))),
+    NA_real_
+  )
+  
+  smd_ci_low <- ifelse(is.finite(smd_se), smd - 1.96 * smd_se, NA_real_)
+  smd_ci_high <- ifelse(is.finite(smd_se), smd + 1.96 * smd_se, NA_real_)
+  
   tibble(
-    feature = feature, n_0 = length(x0), n_1 = length(x1),
+    feature = feature, n_0 = n0, n_1 = n1,
     mean_0 = mean_0, mean_1 = mean_1, median_0 = median(x0), median_1 = median(x1),
     sd_0 = sd_0, sd_1 = sd_1, pooled_sd = pooled_sd, smd = smd,
+    smd_se = smd_se, smd_ci_low = smd_ci_low, smd_ci_high = smd_ci_high,
     wilcox_statistic = ifelse(is.null(wt), NA_real_, as.numeric(wt$statistic)),
     p_value = ifelse(is.null(wt), NA_real_, wt$p.value),
     median_diff = median(x1) - median(x0), mean_diff = mean_1 - mean_0
@@ -339,14 +451,36 @@ plot_numeric_feature <- function(data, feature, outdir) {
 # -----------------------------------------------------------------------------
 # RUN STATISTICAL TESTS
 # -----------------------------------------------------------------------------
-message("Running Wilcoxon tests...")
-numeric_test_results <- purrr::map_dfr(numeric_features, ~ safe_wilcox(df_raw, .x)) |>
-  mutate(
-    p_adj = p.adjust(p_value, method = "BH"),
-    direction = case_when(smd > 0 ~ "higher_in_label_1", smd < 0 ~ "lower_in_label_1", TRUE ~ "no_difference"),
-    abs_smd = abs(smd)
-  ) |> arrange(p_adj, desc(abs_smd))
-write_csv(numeric_test_results, file.path(results_dir, "numeric_feature_tests.csv"))
+message("Running Wilcoxon tests by region...")
+wilcox_results_by_group <- purrr::imap(wilcox_feature_groups, function(features, group_name) {
+  
+  if (length(features) == 0) {
+    message("  No features found for ", group_name)
+    return(NULL)
+  }
+  
+  res <- purrr::map_dfr(features, ~ safe_wilcox(df_raw, .x)) |>
+    mutate(
+      group = group_name,
+      p_adj = p.adjust(p_value, method = "BH"),
+      direction = case_when(
+        smd > 0 ~ "Higher in presented peptides",
+        smd < 0 ~ "Lower in presented peptides",
+        TRUE ~ "no_difference"
+      ),
+      abs_smd = abs(smd)
+    ) |>
+    arrange(p_adj, desc(abs_smd))
+  
+  out_file <- file.path(results_dir, paste0("wilcoxon_", group_name, "_features.csv"))
+  write_csv(res, out_file)
+  message("  Saved: ", out_file)
+  
+  res
+})
+
+numeric_test_results <- bind_rows(wilcox_results_by_group)
+write_csv(numeric_test_results, file.path(results_dir, "numeric_feature_tests_by_group.csv"))
 
 message("Running univariate logistic regressions...")
 numeric_logit_results <- purrr::map_dfr(numeric_features, ~ safe_logit(df_raw, .x, scale_feature = FALSE)) |>
@@ -372,17 +506,46 @@ write_csv(plddt_quad_results, file.path(results_dir, "mean_plddt_peptide_quadrat
 # -----------------------------------------------------------------------------
 # SUMMARY PLOTS & INDIVIDUAL FEATURE PLOTS
 # -----------------------------------------------------------------------------
-message("Making summary plots...")
+message("Making Wilcoxon plots by group...")
 
-top_smd <- numeric_test_results |>
-  filter(!is.na(smd), !is.na(p_value), is.finite(smd), is.finite(p_value)) |>
-  slice_head(n = 20) |> mutate(feature = forcats::fct_reorder(feature, smd))
-
-p_wilcox <- ggplot(top_smd, aes(x = smd, y = feature, color = direction)) +
-  geom_point(size = 3) + geom_vline(xintercept = 0, linetype = "dashed", color = "grey40") +
-  scale_color_manual(values = c("higher_in_label_1" = "#2ecc71", "lower_in_label_1" = "#e74c3c", "no_difference" = "grey50")) +
-  labs(title = "Top numeric features by Wilcoxon test", x = "Standardized mean difference", y = "Feature") + theme_bw()
-ggsave(file.path(figures_dir, "top_numeric_features_wilcoxon.png"), plot = p_wilcox, width = 8, height = 6, dpi = 300)
+for (group_name in names(wilcox_feature_groups)) {
+  
+  plot_df <- numeric_test_results |>
+    filter(group == group_name, !is.na(smd), !is.na(p_adj), is.finite(smd), is.finite(p_adj)) |>
+    mutate(feature_label = pretty_feature_label(feature),
+           feature_label = forcats::fct_reorder(feature_label, smd))
+  
+  if (nrow(plot_df) == 0) {
+    message("  Skipping Wilcoxon plot for ", group_name, " — no valid results.")
+    next
+  }
+  
+  p_wilcox <- ggplot(plot_df, aes(x = smd, y = feature_label, color = direction)) +
+    geom_errorbarh(aes(xmin = smd_ci_low, xmax = smd_ci_high), height = 0.2, linewidth = 0.7, alpha = 0.8) +
+    geom_point(size = 3) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey40") +
+    scale_color_manual(values = c(
+      "Higher in presented peptides" = "#2ecc71",
+      "Lower in presented peptides" = "#e74c3c",
+      "No difference" = "grey50"
+    )) +
+    coord_cartesian(xlim = c(-0.3, 0.3)) +
+    labs(
+      title = paste("Wilcoxon results —", group_name),
+      subtitle = "Bars show 95% confidence intervals",
+      x = "Standardized mean difference (95% CI)",
+      y = NULL,
+      color = "Direction"
+    ) +
+    theme_bw() +
+    theme(
+      legend.position = "bottom"
+    )
+  
+  out_file <- file.path(figures_dir, paste0("wilcoxon_", group_name, "_all_features.png"))
+  ggsave(out_file, plot = p_wilcox, width = 8, height = 6, dpi = 300)
+  message("  Saved: ", out_file)
+}
 
 top_or_scaled <- numeric_logit_scaled_results |>
   filter(!is.na(odds_ratio), !is.na(conf_low), !is.na(conf_high), !is.na(p_value)) |>
@@ -436,3 +599,4 @@ selected_plot_objects <- purrr::map(top_plot_features, ~ plot_numeric_feature(df
 names(selected_plot_objects) <- top_plot_features
 
 message("\nDone.")
+
