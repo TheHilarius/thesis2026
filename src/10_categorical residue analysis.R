@@ -247,7 +247,7 @@ plot_stacked_proportion <- function(df, feature_name) {
   ggplot(counts, aes(x = residue, y = prop, fill = label)) +
     geom_col(width = 0.7, colour = "white", linewidth = 0.2) +
     scale_fill_manual(
-      values = c("Not Presented" = "#4878CF", "Presented" = "#E84646"),
+      values = c("Not Presented" = "#E84646", "Presented" = "#2ecc71"),
       name   = "Label"
     ) +
     scale_y_continuous(labels = percent_format(accuracy = 1)) +
@@ -378,7 +378,7 @@ make_heatmap <- function(enrich_df, features, title_suffix) {
     geom_text(aes(label = round(log2_enrichment, 2)),
               size = 2.6, colour = "grey10") +
     scale_fill_gradient2(
-      low      = "#3A5FCD",
+      low      = "#2ecc71",
       mid      = "white",
       high     = "#CC2929",
       midpoint = 0,
@@ -432,7 +432,7 @@ make_or_plot <- function(enrich_df, features, title_suffix) {
     geom_vline(xintercept = 0, linetype = "dashed", colour = "grey50") +
     geom_point(size = 2.5, alpha = 0.85) +
     scale_colour_manual(
-      values = c("TRUE" = "#CC2929", "FALSE" = "#3A5FCD"),
+      values = c("TRUE" = "#2ecc71", "FALSE" = "#CC2929"),
       labels = c("TRUE" = "Enriched", "FALSE" = "Depleted"),
       name   = NULL
     ) +
