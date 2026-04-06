@@ -576,19 +576,13 @@ read_nsp3_csv <- function(path, uniprot_id) {
   df <- data.table::fread(path, header = TRUE) |>
     as_tibble()
   
-  # Trim whitespace from column names
   names(df) <- trimws(names(df))
-  
-  # p[q3_H] → p_q3_H  (brackets not valid in R)
   names(df) <- gsub("[", "_", names(df), fixed = TRUE)
   names(df) <- gsub("]", "",  names(df), fixed = TRUE)
   
-  # The id column has format ">Q16678" — strip the >
-  # n is the residue number (1-indexed)
   df |>
     select(
       n, seq, rsa,
-      q3, p_q3_H, p_q3_E, p_q3_C,
       q8, p_q8_G, p_q8_H, p_q8_I, p_q8_B,
       p_q8_E, p_q8_S, p_q8_T, p_q8_C,
       disorder
@@ -597,7 +591,6 @@ read_nsp3_csv <- function(path, uniprot_id) {
       n          = as.integer(n),
       rsa        = as.numeric(rsa),
       disorder   = as.numeric(disorder),
-      q3         = as.character(q3),
       q8         = as.character(q8),
       across(starts_with("p_q"), as.numeric),
       uniprot    = uniprot_id
@@ -610,20 +603,10 @@ read_nsp3_csv <- function(path, uniprot_id) {
 # ─────────────────────────────────────────
 aggregate_nsp3_window <- function(res_df) {
   
-  # Return NAs if window is empty
-  # (e.g. peptide at protein terminus with no flank)
   if (nrow(res_df) == 0) {
     return(tibble(
       mean_rsa      = NA_real_,
       mean_disorder = NA_real_,
-      # q3 hard calls
-      frac_helix    = NA_real_,
-      frac_sheet    = NA_real_,
-      frac_coil     = NA_real_,
-      # q3 probabilities
-      mean_p_q3_H   = NA_real_,
-      mean_p_q3_E   = NA_real_,
-      mean_p_q3_C   = NA_real_,
       # q8 hard calls
       frac_q8_G     = NA_real_,
       frac_q8_H     = NA_real_,
@@ -648,14 +631,6 @@ aggregate_nsp3_window <- function(res_df) {
   tibble(
     mean_rsa      = mean(res_df$rsa,      na.rm = TRUE),
     mean_disorder = mean(res_df$disorder, na.rm = TRUE),
-    # q3 hard calls — fraction of residues assigned to each class
-    frac_helix    = mean(res_df$q3 == "H", na.rm = TRUE),
-    frac_sheet    = mean(res_df$q3 == "E", na.rm = TRUE),
-    frac_coil     = mean(res_df$q3 == "C", na.rm = TRUE),
-    # q3 mean probabilities
-    mean_p_q3_H   = mean(res_df$p_q3_H,  na.rm = TRUE),
-    mean_p_q3_E   = mean(res_df$p_q3_E,  na.rm = TRUE),
-    mean_p_q3_C   = mean(res_df$p_q3_C,  na.rm = TRUE),
     # q8 hard calls
     frac_q8_G     = mean(res_df$q8 == "G", na.rm = TRUE),
     frac_q8_H     = mean(res_df$q8 == "H", na.rm = TRUE),
@@ -695,10 +670,6 @@ extract_nsp3_windows <- function(uniprot_id,
       n        = integer(),
       seq      = character(),
       rsa      = numeric(),
-      q3       = character(),
-      p_q3_H   = numeric(),
-      p_q3_E   = numeric(),
-      p_q3_C   = numeric(),
       q8       = character(),
       p_q8_G   = numeric(),
       p_q8_H   = numeric(),
@@ -749,7 +720,8 @@ extract_nsp3_windows <- function(uniprot_id,
   
   bind_cols(pep_feats, nflank_feats, cflank_feats, window_feats)
 }
-#
+
+
 # Load netmhcpan batches
 #
 # Read and combine all NetMHCpan batch CSV files (only 9 mers NOW)
