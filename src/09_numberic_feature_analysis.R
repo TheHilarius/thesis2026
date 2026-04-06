@@ -8,13 +8,19 @@ set_working_directory()
 
 input_file <- "data/processed/df_all.csv"
 results_dir <- "results"
-figures_dir <- file.path("results", "figures", "numeric")
+figures_dir <- file.path("results", "figures", "numeric_9mer")
 
 dir.create(results_dir, showWarnings = FALSE, recursive = TRUE)
 dir.create(figures_dir, showWarnings = FALSE, recursive = TRUE)
 
 # Load data
 df_raw <- read_csv(input_file, show_col_types = FALSE)
+
+
+df_raw %>%
+  mutate(length = nchar(peptide)) %>%
+  count(length)
+
 
 df_raw <- df_raw |>
   filter(!is.na(label)) |>
