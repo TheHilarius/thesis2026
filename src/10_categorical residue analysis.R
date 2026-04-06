@@ -14,8 +14,8 @@ set_working_directory()
 # -----------------------------------------------------------------------------
 # 0. Setup output directories
 # -----------------------------------------------------------------------------
-dir.create("results",              showWarnings = FALSE, recursive = TRUE)
-dir.create("results/figures/categorical",  showWarnings = FALSE, recursive = TRUE)
+dir.create("results",                         showWarnings = FALSE, recursive = TRUE)
+dir.create("results/figures/categorical",     showWarnings = FALSE, recursive = TRUE)
 
 # -----------------------------------------------------------------------------
 # 1. Load and clean data
@@ -26,20 +26,60 @@ cat("Dataset dimensions:", nrow(df_all), "x", ncol(df_all), "\n")
 cat("Label distribution:\n")
 print(table(df_all$label))
 
-# Define the four cleavage-context features
-cleavage_features <- c(
-  "c_term_P1",
-  "c_term_P1_prime",
-  "n_term_P1",
-  "n_term_P1_prime"
+# -----------------------------------------------------------------------------
+# Define ALL cleavage-context features (P4–P4' for N- and C-terminal sites)
+# -----------------------------------------------------------------------------
+n_cleavage_features <- c(
+  "n_cleavage_P4",
+  "n_cleavage_P3",
+  "n_cleavage_P2",
+  "n_cleavage_P1",
+  "n_cleavage_P1_prime",
+  "n_cleavage_P2_prime",
+  "n_cleavage_P3_prime",
+  "n_cleavage_P4_prime"
 )
 
-# Clean: keep only rows with non-NA label AND non-NA in ALL four features
+c_cleavage_features <- c(
+  "c_cleavage_P4",
+  "c_cleavage_P3",
+  "c_cleavage_P2",
+  "c_cleavage_P1",
+  "c_cleavage_P1_prime",
+  "c_cleavage_P2_prime",
+  "c_cleavage_P3_prime",
+  "c_cleavage_P4_prime"
+)
+
+cleavage_features <- c(n_cleavage_features, c_cleavage_features)
+
+# Human-readable labels used in plots (named vector for easy recode)
+feature_labels <- c(
+  "n_cleavage_P4"       = "N-term P4",
+  "n_cleavage_P3"       = "N-term P3",
+  "n_cleavage_P2"       = "N-term P2",
+  "n_cleavage_P1"       = "N-term P1",
+  "n_cleavage_P1_prime" = "N-term P1'",
+  "n_cleavage_P2_prime" = "N-term P2'",
+  "n_cleavage_P3_prime" = "N-term P3'",
+  "n_cleavage_P4_prime" = "N-term P4'",
+  "c_cleavage_P4"       = "C-term P4",
+  "c_cleavage_P3"       = "C-term P3",
+  "c_cleavage_P2"       = "C-term P2",
+  "c_cleavage_P1"       = "C-term P1",
+  "c_cleavage_P1_prime" = "C-term P1'",
+  "c_cleavage_P2_prime" = "C-term P2'",
+  "c_cleavage_P3_prime" = "C-term P3'",
+  "c_cleavage_P4_prime" = "C-term P4'"
+)
+
+# -----------------------------------------------------------------------------
+# Clean: keep only rows with non-NA label; convert features to character
+# -----------------------------------------------------------------------------
 df_clean <- df_all %>%
   filter(!is.na(label)) %>%
   mutate(label = factor(label, levels = c(0, 1),
                         labels = c("Not Presented", "Presented"))) %>%
-  # Convert features to character (guard against numeric mis-read)
   mutate(across(all_of(cleavage_features), as.character))
 
 cat("\nRows after cleaning:", nrow(df_clean), "\n")
@@ -66,14 +106,15 @@ cramers_v <- function(ct) {
 
 # -----------------------------------------------------------------------------
 # 2b. Per-residue enrichment table
-#   Returns: residue | freq_0 | freq_1 | log2_enrichment | odds_ratio
+#   Returns: feature | residue | n_0 | n_1 | prop_0 | prop_1 |
+#            log2_enrichment | odds_ratio
 # -----------------------------------------------------------------------------
 compute_enrichment <- function(df, feature) {
   
   ct <- table(df[[feature]], df$label)
   
   # Normalised frequencies (proportions within each label)
-  prop_mat <- prop.table(ct, margin = 2)   # column proportions
+  prop_mat <- prop.table(ct, margin = 2)    # column proportions
   
   enrich <- as_tibble(prop_mat, .name_repair = "minimal") %>%
     rename(residue = 1, label = 2, proportion = n) %>%
@@ -85,11 +126,10 @@ compute_enrichment <- function(df, feature) {
     ) %>%
     mutate(
       feature         = feature,
-      # pseudo-count 1e-6 to avoid log2(0)
       log2_enrichment = log2((prop_1 + 1e-6) / (prop_0 + 1e-6))
     )
   
-  # Odds ratios from raw counts
+  # Odds ratios from raw counts (Haldane-Anscombe correction +0.5)
   counts <- as_tibble(ct, .name_repair = "minimal") %>%
     rename(residue = 1, label = 2, count = n) %>%
     pivot_wider(names_from = label, values_from = count,
@@ -99,7 +139,6 @@ compute_enrichment <- function(df, feature) {
       n_1 = `n_Presented`
     ) %>%
     mutate(
-      # odds ratio with Haldane-Anscombe correction (+0.5)
       odds_ratio = ((n_1 + 0.5) / (sum(n_1) - n_1 + 0.5)) /
         ((n_0 + 0.5) / (sum(n_0) - n_0 + 0.5))
     )
@@ -137,7 +176,7 @@ test_feature <- function(df, feature) {
 }
 
 # -----------------------------------------------------------------------------
-# 2d. Grouped bar plot (proportions by label)
+# 2d. Grouped bar plot (within-label proportions) for ONE feature
 # -----------------------------------------------------------------------------
 plot_grouped_bar <- function(enrich_df, feature_name) {
   
@@ -157,13 +196,13 @@ plot_grouped_bar <- function(enrich_df, feature_name) {
     geom_col(position = position_dodge(width = 0.7),
              width = 0.6, colour = "white", linewidth = 0.2) +
     scale_fill_manual(
-      values = c("Not Presented" = "#4878CF",
-                 "Presented"     = "#E84646"),
-      name = "Label"
+      values = c("Not Presented" = "#E84646", "Presented" = "#2ecc71"),
+      name   = "Label"
     ) +
     scale_y_continuous(labels = percent_format(accuracy = 1)) +
     labs(
-      title    = paste0("Residue proportions by label — ", feature_name),
+      title    = paste0("Residue proportions by label — ",
+                        feature_labels[feature_name]),
       subtitle = "Bars show within-label proportions",
       x        = "Residue (amino acid)",
       y        = "Proportion within label"
@@ -177,7 +216,7 @@ plot_grouped_bar <- function(enrich_df, feature_name) {
 }
 
 # -----------------------------------------------------------------------------
-# 2e. Stacked proportion plot
+# 2e. Stacked proportion plot  (fixed fct_reorder)
 # -----------------------------------------------------------------------------
 plot_stacked_proportion <- function(df, feature_name) {
   
@@ -189,24 +228,34 @@ plot_stacked_proportion <- function(df, feature_name) {
     count(residue, label) %>%
     group_by(residue) %>%
     mutate(prop = n / sum(n)) %>%
-    ungroup() %>%
-    mutate(residue = fct_reorder(residue,
-                                 ifelse(label == "Presented", prop, NA),
-                                 .fun  = function(x) mean(x, na.rm = TRUE),
-                                 .desc = TRUE))
+    ungroup()
+  
+  # Compute the "Presented" proportion per residue for ordering.
+  # Residues with no "Presented" rows get 0 (not NA).
+  residue_order <- counts %>%
+    filter(label == "Presented") %>%
+    select(residue, prop_presented = prop) %>%
+    # right-join so residues with zero presented rows are kept
+    right_join(distinct(counts, residue), by = "residue") %>%
+    mutate(prop_presented = replace_na(prop_presented, 0)) %>%
+    arrange(desc(prop_presented)) %>%
+    pull(residue)
+  
+  counts <- counts %>%
+    mutate(residue = factor(residue, levels = residue_order))
   
   ggplot(counts, aes(x = residue, y = prop, fill = label)) +
     geom_col(width = 0.7, colour = "white", linewidth = 0.2) +
     scale_fill_manual(
-      values = c("Not Presented" = "#4878CF",
-                 "Presented"     = "#E84646"),
-      name = "Label"
+      values = c("Not Presented" = "#4878CF", "Presented" = "#E84646"),
+      name   = "Label"
     ) +
     scale_y_continuous(labels = percent_format(accuracy = 1)) +
     geom_hline(yintercept = mean(df$label == "Presented"),
                linetype = "dashed", colour = "grey40") +
     labs(
-      title    = paste0("Stacked label proportions — ", feature_name),
+      title    = paste0("Stacked label proportions — ",
+                        feature_labels[feature_name]),
       subtitle = "Dashed line = overall presentation rate",
       x        = "Residue (amino acid)",
       y        = "Proportion"
@@ -220,48 +269,51 @@ plot_stacked_proportion <- function(df, feature_name) {
 }
 
 # =============================================================================
-# 3. Run chi-square + Cramér's V for all features
+# 3. Run chi-square + Cramér's V for all 16 features
 # =============================================================================
 cat("\n--- Running chi-square tests ---\n")
 
 test_results <- map_dfr(cleavage_features, ~test_feature(df_clean, .x))
 
-# FDR correction across the four tests
+# FDR correction across all tests
 test_results <- test_results %>%
-  mutate(p_adj_BH = p.adjust(p_value, method = "BH")) %>%
-  arrange(p_adj_BH)
-
-# Clean results table for a paper/report
-test_results %>%
   mutate(
-    chi2      = round(chi2, 1),
-    cramers_v = round(cramers_v, 4),
-    sig       = case_when(
+    p_adj_BH        = p.adjust(p_value, method = "BH"),
+    feature_label   = feature_labels[feature],
+    v_interpretation = case_when(
+      cramers_v >= 0.25 ~ "strong",
+      cramers_v >= 0.15 ~ "moderate",
+      cramers_v >= 0.05 ~ "weak",
+      TRUE              ~ "negligible"
+    ),
+    sig = case_when(
       p_adj_BH < 0.001 ~ "***",
       p_adj_BH < 0.01  ~ "**",
       p_adj_BH < 0.05  ~ "*",
       TRUE             ~ "ns"
     )
   ) %>%
-  select(feature, n_obs, chi2, df_chi2, cramers_v, v_interpretation, sig) %>%
-  print()
-
+  arrange(p_adj_BH)
 
 cat("\nStatistical test summary:\n")
-print(test_results)
+test_results %>%
+  mutate(chi2 = round(chi2, 1), cramers_v = round(cramers_v, 4)) %>%
+  select(feature_label, n_obs, n_levels, chi2, df_chi2,
+         cramers_v, v_interpretation, p_adj_BH, sig) %>%
+  print(n = 20)
 
-# See exactly which values appear and how often
-df_clean %>%
-  count(c_term_P1_prime, sort = TRUE) %>%
-  print(n = 30)
+# Quick inspection of unique values per feature
+cat("\nUnique value counts per feature:\n")
+for (feat in cleavage_features) {
+  cat(sprintf("  %-30s : %d unique values\n", feat,
+              n_distinct(df_clean[[feat]], na.rm = TRUE)))
+}
 
-
-# Save
-#write_csv(test_results, "results/categorical_feature_tests.csv")
-#cat("Saved: results/categorical_feature_tests.csv\n")
+# write_csv(test_results, "results/categorical_feature_tests.csv")
+# cat("Saved: results/categorical_feature_tests.csv\n")
 
 # =============================================================================
-# 4. Compute per-residue enrichment for all features
+# 4. Compute per-residue enrichment for all 16 features
 # =============================================================================
 cat("\n--- Computing per-residue enrichment ---\n")
 
@@ -270,128 +322,147 @@ enrichment_all <- map_dfr(cleavage_features, ~compute_enrichment(df_clean, .x))
 cat("\nEnrichment table (first 20 rows):\n")
 print(head(enrichment_all, 20))
 
-#write_csv(enrichment_all, "results/residue_enrichment_tables.csv")
-#cat("Saved: results/residue_enrichment_tables.csv\n")
+# write_csv(enrichment_all, "results/residue_enrichment_tables.csv")
+# cat("Saved: results/residue_enrichment_tables.csv\n")
 
 # =============================================================================
 # 5. Plots
 # =============================================================================
 cat("\n--- Generating plots ---\n")
 
-# 5a. Grouped bar plots
+# 5a. Grouped bar plots (one PNG per feature)
 for (feat in cleavage_features) {
-  p <- plot_grouped_bar(enrichment_all, feat)
+  p     <- plot_grouped_bar(enrichment_all, feat)
   fname <- paste0("results/figures/categorical/grouped_bar_", feat, ".png")
   ggsave(fname, plot = p, width = 10, height = 5, dpi = 150)
   cat("Saved:", fname, "\n")
 }
 
-# 5b. Stacked proportion plots
+# 5b. Stacked proportion plots (one PNG per feature)
 for (feat in cleavage_features) {
-  p <- plot_stacked_proportion(df_clean, feat)
+  p     <- plot_stacked_proportion(df_clean, feat)
   fname <- paste0("results/figures/categorical/stacked_prop_", feat, ".png")
   ggsave(fname, plot = p, width = 10, height = 5, dpi = 150)
   cat("Saved:", fname, "\n")
 }
 
-# 5c. Log2-enrichment heatmaps (all four features in one panel)
-heatmap_data <- enrichment_all %>%
-  mutate(
-    # cap at ±3 for colour scale readability
-    log2_enrich_capped = pmax(pmin(log2_enrichment, 3), -3),
-    feature_label = recode(feature,
-                           "c_term_P1"       = "C-term P1",
-                           "c_term_P1_prime" = "C-term P1'",
-                           "n_term_P1"       = "N-term P1",
-                           "n_term_P1_prime" = "N-term P1'"
+# -----------------------------------------------------------------------------
+# 5c. Log2-enrichment heatmap — split into N-terminal and C-terminal panels
+#     so the figure stays readable with 8 positions each
+# -----------------------------------------------------------------------------
+
+make_heatmap <- function(enrich_df, features, title_suffix) {
+  
+  hdata <- enrich_df %>%
+    filter(feature %in% features) %>%
+    mutate(
+      log2_enrich_capped = pmax(pmin(log2_enrichment, 3), -3),
+      feature_label      = factor(feature_labels[feature],
+                                  levels = feature_labels[features])
     )
-  )
+  
+  # Order residues by mean enrichment across the selected features
+  residue_order <- hdata %>%
+    group_by(residue) %>%
+    summarise(mean_enrich = mean(log2_enrichment, na.rm = TRUE),
+              .groups = "drop") %>%
+    arrange(mean_enrich) %>%
+    pull(residue)
+  
+  hdata <- hdata %>%
+    mutate(residue = factor(residue, levels = residue_order))
+  
+  ggplot(hdata, aes(x = feature_label, y = residue,
+                    fill = log2_enrich_capped)) +
+    geom_tile(colour = "white", linewidth = 0.4) +
+    geom_text(aes(label = round(log2_enrichment, 2)),
+              size = 2.6, colour = "grey10") +
+    scale_fill_gradient2(
+      low      = "#3A5FCD",
+      mid      = "white",
+      high     = "#CC2929",
+      midpoint = 0,
+      limits   = c(-3, 3),
+      oob      = squish,
+      name     = "log2\nenrichment\n(capped ±3)"
+    ) +
+    labs(
+      title    = paste0("Log2 enrichment — ", title_suffix),
+      subtitle = "Presented (label=1) vs Not Presented (label=0)",
+      x        = "Cleavage position",
+      y        = "Amino acid"
+    ) +
+    theme_bw(base_size = 12) +
+    theme(
+      plot.title  = element_text(face = "bold"),
+      axis.text.x = element_text(angle = 35, hjust = 1),
+      panel.grid  = element_blank()
+    )
+}
 
-# Order residues by mean enrichment across features
-residue_order <- heatmap_data %>%
-  group_by(residue) %>%
-  summarise(mean_enrich = mean(log2_enrichment, na.rm = TRUE)) %>%
-  arrange(mean_enrich) %>%
-  pull(residue)
+p_heat_n <- make_heatmap(enrichment_all, n_cleavage_features,
+                         "N-terminal cleavage site (P4–P4')")
+p_heat_c <- make_heatmap(enrichment_all, c_cleavage_features,
+                         "C-terminal cleavage site (P4–P4')")
 
-heatmap_data <- heatmap_data %>%
-  mutate(residue = factor(residue, levels = residue_order))
+ggsave("results/figures/categorical/log2_enrichment_heatmap_Nterm.png",
+       plot = p_heat_n, width = 10, height = 10, dpi = 150)
+cat("Saved: results/figures/categorical/log2_enrichment_heatmap_Nterm.png\n")
 
-p_heat <- ggplot(heatmap_data,
-                 aes(x = feature_label, y = residue,
-                     fill = log2_enrich_capped)) +
-  geom_tile(colour = "white", linewidth = 0.4) +
-  geom_text(aes(label = round(log2_enrichment, 2)),
-            size = 2.8, colour = "grey10") +
-  scale_fill_gradient2(
-    low      = "#3A5FCD",
-    mid      = "white",
-    high     = "#CC2929",
-    midpoint = 0,
-    limits   = c(-3, 3),
-    oob      = squish,
-    name     = "log2\nenrichment\n(capped ±3)"
-  ) +
-  labs(
-    title    = "Log2 enrichment of cleavage-adjacent residues",
-    subtitle = "Presented (label=1) vs Not Presented (label=0)",
-    x        = "Cleavage position",
-    y        = "Amino acid"
-  ) +
-  theme_bw(base_size = 12) +
-  theme(
-    plot.title       = element_text(face = "bold"),
-    axis.text.x      = element_text(angle = 30, hjust = 1),
-    panel.grid       = element_blank()
-  )
+ggsave("results/figures/categorical/log2_enrichment_heatmap_Cterm.png",
+       plot = p_heat_c, width = 10, height = 10, dpi = 150)
+cat("Saved: results/figures/categorical/log2_enrichment_heatmap_Cterm.png\n")
 
-ggsave("results/figures/categorical/log2_enrichment_heatmap.png",
-       plot = p_heat, width = 9, height = 10, dpi = 150)
-cat("Saved: results/figures/categorical/log2_enrichment_heatmap.png\n")
+# -----------------------------------------------------------------------------
+# 5d. Odds-ratio dot plot — faceted by position, split N / C terminal
+# -----------------------------------------------------------------------------
 
-# 5d. Dot-range plot: odds ratios with implicit CIs via jitter
-or_plot_data <- enrichment_all %>%
-  mutate(
-    feature_label = recode(feature,
-                           "c_term_P1"       = "C-term P1",
-                           "c_term_P1_prime" = "C-term P1'",
-                           "n_term_P1"       = "N-term P1",
-                           "n_term_P1_prime" = "N-term P1'"
-    ),
-    enriched = log2_enrichment > 0
-  )
+make_or_plot <- function(enrich_df, features, title_suffix) {
+  
+  plot_data <- enrich_df %>%
+    filter(feature %in% features) %>%
+    mutate(
+      feature_label = factor(feature_labels[feature],
+                             levels = feature_labels[features]),
+      enriched      = log2_enrichment > 0
+    )
+  
+  ggplot(plot_data,
+         aes(x = log2(odds_ratio), y = residue, colour = enriched)) +
+    geom_vline(xintercept = 0, linetype = "dashed", colour = "grey50") +
+    geom_point(size = 2.5, alpha = 0.85) +
+    scale_colour_manual(
+      values = c("TRUE" = "#CC2929", "FALSE" = "#3A5FCD"),
+      labels = c("TRUE" = "Enriched", "FALSE" = "Depleted"),
+      name   = NULL
+    ) +
+    facet_wrap(~feature_label, ncol = 4) +
+    labs(
+      title    = paste0("Per-residue odds ratios — ", title_suffix),
+      subtitle = "log2(OR) > 0 → enriched in presented peptides",
+      x        = "log2(Odds Ratio)",
+      y        = "Amino acid"
+    ) +
+    theme_bw(base_size = 11) +
+    theme(
+      plot.title       = element_text(face = "bold"),
+      panel.grid.minor = element_blank(),
+      legend.position  = "bottom"
+    )
+}
 
-p_or <- ggplot(or_plot_data,
-               aes(x = log2(odds_ratio), y = residue,
-                   colour = enriched, shape = feature_label)) +
-  geom_vline(xintercept = 0, linetype = "dashed", colour = "grey50") +
-  geom_point(size = 3, alpha = 0.85) +
-  scale_colour_manual(
-    values = c("TRUE" = "#CC2929", "FALSE" = "#3A5FCD"),
-    labels = c("TRUE" = "Enriched", "FALSE" = "Depleted"),
-    name   = NULL
-  ) +
-  scale_shape_manual(
-    values = c(16, 17, 15, 18),
-    name   = "Position"
-  ) +
-  labs(
-    title    = "Per-residue odds ratios across cleavage positions",
-    subtitle = "log2(OR) > 0 → enriched in presented peptides",
-    x        = "log2(Odds Ratio)",
-    y        = "Amino acid"
-  ) +
-  facet_wrap(~feature_label, ncol = 4) +
-  theme_bw(base_size = 11) +
-  theme(
-    plot.title       = element_text(face = "bold"),
-    panel.grid.minor = element_blank(),
-    legend.position  = "bottom"
-  )
+p_or_n <- make_or_plot(enrichment_all, n_cleavage_features,
+                       "N-terminal cleavage site")
+p_or_c <- make_or_plot(enrichment_all, c_cleavage_features,
+                       "C-terminal cleavage site")
 
-ggsave("results/figures/categorical/odds_ratio_dotplot.png",
-       plot = p_or, width = 14, height = 7, dpi = 150)
-cat("Saved: results/figures/categorical/odds_ratio_dotplot.png\n")
+ggsave("results/figures/categorical/odds_ratio_dotplot_Nterm.png",
+       plot = p_or_n, width = 16, height = 7, dpi = 150)
+cat("Saved: results/figures/categorical/odds_ratio_dotplot_Nterm.png\n")
+
+ggsave("results/figures/categorical/odds_ratio_dotplot_Cterm.png",
+       plot = p_or_c, width = 16, height = 7, dpi = 150)
+cat("Saved: results/figures/categorical/odds_ratio_dotplot_Cterm.png\n")
 
 # =============================================================================
 # 6. Console summary: top enriched / depleted residues per feature
@@ -400,14 +471,18 @@ cat("\n=== TOP 5 ENRICHED RESIDUES PER FEATURE (label=1) ===\n")
 enrichment_all %>%
   group_by(feature) %>%
   slice_max(log2_enrichment, n = 5) %>%
-  select(feature, residue, prop_0, prop_1, log2_enrichment, odds_ratio) %>%
-  print(n = 25)
+  mutate(feature_label = feature_labels[feature]) %>%
+  select(feature_label, residue, n_0, n_1,
+         prop_0, prop_1, log2_enrichment, odds_ratio) %>%
+  print(n = 80)
 
 cat("\n=== TOP 5 DEPLETED RESIDUES PER FEATURE (label=1) ===\n")
 enrichment_all %>%
   group_by(feature) %>%
   slice_min(log2_enrichment, n = 5) %>%
-  select(feature, residue, prop_0, prop_1, log2_enrichment, odds_ratio) %>%
-  print(n = 25)
+  mutate(feature_label = feature_labels[feature]) %>%
+  select(feature_label, residue, n_0, n_1,
+         prop_0, prop_1, log2_enrichment, odds_ratio) %>%
+  print(n = 80)
 
 cat("\n--- Analysis complete ---\n")
