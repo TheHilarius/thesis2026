@@ -71,7 +71,6 @@ pretty_feature_label <- function(x) {
     str_replace("^frac_sheet$", "Frac. sheet") |>
     str_replace("^frac_coil$", "Frac. coil") |>
     str_replace("^mean_plddt$", "Mean pLDDT") |>
-    str_replace("^min_plddt$", "Minimum pLDDT") |>
     str_replace("^sd_plddt$", "SD pLDDT") |>
     
     # General features
@@ -85,24 +84,28 @@ wilcox_feature_groups <- list(
   n_flank = names(df_raw)[
     str_detect(names(df_raw), "_nflank$") &
       !str_detect(names(df_raw), "^mean_p_q3_") &
-      !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_")
+      !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_") &
+      !str_detect(names(df_raw), "^min_plddt")
   ],
   peptide = names(df_raw)[
     str_detect(names(df_raw), "_peptide$") &
       !str_detect(names(df_raw), "^mean_p_q3_") &
-      !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_")
+      !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_") &
+      !str_detect(names(df_raw), "^min_plddt")
   ],
   c_flank = names(df_raw)[
     str_detect(names(df_raw), "_cflank$") &
       !str_detect(names(df_raw), "^mean_p_q3_") &
-      !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_")
+      !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_") &
+      !str_detect(names(df_raw), "^min_plddt")
   ],
   general = intersect(
     c(
       names(df_raw)[
         str_detect(names(df_raw), "_full_context$") &
           !str_detect(names(df_raw), "^mean_p_q3_") &
-          !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_")
+          !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_") &
+          !str_detect(names(df_raw), "^min_plddt")
       ],
       "distance_from_n_terminus",
       "distance_from_c_terminus",
@@ -127,19 +130,22 @@ heatmap_feature_groups <- list(
     str_detect(names(df_raw), "_nflank$") &
       !str_detect(names(df_raw), "^mean_p_q3_") &
       !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_") &
-      !str_detect(names(df_raw), "^frac_q8_")
+      !str_detect(names(df_raw), "^frac_q8_") &
+      !str_detect(names(df_raw), "^min_plddt")
   ],
   peptide = names(df_raw)[
     str_detect(names(df_raw), "_peptide$") &
       !str_detect(names(df_raw), "^mean_p_q3_") &
       !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_") &
-      !str_detect(names(df_raw), "^frac_q8_")
+      !str_detect(names(df_raw), "^frac_q8_") &
+      !str_detect(names(df_raw), "^min_plddt")
   ],
   c_flank = names(df_raw)[
     str_detect(names(df_raw), "_cflank$") &
       !str_detect(names(df_raw), "^mean_p_q3_") &
       !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_") &
-      !str_detect(names(df_raw), "^frac_q8_")
+      !str_detect(names(df_raw), "^frac_q8_") &
+      !str_detect(names(df_raw), "^min_plddt")
   ],
   general = intersect(
     c(
@@ -147,7 +153,8 @@ heatmap_feature_groups <- list(
         str_detect(names(df_raw), "_full_context$") &
           !str_detect(names(df_raw), "^mean_p_q3_") &
           !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_") &
-          !str_detect(names(df_raw), "^frac_q8_")
+          !str_detect(names(df_raw), "^frac_q8_") &
+          !str_detect(names(df_raw), "^min_plddt")
       ],
       "distance_from_n_terminus",
       "distance_from_c_terminus",
@@ -190,9 +197,9 @@ for (group_name in names(heatmap_feature_groups)) {
   p_heat <- ggplot(cor_long, aes(x = Feature_1, y = Feature_2, fill = Correlation)) +
     geom_tile() +
     scale_fill_gradient2(
-      low = "#2ecc71",
+      low = "#3b82f6",
       mid = "white",
-      high = "#e74c3c",
+      high = "#f59e0b",
       midpoint = 0,
       limits = c(-1, 1)
     ) +
