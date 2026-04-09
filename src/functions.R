@@ -654,14 +654,13 @@ aggregate_nsp3_window <- function(res_df) {
 
 # ─────────────────────────────────────────
 # Extract NSP3 features for one peptide
-# across all four windows:
-#   peptide / nflank / cflank / full_context
+# across three windows:
+#   peptide / nflank / cflank
 # ─────────────────────────────────────────
 extract_nsp3_windows <- function(uniprot_id,
                                  nflank_start, nflank_end,
                                  pep_start,    pep_end,
                                  cflank_start, cflank_end,
-                                 window_start, window_end,
                                  nsp3_split) {
   
   # Helper to build empty named output when protein is missing
@@ -694,31 +693,26 @@ extract_nsp3_windows <- function(uniprot_id,
     return(bind_cols(
       empty_window("_peptide"),
       empty_window("_nflank"),
-      empty_window("_cflank"),
-      empty_window("_full_context")
+      empty_window("_cflank")
     ))
   }
   
   # ── Slice each window by residue number ─────────────────────────────────────
-  # n is 1-indexed residue number matching UniProt coordinates
   pep_rows    <- res |> filter(n >= pep_start    & n <= pep_end)
   nflank_rows <- res |> filter(n >= nflank_start & n <= nflank_end)
   cflank_rows <- res |> filter(n >= cflank_start & n <= cflank_end)
-  window_rows <- res |> filter(n >= window_start & n <= window_end)
   
   # ── Aggregate each window ────────────────────────────────────────────────────
   pep_feats    <- aggregate_nsp3_window(pep_rows)
   nflank_feats <- aggregate_nsp3_window(nflank_rows)
   cflank_feats <- aggregate_nsp3_window(cflank_rows)
-  window_feats <- aggregate_nsp3_window(window_rows)
   
   # ── Add suffix so columns don't clash ───────────────────────────────────────
   names(pep_feats)    <- paste0(names(pep_feats),    "_peptide")
   names(nflank_feats) <- paste0(names(nflank_feats), "_nflank")
   names(cflank_feats) <- paste0(names(cflank_feats), "_cflank")
-  names(window_feats) <- paste0(names(window_feats), "_full_context")
   
-  bind_cols(pep_feats, nflank_feats, cflank_feats, window_feats)
+  bind_cols(pep_feats, nflank_feats, cflank_feats)
 }
 
 
