@@ -184,19 +184,16 @@ plot_grouped_bar <- function(df, feature_name) {
     filter(!is.na(.data[[feature_name]])) %>%
     mutate(residue = .data[[feature_name]])
   
+  total_n <- nrow(sub)
+  
   counts <- sub %>%
     count(residue, label, name = "n") %>%
     group_by(label) %>%
-    mutate(total = sum(n)) %>%
-    rowwise() %>%
     mutate(
-      proportion = n / total,
-      ci = list(prop.test(n, total)$conf.int),
-      ymin = ci[1],
-      ymax = ci[2]
+      total      = sum(n),
+      proportion = n / total
     ) %>%
     ungroup() %>%
-    select(-ci) %>%
     mutate(
       residue = fct_reorder(residue, proportion, .fun = max, .desc = TRUE)
     )
@@ -206,21 +203,18 @@ plot_grouped_bar <- function(df, feature_name) {
       position = position_dodge(width = 0.7),
       width = 0.6, colour = "white", linewidth = 0.2
     ) +
-    geom_errorbar(
-      aes(ymin = ymin, ymax = ymax),
-      position = position_dodge(width = 0.7),
-      width = 0.2,
-      linewidth = 0.4
-    ) +
     scale_fill_manual(
       values = c("Not Presented" = "#E84646", "Presented" = "#2ecc71"),
       name   = "Label"
     ) +
-    scale_y_continuous(labels = percent_format(accuracy = 1)) +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
     labs(
       title    = paste0("Residue proportions by label — ",
                         feature_labels[feature_name]),
-      subtitle = "Bars show within-label proportions; error bars show 95% CI",
+      subtitle = paste0(
+        "n=", format(total_n, big.mark = ","),
+        "; bars show within-label proportions"
+      ),
       x        = "Residue (amino acid)",
       y        = "Proportion within label"
     ) +
@@ -233,14 +227,15 @@ plot_grouped_bar <- function(df, feature_name) {
 }
 
 # -----------------------------------------------------------------------------
-# 2e. Stacked proportion plot  (with sample-size annotations at both extremes)
+# 2e. Stacked proportion plot  (with sample-size annotations on all bars)
 # -----------------------------------------------------------------------------
-plot_stacked_proportion <- function(df, feature_name,
-                                    annotation_threshold = 0.80) {
+plot_stacked_proportion <- function(df, feature_name) {
   
   sub <- df %>%
     filter(!is.na(.data[[feature_name]])) %>%
     rename(residue = all_of(feature_name))
+  
+  total_n <- nrow(sub)
   
   counts <- sub %>%
     count(residue, label) %>%
@@ -261,39 +256,11 @@ plot_stacked_proportion <- function(df, feature_name,
   counts <- counts %>%
     mutate(residue = factor(residue, levels = residue_order))
   
-  # --- Per-residue summary for annotation decisions -------------------------
-  residue_summary <- counts %>%
+  # --- Per-residue totals for annotation on every bar -----------------------
+  annotations <- counts %>%
     select(residue, total) %>%
     distinct() %>%
-    left_join(
-      counts %>%
-        filter(label == "Presented") %>%
-        select(residue, prop_presented = prop),
-      by = "residue"
-    ) %>%
-    mutate(prop_presented = replace_na(prop_presented, 0))
-  
-  # --- Annotations for HIGH presented proportion (>= threshold) -------------
-  ann_high <- residue_summary %>%
-    filter(prop_presented >= annotation_threshold) %>%
-    mutate(
-      label_text = paste0("n=", total),
-      y_pos      = 1.03,
-      vjust_val  = 0
-    )
-  
-  # --- Annotations for LOW presented proportion (<= 1 - threshold) ----------
-  ann_low <- residue_summary %>%
-    filter(prop_presented <= (1 - annotation_threshold)) %>%
-    mutate(
-      label_text = paste0("n=", total),
-      y_pos      = 1.03,
-      vjust_val  = 0
-    )
-  
-  # Combine both sets of annotations
-  annotations <- bind_rows(ann_high, ann_low) %>%
-    distinct(residue, .keep_all = TRUE)
+    mutate(y_pos = 1.03)
   
   ggplot(counts, aes(x = residue, y = prop, fill = label)) +
     geom_col(width = 0.7, colour = "white", linewidth = 0.2) +
@@ -307,12 +274,12 @@ plot_stacked_proportion <- function(df, feature_name,
     ) +
     geom_hline(yintercept = mean(df$label == "Presented"),
                linetype = "dashed", colour = "grey40") +
-    # Annotate bars at both extremes
+    # Annotate every bar with its total count
     geom_text(
       data        = annotations,
-      aes(x = residue, y = y_pos, label = label_text),
+      aes(x = residue, y = y_pos, label = total),
       inherit.aes = FALSE,
-      size        = 3.2,
+      size        = 3.0,
       fontface    = "bold",
       colour      = "grey20",
       vjust       = 0
@@ -321,9 +288,9 @@ plot_stacked_proportion <- function(df, feature_name,
       title    = paste0("Stacked label proportions — ",
                         feature_labels[feature_name]),
       subtitle = paste0(
-        "Dashed line = overall presentation rate; ",
-        "sample size shown where either label \u2265 ",
-        scales::percent(annotation_threshold, accuracy = 1)
+        "Dashed line = overall presentation rate",
+        "; Numbers above bars represent per-residue sample size",
+        "; n=", format(total_n, big.mark = ",")
       ),
       x = "Residue (amino acid)",
       y = "Proportion"
