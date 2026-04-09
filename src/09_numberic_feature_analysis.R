@@ -16,11 +16,9 @@ dir.create(figures_dir, showWarnings = FALSE, recursive = TRUE)
 # Load data
 df_raw <- read_csv(input_file, show_col_types = FALSE)
 
-
 df_raw %>%
   mutate(length = nchar(peptide)) %>%
   count(length)
-
 
 df_raw <- df_raw |>
   filter(!is.na(label)) |>
@@ -36,7 +34,6 @@ pretty_feature_label <- function(x) {
     str_replace("_nflank$", "") |>
     str_replace("_peptide$", "") |>
     str_replace("_cflank$", "") |>
-    str_replace("_full_context$", "") |>
     
     # Q8 fractions
     str_replace("^frac_q8_G$", "Frac. 3-10 helix") |>
@@ -101,12 +98,6 @@ wilcox_feature_groups <- list(
   ],
   general = intersect(
     c(
-      names(df_raw)[
-        str_detect(names(df_raw), "_full_context$") &
-          !str_detect(names(df_raw), "^mean_p_q3_") &
-          !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_") &
-          !str_detect(names(df_raw), "^min_plddt")
-      ],
       "distance_from_n_terminus",
       "distance_from_c_terminus",
       "protein_length",
@@ -149,13 +140,6 @@ heatmap_feature_groups <- list(
   ],
   general = intersect(
     c(
-      names(df_raw)[
-        str_detect(names(df_raw), "_full_context$") &
-          !str_detect(names(df_raw), "^mean_p_q3_") &
-          !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_") &
-          !str_detect(names(df_raw), "^frac_q8_") &
-          !str_detect(names(df_raw), "^min_plddt")
-      ],
       "distance_from_n_terminus",
       "distance_from_c_terminus",
       "protein_length",
@@ -279,18 +263,15 @@ ggsave(file.path(figures_dir, "netsurfp_pca_scree_plot.png"), plot = p_scree, wi
 pc1_var <- pca_var$Variance[1] * 100
 pc2_var <- pca_var$Variance[2] * 100
 
-# NEW: Shuffle the rows randomly so the dots are mixed, preventing one class from hiding the other
 set.seed(42)
 df_pca_plot <- df_raw |> slice_sample(prop = 1)
 
 p_pca_scatter <- ggplot(df_pca_plot, aes(
   x = NetSurfP_PC1, 
   y = NetSurfP_PC2, 
-  # NEW: using fill and color to control the inside and outside of the dots
   fill = factor(label, levels = c(0, 1), labels = c("0_not_presented", "1_presented")),
   color = factor(label, levels = c(0, 1), labels = c("0_not_presented", "1_presented"))
 )) +
-  # NEW: shape = 21 allows distinct borders. alpha = 0.3 makes everything highly transparent.
   geom_point(shape = 21, alpha = 1, size = 1.5, stroke = 0.5) +
   scale_fill_manual(values = c("0_not_presented" = "#e74c3c", "1_presented" = "#2ecc71")) +
   scale_color_manual(values = c("0_not_presented" = "#e74c3c", "1_presented" = "#2ecc71")) +
@@ -364,7 +345,6 @@ safe_wilcox <- function(data, feature) {
   n0 <- length(x0)
   n1 <- length(x1)
   
-  # Approximate SE and 95% CI for Cohen's d
   smd_se <- ifelse(
     is.finite(smd),
     sqrt((n0 + n1) / (n0 * n1) + (smd^2) / (2 * (n0 + n1 - 2))),
@@ -594,7 +574,11 @@ message("Making per-feature plots...")
 
 top_plot_features <- c(
   "frac_disordered_peptide",
+  "frac_disordered_nflank",
+  "frac_disordered_cflank",
   "mean_plddt_peptide",
+  "mean_plddt_nflank",
+  "mean_plddt_cflank",
   "min_plddt_peptide",
   "NetSurfP_PC1",
   "NetSurfP_PC2"
@@ -606,4 +590,3 @@ selected_plot_objects <- purrr::map(top_plot_features, ~ plot_numeric_feature(df
 names(selected_plot_objects) <- top_plot_features
 
 message("\nDone.")
-
