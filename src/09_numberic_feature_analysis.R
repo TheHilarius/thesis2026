@@ -473,7 +473,7 @@ wilcox_results_by_group <- purrr::imap(wilcox_feature_groups, function(features,
       direction = case_when(
         smd > 0 ~ "Higher in presented peptides",
         smd < 0 ~ "Lower in presented peptides",
-        TRUE ~ "no_difference"
+        TRUE ~ "No difference"
       ),
       abs_smd = abs(smd)
     ) |>
