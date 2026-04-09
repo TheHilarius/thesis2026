@@ -184,19 +184,16 @@ plot_grouped_bar <- function(df, feature_name) {
     filter(!is.na(.data[[feature_name]])) %>%
     mutate(residue = .data[[feature_name]])
   
+  total_n <- nrow(sub)
+  
   counts <- sub %>%
     count(residue, label, name = "n") %>%
     group_by(label) %>%
-    mutate(total = sum(n)) %>%
-    rowwise() %>%
     mutate(
-      proportion = n / total,
-      ci = list(prop.test(n, total)$conf.int),
-      ymin = ci[1],
-      ymax = ci[2]
+      total      = sum(n),
+      proportion = n / total
     ) %>%
     ungroup() %>%
-    select(-ci) %>%
     mutate(
       residue = fct_reorder(residue, proportion, .fun = max, .desc = TRUE)
     )
@@ -206,21 +203,18 @@ plot_grouped_bar <- function(df, feature_name) {
       position = position_dodge(width = 0.7),
       width = 0.6, colour = "white", linewidth = 0.2
     ) +
-    geom_errorbar(
-      aes(ymin = ymin, ymax = ymax),
-      position = position_dodge(width = 0.7),
-      width = 0.2,
-      linewidth = 0.4
-    ) +
     scale_fill_manual(
       values = c("Not Presented" = "#E84646", "Presented" = "#2ecc71"),
       name   = "Label"
     ) +
-    scale_y_continuous(labels = percent_format(accuracy = 1)) +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
     labs(
       title    = paste0("Residue proportions by label — ",
                         feature_labels[feature_name]),
-      subtitle = "Bars show within-label proportions; error bars show 95% CI",
+      subtitle = paste0(
+        "n=", format(total_n, big.mark = ","),
+        "; bars show within-label proportions"
+      ),
       x        = "Residue (amino acid)",
       y        = "Proportion within label"
     ) +
@@ -294,9 +288,9 @@ plot_stacked_proportion <- function(df, feature_name) {
       title    = paste0("Stacked label proportions — ",
                         feature_labels[feature_name]),
       subtitle = paste0(
-        "; Dashed line = overall presentation rate",
+        "Dashed line = overall presentation rate",
         "; Numbers above bars represent per-residue sample size",
-        "n=", format(total_n, big.mark = ",")
+        "; n=", format(total_n, big.mark = ",")
       ),
       x = "Residue (amino acid)",
       y = "Proportion"
