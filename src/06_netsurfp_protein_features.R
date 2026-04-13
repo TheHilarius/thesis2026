@@ -15,9 +15,7 @@ df_peptides <- df_raw |>
     nflank_start = pep_start - nchar(n_flank),
     nflank_end   = pep_start - 1L,
     cflank_start = pep_end   + 1L,
-    cflank_end   = pep_end   + nchar(c_flank),
-    window_start = pep_start - nchar(n_flank),
-    window_end   = pep_end   + nchar(c_flank)
+    cflank_end   = pep_end   + nchar(c_flank)
   )
 
 cat("Epitopes loaded:", nrow(df_peptides), "\n")
@@ -58,8 +56,7 @@ netsurfp_features <- df_peptides |>
         uniprot_id,
         nflank_start, nflank_end,
         pep_start,    pep_end,
-        cflank_start, cflank_end,
-        window_start, window_end
+        cflank_start, cflank_end
       ),
       extract_nsp3_windows,
       nsp3_split = nsp3_split,
@@ -102,20 +99,8 @@ netsurfp_features <- netsurfp_features |>
     frac_q8_T_cflank, frac_q8_C_cflank,
     mean_p_q8_G_cflank, mean_p_q8_H_cflank, mean_p_q8_I_cflank,
     mean_p_q8_B_cflank, mean_p_q8_E_cflank, mean_p_q8_S_cflank,
-    mean_p_q8_T_cflank, mean_p_q8_C_cflank,
-    
-    # Full context window
-    mean_rsa_full_context, mean_disorder_full_context,
-    frac_q8_G_full_context, frac_q8_H_full_context, frac_q8_I_full_context,
-    frac_q8_B_full_context, frac_q8_E_full_context, frac_q8_S_full_context,
-    frac_q8_T_full_context, frac_q8_C_full_context,
-    mean_p_q8_G_full_context, mean_p_q8_H_full_context, mean_p_q8_I_full_context,
-    mean_p_q8_B_full_context, mean_p_q8_E_full_context, mean_p_q8_S_full_context,
-    mean_p_q8_T_full_context, mean_p_q8_C_full_context
+    mean_p_q8_T_cflank, mean_p_q8_C_cflank
   )
-
-#netsurfp_features |>
-#  select(-c(nflank_start, nflank_end, cflank_start, cflank_end, window_start, window_end))
 
 df_final_nsp3 <- df_raw |>
   left_join(netsurfp_features, by = c("peptide", "uniprot_id", 
