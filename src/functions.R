@@ -600,55 +600,20 @@ read_nsp3_csv <- function(path, uniprot_id) {
 # ─────────────────────────────────────────
 # Aggregate NSP3 features over a window
 # of residues (peptide, nflank, cflank etc)
+# Now only computes RSA and disorder (Q8 handled by point system)
 # ─────────────────────────────────────────
 aggregate_nsp3_window <- function(res_df) {
   
   if (nrow(res_df) == 0) {
     return(tibble(
       mean_rsa      = NA_real_,
-      mean_disorder = NA_real_,
-      # q8 hard calls
-      frac_q8_G     = NA_real_,
-      frac_q8_H     = NA_real_,
-      frac_q8_I     = NA_real_,
-      frac_q8_B     = NA_real_,
-      frac_q8_E     = NA_real_,
-      frac_q8_S     = NA_real_,
-      frac_q8_T     = NA_real_,
-      frac_q8_C     = NA_real_,
-      # q8 probabilities
-      mean_p_q8_G   = NA_real_,
-      mean_p_q8_H   = NA_real_,
-      mean_p_q8_I   = NA_real_,
-      mean_p_q8_B   = NA_real_,
-      mean_p_q8_E   = NA_real_,
-      mean_p_q8_S   = NA_real_,
-      mean_p_q8_T   = NA_real_,
-      mean_p_q8_C   = NA_real_
+      mean_disorder = NA_real_
     ))
   }
   
   tibble(
     mean_rsa      = mean(res_df$rsa,      na.rm = TRUE),
-    mean_disorder = mean(res_df$disorder, na.rm = TRUE),
-    # q8 hard calls
-    frac_q8_G     = mean(res_df$q8 == "G", na.rm = TRUE),
-    frac_q8_H     = mean(res_df$q8 == "H", na.rm = TRUE),
-    frac_q8_I     = mean(res_df$q8 == "I", na.rm = TRUE),
-    frac_q8_B     = mean(res_df$q8 == "B", na.rm = TRUE),
-    frac_q8_E     = mean(res_df$q8 == "E", na.rm = TRUE),
-    frac_q8_S     = mean(res_df$q8 == "S", na.rm = TRUE),
-    frac_q8_T     = mean(res_df$q8 == "T", na.rm = TRUE),
-    frac_q8_C     = mean(res_df$q8 == "C", na.rm = TRUE),
-    # q8 mean probabilities
-    mean_p_q8_G   = mean(res_df$p_q8_G,  na.rm = TRUE),
-    mean_p_q8_H   = mean(res_df$p_q8_H,  na.rm = TRUE),
-    mean_p_q8_I   = mean(res_df$p_q8_I,  na.rm = TRUE),
-    mean_p_q8_B   = mean(res_df$p_q8_B,  na.rm = TRUE),
-    mean_p_q8_E   = mean(res_df$p_q8_E,  na.rm = TRUE),
-    mean_p_q8_S   = mean(res_df$p_q8_S,  na.rm = TRUE),
-    mean_p_q8_T   = mean(res_df$p_q8_T,  na.rm = TRUE),
-    mean_p_q8_C   = mean(res_df$p_q8_C,  na.rm = TRUE)
+    mean_disorder = mean(res_df$disorder,  na.rm = TRUE)
   )
 }
 
@@ -656,6 +621,7 @@ aggregate_nsp3_window <- function(res_df) {
 # Extract NSP3 features for one peptide
 # across three windows:
 #   peptide / nflank / cflank
+# Returns RSA and disorder only (Q8 handled by extract_nsp3_q8_features)
 # ─────────────────────────────────────────
 extract_nsp3_windows <- function(uniprot_id,
                                  nflank_start, nflank_end,
@@ -663,51 +629,34 @@ extract_nsp3_windows <- function(uniprot_id,
                                  cflank_start, cflank_end,
                                  nsp3_split) {
   
-  # Helper to build empty named output when protein is missing
-  empty_window <- function(suffix) {
-    empty_df <- tibble(
-      n        = integer(),
-      seq      = character(),
-      rsa      = numeric(),
-      q8       = character(),
-      p_q8_G   = numeric(),
-      p_q8_H   = numeric(),
-      p_q8_I   = numeric(),
-      p_q8_B   = numeric(),
-      p_q8_E   = numeric(),
-      p_q8_S   = numeric(),
-      p_q8_T   = numeric(),
-      p_q8_C   = numeric(),
-      disorder = numeric(),
-      uniprot  = character()
-    )
-    feats <- aggregate_nsp3_window(empty_df)
-    names(feats) <- paste0(names(feats), suffix)
-    feats
-  }
+  na_row <- tibble(
+    mean_rsa_peptide = NA_real_, mean_disorder_peptide = NA_real_,
+    mean_rsa_nflank  = NA_real_, mean_disorder_nflank  = NA_real_,
+    mean_rsa_cflank  = NA_real_, mean_disorder_cflank  = NA_real_
+  )
   
-  # ── Protein not in NSP3 output ──────────────────────────────────────────────
   res <- nsp3_split[[uniprot_id]]
+  if (is.null(res)) return(na_row)
   
-  if (is.null(res)) {
-    return(bind_cols(
-      empty_window("_peptide"),
-      empty_window("_nflank"),
-      empty_window("_cflank")
-    ))
+  # Slice each window by residue number
+  pep_rows    <- res[res$n >= pep_start    & res$n <= pep_end, ]
+  nflank_rows <- if (!is.na(nflank_start) && !is.na(nflank_end) && nflank_end >= nflank_start) {
+    res[res$n >= nflank_start & res$n <= nflank_end, ]
+  } else {
+    res[0, ]
+  }
+  cflank_rows <- if (!is.na(cflank_start) && !is.na(cflank_end) && cflank_end >= cflank_start) {
+    res[res$n >= cflank_start & res$n <= cflank_end, ]
+  } else {
+    res[0, ]
   }
   
-  # ── Slice each window by residue number ─────────────────────────────────────
-  pep_rows    <- res |> filter(n >= pep_start    & n <= pep_end)
-  nflank_rows <- res |> filter(n >= nflank_start & n <= nflank_end)
-  cflank_rows <- res |> filter(n >= cflank_start & n <= cflank_end)
-  
-  # ── Aggregate each window ────────────────────────────────────────────────────
+  # Aggregate each window
   pep_feats    <- aggregate_nsp3_window(pep_rows)
   nflank_feats <- aggregate_nsp3_window(nflank_rows)
   cflank_feats <- aggregate_nsp3_window(cflank_rows)
   
-  # ── Add suffix so columns don't clash ───────────────────────────────────────
+  # Add suffix so columns don't clash
   names(pep_feats)    <- paste0(names(pep_feats),    "_peptide")
   names(nflank_feats) <- paste0(names(nflank_feats), "_nflank")
   names(cflank_feats) <- paste0(names(cflank_feats), "_cflank")
@@ -870,6 +819,332 @@ mean_plddt_region <- function(uid, start, end, lookup_split) {
   if (all(is.na(v))) return(NA_real_)
   mean(v, na.rm = TRUE)
 }
-###
+
+# ============================================================================
+# RE-ENGINEERED NETSURFP Q8 FEATURES — BIOLOGICAL POINT SYSTEM
+# ============================================================================
+
+# Constants used by compute_q8_full_context and make_na_result
+Q8_MIN_RUNS <- c(
+  H = 4L, G = 3L, I = 5L, E = 2L,
+  B = 1L, T = 2L, S = 1L, C = 1L
+)
+Q8_STATES <- names(Q8_MIN_RUNS)
+RESCUE_THRESHOLD <- 0.4
+
+
+#' Find contiguous runs in a character vector
+#' @return data.frame: value, start, end, len
+find_all_runs <- function(x) {
+  r <- rle(x)
+  ends   <- cumsum(r$lengths)
+  starts <- ends - r$lengths + 1L
+  data.frame(
+    value = r$values,
+    start = starts,
+    end   = ends,
+    len   = r$lengths,
+    stringsAsFactors = FALSE
+  )
+}
+
+
+#' Determine which window(s) a run overlaps
+#' @param run_start Integer start of run (in full-context coords)
+#' @param run_end Integer end of run
+#' @param nfl_end Last position of nflank in full context
+#' @param pep_end Last position of peptide in full context
+#' @return Character vector: subset of c("nflank", "peptide", "cflank")
+run_overlaps_windows <- function(run_start, run_end, nfl_end, pep_end) {
+  windows <- character(0)
+  if (run_start <= nfl_end)                      windows <- c(windows, "nflank")
+  if (run_end > nfl_end & run_start <= pep_end)  windows <- c(windows, "peptide")
+  if (run_end > pep_end)                         windows <- c(windows, "cflank")
+  windows
+}
+
+
+#' Extract Q8 probability matrix from NSP3 data for a given window
+#'
+#' @param nsp3_protein data.frame of NSP3 output for one protein
+#' @param start Start position (1-indexed, protein coordinates)
+#' @param end End position (1-indexed, protein coordinates)
+#' @return Matrix with nrow = (end - start + 1), ncol = 8
+extract_q8_matrix <- function(nsp3_protein, start, end) {
+  if (is.null(nsp3_protein) || start < 1 || end < start) {
+    return(matrix(NA_real_, nrow = 0, ncol = 8,
+                  dimnames = list(NULL, Q8_STATES)))
+  }
+  
+  # Filter by residue number (safe — doesn't assume row order)
+  rows <- nsp3_protein[nsp3_protein$n >= start & nsp3_protein$n <= end, ]
+  
+  if (nrow(rows) == 0) {
+    return(matrix(NA_real_, nrow = 0, ncol = 8,
+                  dimnames = list(NULL, Q8_STATES)))
+  }
+  
+  # These match the column names from read_nsp3_csv
+  q8_cols <- c("p_q8_H", "p_q8_G", "p_q8_I", "p_q8_E",
+               "p_q8_B", "p_q8_T", "p_q8_S", "p_q8_C")
+  mat <- as.matrix(rows[, q8_cols])
+  colnames(mat) <- Q8_STATES
+  mat
+}
+
+
+#' Core: compute Q8 points and transitions on a full-context probability matrix
+#'
+#' @param prob_matrix Matrix [n_residues x 8], colnames = Q8_STATES.
+#'   Rows ordered: nflank residues, then peptide, then cflank
+#' @param n_nflank Integer length of nflank (can be 0 if at protein start)
+#' @param n_peptide Integer length of peptide (9)
+#' @param n_cflank Integer length of cflank (can be 0 if at protein end)
+#' @param rescue_threshold Numeric (default 0.4)
+#' @return Single-row tibble with point and transition features
+compute_q8_full_context <- function(prob_matrix,
+                                    n_nflank,
+                                    n_peptide,
+                                    n_cflank,
+                                    rescue_threshold = RESCUE_THRESHOLD) {
+  
+  n_total <- nrow(prob_matrix)
+  
+  if (n_total == 0 || is.null(prob_matrix)) {
+    return(make_na_result())
+  }
+  
+  stopifnot(all(Q8_STATES %in% colnames(prob_matrix)))
+  prob_matrix <- prob_matrix[, Q8_STATES, drop = FALSE]
+  
+  # Window boundaries in full-context coordinates (1-indexed)
+  nfl_end <- n_nflank
+  pep_end <- n_nflank + n_peptide
+  
+  # --- Step 1: Argmax assignment ---
+  argmax_idx <- apply(prob_matrix, 1, which.max)
+  primary    <- Q8_STATES[argmax_idx]
+  
+  # --- Step 2: Find all runs from argmax ---
+  all_runs <- find_all_runs(primary)
+  
+  # --- Step 3: Identify qualifying runs (meet minimum) ---
+  qualifying <- all_runs |>
+    mutate(min_needed = Q8_MIN_RUNS[value]) |>
+    filter(len >= min_needed)
+  
+  # --- Step 4: Rescue for runs that are exactly 1 short ---
+  shortfall <- all_runs |>
+    mutate(min_needed = Q8_MIN_RUNS[value]) |>
+    filter(len == min_needed - 1L, min_needed > 1L)
+  
+  already_qualified <- unique(qualifying$value)
+  
+  rescue_list <- list()
+  
+  for (i in seq_len(nrow(shortfall))) {
+    state     <- shortfall$value[i]
+    run_start <- shortfall$start[i]
+    run_end   <- shortfall$end[i]
+    
+    if (state %in% already_qualified) next
+    
+    # Check left neighbor
+    left_pos <- run_start - 1L
+    if (left_pos >= 1 && prob_matrix[left_pos, state] >= rescue_threshold) {
+      rescue_list[[length(rescue_list) + 1]] <- data.frame(
+        state         = state,
+        position      = left_pos,
+        prob          = prob_matrix[left_pos, state],
+        min_run       = Q8_MIN_RUNS[state],
+        new_run_start = left_pos,
+        new_run_end   = run_end,
+        stringsAsFactors = FALSE
+      )
+    }
+    
+    # Check right neighbor
+    right_pos <- run_end + 1L
+    if (right_pos <= n_total && prob_matrix[right_pos, state] >= rescue_threshold) {
+      rescue_list[[length(rescue_list) + 1]] <- data.frame(
+        state         = state,
+        position      = right_pos,
+        prob          = prob_matrix[right_pos, state],
+        min_run       = Q8_MIN_RUNS[state],
+        new_run_start = run_start,
+        new_run_end   = right_pos,
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+  
+  # Resolve rescue conflicts
+  rescued_states    <- character(0)
+  claimed_positions <- integer(0)
+  rescued_runs <- data.frame(
+    value = character(0), start = integer(0), end = integer(0),
+    stringsAsFactors = FALSE
+  )
+  
+  if (length(rescue_list) > 0) {
+    rc_df <- bind_rows(rescue_list) |>
+      arrange(desc(min_run), desc(prob))
+    
+    for (i in seq_len(nrow(rc_df))) {
+      s   <- rc_df$state[i]
+      pos <- rc_df$position[i]
+      
+      if (pos %in% claimed_positions) next
+      if (s %in% rescued_states) next
+      if (s %in% already_qualified) next
+      
+      claimed_positions <- c(claimed_positions, pos)
+      rescued_states    <- c(rescued_states, s)
+      rescued_runs <- bind_rows(rescued_runs, data.frame(
+        value = s,
+        start = rc_df$new_run_start[i],
+        end   = rc_df$new_run_end[i],
+        stringsAsFactors = FALSE
+      ))
+    }
+  }
+  
+  # --- Step 5: Combine qualifying + rescued runs ---
+  all_valid_runs <- bind_rows(
+    qualifying |> select(value, start, end),
+    rescued_runs
+  )
+  
+  # --- Step 6: Assign points per window + detect transitions ---
+  points <- list(
+    nflank  = setNames(rep(0L, 8), Q8_STATES),
+    peptide = setNames(rep(0L, 8), Q8_STATES),
+    cflank  = setNames(rep(0L, 8), Q8_STATES)
+  )
+  
+  trans_n_pep <- setNames(rep(0L, 8), Q8_STATES)
+  trans_pep_c <- setNames(rep(0L, 8), Q8_STATES)
+  
+  for (i in seq_len(nrow(all_valid_runs))) {
+    state <- all_valid_runs$value[i]
+    rs    <- all_valid_runs$start[i]
+    re    <- all_valid_runs$end[i]
+    
+    windows <- run_overlaps_windows(rs, re, nfl_end, pep_end)
+    
+    for (w in windows) {
+      points[[w]][state] <- 1L
+    }
+    
+    if ("nflank" %in% windows && "peptide" %in% windows) {
+      trans_n_pep[state] <- 1L
+    }
+    if ("peptide" %in% windows && "cflank" %in% windows) {
+      trans_pep_c[state] <- 1L
+    }
+  }
+  
+  # --- Step 7: Assemble output ---
+  result <- c(
+    setNames(points$peptide, paste0("q8point_", Q8_STATES, "_peptide")),
+    setNames(points$nflank,  paste0("q8point_", Q8_STATES, "_nflank")),
+    setNames(points$cflank,  paste0("q8point_", Q8_STATES, "_cflank")),
+    setNames(trans_n_pep,    paste0("q8trans_", Q8_STATES, "_n_pep")),
+    setNames(trans_pep_c,    paste0("q8trans_", Q8_STATES, "_pep_c"))
+  )
+  
+  as_tibble_row(result)
+}
+
+
+#' Helper: NA result for missing data
+make_na_result <- function() {
+  nms <- c(
+    paste0("q8point_", Q8_STATES, "_peptide"),
+    paste0("q8point_", Q8_STATES, "_nflank"),
+    paste0("q8point_", Q8_STATES, "_cflank"),
+    paste0("q8trans_", Q8_STATES, "_n_pep"),
+    paste0("q8trans_", Q8_STATES, "_pep_c")
+  )
+  as_tibble_row(setNames(rep(NA_integer_, length(nms)), nms))
+}
+
+
+#' Full extraction for one peptide: builds full context, computes Q8 points
+#'
+#' @param uniprot_id UniProt ID
+#' @param nflank_start Start of N-flank (protein coordinates, 1-indexed)
+#' @param nflank_end End of N-flank
+#' @param pep_start Start of peptide
+#' @param pep_end End of peptide
+#' @param cflank_start Start of C-flank
+#' @param cflank_end End of C-flank
+#' @param nsp3_split Named list of NSP3 data.frames by protein
+#' @return Single-row tibble with q8point and q8trans features
+extract_nsp3_q8_features <- function(uniprot_id,
+                                     nflank_start, nflank_end,
+                                     pep_start, pep_end,
+                                     cflank_start, cflank_end,
+                                     nsp3_split) {
+  
+  nsp3_prot <- nsp3_split[[uniprot_id]]
+  if (is.null(nsp3_prot)) return(make_na_result())
+  
+  # Guard against NA peptide coordinates
+  if (is.na(pep_start) || is.na(pep_end)) return(make_na_result())
+  
+  prot_len <- max(nsp3_prot$n, na.rm = TRUE)
+  
+  # --- Determine actual valid ranges within the protein ---
+  # Peptide: always valid (9-mer, must exist in protein)
+  pep_start_c <- as.integer(pep_start)
+  pep_end_c   <- as.integer(pep_end)
+  actual_pep_len <- pep_end_c - pep_start_c + 1L
+  
+  # N-flank: may be missing (peptide at N-terminus) or shorter
+  if (is.na(nflank_start) || is.na(nflank_end) || nflank_end < 1L || nflank_start > nflank_end) {
+    actual_nfl_len <- 0L
+    nfl_start_c    <- pep_start_c  # placeholder, won't be used
+  } else {
+    nfl_start_c    <- max(1L, as.integer(nflank_start))
+    nfl_end_c      <- min(as.integer(nflank_end), prot_len)
+    actual_nfl_len <- if (nfl_end_c >= nfl_start_c) nfl_end_c - nfl_start_c + 1L else 0L
+  }
+  
+  # C-flank: may be missing (peptide at C-terminus) or shorter
+  if (is.na(cflank_start) || is.na(cflank_end) || cflank_start > prot_len || cflank_start > cflank_end) {
+    actual_cfl_len <- 0L
+    cfl_end_c      <- pep_end_c  # placeholder, won't be used
+  } else {
+    cfl_start_c    <- as.integer(cflank_start)
+    cfl_end_c      <- min(as.integer(cflank_end), prot_len)
+    actual_cfl_len <- if (cfl_end_c >= cfl_start_c) cfl_end_c - cfl_start_c + 1L else 0L
+  }
+  
+  # --- Build full context range ---
+  full_start <- if (actual_nfl_len > 0) nfl_start_c else pep_start_c
+  full_end   <- if (actual_cfl_len > 0) cfl_end_c   else pep_end_c
+  
+  mat_full <- extract_q8_matrix(nsp3_prot, full_start, full_end)
+  
+  if (nrow(mat_full) == 0) return(make_na_result())
+  
+  # Verify dimensions match expectations
+  expected_len <- actual_nfl_len + actual_pep_len + actual_cfl_len
+  if (nrow(mat_full) != expected_len) {
+    warning(sprintf(
+      "Matrix size mismatch for %s pos %d-%d: expected %d rows, got %d",
+      uniprot_id, pep_start, pep_end, expected_len, nrow(mat_full)
+    ))
+    return(make_na_result())
+  }
+  
+  compute_q8_full_context(
+    prob_matrix = mat_full,
+    n_nflank    = actual_nfl_len,
+    n_peptide   = actual_pep_len,
+    n_cflank    = actual_cfl_len
+  )
+}
 
 cat("functions.R loaded successfully.\n")
