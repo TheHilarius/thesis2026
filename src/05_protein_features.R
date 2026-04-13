@@ -92,7 +92,12 @@ df_with_flanks <- df_clean %>%
     end_col = "end",
     n_flank_size = N_FLANK_SIZE,
     c_flank_size = C_FLANK_SIZE
-  )
+  ) |>
+  mutate(
+    rel_distance_from_n_terminus = distance_from_n_terminus / protein_length,
+    rel_distance_from_c_terminus = distance_from_c_terminus / protein_length
+  ) |>
+  select(-c(distance_from_n_terminus,distance_from_c_terminus))
 
 # ============================================================================
 # STEP 4: EXTRACT CLEAVAGE SITE POSITIONS

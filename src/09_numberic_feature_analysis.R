@@ -23,12 +23,7 @@ df_raw %>%
 df_raw <- df_raw |>
   filter(!is.na(label)) |>
   mutate(label = as.integer(label)) |>
-  filter(label %in% c(0, 1)) |>
-  # Standardize terminus distances by protein length
-  mutate(
-    rel_distance_from_n_terminus = distance_from_n_terminus / protein_length,
-    rel_distance_from_c_terminus = distance_from_c_terminus / protein_length
-  )
+  filter(label %in% c(0, 1))
 
 message("Label counts:")
 print(table(df_raw$label))
