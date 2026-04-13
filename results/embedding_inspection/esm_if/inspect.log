@@ -1,0 +1,147 @@
+=================================================================
+  ESM Embedding Inspection
+=================================================================
+
+Loading data/processed/embeddings/esmif_structure_embeddings.h5...
+
+── HDF5 Metadata ──────────────────────────────────────────
+  emb_dim               : 512
+  model                 : esm_if1_gvp4_t16_142M_UR50
+  n_samples             : 53198
+
+── Datasets ───────────────────────────────────────────────
+  c_flank_if_struct       : shape=(53198, 512)  dtype=float32
+  n_flank_if_struct       : shape=(53198, 512)  dtype=float32
+  peptide_ids             : shape=(53198,)  dtype=|S20
+  peptide_if_struct       : shape=(53198, 512)  dtype=float32
+  uniprot_ids             : shape=(53198,)  dtype=|S20
+
+  Detected format: ESM-IF
+
+  Loaded 53198 samples, embedding dim = 512
+  Model type: ESM-IF
+
+Loading data/processed/df_all.csv...
+  Positives (label=1) : 23496
+  Negatives (label=0) : 29702
+
+=================================================================
+  1. Basic Embedding Statistics
+=================================================================
+
+  ── peptide embeddings ((53198, 512)) ──
+    Zero vectors       : 6321 / 53198  (11.9%)
+    Value range        : [-1.9606, 1.7665]
+    Mean (all dims)    : 0.004014
+    Std  (all dims)    : 0.242464
+    L2 norm  min/med/max : 0.000 / 5.453 / 11.644
+    Per-dim mean range : [-0.6818, 0.4933]
+    Per-dim std range  : [0.1014, 0.4255]
+
+  ── n_flank embeddings ((53198, 512)) ──
+    Zero vectors       : 6354 / 53198  (11.9%)
+    Value range        : [-2.1190, 1.7635]
+    Mean (all dims)    : 0.004259
+    Std  (all dims)    : 0.238454
+    L2 norm  min/med/max : 0.000 / 5.346 / 10.697
+    Per-dim mean range : [-0.6354, 0.4585]
+    Per-dim std range  : [0.0988, 0.3982]
+
+  ── c_flank embeddings ((53198, 512)) ──
+    Zero vectors       : 6456 / 53198  (12.1%)
+    Value range        : [-2.7540, 2.1468]
+    Mean (all dims)    : 0.004135
+    Std  (all dims)    : 0.238456
+    L2 norm  min/med/max : 0.000 / 5.342 / 11.508
+    Per-dim mean range : [-0.6266, 0.4618]
+    Per-dim std range  : [0.0994, 0.3948]
+
+  ── Fallback flags: not available (ESM-IF) ──
+
+=================================================================
+  2. Plotting L2 norm distributions...
+=================================================================
+  Saved: results/embedding_inspection/esm_if/l2_norm_distributions.png
+
+=================================================================
+  3. Per-dimension mean difference (positive vs negative)...
+=================================================================
+  Saved: results/embedding_inspection/esm_if/per_dim_mean_diff.png
+
+=================================================================
+  4. Cosine similarity between peptide / n_flank / c_flank...
+=================================================================
+  peptide↔n_flank       : median(pos)=0.656  median(neg)=0.670  (n_valid=46843)
+  peptide↔c_flank       : median(pos)=0.647  median(neg)=0.669  (n_valid=46742)
+  n_flank↔c_flank       : median(pos)=0.589  median(neg)=0.614  (n_valid=46708)
+  Saved: results/embedding_inspection/esm_if/cosine_similarity.png
+
+=================================================================
+  5. Inter-sample cosine similarity (sampling 2000 pairs)...
+=================================================================
+  peptide: pos↔pos=0.289  neg↔neg=0.298  pos↔neg=0.295
+  n_flank: pos↔pos=0.296  neg↔neg=0.303  pos↔neg=0.303
+  c_flank: pos↔pos=0.303  neg↔neg=0.310  pos↔neg=0.308
+  Saved: results/embedding_inspection/esm_if/inter_sample_cosine.png
+
+=================================================================
+  6. PCA analysis...
+=================================================================
+  peptide: 50% variance in 18 PCs
+  peptide: 75% variance in 50 PCs
+  peptide: 90% variance in 50 PCs
+  n_flank: 50% variance in 16 PCs
+  n_flank: 75% variance in 50 PCs
+  n_flank: 90% variance in 50 PCs
+  c_flank: 50% variance in 17 PCs
+  c_flank: 75% variance in 50 PCs
+  c_flank: 90% variance in 50 PCs
+  Saved: results/embedding_inspection/esm_if/pca_analysis.png
+
+=================================================================
+  7. t-SNE on peptide embeddings...
+=================================================================
+  Running t-SNE on 5000 samples (perplexity=30)...
+  Saved: results/embedding_inspection/esm_if/tsne_peptide.png
+
+=================================================================
+  8. Top discriminative dimensions (Mann-Whitney per dim)...
+=================================================================
+  peptide: 328/512 dims significant (Bonferroni p<0.05)
+    Top 5 effect sizes: d471=0.1507, d122=0.1329, d193=0.1267, d474=0.1220, d290=-0.1159
+  n_flank: 325/512 dims significant (Bonferroni p<0.05)
+    Top 5 effect sizes: d471=0.1541, d122=0.1355, d474=0.1227, d164=0.1069, d193=0.1010
+  c_flank: 304/512 dims significant (Bonferroni p<0.05)
+    Top 5 effect sizes: d471=0.1313, d509=-0.1105, d290=-0.1079, d474=0.1053, d151=0.1040
+  Saved: results/embedding_inspection/esm_if/top_discriminative_dims.png
+
+=================================================================
+  9. Embedding norm vs peptide length...
+=================================================================
+  Saved: results/embedding_inspection/esm_if/norm_vs_length.png
+
+=================================================================
+  10. Summary
+=================================================================
+ model  region  n_samples  emb_dim  n_zero_vecs norm_median norm_std value_mean value_std
+ESM-IF peptide      53198      512         6321       5.453    2.056   0.004014  0.242464
+ESM-IF n_flank      53198      512         6354       5.346    2.035   0.004259  0.238454
+ESM-IF c_flank      53198      512         6456       5.342    2.049   0.004135  0.238456
+
+  Saved: results/embedding_inspection/esm_if/embedding_summary.csv
+
+=================================================================
+  All outputs saved to: results/embedding_inspection/esm_if/
+=================================================================
+
+Files:
+  cosine_similarity.png
+  embedding_summary.csv
+  inspect.log
+  inter_sample_cosine.png
+  l2_norm_distributions.png
+  norm_vs_length.png
+  pca_analysis.png
+  per_dim_mean_diff.png
+  top_discriminative_dims.png
+  tsne_peptide.png
