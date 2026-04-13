@@ -23,7 +23,12 @@ df_raw %>%
 df_raw <- df_raw |>
   filter(!is.na(label)) |>
   mutate(label = as.integer(label)) |>
-  filter(label %in% c(0, 1))
+  filter(label %in% c(0, 1)) |>
+  # Standardize terminus distances by protein length
+  mutate(
+    rel_distance_from_n_terminus = distance_from_n_terminus / protein_length,
+    rel_distance_from_c_terminus = distance_from_c_terminus / protein_length
+  )
 
 message("Label counts:")
 print(table(df_raw$label))
@@ -71,6 +76,8 @@ pretty_feature_label <- function(x) {
     str_replace("^sd_plddt$", "SD pLDDT") |>
     
     # General features
+    str_replace("^rel_distance_from_n_terminus$", "Rel. dist. from N terminus") |>
+    str_replace("^rel_distance_from_c_terminus$", "Rel. dist. from C terminus") |>
     str_replace("^distance_from_n_terminus$", "Dist. from N terminus") |>
     str_replace("^distance_from_c_terminus$", "Dist. from C terminus") |>
     str_replace("^protein_length$", "Protein length") |>
@@ -84,27 +91,25 @@ wilcox_feature_groups <- list(
       !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_") &
       !str_detect(names(df_raw), "^min_plddt")
   ],
-  peptide = names(df_raw)[
-    str_detect(names(df_raw), "_peptide$") &
-      !str_detect(names(df_raw), "^mean_p_q3_") &
-      !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_") &
-      !str_detect(names(df_raw), "^min_plddt")
-  ],
+  peptide = c(
+    names(df_raw)[
+      str_detect(names(df_raw), "_peptide$") &
+        !str_detect(names(df_raw), "^mean_p_q3_") &
+        !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_") &
+        !str_detect(names(df_raw), "^min_plddt")
+    ],
+    intersect(
+      c("rel_distance_from_n_terminus", "rel_distance_from_c_terminus",
+        "protein_length", "pep_length"),
+      names(df_raw)
+    )
+  ),
   c_flank = names(df_raw)[
     str_detect(names(df_raw), "_cflank$") &
       !str_detect(names(df_raw), "^mean_p_q3_") &
       !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_") &
       !str_detect(names(df_raw), "^min_plddt")
-  ],
-  general = intersect(
-    c(
-      "distance_from_n_terminus",
-      "distance_from_c_terminus",
-      "protein_length",
-      "pep_length"
-    ),
-    names(df_raw)
-  )
+  ]
 )
 
 numeric_cols <- names(df_raw)[sapply(df_raw, is.numeric)]
@@ -124,29 +129,27 @@ heatmap_feature_groups <- list(
       !str_detect(names(df_raw), "^frac_q8_") &
       !str_detect(names(df_raw), "^min_plddt")
   ],
-  peptide = names(df_raw)[
-    str_detect(names(df_raw), "_peptide$") &
-      !str_detect(names(df_raw), "^mean_p_q3_") &
-      !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_") &
-      !str_detect(names(df_raw), "^frac_q8_") &
-      !str_detect(names(df_raw), "^min_plddt")
-  ],
+  peptide = c(
+    names(df_raw)[
+      str_detect(names(df_raw), "_peptide$") &
+        !str_detect(names(df_raw), "^mean_p_q3_") &
+        !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_") &
+        !str_detect(names(df_raw), "^frac_q8_") &
+        !str_detect(names(df_raw), "^min_plddt")
+    ],
+    intersect(
+      c("rel_distance_from_n_terminus", "rel_distance_from_c_terminus",
+        "protein_length", "pep_length"),
+      names(df_raw)
+    )
+  ),
   c_flank = names(df_raw)[
     str_detect(names(df_raw), "_cflank$") &
       !str_detect(names(df_raw), "^mean_p_q3_") &
       !str_detect(names(df_raw), "^frac_(helix|sheet|coil)_") &
       !str_detect(names(df_raw), "^frac_q8_") &
       !str_detect(names(df_raw), "^min_plddt")
-  ],
-  general = intersect(
-    c(
-      "distance_from_n_terminus",
-      "distance_from_c_terminus",
-      "protein_length",
-      "pep_length"
-    ),
-    names(df_raw)
-  )
+  ]
 )
 
 numeric_cols <- names(df_raw)[sapply(df_raw, is.numeric)]
@@ -155,8 +158,7 @@ heatmap_feature_groups <- purrr::map(heatmap_feature_groups, ~ intersect(.x, num
 heatmap_titles <- c(
   peptide = "Correlation Heatmap — Peptide",
   n_flank = "Correlation Heatmap — N-flank",
-  c_flank = "Correlation Heatmap — C-flank",
-  general = "Correlation Heatmap — General"
+  c_flank = "Correlation Heatmap — C-flank"
 )
 
 for (group_name in names(heatmap_feature_groups)) {
@@ -294,12 +296,15 @@ ggsave(file.path(figures_dir, "netsurfp_pca_scatter.png"), plot = p_pca_scatter,
 exclude_cols <- c(
   "label", "start", "end", "peptide", "uniprot_id", "source_molecule",
   "molecule_parent", "sequence", "n_flank", "c_flank", "full_context",
-  "c_term_P1", "c_term_P1_prime", "n_term_P1", "n_term_P1_prime"
+  "c_term_P1", "c_term_P1_prime", "n_term_P1", "n_term_P1_prime",
+  "distance_from_n_terminus", "distance_from_c_terminus"
 )
 
 numeric_features <- df_raw |>
   select(where(is.numeric)) |>
   select(-any_of(exclude_cols)) |>
+  # Drop any lingering full_context columns from old datasets
+  select(-matches("_full_context$")) |>
   names()
 
 message("Number of numeric features (including PCs): ", length(numeric_features))
@@ -466,7 +471,12 @@ wilcox_results_by_group <- purrr::imap(wilcox_feature_groups, function(features,
   res
 })
 
-numeric_test_results <- bind_rows(wilcox_results_by_group)
+# After binding all groups together
+numeric_test_results <- bind_rows(wilcox_results_by_group) |>
+  mutate(
+    # Global BH correction across ALL Wilcoxon tests
+    p_adj_global = p.adjust(p_value, method = "BH")
+  )
 write_csv(numeric_test_results, file.path(results_dir, "numeric_feature_tests_by_group.csv"))
 
 message("Running univariate logistic regressions...")
