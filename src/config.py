@@ -1,17 +1,21 @@
 """
+config.py
 Shared configuration for the MHC-I processing prediction pipeline.
-Single source of truth — both 01_datasplit.py and 02_cross_validation.py import from here.
 """
 
 from pathlib import Path
 
 # ──────────────────────────────────────────────
+# PROJECT ROOT
+# ──────────────────────────────────────────────
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+# ──────────────────────────────────────────────
 # PATHS
 # ──────────────────────────────────────────────
-
-DATA_DIR = Path("data/processed")
-LOG_DIR = Path("logs")
-MODEL_DIR = Path("models")
+DATA_DIR = PROJECT_ROOT / "data" / "processed"
+LOG_DIR = PROJECT_ROOT / "logs"
+MODEL_DIR = PROJECT_ROOT / "models"
 
 RAW_DATA_PATH = DATA_DIR / "df_all.csv"
 SPLIT_DATA_PATH = DATA_DIR / "df_all_with_folds.csv"
@@ -19,22 +23,19 @@ SPLIT_DATA_PATH = DATA_DIR / "df_all_with_folds.csv"
 # ──────────────────────────────────────────────
 # CROSS-VALIDATION SETTINGS
 # ──────────────────────────────────────────────
-
-N_CV_FOLDS = 5                  # k in k-fold CV — change this one number
-HELD_OUT_INDEX = N_CV_FOLDS     # Always the bucket after the last CV fold
-N_BUCKETS = N_CV_FOLDS + 1     # Total buckets (CV folds + 1 held-out)
+N_CV_FOLDS = 5
+HELD_OUT_INDEX = N_CV_FOLDS
+N_BUCKETS = N_CV_FOLDS + 1
 
 RANDOM_STATE = 42
 
 # ──────────────────────────────────────────────
 # COLUMN DEFINITIONS
 # ──────────────────────────────────────────────
-
 PEPTIDE_COL = "peptide"
 LABEL_COL = "label"
 FOLD_COL = "fold"
 
-# Metadata columns — NOT used as features
 METADATA_COLS = [
     "start",
     "end",
@@ -51,29 +52,27 @@ METADATA_COLS = [
     "n_flank",
     "c_flank",
     "full_context",
-    "fold",  # Added by 01_datasplit.py
+    "fold",
 ]
 
 # ──────────────────────────────────────────────
 # CLUSTERING
 # ──────────────────────────────────────────────
-
 HAMMING_CUTOFF = 1
 
 # ──────────────────────────────────────────────
-# TRAINING HYPERPARAMETERS (defaults, tunable)
+# RANDOM FOREST HYPERPARAMETERS (no regularization baseline)
 # ──────────────────────────────────────────────
-
-BATCH_SIZE = 256
-LEARNING_RATE = 1e-3
-MAX_EPOCHS = 200
-EARLY_STOPPING_PATIENCE = 15
-WEIGHT_DECAY = 1e-4
-LR_SCHEDULER_PATIENCE = 7
-LR_SCHEDULER_FACTOR = 0.5
+RF_N_ESTIMATORS = 1000       # Number of trees
+RF_MAX_DEPTH = None         # No depth limit (no regularization)
+RF_MIN_SAMPLES_SPLIT = 2    # Default (minimal constraint)
+RF_MIN_SAMPLES_LEAF = 1     # Default (minimal constraint)
+RF_MAX_FEATURES = "sqrt"    # Standard for classification
+RF_N_JOBS = -1              # Use all CPU cores
+RF_CLASS_WEIGHT = None      # No class weighting (change to "balanced" if needed)
 
 # ──────────────────────────────────────────────
-# HELPER
+# HELPERS
 # ──────────────────────────────────────────────
 
 def get_feature_cols(df_columns):
@@ -86,4 +85,14 @@ def validate_config():
     assert N_CV_FOLDS >= 2, f"Need at least 2 CV folds, got {N_CV_FOLDS}"
     assert HELD_OUT_INDEX == N_CV_FOLDS, "HELD_OUT_INDEX must equal N_CV_FOLDS"
     assert HAMMING_CUTOFF >= 0, "HAMMING_CUTOFF must be non-negative"
-    print(f"Config validated: {N_CV_FOLDS}-fold CV + 1 held-out = {N_BUCKETS} buckets")
+
+    if not RAW_DATA_PATH.exists():
+        print(f"WARNING: Data file not found: {RAW_DATA_PATH}")
+    else:
+        print(f"[OK] Data file found: {RAW_DATA_PATH}")
+
+    print(f"[OK] Config validated: {N_CV_FOLDS}-fold CV + 1 held-out = {N_BUCKETS} buckets")
+    print(f"     Project root: {PROJECT_ROOT}")
+    print(f"     Data dir:     {DATA_DIR}")
+    print(f"     Log dir:      {LOG_DIR}")
+    print(f"     Model dir:    {MODEL_DIR}")

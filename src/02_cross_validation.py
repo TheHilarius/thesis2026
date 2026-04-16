@@ -99,7 +99,7 @@ def print_metrics(metrics, prefix=""):
 # 2. DATA PREPARATION
 # ──────────────────────────────────────────────
 
-def impute_nan(X_train, X_test, feature_cols):
+def impute_nan(X_train, X_test, feature_cols, fold_id):
     """
     Replace Inf with NaN, then fill NaN with column median from train.
     Returns cleaned arrays and the medians used (for held-out imputation).
@@ -107,7 +107,6 @@ def impute_nan(X_train, X_test, feature_cols):
     X_train = np.where(np.isinf(X_train), np.nan, X_train)
     X_test = np.where(np.isinf(X_test), np.nan, X_test)
 
-    # Report
     for name, arr in [("X_train", X_train), ("X_test", X_test)]:
         n_nan = np.isnan(arr).sum()
         n_inf = np.isinf(arr).sum()
@@ -118,16 +117,24 @@ def impute_nan(X_train, X_test, feature_cols):
                 print(f"    Column '{feature_cols[col_idx]}': "
                       f"{nan_per_col[col_idx]} NaN values")
 
-    # Compute medians from train only
     col_medians = np.nanmedian(X_train, axis=0)
     col_medians = np.where(np.isnan(col_medians), 0.0, col_medians)
 
-    # Fill NaN
+    print(f"  Fold {fold_id}: medians computed from {X_train.shape[0]} training samples")
+
+    n_imputed_train = 0
+    n_imputed_test = 0
     for col_idx in range(X_train.shape[1]):
         train_nan = np.isnan(X_train[:, col_idx])
         test_nan = np.isnan(X_test[:, col_idx])
+        n_imputed_train += train_nan.sum()
+        n_imputed_test += test_nan.sum()
         X_train[train_nan, col_idx] = col_medians[col_idx]
         X_test[test_nan, col_idx] = col_medians[col_idx]
+
+    if n_imputed_train > 0 or n_imputed_test > 0:
+        print(f"  Fold {fold_id}: imputed {n_imputed_train} train values, "
+              f"{n_imputed_test} test values")
 
     assert not np.isnan(X_train).any(), "NaN still in X_train"
     assert not np.isnan(X_test).any(), "NaN still in X_test"
@@ -163,7 +170,7 @@ def prepare_fold_data(df, feature_cols, fold_id):
     y_test = test_df[LABEL_COL].values.astype(np.int32)
 
     # Impute NaN
-    X_train, X_test, col_medians = impute_nan(X_train, X_test, feature_cols)
+    X_train, X_test, col_medians = impute_nan(X_train, X_test, feature_cols, fold_id)
 
     fold_info = {
         "fold_id": fold_id,
@@ -383,12 +390,10 @@ if __name__ == "__main__":
     feat_stats = df[feature_cols].describe().T
     print(f"  {'Column':<35} {'mean':>10} {'std':>10} {'min':>10} {'max':>10}")
     print(f"  {'-' * 77}")
-    for col in feature_cols[:20]:
+    for col in feature_cols:
         row = feat_stats.loc[col]
         print(f"  {col:<35} {row['mean']:>10.3f} {row['std']:>10.3f} "
               f"{row['min']:>10.3f} {row['max']:>10.3f}")
-    if len(feature_cols) > 20:
-        print(f"  ... and {len(feature_cols) - 20} more columns")
 
     print(f"\n{'=' * 80}")
     print(f"PIPELINE READY: {n_features} features, {N_CV_FOLDS} folds, Random Forest baseline")

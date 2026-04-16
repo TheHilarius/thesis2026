@@ -6,7 +6,6 @@ Homology-based data splitting for MHC-I processing prediction.
 import sys
 import os
 
-# -- Path fix: add src/ directory so config.py is importable --
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 if SRC_DIR not in sys.path:
     sys.path.insert(0, SRC_DIR)
@@ -25,7 +24,6 @@ from config import (
     PEPTIDE_COL, LABEL_COL, FOLD_COL, HAMMING_CUTOFF,
     validate_config,
 )
-
 
 
 # ──────────────────────────────────────────────
@@ -91,6 +89,13 @@ AMINO_ACIDS = list("ACDEFGHIKLMNPQRSTVWY")
 
 
 def cluster_by_hamming(peptides, max_dist=1):
+    """
+    Cluster unique peptides by Hamming distance.
+
+    Identical peptides are the same node (Hamming distance = 0),
+    so duplicate peptide sequences from different proteins are
+    trivially in the same cluster.
+    """
     uf = UnionFind()
     peptide_set = set(peptides)
 
@@ -115,6 +120,13 @@ def cluster_by_hamming(peptides, max_dist=1):
 # ──────────────────────────────────────────────
 
 def greedy_balanced_partition(clusters, n_buckets, peptide_sample_counts):
+    """
+    Greedy bin-packing: assign each cluster to the currently smallest bucket.
+
+    peptide_sample_counts includes ALL rows for each peptide
+    (including duplicates from different proteins), so the balancing
+    accounts for the true number of data rows, not just unique peptides.
+    """
     cluster_info = []
     for root, peps in clusters.items():
         total = sum(peptide_sample_counts.get(p, 0) for p in peps)
@@ -139,6 +151,7 @@ def greedy_balanced_partition(clusters, n_buckets, peptide_sample_counts):
 # ──────────────────────────────────────────────
 
 def verify_no_homology_leakage(df, peptide_col, fold_col):
+    """Check that no two peptides in different folds have Hamming distance <= 1."""
     folds = sorted(df[fold_col].unique())
     fold_peptides = {
         f: set(df.loc[df[fold_col] == f, peptide_col].unique()) for f in folds
@@ -163,8 +176,116 @@ def verify_no_homology_leakage(df, peptide_col, fold_col):
     return violations
 
 
+def verify_no_peptide_split(df, peptide_col, fold_col):
+    """
+    Verify that every row with the same peptide sequence is in the same fold.
+    This catches the case where identical peptides from different proteins
+    might have been accidentally split across folds.
+    """
+    peptide_folds = df.groupby(peptide_col)[fold_col].nunique()
+    split_peptides = peptide_folds[peptide_folds > 1]
+
+    if len(split_peptides) == 0:
+        print("No peptide split across folds (all duplicates in same fold).")
+    else:
+        print(f"WARNING: {len(split_peptides)} peptides split across folds!")
+        for pep, n_folds in split_peptides.head(10).items():
+            folds_in = df.loc[df[peptide_col] == pep, fold_col].unique()
+            print(f"  {pep}: appears in folds {sorted(folds_in)}")
+
+    return len(split_peptides)
+
+
 # ──────────────────────────────────────────────
-# 5. STATISTICS
+# 5. DUPLICATE PEPTIDE ANALYSIS
+# ──────────────────────────────────────────────
+
+def analyze_duplicate_peptides(df, peptide_col, label_col):
+    """
+    Report on peptides that appear multiple times in the dataset,
+    potentially from different source proteins.
+    """
+    print("\n" + "=" * 80)
+    print("DUPLICATE PEPTIDE ANALYSIS")
+    print("=" * 80)
+
+    total_rows = len(df)
+    unique_peptides = df[peptide_col].nunique()
+    duplicate_rows = total_rows - unique_peptides
+
+    print(f"  Total rows:        {total_rows}")
+    print(f"  Unique peptides:   {unique_peptides}")
+    print(f"  Duplicate rows:    {duplicate_rows} "
+          f"({duplicate_rows / total_rows * 100:.1f}% of all rows)")
+
+    # Count how many times each peptide appears
+    pep_counts = df[peptide_col].value_counts()
+    multi_occurrence = pep_counts[pep_counts > 1]
+
+    if len(multi_occurrence) == 0:
+        print("  No peptides appear more than once.")
+        return
+
+    print(f"\n  Peptides appearing more than once: {len(multi_occurrence)}")
+    print(f"  Total rows from multi-occurrence peptides: {multi_occurrence.sum()}")
+
+    # Distribution of occurrence counts
+    print(f"\n  Occurrence count distribution:")
+    print(f"  {'Times seen':<15} {'Peptides':>10} {'Total rows':>12}")
+    print(f"  {'-' * 40}")
+    for count_val in sorted(pep_counts.unique()):
+        n_peps = (pep_counts == count_val).sum()
+        n_rows = n_peps * count_val
+        if n_peps > 0:
+            print(f"  {count_val:<15} {n_peps:>10} {n_rows:>12}")
+
+    # If uniprot_id column exists, show protein overlap
+    if "uniprot_id" in df.columns:
+        print(f"\n  Peptide-protein relationships:")
+        pep_proteins = df.groupby(peptide_col)["uniprot_id"].nunique()
+        multi_protein = pep_proteins[pep_proteins > 1]
+
+        print(f"  Peptides in exactly 1 protein:   {(pep_proteins == 1).sum()}")
+        print(f"  Peptides in multiple proteins:    {len(multi_protein)}")
+
+        if len(multi_protein) > 0:
+            print(f"\n  Top 10 peptides by number of source proteins:")
+            print(f"  {'Peptide':<15} {'Proteins':>10} {'Total rows':>12} {'Label dist':>15}")
+            print(f"  {'-' * 55}")
+            for pep in multi_protein.nlargest(10).index:
+                n_prots = multi_protein[pep]
+                pep_rows = df[df[peptide_col] == pep]
+                n_rows = len(pep_rows)
+                n_pos = (pep_rows[label_col] == 1).sum()
+                n_neg = (pep_rows[label_col] == 0).sum()
+                print(f"  {pep:<15} {n_prots:>10} {n_rows:>12} "
+                      f"  pos={n_pos}, neg={n_neg}")
+
+    # Check label consistency for duplicate peptides
+    print(f"\n  Label consistency for duplicate peptides:")
+    pep_label_nunique = df.groupby(peptide_col)[label_col].nunique()
+    mixed_label = pep_label_nunique[pep_label_nunique > 1]
+    print(f"  Peptides with consistent label:  {(pep_label_nunique == 1).sum()}")
+    print(f"  Peptides with mixed labels:      {len(mixed_label)}")
+
+    if len(mixed_label) > 0:
+        print(f"\n  NOTE: {len(mixed_label)} peptides have both positive and negative labels.")
+        print(f"  This can happen when the same peptide is processed in one protein")
+        print(f"  context but not another. Examples:")
+        for pep in list(mixed_label.index)[:5]:
+            pep_rows = df[df[peptide_col] == pep]
+            n_pos = (pep_rows[label_col] == 1).sum()
+            n_neg = (pep_rows[label_col] == 0).sum()
+            if "uniprot_id" in df.columns:
+                prots = pep_rows["uniprot_id"].unique()
+                print(f"    {pep}: pos={n_pos}, neg={n_neg}, "
+                      f"proteins={list(prots)}")
+            else:
+                print(f"    {pep}: pos={n_pos}, neg={n_neg}")
+
+
+# ──────────────────────────────────────────────
+# 6. STATISTICS
 # ──────────────────────────────────────────────
 
 def print_bucket_statistics(df, peptide_col, label_col, fold_col,
@@ -215,11 +336,11 @@ def print_bucket_statistics(df, peptide_col, label_col, fold_col,
     sizes = [s["total"] for s in bucket_stats.values()]
     pos_pcts = [s["pos_pct"] for s in bucket_stats.values()]
 
-    print(f"  Neg:Pos ratio   — min: {min(ratios):.3f}  max: {max(ratios):.3f}  "
+    print(f"  Neg:Pos ratio   -- min: {min(ratios):.3f}  max: {max(ratios):.3f}  "
           f"std: {np.std(ratios):.4f}")
-    print(f"  Bucket sizes    — min: {min(sizes)}  max: {max(sizes)}  "
+    print(f"  Bucket sizes    -- min: {min(sizes)}  max: {max(sizes)}  "
           f"std: {np.std(sizes):.1f}")
-    print(f"  Positive %      — min: {min(pos_pcts):.1f}%  max: {max(pos_pcts):.1f}%  "
+    print(f"  Positive %      -- min: {min(pos_pcts):.1f}%  max: {max(pos_pcts):.1f}%  "
           f"std: {np.std(pos_pcts):.2f}%")
 
     cv_stats = {k: v for k, v in bucket_stats.items() if k != held_out_index}
@@ -227,9 +348,9 @@ def print_bucket_statistics(df, peptide_col, label_col, fold_col,
     cv_sizes = [v["total"] for v in cv_stats.values()]
 
     print(f"\n  CV folds only (excl. held-out):")
-    print(f"    Size range:     {min(cv_sizes)} – {max(cv_sizes)}  "
-          f"(ideal ≈ {sum(cv_sizes) // len(cv_sizes)})")
-    print(f"    Ratio range:    {min(cv_ratios):.3f} – {max(cv_ratios):.3f}")
+    print(f"    Size range:     {min(cv_sizes)} -- {max(cv_sizes)}  "
+          f"(ideal = {sum(cv_sizes) // len(cv_sizes)})")
+    print(f"    Ratio range:    {min(cv_ratios):.3f} -- {max(cv_ratios):.3f}")
 
     ho = bucket_stats.get(held_out_index, {})
     if ho:
@@ -263,7 +384,7 @@ def inspect_bucket_clusters(df, clusters, peptide_to_bucket,
         sizes = [s for _, _, s in cls_list]
 
         if not sizes:
-            print(f"\n── Bucket {i} ({role}): EMPTY ──")
+            print(f"\n-- Bucket {i} ({role}): EMPTY --")
             continue
 
         n_clusters = len(sizes)
@@ -276,7 +397,7 @@ def inspect_bucket_clusters(df, clusters, peptide_to_bucket,
         median_size = np.median(sizes)
         total_peptides_in_bucket = sum(sizes)
 
-        print(f"\n── Bucket {i} ({role}) ──")
+        print(f"\n-- Bucket {i} ({role}) --")
         print(f"  Total clusters:      {n_clusters}")
         print(f"  Total unique peps:   {total_peptides_in_bucket}")
         print(f"  Cluster size stats:  mean={mean_size:.1f}  "
@@ -346,7 +467,7 @@ if __name__ == "__main__":
     t_start = time.time()
 
     print("=" * 80)
-    print("  01_DATASPLIT — HOMOLOGY-BASED DATA SPLIT")
+    print("  01_DATASPLIT -- HOMOLOGY-BASED DATA SPLIT")
     print("=" * 80)
     print(f"  Timestamp:        {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"  Data path:        {RAW_DATA_PATH}")
@@ -359,11 +480,11 @@ if __name__ == "__main__":
     print(f"  Hamming cutoff:   <= {HAMMING_CUTOFF}")
     print("=" * 80)
 
-    # ── Load ──
+    # -- Load --
     print(f"\nLoading data from: {RAW_DATA_PATH}")
     df = pd.read_csv(RAW_DATA_PATH)
 
-    print(f"\nShape: {df.shape[0]} rows × {df.shape[1]} columns")
+    print(f"\nShape: {df.shape[0]} rows x {df.shape[1]} columns")
     print(f"\nColumns ({len(df.columns)}):")
     for i, col in enumerate(df.columns):
         print(f"  [{i:>3}] {col:<40} dtype: {df[col].dtype}")
@@ -390,13 +511,18 @@ if __name__ == "__main__":
     if "uniprot_id" in df.columns:
         print(f"\nUnique source proteins (uniprot_id): {df['uniprot_id'].nunique()}")
 
-    # ── Phase 1: Cluster ──
+    # -- Duplicate peptide analysis --
+    analyze_duplicate_peptides(df, PEPTIDE_COL, LABEL_COL)
+
+    # -- Phase 1: Cluster --
     print("\n" + "=" * 80)
     print("PHASE 1: HOMOLOGY CLUSTERING")
     print("=" * 80)
     unique_peptides = df[PEPTIDE_COL].unique().tolist()
-    print(f"Total rows:       {len(df)}")
-    print(f"Unique peptides:  {len(unique_peptides)}")
+    print(f"Total rows:          {len(df)}")
+    print(f"Unique peptides:     {len(unique_peptides)}")
+    print(f"Duplicate rows:      {len(df) - len(unique_peptides)} "
+          f"(same peptide, different protein context)")
 
     t_cluster_start = time.time()
     print(f"Clustering by Hamming distance <= {HAMMING_CUTOFF} ...")
@@ -405,22 +531,28 @@ if __name__ == "__main__":
 
     n_clusters = len(clusters)
     largest_cluster_size = max(len(v) for v in clusters.values())
-    print(f"Clusters formed:  {n_clusters}")
-    print(f"Largest cluster:  {largest_cluster_size} peptides")
-    print(f"Clustering time:  {t_cluster_end - t_cluster_start:.2f}s")
+    print(f"Clusters formed:     {n_clusters}")
+    print(f"Largest cluster:     {largest_cluster_size} peptides")
+    print(f"Clustering time:     {t_cluster_end - t_cluster_start:.2f}s")
 
     if largest_cluster_size > len(unique_peptides) * 0.25:
         msg = (f"Largest cluster = {largest_cluster_size} peptides "
                f"({largest_cluster_size / len(unique_peptides) * 100:.1f}% "
-               f"of unique peptides) — may cause imbalanced buckets.")
+               f"of unique peptides) -- may cause imbalanced buckets.")
         print(msg)
         warnings.warn(msg)
 
-    # ── Phase 2: Assign ──
+    # -- Phase 2: Assign --
     print("\n" + "=" * 80)
     print("PHASE 2: BUCKET ASSIGNMENT")
     print("=" * 80)
+
+    # sample_counts counts ALL rows per peptide, including duplicates
+    # from different proteins. This ensures balancing accounts for
+    # the true data volume, not just unique sequences.
     sample_counts = df[PEPTIDE_COL].value_counts().to_dict()
+    print(f"Sample counts include all rows (duplicates from different proteins counted)")
+
     np.random.seed(RANDOM_STATE)
 
     t_assign_start = time.time()
@@ -429,20 +561,46 @@ if __name__ == "__main__":
     )
     t_assign_end = time.time()
 
+    # Map fold to EVERY row via peptide sequence.
+    # All rows with the same peptide (regardless of source protein)
+    # get the same fold assignment.
     df[FOLD_COL] = df[PEPTIDE_COL].map(peptide_to_bucket)
-    print(f"Assignment time:  {t_assign_end - t_assign_start:.2f}s")
-    print(f"Bucket totals:    {bucket_totals}")
+    print(f"Assignment time:     {t_assign_end - t_assign_start:.2f}s")
+    print(f"Bucket totals:       {bucket_totals}")
 
-    # ── Verify ──
+    # -- Verify: no homology leakage --
     print("\n" + "=" * 80)
     print("LEAKAGE VERIFICATION")
     print("=" * 80)
+
+    # Verify 1: No Hamming-distance-1 neighbors across folds
     t_verify_start = time.time()
     n_violations = verify_no_homology_leakage(df, PEPTIDE_COL, FOLD_COL)
     t_verify_end = time.time()
     print(f"Verification time: {t_verify_end - t_verify_start:.2f}s")
 
-    # ── Statistics ──
+    # Verify 2: No peptide sequence split across folds
+    # (confirms all duplicate rows stay together)
+    print()
+    n_splits = verify_no_peptide_split(df, PEPTIDE_COL, FOLD_COL)
+
+    # -- Per-fold duplicate peptide report --
+    print("\n" + "=" * 80)
+    print("DUPLICATE PEPTIDES PER FOLD")
+    print("=" * 80)
+    print(f"  {'Fold':<10} {'Role':<22} {'Total':>7} {'Unique':>7} "
+          f"{'Duplicates':>11} {'Dup %':>7}")
+    print(f"  {'-' * 66}")
+    for i in sorted(df[FOLD_COL].unique()):
+        fold_df = df[df[FOLD_COL] == i]
+        n_total = len(fold_df)
+        n_unique = fold_df[PEPTIDE_COL].nunique()
+        n_dup = n_total - n_unique
+        role = "Held-out" if i == HELD_OUT_INDEX else f"CV fold {i}"
+        print(f"  {i:<10} {role:<22} {n_total:>7} {n_unique:>7} "
+              f"{n_dup:>11} {n_dup / n_total * 100 if n_total > 0 else 0:>6.1f}%")
+
+    # -- Statistics --
     print_bucket_statistics(df, PEPTIDE_COL, LABEL_COL, FOLD_COL,
                             N_CV_FOLDS, HELD_OUT_INDEX)
 
@@ -450,7 +608,7 @@ if __name__ == "__main__":
                             PEPTIDE_COL, LABEL_COL, FOLD_COL,
                             N_CV_FOLDS, HELD_OUT_INDEX)
 
-    # ── CV preview ──
+    # -- CV preview --
     print("\n" + "=" * 80)
     print("CV FOLD TRAIN/TEST SIZES")
     print("=" * 80)
@@ -474,7 +632,7 @@ if __name__ == "__main__":
     print(f"  Held-out: samples={len(val_df):>6} "
           f"(pos={v_pos}, neg={v_neg}, ratio={v_neg / v_pos:.3f})")
 
-    # ── Save ──
+    # -- Save --
     os.makedirs(DATA_DIR, exist_ok=True)
     df.to_csv(SPLIT_DATA_PATH, index=False)
     print(f"\nSaved to: {SPLIT_DATA_PATH}")
@@ -486,12 +644,15 @@ if __name__ == "__main__":
     print(f"  Total runtime:    {t_end - t_start:.2f}s")
     print(f"  Input rows:       {len(df)}")
     print(f"  Unique peptides:  {len(unique_peptides)}")
+    print(f"  Duplicate rows:   {len(df) - len(unique_peptides)}")
     print(f"  Clusters:         {n_clusters}")
     print(f"  Buckets:          {N_BUCKETS} ({N_CV_FOLDS} CV + 1 held-out)")
-    print(f"  Leakage:          {'NONE' if n_violations == 0 else f'{n_violations} violations'}")
+    print(f"  Homology leakage: {'NONE' if n_violations == 0 else f'{n_violations} violations'}")
+    print(f"  Peptide splits:   {'NONE' if n_splits == 0 else f'{n_splits} peptides split'}")
     print(f"  Output:           {SPLIT_DATA_PATH}")
     print(f"  Log:              {LOG_PATH}")
     print(f"  Completed:        {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 80)
 
     logger.close()
+
