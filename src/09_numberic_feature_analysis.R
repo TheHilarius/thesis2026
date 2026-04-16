@@ -10,11 +10,12 @@ input_file <- "data/processed/df_all.csv"
 results_dir <- "results"
 figures_dir <- file.path("results", "figures", "numeric_9mer")
 per_feature_dir <- file.path("results", "figures", "numeric_9mer", "per_feature")
+heatmap_dir <- file.path("results", "figures", "numeric_9mer", "heatmap")
 
 dir.create(results_dir, showWarnings = FALSE, recursive = TRUE)
 dir.create(figures_dir, showWarnings = FALSE, recursive = TRUE)
 dir.create(per_feature_dir, showWarnings = FALSE, recursive = TRUE)
-
+dir.create(heatmap_dir, showWarnings = FALSE, recursive = TRUE)
 # Load data
 df_raw <- read_csv(input_file, show_col_types = FALSE)
 
@@ -284,7 +285,7 @@ for (group_name in names(heatmap_feature_groups)) {
           axis.text.y = element_text(size = 8),
           panel.grid = element_blank(), plot.title.position = "plot")
   
-  ggsave(file.path(figures_dir, paste0("correlation_heatmap_", group_name, ".png")),
+  ggsave(file.path(heatmap_dir, paste0("correlation_heatmap_", group_name, ".png")),
          plot = p_heat, width = plot_size, height = plot_size, dpi = 300)
   message("  Saved: correlation_heatmap_", group_name)
 }
@@ -489,15 +490,16 @@ logit_scaled <- map_dfr(all_numeric, ~ safe_logit(df_raw, .x, scale_feature = TR
   mutate(p_adj = p.adjust(p_value, method = "BH")) |> arrange(p_adj)
 write_csv(logit_scaled, file.path(results_dir, "numeric_logistic_regression_scaled.csv"))
 
-top_or <- logit_scaled |>
+all_or <- logit_scaled |>
   filter(!is.na(odds_ratio), !is.na(conf_low), !is.na(conf_high)) |>
-  slice_head(n = 20) |>
   mutate(feature = fct_reorder(feature, odds_ratio))
+
+top_or <- all_or # |> slice_head(n = 20)
 
 max_log_dist <- max(abs(log10(c(top_or$conf_low, top_or$conf_high))), na.rm = TRUE) * 1.1
 sym_limits <- c(10^(-max_log_dist), 10^(max_log_dist))
 
-p_or <- ggplot(top_or, aes(x = odds_ratio, y = feature)) +
+p_or <- ggplot(top_or, aes(x = odds_ratio, y = feature)) + # top_or
   geom_point(size = 3, color = "#2ecc71") +
   geom_errorbarh(aes(xmin = conf_low, xmax = conf_high), height = 0.2, color = "grey30") +
   geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
