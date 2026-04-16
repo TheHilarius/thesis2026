@@ -1,3 +1,16 @@
+"""
+01_datasplit.py
+Homology-based data splitting for MHC-I processing prediction.
+"""
+
+import sys
+import os
+
+# -- Path fix: add src/ directory so config.py is importable --
+SRC_DIR = os.path.dirname(os.path.abspath(__file__))
+if SRC_DIR not in sys.path:
+    sys.path.insert(0, SRC_DIR)
+
 import pandas as pd
 import numpy as np
 from collections import defaultdict
@@ -5,16 +18,14 @@ from itertools import combinations
 from datetime import datetime
 import warnings
 import time
-import sys
-import os
 
-# Import shared config
 from config import (
     DATA_DIR, RAW_DATA_PATH, SPLIT_DATA_PATH, LOG_DIR,
     N_CV_FOLDS, HELD_OUT_INDEX, N_BUCKETS, RANDOM_STATE,
-    PEPTIDE_COL, LABEL_COL, FOLD_COL, HAMMING_CUTOFF, 
+    PEPTIDE_COL, LABEL_COL, FOLD_COL, HAMMING_CUTOFF,
     validate_config,
 )
+
 
 
 # ──────────────────────────────────────────────
