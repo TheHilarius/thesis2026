@@ -491,9 +491,8 @@ extract_cleavage_positions <- function(data,
   #' positions around each cleavage site.
   #'
   #' NOMENCLATURE:
-  #'   P4-P3-P2-P1 | P1'-P2'-P3'-P4'
-  #'               ↑
-  #'         Cleavage site
+  #'   ...N4 N3 N2 N1 | P1 P2 P3 P4 P5 P6 P7 P8 P9 | C1 C2 C3 C4...
+  #'                  ^cut                         ^cut
   #'
   #'   P1 = residue immediately BEFORE the cut (most important!)
   #'   P1' = residue immediately AFTER the cut
@@ -502,40 +501,39 @@ extract_cleavage_positions <- function(data,
   #'   1. N-terminal cleavage: where the epitope's N-terminus is created
   #'   2. C-terminal cleavage: where the epitope's C-terminus is created
   
-  data %>%
+  data |>
     mutate(
       # Store lengths for indexing
       pep_len = nchar(.data[[peptide_col]]),
       n_flank_len = nchar(.data[[n_flank_col]]),
-      c_flank_len = nchar(.data[[c_flank_col]]),
-      
-      # P4 through P1: Last 4 residues of N-flank (before the cut)
-      n_cleavage_P4 = if_else(n_flank_len >= 4, substr(.data[[n_flank_col]], n_flank_len - 3, n_flank_len - 3), NA_character_),
-      n_cleavage_P3 = if_else(n_flank_len >= 3, substr(.data[[n_flank_col]], n_flank_len - 2, n_flank_len - 2), NA_character_),
-      n_cleavage_P2 = if_else(n_flank_len >= 2, substr(.data[[n_flank_col]], n_flank_len - 1, n_flank_len - 1), NA_character_),
-      n_cleavage_P1 = if_else(n_flank_len >= 1, substr(.data[[n_flank_col]], n_flank_len, n_flank_len), NA_character_),
-      
-      # P1' through P4': First 4 residues of epitope (after the cut)
-      n_cleavage_P1_prime = substr(.data[[peptide_col]], 1, 1),
-      n_cleavage_P2_prime = substr(.data[[peptide_col]], 2, 2),
-      n_cleavage_P3_prime = substr(.data[[peptide_col]], 3, 3),
-      n_cleavage_P4_prime = substr(.data[[peptide_col]], 4, 4),
-      
-      # NOTE: P1 here is the LAST residue of the epitope — the MOST
-      
-      # P4 through P1: Last 4 residues of epitope (before the cut)
-      c_cleavage_P4 = if_else(pep_len >= 4, substr(.data[[peptide_col]], pep_len - 3, pep_len - 3), NA_character_),
-      c_cleavage_P3 = if_else(pep_len >= 3, substr(.data[[peptide_col]], pep_len - 2, pep_len - 2), NA_character_),
-      c_cleavage_P2 = if_else(pep_len >= 2, substr(.data[[peptide_col]], pep_len - 1, pep_len - 1), NA_character_),
-      c_cleavage_P1 = substr(.data[[peptide_col]], pep_len, pep_len),
-      
-      # P1' through P4': First 4 residues of C-flank (after the cut)
-      c_cleavage_P1_prime = if_else(c_flank_len >= 1, substr(.data[[c_flank_col]], 1, 1), NA_character_),
-      c_cleavage_P2_prime = if_else(c_flank_len >= 2, substr(.data[[c_flank_col]], 2, 2), NA_character_),
-      c_cleavage_P3_prime = if_else(c_flank_len >= 3, substr(.data[[c_flank_col]], 3, 3), NA_character_),
-      c_cleavage_P4_prime = if_else(c_flank_len >= 4, substr(.data[[c_flank_col]], 4, 4), NA_character_)
-      
-    ) %>%
+      c_flank_len = nchar(.data[[c_flank_col]])
+    ) |>
+    # N-flank positions: N4, N3, N2, N1 (reading left to right)
+    mutate(
+      N4 = if_else(n_flank_len >= 4, substr(.data[[n_flank_col]], n_flank_len - 3, n_flank_len - 3), NA_character_),
+      N3 = if_else(n_flank_len >= 3, substr(.data[[n_flank_col]], n_flank_len - 2, n_flank_len - 2), NA_character_),
+      N2 = if_else(n_flank_len >= 2, substr(.data[[n_flank_col]], n_flank_len - 1, n_flank_len - 1), NA_character_),
+      N1 = if_else(n_flank_len >= 1, substr(.data[[n_flank_col]], n_flank_len, n_flank_len), NA_character_)
+    ) |>
+    # Peptide positions: P1 through P9
+    mutate(
+      P1 = substr(.data[[peptide_col]], 1, 1),
+      P2 = substr(.data[[peptide_col]], 2, 2),
+      P3 = substr(.data[[peptide_col]], 3, 3),
+      P4 = substr(.data[[peptide_col]], 4, 4),
+      P5 = substr(.data[[peptide_col]], 5, 5),
+      P6 = substr(.data[[peptide_col]], 6, 6),
+      P7 = substr(.data[[peptide_col]], 7, 7),
+      P8 = substr(.data[[peptide_col]], 8, 8),
+      P9 = substr(.data[[peptide_col]], 9, 9)
+    ) |>
+    # C-flank positions: C1, C2, C3, C4
+    mutate(
+      C1 = if_else(c_flank_len >= 1, substr(.data[[c_flank_col]], 1, 1), NA_character_),
+      C2 = if_else(c_flank_len >= 2, substr(.data[[c_flank_col]], 2, 2), NA_character_),
+      C3 = if_else(c_flank_len >= 3, substr(.data[[c_flank_col]], 3, 3), NA_character_),
+      C4 = if_else(c_flank_len >= 4, substr(.data[[c_flank_col]], 4, 4), NA_character_)
+    ) |>
     # Remove temporary length columns
     select(-pep_len, -n_flank_len, -c_flank_len)
 }
@@ -1145,6 +1143,65 @@ extract_nsp3_q8_features <- function(uniprot_id,
     n_peptide   = actual_pep_len,
     n_cflank    = actual_cfl_len
   )
+}
+
+#  Cliff's Delta (overflow-safe, chunked computation) 
+cliff_delta_sampled <- function(x, y, n_sample = 50000, seed = 42) {
+  set.seed(seed)
+  if (length(x) > n_sample) x <- sample(x, n_sample)
+  if (length(y) > n_sample) y <- sample(y, n_sample)
+  
+  x_chunks <- split(x, ceiling(seq_along(x) / 5000))
+  total_greater <- 0; total_less <- 0; total_pairs <- 0
+  
+  for (chunk in x_chunks) {
+    comparisons <- outer(chunk, y, FUN = function(a, b) sign(a - b))
+    total_greater <- total_greater + sum(comparisons > 0)
+    total_less    <- total_less    + sum(comparisons < 0)
+    total_pairs   <- total_pairs   + length(comparisons)
+  }
+  
+  delta <- (total_greater - total_less) / total_pairs
+  magnitude <- case_when(
+    abs(delta) < 0.147 ~ "negligible",
+    abs(delta) < 0.33  ~ "small",
+    abs(delta) < 0.474 ~ "medium",
+    TRUE               ~ "large"
+  )
+  list(estimate = delta, magnitude = magnitude)
+}
+
+sample_bin_matched <- function(df_pos, df_neg, n_bins, seed = 42) {
+  breaks <- seq(0, 2, length.out = n_bins + 1)
+  
+  pos_binned <- df_pos |>
+    mutate(rank_bin = cut(rank, breaks = breaks, include.lowest = TRUE))
+  neg_binned <- df_neg |>
+    mutate(rank_bin = cut(rank, breaks = breaks, include.lowest = TRUE))
+  
+  props <- pos_binned |> 
+    count(rank_bin, name = "n_pos") |> 
+    mutate(prop = n_pos / sum(n_pos))
+  avail <- neg_binned |> 
+    count(rank_bin, name = "n_available")
+  
+  plan <- props |>
+    left_join(avail, by = "rank_bin") |>
+    mutate(n_available = replace_na(n_available, 0),
+           max_total = ifelse(prop > 0, n_available / prop, Inf))
+  
+  max_n <- floor(min(plan$max_total))
+  plan <- plan |> mutate(n_sample = floor(max_n * prop))
+  
+  set.seed(seed)
+  plan |>
+    select(rank_bin, n_sample) |>
+    pmap_dfr(function(rank_bin, n_sample) {
+      neg_binned |>
+        filter(rank_bin == !!rank_bin) |>
+        slice_sample(n = n_sample) # random within each bin
+    }) |>
+    mutate(label = 0)
 }
 
 cat("functions.R loaded successfully.\n")

@@ -3,16 +3,26 @@ source("src/functions.R")
 set_working_directory()
 library(ggplot2)
 
-
-# 1. Load IEDB positives 
+# Load IEDB positives 
 df_raw <- read_csv("data/processed/pos_EL_all_epitopes_hla0201.csv")
 
 df_iedb_pos <- df_raw |>
   filter(pep_length == 9) |>
   filter(uniprot_id != "O60361")  # deleted from SwissProt in 2026_01
 
+# deduplication
+n_before <- nrow(df_iedb_pos)
+df_iedb_pos <- df_iedb_pos |>
+  distinct(peptide, uniprot_id, start, end, .keep_all = TRUE)
+n_after <- nrow(df_iedb_pos)
 
-# 1.5. Validate against FASTA database ────────────────────────────────────────
+if (n_before > n_after) {
+  cat("Removed", n_before - n_after, "duplicate positives\n")
+} else {
+  cat("No duplicate positives found.\n")
+}
+
+# Validate against FASTA database ────────────────────────────────────────
 cat("Loading FASTA database to remove obsolete isoforms...\n")
 df_fasta <- read_fasta_df("data/raw/fasta/combined_9mer.fasta") |>
   mutate(uniprot_id = str_extract(header, "(?<=\\|)[A-Z0-9]+(?=\\|)"))
@@ -23,7 +33,7 @@ df_iedb_pos <- df_iedb_pos |>
 write_csv(df_iedb_pos, "data/processed/pos_EL_9mers_epitopes_hla0201.csv")
 cat("IEDB positives:", nrow(df_iedb_pos), "\n")
 
-# 2. Protein lookup table 
+# Protein lookup table 
 df_protein_lookup <- df_iedb_pos |>
   select(uniprot_id, source_molecule, molecule_parent) |>
   slice_head(n = 1, by = uniprot_id)
@@ -32,13 +42,13 @@ write_csv(df_protein_lookup, "data/processed/protein_lookup.csv")
 cat("Unique proteins:", nrow(df_protein_lookup), "\n")
 
 
-# 3. Load NetMHCpan predictions (9-mer binders only) 
+# Load NetMHCpan predictions (9-mer binders only) 
 cat("Loading NetMHCpan 9-mer binders...\n")
 df_netmhcpan_raw <- load_netmhcpan_batches(binders_only = TRUE, peptide_length = 9)
 cat("Total 9-mer binders loaded:", nrow(df_netmhcpan_raw), "\n")
 
 
-# 4. Parse, clean, and filter to valid proteins 
+# Parse, clean, and filter to valid proteins 
 df_netmhcpan_binders <- df_netmhcpan_raw |>
   mutate(HLA = "HLA-A02:01") |>
   mutate(binder = case_when(
@@ -75,18 +85,31 @@ cat("The", nrow(missing_proteins), "proteins without 9-mer binders have",
     "non-binders (predicted by NetMHCpan)\n")
 
 
-# 5. Compare NetMHCpan vs IEDB 
+# Compare NetMHCpan vs IEDB 
+#df_iedb_pos <- df_iedb_pos |>
+#  left_join(
+#    df_netmhcpan_binders |> select(peptide, uniprot_id, rank),
+#    by = c("peptide", "uniprot_id")
+#  )
 df_iedb_pos <- df_iedb_pos |>
   left_join(
-    df_netmhcpan_binders |> select(peptide, uniprot_id, rank),
+    df_netmhcpan_binders |>
+      select(peptide, uniprot_id, rank) |>
+      slice_min(rank, n = 1, by = c(peptide, uniprot_id)),
     by = c("peptide", "uniprot_id")
   )
 cat("IEDB positives with rank (TP):", sum(!is.na(df_iedb_pos$rank)), "\n")
 cat("IEDB positives without rank (FN):", sum(is.na(df_iedb_pos$rank)), "\n")
 
-df_overlap        <- df_netmhcpan_binders |> semi_join(df_iedb_pos, by = c("peptide", "uniprot_id"))
-df_netmhcpan_only <- df_netmhcpan_binders |> anti_join(df_iedb_pos, by = c("peptide", "uniprot_id"))
-df_iedb_only      <- df_iedb_pos          |> anti_join(df_netmhcpan_binders, by = c("peptide", "uniprot_id"))
+df_overlap        <- df_netmhcpan_binders |> 
+  semi_join(df_iedb_pos, by = c("peptide", "uniprot_id"))
+
+df_netmhcpan_only <- df_netmhcpan_binders |> 
+  anti_join(df_iedb_pos, by = c("peptide", "uniprot_id")) |>
+  distinct(peptide, uniprot_id, start, end, .keep_all = TRUE)
+
+df_iedb_only      <- df_iedb_pos |> 
+  anti_join(df_netmhcpan_binders, by = c("peptide", "uniprot_id"))
 
 cat("\n=== Comparison Summary (9-mers only) ===\n")
 cat("Experimentally confirmed (IEDB):          ", nrow(df_iedb_pos), "\n")
@@ -98,14 +121,14 @@ cat("Sensitivity (IEDB peptides recovered):    ",
     round(nrow(df_overlap) / nrow(df_iedb_pos) * 100, 1), "%\n")
 
 
-# 6. Save split outputs 
+# Save split outputs 
 write_csv(df_netmhcpan_binders, "data/processed/netmhcpan_9mer_binders.csv")
 write_csv(df_netmhcpan_only,    "data/processed/netmhcpan_9mer_only.csv")
 write_csv(df_iedb_only,         "data/processed/iedb_9mer_only.csv")
 cat("\n✅ Saved split data to data/processed/\n")
 
 
-# 7. Confusion matrix 
+# Confusion matrix 
 TP <- nrow(df_overlap)
 FP <- nrow(df_netmhcpan_only)
 FN <- nrow(df_iedb_only)
@@ -184,8 +207,9 @@ p1 <- ggplot(df_cm, aes(x = Predicted, y = Actual, fill = quad)) +
     plot.margin = margin(t = 10, r = 10, b = 10, l = 5)
   )
 
-# 8. Define positives & pre-matching diagnostics 
+# Define positives & pre-matching diagnostics 
 df_positives <- df_overlap |>
+  distinct(peptide, uniprot_id, start, end, .keep_all = TRUE) |>
   mutate(label = 1)
 
 #  Affinity bias check 
@@ -268,38 +292,9 @@ p3 <- ggplot(df_rank_pre, aes(x = rank, colour = label)) +
         plot.title.position = "plot")
 
 
-# 9. Rank-matched negative sampling 
-
-#  Helper: perform bin-matched sampling 
-sample_bin_matched <- function(df_pos, df_neg, n_bins) {
-  breaks <- seq(0, 2, length.out = n_bins + 1)
-  
-  pos_binned <- df_pos |>
-    mutate(rank_bin = cut(rank, breaks = breaks, include.lowest = TRUE))
-  neg_binned <- df_neg |>
-    mutate(rank_bin = cut(rank, breaks = breaks, include.lowest = TRUE))
-  
-  props <- pos_binned |> count(rank_bin, name = "n_pos") |> mutate(prop = n_pos / sum(n_pos))
-  avail <- neg_binned |> count(rank_bin, name = "n_available")
-  
-  plan <- props |>
-    left_join(avail, by = "rank_bin") |>
-    mutate(n_available = replace_na(n_available, 0),
-           max_total = ifelse(prop > 0, n_available / prop, Inf))
-  
-  max_n <- floor(min(plan$max_total))
-  plan <- plan |> mutate(n_sample = floor(max_n * prop))
-  
-  set.seed(42)
-  plan |>
-    select(rank_bin, n_sample) |>
-    pmap_dfr(function(rank_bin, n_sample) {
-      neg_binned |>
-        filter(rank_bin == !!rank_bin) |>
-        slice_sample(n = n_sample)
-    }) |>
-    mutate(label = 0)
-}
+# Rank-matched negative sampling 
+RANDOM_SEED = 42
+CHOSEN_N_BINS = 25 # Use later when building df_negatives
 
 #  Bin count sweep 
 test_bins <- c(seq(5, 20, by = 1), seq(25, 200, by = 5))
@@ -376,7 +371,7 @@ neg_sets <- map(configs$n_bins, function(nb) {
 names(neg_sets) <- configs$tier
 
 
-# 10. Comparison plots across configurations 
+# Comparison plots across configurations 
 
 df_facet_density <- imap_dfr(neg_sets, function(df_neg, tier_name) {
   cfg <- configs |> filter(tier == tier_name)
@@ -450,16 +445,13 @@ bind_rows(
   configs |> transmute(option = tier, n_bins, n_neg, ratio, ks_D, quality = match_quality)
 ) |> print(n = Inf)
 
-
-# 11. Build final dataset (Option C: 25 bins) 
-config_chosen <- configs |> filter(tier == "C: Decent (D<0.10)")
-
-df_negatives <- neg_sets[[config_chosen$tier]]
+# Build final dataset (Option C: 25 bins) 
+df_negatives <- sample_bin_matched(df_positives, df_netmhcpan_only, CHOSEN_N_BINS, seed = RANDOM_SEED)
 
 cat("\n=== Chosen Configuration: Option C ===\n")
-cat("Bins:    ", config_chosen$n_bins, "\n")
-cat("KS D:   ", config_chosen$ks_D, "(", config_chosen$match_quality, ")\n")
-cat("Neg:Pos: ", config_chosen$ratio, ":1\n")
+cat("Bins:    ", CHOSEN_N_BINS, "\n")
+cat("Negatives:", scales::comma(nrow(df_negatives)), "\n")
+cat("Neg:Pos: ", round(nrow(df_negatives) / nrow(df_positives), 2), ":1\n")
 
 df_combined <- bind_rows(df_positives, df_negatives) |>
   select(-any_of(c("hla", "binder", "rank_bin")))
@@ -471,35 +463,9 @@ cat("Total:    ", scales::comma(nrow(df_combined)), "\n")
 cat("Ratio:    ", round(sum(df_combined$label == 0) / sum(df_combined$label == 1), 2), ":1\n")
 
 
-# 12. Statistical validation of bias correction 
+# Statistical validation of bias correction 
 # At n > 20K, p-values are always < 2.2e-16 (overpowered). Effect sizes
 # (KS D, Cliff's Δ) quantify the magnitude of distributional difference.
-
-#  Cliff's Delta (overflow-safe, chunked computation) 
-cliff_delta_sampled <- function(x, y, n_sample = 50000, seed = 42) {
-  set.seed(seed)
-  if (length(x) > n_sample) x <- sample(x, n_sample)
-  if (length(y) > n_sample) y <- sample(y, n_sample)
-  
-  x_chunks <- split(x, ceiling(seq_along(x) / 5000))
-  total_greater <- 0; total_less <- 0; total_pairs <- 0
-  
-  for (chunk in x_chunks) {
-    comparisons <- outer(chunk, y, FUN = function(a, b) sign(a - b))
-    total_greater <- total_greater + sum(comparisons > 0)
-    total_less    <- total_less    + sum(comparisons < 0)
-    total_pairs   <- total_pairs   + length(comparisons)
-  }
-  
-  delta <- (total_greater - total_less) / total_pairs
-  magnitude <- case_when(
-    abs(delta) < 0.147 ~ "negligible",
-    abs(delta) < 0.33  ~ "small",
-    abs(delta) < 0.474 ~ "medium",
-    TRUE               ~ "large"
-  )
-  list(estimate = delta, magnitude = magnitude)
-}
 
 #  Compute all tests 
 ks_before     <- ks.test(df_positives$rank, df_netmhcpan_only$rank)
@@ -659,7 +625,7 @@ p6 <- ggplot(df_stat_compare, aes(x = group, y = rank, fill = group)) +
     plot.margin         = margin(t = 10, r = 15, b = 10, l = 10)
   )
 
-# 13. Save all outputs 
+# Save all outputs 
 ggsave("results/confusion_matrix_9mer.png",              p1, width = 7,  height = 5,  dpi = 150)
 ggsave("results/affinity_bias_density_before.png",       p2, width = 7,  height = 5,  dpi = 150)
 ggsave("results/affinity_bias_ecdf_before.png",          p3, width = 7,  height = 5,  dpi = 150)
