@@ -1,13 +1,16 @@
 """
 03_modelling.py
 Cross-validation pipeline for MHC-I processing prediction.
-Baseline model: Random Forest (no regularization).
+Model-agnostic: select a model via --model <key> (default: rf).
 
 Assumes:
-  - 01_datasplit.py has been run (fold column exists).
+  - 01_datasplit.py has been run  (fold column exists).
   - 02_datasplit_analysis.py has been run for data-quality checks.
-This script focuses exclusively on training, evaluation, and
-model persistence.
+
+Usage:
+    python 03_modelling.py               # runs default model (rf)
+    python 03_modelling.py --model rf    # Random Forest baseline
+    python 03_modelling.py --model lr    # Logistic Regression baseline
 """
 
 import sys
@@ -17,9 +20,11 @@ SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 if SRC_DIR not in sys.path:
     sys.path.insert(0, SRC_DIR)
 
+import argparse
+import importlib
 import pandas as pd
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import (
     roc_auc_score, average_precision_score,
     accuracy_score, f1_score, matthews_corrcoef,
@@ -34,12 +39,9 @@ from config import (
     SPLIT_DATA_PATH, LOG_DIR, MODEL_DIR,
     N_CV_FOLDS, HELD_OUT_INDEX,
     PEPTIDE_COL, LABEL_COL, FOLD_COL,
-    POSITION_AA_COLS,
-    RANDOM_STATE,
-    RF_N_ESTIMATORS, RF_MAX_DEPTH, RF_MIN_SAMPLES_SPLIT,
-    RF_MIN_SAMPLES_LEAF, RF_MAX_FEATURES, RF_N_JOBS,
-    RF_CLASS_WEIGHT,
-    get_feature_cols, validate_config,
+    POSITION_AA_COLS, RANDOM_STATE,
+    DEFAULT_MODEL,
+    get_feature_cols, get_model_config, validate_config,
 )
 
 
@@ -69,7 +71,25 @@ class Logger:
 
 
 # ──────────────────────────────────────────────
-# 1. METRICS
+# 1. MODEL FACTORY
+# ──────────────────────────────────────────────
+
+def build_model(model_cfg):
+    """
+    Instantiate a sklearn model from a MODEL_REGISTRY entry.
+
+    The 'model_class' string (e.g. 'sklearn.ensemble.RandomForestClassifier')
+    is imported dynamically so config.py stays free of sklearn imports.
+    """
+    class_path = model_cfg["model_class"]
+    module_path, class_name = class_path.rsplit(".", 1)
+    module = importlib.import_module(module_path)
+    cls = getattr(module, class_name)
+    return cls(**model_cfg["params"])
+
+
+# ──────────────────────────────────────────────
+# 2. METRICS
 # ──────────────────────────────────────────────
 
 def compute_metrics(y_true, y_prob, threshold=0.5):
@@ -103,7 +123,7 @@ def print_metrics(metrics, prefix=""):
 
 
 # ──────────────────────────────────────────────
-# 2. DATA PREPARATION
+# 3. DATA PREPARATION
 # ──────────────────────────────────────────────
 
 def impute_nan(X_train, X_test, feature_cols, fold_id):
@@ -171,26 +191,34 @@ def resolve_feature_cols(df):
     return feature_cols
 
 
-def prepare_fold_data(df, feature_cols, fold_id):
+def prepare_fold_data(df, feature_cols, fold_id, needs_scaling):
     """
     Split CV data into train/test for a given fold.
-    No scaling needed for Random Forest.
+    Optionally standardises features (fit on train, transform both).
 
     Returns:
-        X_train, y_train, X_test, y_test, col_medians, fold_info
+        X_train, y_train, X_test, y_test, col_medians, scaler, fold_info
     """
     cv_df = df[df[FOLD_COL] != HELD_OUT_INDEX].copy()
 
     train_df = cv_df[cv_df[FOLD_COL] != fold_id].copy()
     test_df = cv_df[cv_df[FOLD_COL] == fold_id].copy()
 
-    X_train = train_df[feature_cols].values.astype(np.float32)
+    X_train = train_df[feature_cols].values.astype(np.float64)
     y_train = train_df[LABEL_COL].values.astype(np.int32)
-    X_test = test_df[feature_cols].values.astype(np.float32)
+    X_test = test_df[feature_cols].values.astype(np.float64)
     y_test = test_df[LABEL_COL].values.astype(np.int32)
 
-    # Impute NaN
+    # Impute NaN (always before scaling)
     X_train, X_test, col_medians = impute_nan(X_train, X_test, feature_cols, fold_id)
+
+    # Optional scaling
+    scaler = None
+    if needs_scaling:
+        scaler = StandardScaler()
+        X_train = scaler.fit_transform(X_train)
+        X_test = scaler.transform(X_test)
+        print(f"  Fold {fold_id}: features standardised (mean=0, std=1)")
 
     fold_info = {
         "fold_id": fold_id,
@@ -203,52 +231,50 @@ def prepare_fold_data(df, feature_cols, fold_id):
         "n_features": len(feature_cols),
     }
 
-    return X_train, y_train, X_test, y_test, col_medians, fold_info
+    return X_train, y_train, X_test, y_test, col_medians, scaler, fold_info
 
 
-def prepare_held_out_data(df, feature_cols, col_medians):
-    """Prepare the held-out set using pre-computed medians for imputation."""
+def prepare_held_out_data(df, feature_cols, col_medians, scaler=None):
+    """Prepare the held-out set using pre-computed medians and optional scaler."""
     ho_df = df[df[FOLD_COL] == HELD_OUT_INDEX].copy()
 
-    X_ho = ho_df[feature_cols].values.astype(np.float32)
+    X_ho = ho_df[feature_cols].values.astype(np.float64)
     y_ho = ho_df[LABEL_COL].values.astype(np.int32)
 
     X_ho = impute_nan_single(X_ho, col_medians)
+
+    if scaler is not None:
+        X_ho = scaler.transform(X_ho)
 
     return X_ho, y_ho
 
 
 # ──────────────────────────────────────────────
-# 3. MODEL TRAINING (one fold)
+# 4. MODEL TRAINING (one fold)
 # ──────────────────────────────────────────────
 
-def train_one_fold(X_train, y_train, X_test, y_test, fold_id):
+def train_one_fold(model_cfg, X_train, y_train, X_test, y_test, fold_id):
     """
-    Train a Random Forest on one CV fold and evaluate.
+    Train a model on one CV fold and evaluate.
 
     Returns:
         model, test_metrics, y_prob
     """
-    model = RandomForestClassifier(
-        n_estimators=RF_N_ESTIMATORS,
-        max_depth=RF_MAX_DEPTH,
-        min_samples_split=RF_MIN_SAMPLES_SPLIT,
-        min_samples_leaf=RF_MIN_SAMPLES_LEAF,
-        max_features=RF_MAX_FEATURES,
-        class_weight=RF_CLASS_WEIGHT,
-        n_jobs=RF_N_JOBS,
-        random_state=RANDOM_STATE,
-        verbose=0,
-    )
+    model = build_model(model_cfg)
+    display = model_cfg["display_name"]
 
-    print(f"  Training Random Forest ({RF_N_ESTIMATORS} trees) ...")
+    print(f"  Training {display} ...")
     t_train_start = time.time()
     model.fit(X_train, y_train)
     t_train_end = time.time()
     print(f"  Training time: {t_train_end - t_train_start:.1f}s")
 
     # Predict probabilities (probability of class 1)
-    y_prob = model.predict_proba(X_test)[:, 1]
+    if hasattr(model, "predict_proba"):
+        y_prob = model.predict_proba(X_test)[:, 1]
+    else:
+        # Fallback for models without predict_proba (e.g. SVM without probability)
+        y_prob = model.decision_function(X_test)
 
     test_metrics = compute_metrics(y_test, y_prob)
 
@@ -256,26 +282,58 @@ def train_one_fold(X_train, y_train, X_test, y_test, fold_id):
 
 
 # ──────────────────────────────────────────────
-# 4. FEATURE IMPORTANCE
+# 5. FEATURE IMPORTANCE / COEFFICIENTS
 # ──────────────────────────────────────────────
 
-def print_feature_importance(model, feature_cols, top_n=20):
-    """Print top N most important features from the Random Forest."""
-    importances = model.feature_importances_
-    indices = np.argsort(importances)[::-1]
+def extract_feature_weights(model, model_cfg):
+    """
+    Extract per-feature weight vector from a trained model.
 
-    print(f"\n  Top {min(top_n, len(feature_cols))} feature importances:")
-    print(f"  {'Rank':<6} {'Feature':<40} {'Importance':>12}")
+    Returns:
+        weights (1-D array, length n_features) or None
+    """
+    attr = model_cfg.get("coef_attr")
+    if attr is None or not hasattr(model, attr):
+        return None
+
+    raw = getattr(model, attr)
+    # coef_ is (1, n_features) for binary LR; feature_importances_ is (n_features,)
+    weights = np.asarray(raw).ravel()
+    return weights
+
+
+def print_feature_weights(weights, feature_cols, model_cfg, top_n=20):
+    """
+    Print top N features by absolute weight.
+    Label adapts to model type (importance vs coefficient).
+    """
+    if weights is None:
+        print("\n  (model does not expose feature weights)")
+        return weights, None
+
+    abs_weights = np.abs(weights)
+    indices = np.argsort(abs_weights)[::-1]
+
+    is_coef = model_cfg["coef_attr"] == "coef_"
+    col_label = "Coefficient" if is_coef else "Importance"
+
+    print(f"\n  Top {min(top_n, len(feature_cols))} feature {col_label.lower()}s:")
+    print(f"  {'Rank':<6} {'Feature':<40} {col_label:>12}"
+          f"{'  |Coef|':>10}" if is_coef else "")
     print(f"  {'-' * 60}")
+
     for rank in range(min(top_n, len(feature_cols))):
         idx = indices[rank]
-        print(f"  {rank + 1:<6} {feature_cols[idx]:<40} {importances[idx]:>12.6f}")
+        line = f"  {rank + 1:<6} {feature_cols[idx]:<40} {weights[idx]:>12.6f}"
+        if is_coef:
+            line += f"  {abs_weights[idx]:>10.6f}"
+        print(line)
 
-    return importances, indices
+    return weights, indices
 
 
 # ──────────────────────────────────────────────
-# 5. AGGREGATE CV RESULTS
+# 6. AGGREGATE CV RESULTS
 # ──────────────────────────────────────────────
 
 def aggregate_cv_results(all_fold_metrics):
@@ -304,15 +362,36 @@ def print_cv_summary(summary):
 
 
 # ──────────────────────────────────────────────
-# 6. MAIN
+# 7. CLI
+# ──────────────────────────────────────────────
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="03_modelling: cross-validation + held-out evaluation",
+    )
+    parser.add_argument(
+        "--model", type=str, default=DEFAULT_MODEL,
+        help=f"Model key from MODEL_REGISTRY (default: {DEFAULT_MODEL})",
+    )
+    return parser.parse_args()
+
+
+# ──────────────────────────────────────────────
+# 8. MAIN
 # ──────────────────────────────────────────────
 
 if __name__ == "__main__":
 
+    args = parse_args()
+    model_key = args.model
+
     validate_config()
+    model_cfg = get_model_config(model_key)
+    display_name = model_cfg["display_name"]
+    needs_scaling = model_cfg["needs_scaling"]
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    LOG_PATH = LOG_DIR / f"03_modelling_RF_log_{timestamp}.txt"
+    LOG_PATH = LOG_DIR / f"03_modelling_{model_key}_log_{timestamp}.txt"
     os.makedirs(LOG_DIR, exist_ok=True)
     os.makedirs(MODEL_DIR, exist_ok=True)
     logger = Logger(str(LOG_PATH))
@@ -322,21 +401,20 @@ if __name__ == "__main__":
 
     # -- Header --
     print("=" * 80)
-    print("  03_MODELLING -- RANDOM FOREST BASELINE")
+    print(f"  03_MODELLING -- {display_name.upper()} BASELINE")
     print("=" * 80)
     print(f"  Timestamp:          {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"  Model key:          {model_key}")
+    print(f"  Model class:        {model_cfg['model_class']}")
     print(f"  Data path:          {SPLIT_DATA_PATH}")
     print(f"  Log path:           {LOG_PATH}")
     print(f"  CV folds (k):       {N_CV_FOLDS}")
     print(f"  Held-out bucket:    {HELD_OUT_INDEX}")
     print(f"  Random state:       {RANDOM_STATE}")
-    print(f"  RF n_estimators:    {RF_N_ESTIMATORS}")
-    print(f"  RF max_depth:       {RF_MAX_DEPTH}")
-    print(f"  RF min_samples_s:   {RF_MIN_SAMPLES_SPLIT}")
-    print(f"  RF min_samples_l:   {RF_MIN_SAMPLES_LEAF}")
-    print(f"  RF max_features:    {RF_MAX_FEATURES}")
-    print(f"  RF class_weight:    {RF_CLASS_WEIGHT}")
-    print(f"  RF n_jobs:          {RF_N_JOBS}")
+    print(f"  Needs scaling:      {needs_scaling}")
+    print(f"\n  Hyperparameters:")
+    for k, v in model_cfg["params"].items():
+        print(f"    {k:<25} {v}")
     print("=" * 80)
 
     # -- Load split data --
@@ -344,7 +422,7 @@ if __name__ == "__main__":
     df = pd.read_csv(SPLIT_DATA_PATH)
     print(f"Shape: {df.shape[0]} rows x {df.shape[1]} columns")
 
-    # -- Quick fold sanity check (detailed report in 02_datasplit_analysis) --
+    # -- Quick fold sanity check --
     if FOLD_COL not in df.columns:
         print(f"FATAL: Column '{FOLD_COL}' not found. Run 01_datasplit.py first.")
         logger.close()
@@ -361,19 +439,12 @@ if __name__ == "__main__":
     # -- Positional AA column status --
     present_pos = [c for c in POSITION_AA_COLS if c in df.columns]
     if present_pos:
-        # Check whether any encoded columns already exist (from a future
-        # encoding step).  Encoded columns are numeric and not in
-        # POSITION_AA_COLS, so they flow through get_feature_cols
-        # automatically.  Here we just log the status.
-        sample_vals = df[present_pos[0]].dropna().unique()[:5]
         is_encoded = np.issubdtype(df[present_pos[0]].dtype, np.number)
         if is_encoded:
             print(f"  Positional AA columns appear already encoded (numeric)")
         else:
             print(f"  {len(present_pos)} positional AA columns present but UNENCODED "
                   f"(dtype: object) -- excluded from features")
-            print(f"    Sample values from '{present_pos[0]}': {list(sample_vals)}")
-            print(f"    Run an encoding step to include these as features")
 
     # -- Resolve feature columns --
     feature_cols = resolve_feature_cols(df)
@@ -385,23 +456,23 @@ if __name__ == "__main__":
         logger.close()
         sys.exit(1)
 
-    # -- List features being used --
     print(f"\n  Feature columns entering the model:")
     for i, col in enumerate(feature_cols):
         print(f"    [{i:>3}] {col}")
 
     print(f"\n{'=' * 80}")
-    print(f"PIPELINE READY: {n_features} features, {N_CV_FOLDS} folds, Random Forest baseline")
+    print(f"PIPELINE READY: {n_features} features, {N_CV_FOLDS} folds, {display_name}")
     print(f"{'=' * 80}")
 
     # ── Cross-Validation Loop ──
     all_fold_metrics = []
     all_fold_predictions = {}
-    all_fold_importances = []
+    all_fold_weights = []
     best_fold_auc = -1
     best_fold_id = -1
     best_fold_model = None
     best_fold_medians = None
+    best_fold_scaler = None
 
     for fold_id in range(N_CV_FOLDS):
         print(f"\n{'-' * 80}")
@@ -411,8 +482,8 @@ if __name__ == "__main__":
         t_fold_start = time.time()
 
         # Prepare data
-        X_train, y_train, X_test, y_test, col_medians, fold_info = prepare_fold_data(
-            df, feature_cols, fold_id,
+        X_train, y_train, X_test, y_test, col_medians, scaler, fold_info = (
+            prepare_fold_data(df, feature_cols, fold_id, needs_scaling)
         )
 
         train_ratio = fold_info["n_train_neg"] / fold_info["n_train_pos"] if fold_info["n_train_pos"] > 0 else float("inf")
@@ -428,7 +499,7 @@ if __name__ == "__main__":
 
         # Train
         model, test_metrics, y_prob = train_one_fold(
-            X_train, y_train, X_test, y_test, fold_id,
+            model_cfg, X_train, y_train, X_test, y_test, fold_id,
         )
 
         t_fold_end = time.time()
@@ -436,9 +507,11 @@ if __name__ == "__main__":
         print(f"\n  Fold {fold_id} results ({t_fold_end - t_fold_start:.1f}s):")
         print_metrics(test_metrics, prefix="  ")
 
-        # Feature importance for this fold
-        importances, indices = print_feature_importance(model, feature_cols, top_n=15)
-        all_fold_importances.append(importances)
+        # Feature weights for this fold
+        weights = extract_feature_weights(model, model_cfg)
+        print_feature_weights(weights, feature_cols, model_cfg, top_n=15)
+        if weights is not None:
+            all_fold_weights.append(weights)
 
         # Store predictions
         all_fold_predictions[fold_id] = {
@@ -454,9 +527,10 @@ if __name__ == "__main__":
             best_fold_id = fold_id
             best_fold_model = model
             best_fold_medians = col_medians
+            best_fold_scaler = scaler
 
         # Save fold model
-        fold_model_path = MODEL_DIR / f"rf_model_fold{fold_id}.pkl"
+        fold_model_path = MODEL_DIR / f"{model_key}_model_fold{fold_id}.pkl"
         with open(fold_model_path, "wb") as f:
             pickle.dump(model, f)
         print(f"  Saved model: {fold_model_path}")
@@ -483,20 +557,26 @@ if __name__ == "__main__":
     print(mean_row)
     print(std_row)
 
-    # ── Averaged feature importance across folds ──
-    print(f"\n{'=' * 80}")
-    print("AVERAGED FEATURE IMPORTANCE ACROSS ALL FOLDS")
-    print("=" * 80)
-    avg_importances = np.mean(all_fold_importances, axis=0)
-    std_importances = np.std(all_fold_importances, axis=0)
-    sorted_indices = np.argsort(avg_importances)[::-1]
+    # ── Averaged feature weights across folds ──
+    if all_fold_weights:
+        print(f"\n{'=' * 80}")
+        is_coef = model_cfg["coef_attr"] == "coef_"
+        weight_label = "COEFFICIENTS" if is_coef else "FEATURE IMPORTANCE"
+        print(f"AVERAGED {weight_label} ACROSS ALL FOLDS")
+        print("=" * 80)
 
-    print(f"  {'Rank':<6} {'Feature':<40} {'Mean Imp':>12} {'Std':>12}")
-    print(f"  {'-' * 72}")
-    for rank in range(min(30, len(feature_cols))):
-        idx = sorted_indices[rank]
-        print(f"  {rank + 1:<6} {feature_cols[idx]:<40} "
-              f"{avg_importances[idx]:>12.6f} {std_importances[idx]:>12.6f}")
+        avg_weights = np.mean(all_fold_weights, axis=0)
+        std_weights = np.std(all_fold_weights, axis=0)
+        abs_avg = np.abs(avg_weights)
+        sorted_indices = np.argsort(abs_avg)[::-1]
+
+        col_label = "Mean Coef" if is_coef else "Mean Imp"
+        print(f"  {'Rank':<6} {'Feature':<40} {col_label:>12} {'Std':>12}")
+        print(f"  {'-' * 72}")
+        for rank in range(min(30, len(feature_cols))):
+            idx = sorted_indices[rank]
+            print(f"  {rank + 1:<6} {feature_cols[idx]:<40} "
+                  f"{avg_weights[idx]:>12.6f} {std_weights[idx]:>12.6f}")
 
     # ── Held-Out Evaluation ──
     print(f"\n{'=' * 80}")
@@ -504,7 +584,9 @@ if __name__ == "__main__":
     print(f"{'=' * 80}")
     print(f"  Using model from best fold ({best_fold_id})")
 
-    X_ho, y_ho = prepare_held_out_data(df, feature_cols, best_fold_medians)
+    X_ho, y_ho = prepare_held_out_data(
+        df, feature_cols, best_fold_medians, scaler=best_fold_scaler,
+    )
 
     n_ho_pos = int(y_ho.sum())
     n_ho_neg = int(len(y_ho) - y_ho.sum())
@@ -512,7 +594,11 @@ if __name__ == "__main__":
     print(f"  Held-out samples: {len(y_ho)} "
           f"(pos={n_ho_pos}, neg={n_ho_neg}, ratio={ho_ratio:.3f})")
 
-    ho_probs = best_fold_model.predict_proba(X_ho)[:, 1]
+    if hasattr(best_fold_model, "predict_proba"):
+        ho_probs = best_fold_model.predict_proba(X_ho)[:, 1]
+    else:
+        ho_probs = best_fold_model.decision_function(X_ho)
+
     ho_metrics = compute_metrics(y_ho, ho_probs)
 
     print(f"\n  Held-out results ({len(y_ho)} samples):")
@@ -537,24 +623,24 @@ if __name__ == "__main__":
         print(f"  {m:<15} {cv_mean:>10.4f} {cv_std:>10.4f} {ho_val:>10.4f} {delta:>+10.4f}")
 
     # ── Save All Results ──
+    pos_status = "encoded" if (
+        present_pos and np.issubdtype(df[present_pos[0]].dtype, np.number)
+    ) else "unencoded (excluded)"
+
     results = {
         "timestamp": timestamp,
-        "model_type": "RandomForest",
+        "model_key": model_key,
+        "model_type": display_name,
+        "model_class": model_cfg["model_class"],
         "config": {
             "n_cv_folds": N_CV_FOLDS,
             "held_out_index": HELD_OUT_INDEX,
             "random_state": RANDOM_STATE,
-            "rf_n_estimators": RF_N_ESTIMATORS,
-            "rf_max_depth": str(RF_MAX_DEPTH),
-            "rf_min_samples_split": RF_MIN_SAMPLES_SPLIT,
-            "rf_min_samples_leaf": RF_MIN_SAMPLES_LEAF,
-            "rf_max_features": RF_MAX_FEATURES,
-            "rf_class_weight": str(RF_CLASS_WEIGHT),
+            "needs_scaling": needs_scaling,
+            "hyperparameters": {k: str(v) for k, v in model_cfg["params"].items()},
             "n_features": n_features,
             "feature_cols": feature_cols,
-            "positional_aa_cols_status": "encoded" if (
-                present_pos and np.issubdtype(df[present_pos[0]].dtype, np.number)
-            ) else "unencoded (excluded)",
+            "positional_aa_cols_status": pos_status,
         },
         "cv_summary": {m: {"mean": s["mean"], "std": s["std"]}
                        for m, s in summary.items()},
@@ -563,31 +649,41 @@ if __name__ == "__main__":
         "best_fold_id": best_fold_id,
         "best_fold_auc": best_fold_auc,
         "fold_predictions": all_fold_predictions,
-        "avg_feature_importances": {
-            feature_cols[i]: float(avg_importances[i])
-            for i in sorted_indices[:min(50, len(feature_cols))]
-        },
     }
 
-    results_path = MODEL_DIR / f"cv_results_RF_{timestamp}.json"
+    # Add averaged feature weights
+    if all_fold_weights:
+        results["avg_feature_weights"] = {
+            feature_cols[i]: float(avg_weights[i])
+            for i in sorted_indices[:min(50, len(feature_cols))]
+        }
+
+    results_path = MODEL_DIR / f"cv_results_{model_key}_{timestamp}.json"
     with open(results_path, "w") as f:
         json.dump(results, f, indent=2, default=str)
     print(f"\nResults saved: {results_path}")
 
     # Save best model
-    best_model_path = MODEL_DIR / "best_rf_model.pkl"
+    best_model_path = MODEL_DIR / f"best_{model_key}_model.pkl"
     with open(best_model_path, "wb") as f:
         pickle.dump(best_fold_model, f)
     print(f"Best model saved: {best_model_path}")
 
-    # Save best medians for future inference
-    medians_path = MODEL_DIR / "best_rf_medians.pkl"
+    # Save best medians
+    medians_path = MODEL_DIR / f"best_{model_key}_medians.pkl"
     with open(medians_path, "wb") as f:
         pickle.dump(best_fold_medians, f)
     print(f"Best medians saved: {medians_path}")
 
-    # Save feature column list for reproducibility
-    feature_cols_path = MODEL_DIR / "feature_cols.json"
+    # Save best scaler (if scaling was used)
+    if best_fold_scaler is not None:
+        scaler_path = MODEL_DIR / f"best_{model_key}_scaler.pkl"
+        with open(scaler_path, "wb") as f:
+            pickle.dump(best_fold_scaler, f)
+        print(f"Best scaler saved: {scaler_path}")
+
+    # Save feature column list
+    feature_cols_path = MODEL_DIR / f"{model_key}_feature_cols.json"
     with open(feature_cols_path, "w") as f:
         json.dump(feature_cols, f, indent=2)
     print(f"Feature columns saved: {feature_cols_path}")
@@ -599,10 +695,10 @@ if __name__ == "__main__":
     print("RUN SUMMARY")
     print("=" * 80)
     print(f"  Total runtime:    {t_end - t_start:.1f}s ({total_minutes:.1f} min)")
-    print(f"  Model:            Random Forest ({RF_N_ESTIMATORS} trees)")
+    print(f"  Model:            {display_name} ({model_key})")
+    print(f"  Scaling:          {'yes' if needs_scaling else 'no'}")
     print(f"  Features:         {n_features}")
-    print(f"  Positional AA:    {len(present_pos)} columns "
-          f"({'included' if present_pos and np.issubdtype(df[present_pos[0]].dtype, np.number) else 'excluded — not yet encoded'})")
+    print(f"  Positional AA:    {len(present_pos)} columns ({pos_status})")
     print(f"  CV folds:         {N_CV_FOLDS}")
     print(f"  Best fold:        {best_fold_id} (AUC = {best_fold_auc:.4f})")
     print(f"  Held-out AUC:     {ho_metrics['auc_roc']:.4f}")

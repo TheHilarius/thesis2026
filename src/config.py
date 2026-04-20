@@ -16,6 +16,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data" / "processed"
 LOG_DIR = PROJECT_ROOT / "logs"
 MODEL_DIR = PROJECT_ROOT / "models"
+FIGURES_DIR = PROJECT_ROOT / "results" / "figures" / "models"
 
 RAW_DATA_PATH = DATA_DIR / "df_all.csv"
 SPLIT_DATA_PATH = DATA_DIR / "df_all_with_folds.csv"
@@ -36,10 +37,7 @@ PEPTIDE_COL = "peptide"
 LABEL_COL = "label"
 FOLD_COL = "fold"
 
-# Columns that are identifiers, text, or structural bookkeeping —
-# never used directly as numeric features.
 METADATA_COLS = [
-    # identifiers / text
     "start",
     "end",
     "peptide",
@@ -56,23 +54,18 @@ METADATA_COLS = [
     "c_flank",
     "full_context",
     "fold",
-    # flank boundary indices (positional bookkeeping, not predictive features)
     "nflank_start",
     "nflank_end",
     "cflank_start",
     "cflank_end",
 ]
 
-# Single-residue positional columns (object dtype).
-# These require encoding (one-hot, BLOSUM, AAindex, etc.) before use.
-# Kept in a dedicated list so the encoding step can reference them.
 POSITION_AA_COLS = [
     "N4", "N3", "N2", "N1",
     "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
     "C1", "C2", "C3", "C4",
 ]
 
-# Union of all non-feature columns (metadata + unencoded AA positions)
 _EXCLUDE_COLS = set(METADATA_COLS) | set(POSITION_AA_COLS)
 
 # ──────────────────────────────────────────────
@@ -81,15 +74,59 @@ _EXCLUDE_COLS = set(METADATA_COLS) | set(POSITION_AA_COLS)
 HAMMING_CUTOFF = 1
 
 # ──────────────────────────────────────────────
-# RANDOM FOREST HYPERPARAMETERS (no regularization baseline)
+# MODEL REGISTRY
 # ──────────────────────────────────────────────
-RF_N_ESTIMATORS = 1000       # Number of trees
-RF_MAX_DEPTH = None          # No depth limit (no regularization)
-RF_MIN_SAMPLES_SPLIT = 2     # Default (minimal constraint)
-RF_MIN_SAMPLES_LEAF = 1      # Default (minimal constraint)
-RF_MAX_FEATURES = "sqrt"     # Standard for classification
-RF_N_JOBS = -1               # Use all CPU cores
-RF_CLASS_WEIGHT = None       # No class weighting (change to "balanced" if needed)
+# Each entry defines everything 03_modelling.py needs to
+# instantiate, train, and interpret a model.
+#
+#   model_class:   fully qualified sklearn class name (string)
+#   params:        dict passed as **kwargs to the constructor
+#   needs_scaling: whether features must be standardised before training
+#   coef_attr:     attribute name for feature weights (None if N/A)
+#
+# To add a new model: add an entry here, then run
+#   python 03_modelling.py --model <key>
+
+MODEL_REGISTRY = {
+
+    # ── Random Forest (no-regularisation baseline) ──
+    "rf": {
+        "display_name": "Random Forest",
+        "model_class": "sklearn.ensemble.RandomForestClassifier",
+        "params": {
+            "n_estimators": 1000,
+            "max_depth": None,
+            "min_samples_split": 2,
+            "min_samples_leaf": 1,
+            "max_features": "sqrt",
+            "class_weight": None,
+            "n_jobs": -1,
+            "random_state": RANDOM_STATE,
+            "verbose": 0,
+        },
+        "needs_scaling": False,
+        "coef_attr": "feature_importances_",   # Gini importance
+    },
+
+    # ── Logistic Regression (no-regularisation baseline) ──
+    "lr": {
+        "display_name": "Logistic Regression",
+        "model_class": "sklearn.linear_model.LogisticRegression",
+        "params": {
+            "penalty": None,           # no regularisation
+            "solver": "lbfgs",
+            "max_iter": 5000,
+            "class_weight": None,
+            "random_state": RANDOM_STATE,
+            "verbose": 0,
+        },
+        "needs_scaling": True,
+        "coef_attr": "coef_",          # weight vector (shape 1×p)
+    },
+}
+
+# Convenience: default model key when --model is not supplied
+DEFAULT_MODEL = "rf"
 
 # ──────────────────────────────────────────────
 # HELPERS
@@ -99,12 +136,22 @@ def get_feature_cols(df_columns):
     """
     Return list of feature columns = all columns minus metadata and
     unencoded positional AA columns.
-
-    Once AA encoding is added upstream, the encoded columns will be
-    numeric and will NOT appear in _EXCLUDE_COLS, so they will be
-    picked up automatically.
     """
     return [c for c in df_columns if c not in _EXCLUDE_COLS]
+
+
+def get_model_config(model_key):
+    """
+    Look up a model configuration by its short key (e.g. 'rf', 'lr').
+    Raises KeyError with a helpful message if the key is unknown.
+    """
+    if model_key not in MODEL_REGISTRY:
+        valid = ", ".join(sorted(MODEL_REGISTRY.keys()))
+        raise KeyError(
+            f"Unknown model key '{model_key}'. "
+            f"Valid keys: {valid}"
+        )
+    return MODEL_REGISTRY[model_key]
 
 
 def validate_config():
@@ -123,3 +170,4 @@ def validate_config():
     print(f"     Data dir:     {DATA_DIR}")
     print(f"     Log dir:      {LOG_DIR}")
     print(f"     Model dir:    {MODEL_DIR}")
+    print(f"     Models registered: {', '.join(sorted(MODEL_REGISTRY.keys()))}")
