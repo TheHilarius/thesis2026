@@ -49,3 +49,18 @@ env_*
 results/*.csv
 data/processed/*.csv
 data/processed/alphafold*.rds
+
+
+# Model files (large binary)
+models/*.pkl
+models/*.pt
+models/*json
+# VS Code local settings
+.vscode/
+
+# Processed data (large CSV)
+data/processed/df_all_with_folds.csv
+
+# Python cache
+__pycache__/
+*.pyc

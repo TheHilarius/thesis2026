@@ -1,0 +1,1215 @@
+================================================================================
+  02_CROSS_VALIDATION -- RANDOM FOREST BASELINE
+================================================================================
+  Timestamp:          2026-04-20 10:10:03
+  Data path:          C:\Users\olive\Documents\R\special_course_spring2026\data\processed\df_all_with_folds.csv
+  Log path:           C:\Users\olive\Documents\R\special_course_spring2026\logs\02_cross_validation_RF_log_20260420_101003.txt
+  CV folds (k):       5
+  Held-out bucket:    5
+  Random state:       42
+  RF n_estimators:    1000
+  RF max_depth:       None
+  RF min_samples_s:   2
+  RF min_samples_l:   1
+  RF max_features:    sqrt
+  RF class_weight:    None
+  RF n_jobs:          -1
+================================================================================
+
+Loading split data from: C:\Users\olive\Documents\R\special_course_spring2026\data\processed\df_all_with_folds.csv
+Shape: 53101 rows x 98 columns
+[OK] Fold column validated: [0, 1, 2, 3, 4, 5]
+
+Label distribution:
+  0 (negative):    29631  (55.8%)
+  1 (positive):    23470  (44.2%)
+
+Feature columns identified (82):
+  [  0] distance_from_n_terminus                 dtype: int64
+  [  1] distance_from_c_terminus                 dtype: int64
+  [  2] n_cleavage_P4                            dtype: object
+  [  3] n_cleavage_P3                            dtype: object
+  [  4] n_cleavage_P2                            dtype: object
+  [  5] n_cleavage_P1                            dtype: object
+  [  6] n_cleavage_P1_prime                      dtype: object
+  [  7] n_cleavage_P2_prime                      dtype: object
+  [  8] n_cleavage_P3_prime                      dtype: object
+  [  9] n_cleavage_P4_prime                      dtype: object
+  [ 10] c_cleavage_P4                            dtype: object
+  [ 11] c_cleavage_P3                            dtype: object
+  [ 12] c_cleavage_P2                            dtype: object
+  [ 13] c_cleavage_P1                            dtype: object
+  [ 14] c_cleavage_P1_prime                      dtype: object
+  [ 15] c_cleavage_P2_prime                      dtype: object
+  [ 16] c_cleavage_P3_prime                      dtype: object
+  [ 17] c_cleavage_P4_prime                      dtype: object
+  [ 18] mean_rsa_peptide                         dtype: float64
+  [ 19] mean_disorder_peptide                    dtype: float64
+  [ 20] frac_q8_G_peptide                        dtype: float64
+  [ 21] frac_q8_H_peptide                        dtype: float64
+  [ 22] frac_q8_I_peptide                        dtype: float64
+  [ 23] frac_q8_B_peptide                        dtype: float64
+  [ 24] frac_q8_E_peptide                        dtype: float64
+  [ 25] frac_q8_S_peptide                        dtype: float64
+  [ 26] frac_q8_T_peptide                        dtype: float64
+  [ 27] frac_q8_C_peptide                        dtype: float64
+  [ 28] mean_p_q8_G_peptide                      dtype: float64
+  [ 29] mean_p_q8_H_peptide                      dtype: float64
+  [ 30] mean_p_q8_I_peptide                      dtype: float64
+  [ 31] mean_p_q8_B_peptide                      dtype: float64
+  [ 32] mean_p_q8_E_peptide                      dtype: float64
+  [ 33] mean_p_q8_S_peptide                      dtype: float64
+  [ 34] mean_p_q8_T_peptide                      dtype: float64
+  [ 35] mean_p_q8_C_peptide                      dtype: float64
+  [ 36] mean_rsa_nflank                          dtype: float64
+  [ 37] mean_disorder_nflank                     dtype: float64
+  [ 38] frac_q8_G_nflank                         dtype: float64
+  [ 39] frac_q8_H_nflank                         dtype: float64
+  [ 40] frac_q8_I_nflank                         dtype: float64
+  [ 41] frac_q8_B_nflank                         dtype: float64
+  [ 42] frac_q8_E_nflank                         dtype: float64
+  [ 43] frac_q8_S_nflank                         dtype: float64
+  [ 44] frac_q8_T_nflank                         dtype: float64
+  [ 45] frac_q8_C_nflank                         dtype: float64
+  [ 46] mean_p_q8_G_nflank                       dtype: float64
+  [ 47] mean_p_q8_H_nflank                       dtype: float64
+  [ 48] mean_p_q8_I_nflank                       dtype: float64
+  [ 49] mean_p_q8_B_nflank                       dtype: float64
+  [ 50] mean_p_q8_E_nflank                       dtype: float64
+  [ 51] mean_p_q8_S_nflank                       dtype: float64
+  [ 52] mean_p_q8_T_nflank                       dtype: float64
+  [ 53] mean_p_q8_C_nflank                       dtype: float64
+  [ 54] mean_rsa_cflank                          dtype: float64
+  [ 55] mean_disorder_cflank                     dtype: float64
+  [ 56] frac_q8_G_cflank                         dtype: float64
+  [ 57] frac_q8_H_cflank                         dtype: float64
+  [ 58] frac_q8_I_cflank                         dtype: float64
+  [ 59] frac_q8_B_cflank                         dtype: float64
+  [ 60] frac_q8_E_cflank                         dtype: float64
+  [ 61] frac_q8_S_cflank                         dtype: float64
+  [ 62] frac_q8_T_cflank                         dtype: float64
+  [ 63] frac_q8_C_cflank                         dtype: float64
+  [ 64] mean_p_q8_G_cflank                       dtype: float64
+  [ 65] mean_p_q8_H_cflank                       dtype: float64
+  [ 66] mean_p_q8_I_cflank                       dtype: float64
+  [ 67] mean_p_q8_B_cflank                       dtype: float64
+  [ 68] mean_p_q8_E_cflank                       dtype: float64
+  [ 69] mean_p_q8_S_cflank                       dtype: float64
+  [ 70] mean_p_q8_T_cflank                       dtype: float64
+  [ 71] mean_p_q8_C_cflank                       dtype: float64
+  [ 72] mean_plddt_peptide                       dtype: float64
+  [ 73] sd_plddt_peptide                         dtype: float64
+  [ 74] min_plddt_peptide                        dtype: float64
+  [ 75] frac_disordered_peptide                  dtype: float64
+  [ 76] mean_plddt_nflank                        dtype: float64
+  [ 77] sd_plddt_nflank                          dtype: float64
+  [ 78] frac_disordered_nflank                   dtype: float64
+  [ 79] mean_plddt_cflank                        dtype: float64
+  [ 80] sd_plddt_cflank                          dtype: float64
+  [ 81] frac_disordered_cflank                   dtype: float64
+
+WARNING: Non-numeric feature columns excluded (16):
+  - n_cleavage_P4 (dtype: object)
+  - n_cleavage_P3 (dtype: object)
+  - n_cleavage_P2 (dtype: object)
+  - n_cleavage_P1 (dtype: object)
+  - n_cleavage_P1_prime (dtype: object)
+  - n_cleavage_P2_prime (dtype: object)
+  - n_cleavage_P3_prime (dtype: object)
+  - n_cleavage_P4_prime (dtype: object)
+  - c_cleavage_P4 (dtype: object)
+  - c_cleavage_P3 (dtype: object)
+  - c_cleavage_P2 (dtype: object)
+  - c_cleavage_P1 (dtype: object)
+  - c_cleavage_P1_prime (dtype: object)
+  - c_cleavage_P2_prime (dtype: object)
+  - c_cleavage_P3_prime (dtype: object)
+  - c_cleavage_P4_prime (dtype: object)
+  Remaining feature columns: 66
+
+NaN REPORT:
+  mean_rsa_peptide                           1947 NaN (3.7%)
+  mean_disorder_peptide                      1947 NaN (3.7%)
+  frac_q8_G_peptide                          1947 NaN (3.7%)
+  frac_q8_H_peptide                          1947 NaN (3.7%)
+  frac_q8_I_peptide                          1947 NaN (3.7%)
+  frac_q8_B_peptide                          1947 NaN (3.7%)
+  frac_q8_E_peptide                          1947 NaN (3.7%)
+  frac_q8_S_peptide                          1947 NaN (3.7%)
+  frac_q8_T_peptide                          1947 NaN (3.7%)
+  frac_q8_C_peptide                          1947 NaN (3.7%)
+  mean_p_q8_G_peptide                        1947 NaN (3.7%)
+  mean_p_q8_H_peptide                        1947 NaN (3.7%)
+  mean_p_q8_I_peptide                        1947 NaN (3.7%)
+  mean_p_q8_B_peptide                        1947 NaN (3.7%)
+  mean_p_q8_E_peptide                        1947 NaN (3.7%)
+  mean_p_q8_S_peptide                        1947 NaN (3.7%)
+  mean_p_q8_T_peptide                        1947 NaN (3.7%)
+  mean_p_q8_C_peptide                        1947 NaN (3.7%)
+  mean_rsa_nflank                            1986 NaN (3.7%)
+  mean_disorder_nflank                       1986 NaN (3.7%)
+  frac_q8_G_nflank                           1986 NaN (3.7%)
+  frac_q8_H_nflank                           1986 NaN (3.7%)
+  frac_q8_I_nflank                           1986 NaN (3.7%)
+  frac_q8_B_nflank                           1986 NaN (3.7%)
+  frac_q8_E_nflank                           1986 NaN (3.7%)
+  frac_q8_S_nflank                           1986 NaN (3.7%)
+  frac_q8_T_nflank                           1986 NaN (3.7%)
+  frac_q8_C_nflank                           1986 NaN (3.7%)
+  mean_p_q8_G_nflank                         1986 NaN (3.7%)
+  mean_p_q8_H_nflank                         1986 NaN (3.7%)
+  mean_p_q8_I_nflank                         1986 NaN (3.7%)
+  mean_p_q8_B_nflank                         1986 NaN (3.7%)
+  mean_p_q8_E_nflank                         1986 NaN (3.7%)
+  mean_p_q8_S_nflank                         1986 NaN (3.7%)
+  mean_p_q8_T_nflank                         1986 NaN (3.7%)
+  mean_p_q8_C_nflank                         1986 NaN (3.7%)
+  mean_rsa_cflank                            2074 NaN (3.9%)
+  mean_disorder_cflank                       2074 NaN (3.9%)
+  frac_q8_G_cflank                           2074 NaN (3.9%)
+  frac_q8_H_cflank                           2074 NaN (3.9%)
+  frac_q8_I_cflank                           2074 NaN (3.9%)
+  frac_q8_B_cflank                           2074 NaN (3.9%)
+  frac_q8_E_cflank                           2074 NaN (3.9%)
+  frac_q8_S_cflank                           2074 NaN (3.9%)
+  frac_q8_T_cflank                           2074 NaN (3.9%)
+  frac_q8_C_cflank                           2074 NaN (3.9%)
+  mean_p_q8_G_cflank                         2074 NaN (3.9%)
+  mean_p_q8_H_cflank                         2074 NaN (3.9%)
+  mean_p_q8_I_cflank                         2074 NaN (3.9%)
+  mean_p_q8_B_cflank                         2074 NaN (3.9%)
+  mean_p_q8_E_cflank                         2074 NaN (3.9%)
+  mean_p_q8_S_cflank                         2074 NaN (3.9%)
+  mean_p_q8_T_cflank                         2074 NaN (3.9%)
+  mean_p_q8_C_cflank                         2074 NaN (3.9%)
+  mean_plddt_peptide                         6363 NaN (12.0%)
+  sd_plddt_peptide                           6363 NaN (12.0%)
+  min_plddt_peptide                          6363 NaN (12.0%)
+  frac_disordered_peptide                    6363 NaN (12.0%)
+  mean_plddt_nflank                          6401 NaN (12.1%)
+  sd_plddt_nflank                            6479 NaN (12.2%)
+  frac_disordered_nflank                     6401 NaN (12.1%)
+  mean_plddt_cflank                          6499 NaN (12.2%)
+  sd_plddt_cflank                            6541 NaN (12.3%)
+  frac_disordered_cflank                     6499 NaN (12.2%)
+  TOTAL: 172398 NaN values across all feature columns
+[OK] No constant feature columns
+
+Feature summary statistics:
+  Column                                    mean        std        min        max
+  -----------------------------------------------------------------------------
+  distance_from_n_terminus               703.935   1588.685      0.000  35891.000
+  distance_from_c_terminus               710.040   1607.615      0.000  35530.000
+  mean_rsa_peptide                         0.311      0.143      0.007      0.831
+  mean_disorder_peptide                    0.131      0.275      0.000      1.000
+  frac_q8_G_peptide                        0.022      0.079      0.000      0.889
+  frac_q8_H_peptide                        0.496      0.433      0.000      1.000
+  frac_q8_I_peptide                        0.001      0.017      0.000      0.889
+  frac_q8_B_peptide                        0.000      0.007      0.000      0.222
+  frac_q8_E_peptide                        0.116      0.234      0.000      1.000
+  frac_q8_S_peptide                        0.020      0.056      0.000      0.556
+  frac_q8_T_peptide                        0.055      0.100      0.000      0.778
+  frac_q8_C_peptide                        0.289      0.352      0.000      1.000
+  mean_p_q8_G_peptide                      0.037      0.059      0.000      0.709
+  mean_p_q8_H_peptide                      0.458      0.389      0.000      0.999
+  mean_p_q8_I_peptide                      0.007      0.022      0.000      0.662
+  mean_p_q8_B_peptide                      0.007      0.011      0.000      0.149
+  mean_p_q8_E_peptide                      0.116      0.214      0.000      0.998
+  mean_p_q8_S_peptide                      0.049      0.056      0.000      0.387
+  mean_p_q8_T_peptide                      0.071      0.075      0.000      0.601
+  mean_p_q8_C_peptide                      0.255      0.284      0.000      1.000
+  mean_rsa_nflank                          0.360      0.152      0.013      0.932
+  mean_disorder_nflank                     0.160      0.298      0.000      1.000
+  frac_q8_G_nflank                         0.024      0.079      0.000      0.900
+  frac_q8_H_nflank                         0.434      0.406      0.000      1.000
+  frac_q8_I_nflank                         0.001      0.019      0.000      0.700
+  frac_q8_B_nflank                         0.000      0.007      0.000      0.200
+  frac_q8_E_nflank                         0.098      0.207      0.000      1.000
+  frac_q8_S_nflank                         0.024      0.059      0.000      0.600
+  frac_q8_T_nflank                         0.064      0.103      0.000      0.800
+  frac_q8_C_nflank                         0.354      0.359      0.000      1.000
+  mean_p_q8_G_nflank                       0.041      0.059      0.000      0.628
+  mean_p_q8_H_nflank                       0.400      0.362      0.000      0.999
+  mean_p_q8_I_nflank                       0.006      0.022      0.000      0.670
+  mean_p_q8_B_nflank                       0.007      0.010      0.000      0.137
+  mean_p_q8_E_nflank                       0.100      0.189      0.000      0.991
+  mean_p_q8_S_nflank                       0.059      0.058      0.000      0.439
+  mean_p_q8_T_nflank                       0.081      0.075      0.000      0.496
+  mean_p_q8_C_nflank                       0.307      0.295      0.000      1.000
+  mean_rsa_cflank                          0.370      0.150      0.008      0.852
+  mean_disorder_cflank                     0.163      0.298      0.000      1.000
+  frac_q8_G_cflank                         0.022      0.076      0.000      0.900
+  frac_q8_H_cflank                         0.402      0.399      0.000      1.000
+  frac_q8_I_cflank                         0.001      0.014      0.000      0.600
+  frac_q8_B_cflank                         0.001      0.008      0.000      0.200
+  frac_q8_E_cflank                         0.104      0.209      0.000      1.000
+  frac_q8_S_cflank                         0.025      0.060      0.000      0.600
+  frac_q8_T_cflank                         0.073      0.108      0.000      0.700
+  frac_q8_C_cflank                         0.372      0.358      0.000      1.000
+  mean_p_q8_G_cflank                       0.038      0.057      0.000      0.558
+  mean_p_q8_H_cflank                       0.369      0.355      0.000      0.999
+  mean_p_q8_I_cflank                       0.006      0.019      0.000      0.593
+  mean_p_q8_B_cflank                       0.007      0.011      0.000      0.162
+  mean_p_q8_E_cflank                       0.106      0.191      0.000      0.992
+  mean_p_q8_S_cflank                       0.063      0.059      0.000      0.416
+  mean_p_q8_T_cflank                       0.090      0.077      0.000      0.526
+  mean_p_q8_C_cflank                       0.320      0.293      0.000      1.000
+  mean_plddt_peptide                      82.631     19.204     19.094     98.960
+  sd_plddt_peptide                         3.178      3.215      0.000     30.417
+  min_plddt_peptide                       77.624     21.172     14.990     98.940
+  frac_disordered_peptide                  0.184      0.362      0.000      1.000
+  mean_plddt_nflank                       80.555     20.054     20.039     98.940
+  sd_plddt_nflank                          3.908      3.847      0.000     30.042
+  frac_disordered_nflank                   0.221      0.381      0.000      1.000
+  mean_plddt_cflank                       80.432     19.935     18.634     98.928
+  sd_plddt_cflank                          4.064      3.996      0.000     28.411
+  frac_disordered_cflank                   0.222      0.379      0.000      1.000
+
+================================================================================
+PIPELINE READY: 66 features, 5 folds, Random Forest baseline
+================================================================================
+
+--------------------------------------------------------------------------------
+  FOLD 0/4
+--------------------------------------------------------------------------------
+  WARNING: X_train: 115343 NaN, 0 Inf values
+    Column 'mean_rsa_peptide': 1316 NaN values
+    Column 'mean_disorder_peptide': 1316 NaN values
+    Column 'frac_q8_G_peptide': 1316 NaN values
+    Column 'frac_q8_H_peptide': 1316 NaN values
+    Column 'frac_q8_I_peptide': 1316 NaN values
+    Column 'frac_q8_B_peptide': 1316 NaN values
+    Column 'frac_q8_E_peptide': 1316 NaN values
+    Column 'frac_q8_S_peptide': 1316 NaN values
+    Column 'frac_q8_T_peptide': 1316 NaN values
+    Column 'frac_q8_C_peptide': 1316 NaN values
+    Column 'mean_p_q8_G_peptide': 1316 NaN values
+    Column 'mean_p_q8_H_peptide': 1316 NaN values
+    Column 'mean_p_q8_I_peptide': 1316 NaN values
+    Column 'mean_p_q8_B_peptide': 1316 NaN values
+    Column 'mean_p_q8_E_peptide': 1316 NaN values
+    Column 'mean_p_q8_S_peptide': 1316 NaN values
+    Column 'mean_p_q8_T_peptide': 1316 NaN values
+    Column 'mean_p_q8_C_peptide': 1316 NaN values
+    Column 'mean_rsa_nflank': 1344 NaN values
+    Column 'mean_disorder_nflank': 1344 NaN values
+    Column 'frac_q8_G_nflank': 1344 NaN values
+    Column 'frac_q8_H_nflank': 1344 NaN values
+    Column 'frac_q8_I_nflank': 1344 NaN values
+    Column 'frac_q8_B_nflank': 1344 NaN values
+    Column 'frac_q8_E_nflank': 1344 NaN values
+    Column 'frac_q8_S_nflank': 1344 NaN values
+    Column 'frac_q8_T_nflank': 1344 NaN values
+    Column 'frac_q8_C_nflank': 1344 NaN values
+    Column 'mean_p_q8_G_nflank': 1344 NaN values
+    Column 'mean_p_q8_H_nflank': 1344 NaN values
+    Column 'mean_p_q8_I_nflank': 1344 NaN values
+    Column 'mean_p_q8_B_nflank': 1344 NaN values
+    Column 'mean_p_q8_E_nflank': 1344 NaN values
+    Column 'mean_p_q8_S_nflank': 1344 NaN values
+    Column 'mean_p_q8_T_nflank': 1344 NaN values
+    Column 'mean_p_q8_C_nflank': 1344 NaN values
+    Column 'mean_rsa_cflank': 1387 NaN values
+    Column 'mean_disorder_cflank': 1387 NaN values
+    Column 'frac_q8_G_cflank': 1387 NaN values
+    Column 'frac_q8_H_cflank': 1387 NaN values
+    Column 'frac_q8_I_cflank': 1387 NaN values
+    Column 'frac_q8_B_cflank': 1387 NaN values
+    Column 'frac_q8_E_cflank': 1387 NaN values
+    Column 'frac_q8_S_cflank': 1387 NaN values
+    Column 'frac_q8_T_cflank': 1387 NaN values
+    Column 'frac_q8_C_cflank': 1387 NaN values
+    Column 'mean_p_q8_G_cflank': 1387 NaN values
+    Column 'mean_p_q8_H_cflank': 1387 NaN values
+    Column 'mean_p_q8_I_cflank': 1387 NaN values
+    Column 'mean_p_q8_B_cflank': 1387 NaN values
+    Column 'mean_p_q8_E_cflank': 1387 NaN values
+    Column 'mean_p_q8_S_cflank': 1387 NaN values
+    Column 'mean_p_q8_T_cflank': 1387 NaN values
+    Column 'mean_p_q8_C_cflank': 1387 NaN values
+    Column 'mean_plddt_peptide': 4210 NaN values
+    Column 'sd_plddt_peptide': 4210 NaN values
+    Column 'min_plddt_peptide': 4210 NaN values
+    Column 'frac_disordered_peptide': 4210 NaN values
+    Column 'mean_plddt_nflank': 4238 NaN values
+    Column 'sd_plddt_nflank': 4289 NaN values
+    Column 'frac_disordered_nflank': 4238 NaN values
+    Column 'mean_plddt_cflank': 4289 NaN values
+    Column 'sd_plddt_cflank': 4314 NaN values
+    Column 'frac_disordered_cflank': 4289 NaN values
+  WARNING: X_test: 27716 NaN, 0 Inf values
+    Column 'mean_rsa_peptide': 302 NaN values
+    Column 'mean_disorder_peptide': 302 NaN values
+    Column 'frac_q8_G_peptide': 302 NaN values
+    Column 'frac_q8_H_peptide': 302 NaN values
+    Column 'frac_q8_I_peptide': 302 NaN values
+    Column 'frac_q8_B_peptide': 302 NaN values
+    Column 'frac_q8_E_peptide': 302 NaN values
+    Column 'frac_q8_S_peptide': 302 NaN values
+    Column 'frac_q8_T_peptide': 302 NaN values
+    Column 'frac_q8_C_peptide': 302 NaN values
+    Column 'mean_p_q8_G_peptide': 302 NaN values
+    Column 'mean_p_q8_H_peptide': 302 NaN values
+    Column 'mean_p_q8_I_peptide': 302 NaN values
+    Column 'mean_p_q8_B_peptide': 302 NaN values
+    Column 'mean_p_q8_E_peptide': 302 NaN values
+    Column 'mean_p_q8_S_peptide': 302 NaN values
+    Column 'mean_p_q8_T_peptide': 302 NaN values
+    Column 'mean_p_q8_C_peptide': 302 NaN values
+    Column 'mean_rsa_nflank': 309 NaN values
+    Column 'mean_disorder_nflank': 309 NaN values
+    Column 'frac_q8_G_nflank': 309 NaN values
+    Column 'frac_q8_H_nflank': 309 NaN values
+    Column 'frac_q8_I_nflank': 309 NaN values
+    Column 'frac_q8_B_nflank': 309 NaN values
+    Column 'frac_q8_E_nflank': 309 NaN values
+    Column 'frac_q8_S_nflank': 309 NaN values
+    Column 'frac_q8_T_nflank': 309 NaN values
+    Column 'frac_q8_C_nflank': 309 NaN values
+    Column 'mean_p_q8_G_nflank': 309 NaN values
+    Column 'mean_p_q8_H_nflank': 309 NaN values
+    Column 'mean_p_q8_I_nflank': 309 NaN values
+    Column 'mean_p_q8_B_nflank': 309 NaN values
+    Column 'mean_p_q8_E_nflank': 309 NaN values
+    Column 'mean_p_q8_S_nflank': 309 NaN values
+    Column 'mean_p_q8_T_nflank': 309 NaN values
+    Column 'mean_p_q8_C_nflank': 309 NaN values
+    Column 'mean_rsa_cflank': 327 NaN values
+    Column 'mean_disorder_cflank': 327 NaN values
+    Column 'frac_q8_G_cflank': 327 NaN values
+    Column 'frac_q8_H_cflank': 327 NaN values
+    Column 'frac_q8_I_cflank': 327 NaN values
+    Column 'frac_q8_B_cflank': 327 NaN values
+    Column 'frac_q8_E_cflank': 327 NaN values
+    Column 'frac_q8_S_cflank': 327 NaN values
+    Column 'frac_q8_T_cflank': 327 NaN values
+    Column 'frac_q8_C_cflank': 327 NaN values
+    Column 'mean_p_q8_G_cflank': 327 NaN values
+    Column 'mean_p_q8_H_cflank': 327 NaN values
+    Column 'mean_p_q8_I_cflank': 327 NaN values
+    Column 'mean_p_q8_B_cflank': 327 NaN values
+    Column 'mean_p_q8_E_cflank': 327 NaN values
+    Column 'mean_p_q8_S_cflank': 327 NaN values
+    Column 'mean_p_q8_T_cflank': 327 NaN values
+    Column 'mean_p_q8_C_cflank': 327 NaN values
+    Column 'mean_plddt_peptide': 1072 NaN values
+    Column 'sd_plddt_peptide': 1072 NaN values
+    Column 'min_plddt_peptide': 1072 NaN values
+    Column 'frac_disordered_peptide': 1072 NaN values
+    Column 'mean_plddt_nflank': 1079 NaN values
+    Column 'sd_plddt_nflank': 1092 NaN values
+    Column 'frac_disordered_nflank': 1079 NaN values
+    Column 'mean_plddt_cflank': 1095 NaN values
+    Column 'sd_plddt_cflank': 1104 NaN values
+    Column 'frac_disordered_cflank': 1095 NaN values
+  Fold 0: medians computed from 35400 training samples
+  Fold 0: imputed 115343 train values, 27716 test values
+  Train:  35400 samples (pos=15647, neg=19753, ratio=1.262)
+  Test:    8851 samples (pos=3903, neg=4948, ratio=1.268)
+  Features: 66
+  Training Random Forest (1000 trees) ...
+  Training time: 26.0s
+
+  Fold 0 results (26.5s):
+    AUC-ROC: 0.6265  |  AUC-PR: 0.5592  |  Acc: 0.5996  |  F1: 0.4599  |  MCC: 0.1670
+    Sens: 0.3866  |  Spec: 0.7676  |  PPV: 0.5675  |  NPV: 0.6134
+
+  Top 15 feature importances:
+  Rank   Feature                                    Importance
+  ------------------------------------------------------------
+  1      distance_from_n_terminus                     0.044648
+  2      distance_from_c_terminus                     0.042878
+  3      mean_plddt_nflank                            0.024185
+  4      sd_plddt_peptide                             0.024125
+  5      sd_plddt_cflank                              0.024086
+  6      mean_plddt_peptide                           0.024039
+  7      sd_plddt_nflank                              0.023850
+  8      mean_rsa_cflank                              0.023708
+  9      mean_plddt_cflank                            0.023692
+  10     mean_p_q8_I_nflank                           0.023470
+  11     mean_rsa_peptide                             0.023454
+  12     mean_rsa_nflank                              0.023363
+  13     mean_p_q8_G_peptide                          0.023195
+  14     mean_p_q8_I_cflank                           0.023177
+  15     mean_p_q8_I_peptide                          0.022763
+  Saved model: C:\Users\olive\Documents\R\special_course_spring2026\models\rf_model_fold0.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 1/4
+--------------------------------------------------------------------------------
+  WARNING: X_train: 113031 NaN, 0 Inf values
+    Column 'mean_rsa_peptide': 1271 NaN values
+    Column 'mean_disorder_peptide': 1271 NaN values
+    Column 'frac_q8_G_peptide': 1271 NaN values
+    Column 'frac_q8_H_peptide': 1271 NaN values
+    Column 'frac_q8_I_peptide': 1271 NaN values
+    Column 'frac_q8_B_peptide': 1271 NaN values
+    Column 'frac_q8_E_peptide': 1271 NaN values
+    Column 'frac_q8_S_peptide': 1271 NaN values
+    Column 'frac_q8_T_peptide': 1271 NaN values
+    Column 'frac_q8_C_peptide': 1271 NaN values
+    Column 'mean_p_q8_G_peptide': 1271 NaN values
+    Column 'mean_p_q8_H_peptide': 1271 NaN values
+    Column 'mean_p_q8_I_peptide': 1271 NaN values
+    Column 'mean_p_q8_B_peptide': 1271 NaN values
+    Column 'mean_p_q8_E_peptide': 1271 NaN values
+    Column 'mean_p_q8_S_peptide': 1271 NaN values
+    Column 'mean_p_q8_T_peptide': 1271 NaN values
+    Column 'mean_p_q8_C_peptide': 1271 NaN values
+    Column 'mean_rsa_nflank': 1299 NaN values
+    Column 'mean_disorder_nflank': 1299 NaN values
+    Column 'frac_q8_G_nflank': 1299 NaN values
+    Column 'frac_q8_H_nflank': 1299 NaN values
+    Column 'frac_q8_I_nflank': 1299 NaN values
+    Column 'frac_q8_B_nflank': 1299 NaN values
+    Column 'frac_q8_E_nflank': 1299 NaN values
+    Column 'frac_q8_S_nflank': 1299 NaN values
+    Column 'frac_q8_T_nflank': 1299 NaN values
+    Column 'frac_q8_C_nflank': 1299 NaN values
+    Column 'mean_p_q8_G_nflank': 1299 NaN values
+    Column 'mean_p_q8_H_nflank': 1299 NaN values
+    Column 'mean_p_q8_I_nflank': 1299 NaN values
+    Column 'mean_p_q8_B_nflank': 1299 NaN values
+    Column 'mean_p_q8_E_nflank': 1299 NaN values
+    Column 'mean_p_q8_S_nflank': 1299 NaN values
+    Column 'mean_p_q8_T_nflank': 1299 NaN values
+    Column 'mean_p_q8_C_nflank': 1299 NaN values
+    Column 'mean_rsa_cflank': 1350 NaN values
+    Column 'mean_disorder_cflank': 1350 NaN values
+    Column 'frac_q8_G_cflank': 1350 NaN values
+    Column 'frac_q8_H_cflank': 1350 NaN values
+    Column 'frac_q8_I_cflank': 1350 NaN values
+    Column 'frac_q8_B_cflank': 1350 NaN values
+    Column 'frac_q8_E_cflank': 1350 NaN values
+    Column 'frac_q8_S_cflank': 1350 NaN values
+    Column 'frac_q8_T_cflank': 1350 NaN values
+    Column 'frac_q8_C_cflank': 1350 NaN values
+    Column 'mean_p_q8_G_cflank': 1350 NaN values
+    Column 'mean_p_q8_H_cflank': 1350 NaN values
+    Column 'mean_p_q8_I_cflank': 1350 NaN values
+    Column 'mean_p_q8_B_cflank': 1350 NaN values
+    Column 'mean_p_q8_E_cflank': 1350 NaN values
+    Column 'mean_p_q8_S_cflank': 1350 NaN values
+    Column 'mean_p_q8_T_cflank': 1350 NaN values
+    Column 'mean_p_q8_C_cflank': 1350 NaN values
+    Column 'mean_plddt_peptide': 4206 NaN values
+    Column 'sd_plddt_peptide': 4206 NaN values
+    Column 'min_plddt_peptide': 4206 NaN values
+    Column 'frac_disordered_peptide': 4206 NaN values
+    Column 'mean_plddt_nflank': 4234 NaN values
+    Column 'sd_plddt_nflank': 4284 NaN values
+    Column 'frac_disordered_nflank': 4234 NaN values
+    Column 'mean_plddt_cflank': 4288 NaN values
+    Column 'sd_plddt_cflank': 4319 NaN values
+    Column 'frac_disordered_cflank': 4288 NaN values
+  WARNING: X_test: 30028 NaN, 0 Inf values
+    Column 'mean_rsa_peptide': 347 NaN values
+    Column 'mean_disorder_peptide': 347 NaN values
+    Column 'frac_q8_G_peptide': 347 NaN values
+    Column 'frac_q8_H_peptide': 347 NaN values
+    Column 'frac_q8_I_peptide': 347 NaN values
+    Column 'frac_q8_B_peptide': 347 NaN values
+    Column 'frac_q8_E_peptide': 347 NaN values
+    Column 'frac_q8_S_peptide': 347 NaN values
+    Column 'frac_q8_T_peptide': 347 NaN values
+    Column 'frac_q8_C_peptide': 347 NaN values
+    Column 'mean_p_q8_G_peptide': 347 NaN values
+    Column 'mean_p_q8_H_peptide': 347 NaN values
+    Column 'mean_p_q8_I_peptide': 347 NaN values
+    Column 'mean_p_q8_B_peptide': 347 NaN values
+    Column 'mean_p_q8_E_peptide': 347 NaN values
+    Column 'mean_p_q8_S_peptide': 347 NaN values
+    Column 'mean_p_q8_T_peptide': 347 NaN values
+    Column 'mean_p_q8_C_peptide': 347 NaN values
+    Column 'mean_rsa_nflank': 354 NaN values
+    Column 'mean_disorder_nflank': 354 NaN values
+    Column 'frac_q8_G_nflank': 354 NaN values
+    Column 'frac_q8_H_nflank': 354 NaN values
+    Column 'frac_q8_I_nflank': 354 NaN values
+    Column 'frac_q8_B_nflank': 354 NaN values
+    Column 'frac_q8_E_nflank': 354 NaN values
+    Column 'frac_q8_S_nflank': 354 NaN values
+    Column 'frac_q8_T_nflank': 354 NaN values
+    Column 'frac_q8_C_nflank': 354 NaN values
+    Column 'mean_p_q8_G_nflank': 354 NaN values
+    Column 'mean_p_q8_H_nflank': 354 NaN values
+    Column 'mean_p_q8_I_nflank': 354 NaN values
+    Column 'mean_p_q8_B_nflank': 354 NaN values
+    Column 'mean_p_q8_E_nflank': 354 NaN values
+    Column 'mean_p_q8_S_nflank': 354 NaN values
+    Column 'mean_p_q8_T_nflank': 354 NaN values
+    Column 'mean_p_q8_C_nflank': 354 NaN values
+    Column 'mean_rsa_cflank': 364 NaN values
+    Column 'mean_disorder_cflank': 364 NaN values
+    Column 'frac_q8_G_cflank': 364 NaN values
+    Column 'frac_q8_H_cflank': 364 NaN values
+    Column 'frac_q8_I_cflank': 364 NaN values
+    Column 'frac_q8_B_cflank': 364 NaN values
+    Column 'frac_q8_E_cflank': 364 NaN values
+    Column 'frac_q8_S_cflank': 364 NaN values
+    Column 'frac_q8_T_cflank': 364 NaN values
+    Column 'frac_q8_C_cflank': 364 NaN values
+    Column 'mean_p_q8_G_cflank': 364 NaN values
+    Column 'mean_p_q8_H_cflank': 364 NaN values
+    Column 'mean_p_q8_I_cflank': 364 NaN values
+    Column 'mean_p_q8_B_cflank': 364 NaN values
+    Column 'mean_p_q8_E_cflank': 364 NaN values
+    Column 'mean_p_q8_S_cflank': 364 NaN values
+    Column 'mean_p_q8_T_cflank': 364 NaN values
+    Column 'mean_p_q8_C_cflank': 364 NaN values
+    Column 'mean_plddt_peptide': 1076 NaN values
+    Column 'sd_plddt_peptide': 1076 NaN values
+    Column 'min_plddt_peptide': 1076 NaN values
+    Column 'frac_disordered_peptide': 1076 NaN values
+    Column 'mean_plddt_nflank': 1083 NaN values
+    Column 'sd_plddt_nflank': 1097 NaN values
+    Column 'frac_disordered_nflank': 1083 NaN values
+    Column 'mean_plddt_cflank': 1096 NaN values
+    Column 'sd_plddt_cflank': 1099 NaN values
+    Column 'frac_disordered_cflank': 1096 NaN values
+  Fold 1: medians computed from 35401 training samples
+  Fold 1: imputed 113031 train values, 30028 test values
+  Train:  35401 samples (pos=15629, neg=19772, ratio=1.265)
+  Test:    8850 samples (pos=3921, neg=4929, ratio=1.257)
+  Features: 66
+  Training Random Forest (1000 trees) ...
+  Training time: 24.6s
+
+  Fold 1 results (25.1s):
+    AUC-ROC: 0.6362  |  AUC-PR: 0.5692  |  Acc: 0.6066  |  F1: 0.4751  |  MCC: 0.1845
+    Sens: 0.4019  |  Spec: 0.7693  |  PPV: 0.5809  |  NPV: 0.6179
+
+  Top 15 feature importances:
+  Rank   Feature                                    Importance
+  ------------------------------------------------------------
+  1      distance_from_n_terminus                     0.044570
+  2      distance_from_c_terminus                     0.041974
+  3      sd_plddt_peptide                             0.024470
+  4      sd_plddt_nflank                              0.024264
+  5      mean_plddt_nflank                            0.024047
+  6      mean_rsa_cflank                              0.024020
+  7      sd_plddt_cflank                              0.023749
+  8      mean_p_q8_I_nflank                           0.023732
+  9      mean_plddt_cflank                            0.023698
+  10     mean_plddt_peptide                           0.023665
+  11     mean_rsa_peptide                             0.023391
+  12     mean_p_q8_I_cflank                           0.023300
+  13     mean_p_q8_G_peptide                          0.023115
+  14     mean_p_q8_G_nflank                           0.022990
+  15     mean_p_q8_B_peptide                          0.022916
+  Saved model: C:\Users\olive\Documents\R\special_course_spring2026\models\rf_model_fold1.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 2/4
+--------------------------------------------------------------------------------
+  WARNING: X_train: 116425 NaN, 0 Inf values
+    Column 'mean_rsa_peptide': 1320 NaN values
+    Column 'mean_disorder_peptide': 1320 NaN values
+    Column 'frac_q8_G_peptide': 1320 NaN values
+    Column 'frac_q8_H_peptide': 1320 NaN values
+    Column 'frac_q8_I_peptide': 1320 NaN values
+    Column 'frac_q8_B_peptide': 1320 NaN values
+    Column 'frac_q8_E_peptide': 1320 NaN values
+    Column 'frac_q8_S_peptide': 1320 NaN values
+    Column 'frac_q8_T_peptide': 1320 NaN values
+    Column 'frac_q8_C_peptide': 1320 NaN values
+    Column 'mean_p_q8_G_peptide': 1320 NaN values
+    Column 'mean_p_q8_H_peptide': 1320 NaN values
+    Column 'mean_p_q8_I_peptide': 1320 NaN values
+    Column 'mean_p_q8_B_peptide': 1320 NaN values
+    Column 'mean_p_q8_E_peptide': 1320 NaN values
+    Column 'mean_p_q8_S_peptide': 1320 NaN values
+    Column 'mean_p_q8_T_peptide': 1320 NaN values
+    Column 'mean_p_q8_C_peptide': 1320 NaN values
+    Column 'mean_rsa_nflank': 1350 NaN values
+    Column 'mean_disorder_nflank': 1350 NaN values
+    Column 'frac_q8_G_nflank': 1350 NaN values
+    Column 'frac_q8_H_nflank': 1350 NaN values
+    Column 'frac_q8_I_nflank': 1350 NaN values
+    Column 'frac_q8_B_nflank': 1350 NaN values
+    Column 'frac_q8_E_nflank': 1350 NaN values
+    Column 'frac_q8_S_nflank': 1350 NaN values
+    Column 'frac_q8_T_nflank': 1350 NaN values
+    Column 'frac_q8_C_nflank': 1350 NaN values
+    Column 'mean_p_q8_G_nflank': 1350 NaN values
+    Column 'mean_p_q8_H_nflank': 1350 NaN values
+    Column 'mean_p_q8_I_nflank': 1350 NaN values
+    Column 'mean_p_q8_B_nflank': 1350 NaN values
+    Column 'mean_p_q8_E_nflank': 1350 NaN values
+    Column 'mean_p_q8_S_nflank': 1350 NaN values
+    Column 'mean_p_q8_T_nflank': 1350 NaN values
+    Column 'mean_p_q8_C_nflank': 1350 NaN values
+    Column 'mean_rsa_cflank': 1394 NaN values
+    Column 'mean_disorder_cflank': 1394 NaN values
+    Column 'frac_q8_G_cflank': 1394 NaN values
+    Column 'frac_q8_H_cflank': 1394 NaN values
+    Column 'frac_q8_I_cflank': 1394 NaN values
+    Column 'frac_q8_B_cflank': 1394 NaN values
+    Column 'frac_q8_E_cflank': 1394 NaN values
+    Column 'frac_q8_S_cflank': 1394 NaN values
+    Column 'frac_q8_T_cflank': 1394 NaN values
+    Column 'frac_q8_C_cflank': 1394 NaN values
+    Column 'mean_p_q8_G_cflank': 1394 NaN values
+    Column 'mean_p_q8_H_cflank': 1394 NaN values
+    Column 'mean_p_q8_I_cflank': 1394 NaN values
+    Column 'mean_p_q8_B_cflank': 1394 NaN values
+    Column 'mean_p_q8_E_cflank': 1394 NaN values
+    Column 'mean_p_q8_S_cflank': 1394 NaN values
+    Column 'mean_p_q8_T_cflank': 1394 NaN values
+    Column 'mean_p_q8_C_cflank': 1394 NaN values
+    Column 'mean_plddt_peptide': 4286 NaN values
+    Column 'sd_plddt_peptide': 4286 NaN values
+    Column 'min_plddt_peptide': 4286 NaN values
+    Column 'frac_disordered_peptide': 4286 NaN values
+    Column 'mean_plddt_nflank': 4316 NaN values
+    Column 'sd_plddt_nflank': 4371 NaN values
+    Column 'frac_disordered_nflank': 4316 NaN values
+    Column 'mean_plddt_cflank': 4367 NaN values
+    Column 'sd_plddt_cflank': 4392 NaN values
+    Column 'frac_disordered_cflank': 4367 NaN values
+  WARNING: X_test: 26634 NaN, 0 Inf values
+    Column 'mean_rsa_peptide': 298 NaN values
+    Column 'mean_disorder_peptide': 298 NaN values
+    Column 'frac_q8_G_peptide': 298 NaN values
+    Column 'frac_q8_H_peptide': 298 NaN values
+    Column 'frac_q8_I_peptide': 298 NaN values
+    Column 'frac_q8_B_peptide': 298 NaN values
+    Column 'frac_q8_E_peptide': 298 NaN values
+    Column 'frac_q8_S_peptide': 298 NaN values
+    Column 'frac_q8_T_peptide': 298 NaN values
+    Column 'frac_q8_C_peptide': 298 NaN values
+    Column 'mean_p_q8_G_peptide': 298 NaN values
+    Column 'mean_p_q8_H_peptide': 298 NaN values
+    Column 'mean_p_q8_I_peptide': 298 NaN values
+    Column 'mean_p_q8_B_peptide': 298 NaN values
+    Column 'mean_p_q8_E_peptide': 298 NaN values
+    Column 'mean_p_q8_S_peptide': 298 NaN values
+    Column 'mean_p_q8_T_peptide': 298 NaN values
+    Column 'mean_p_q8_C_peptide': 298 NaN values
+    Column 'mean_rsa_nflank': 303 NaN values
+    Column 'mean_disorder_nflank': 303 NaN values
+    Column 'frac_q8_G_nflank': 303 NaN values
+    Column 'frac_q8_H_nflank': 303 NaN values
+    Column 'frac_q8_I_nflank': 303 NaN values
+    Column 'frac_q8_B_nflank': 303 NaN values
+    Column 'frac_q8_E_nflank': 303 NaN values
+    Column 'frac_q8_S_nflank': 303 NaN values
+    Column 'frac_q8_T_nflank': 303 NaN values
+    Column 'frac_q8_C_nflank': 303 NaN values
+    Column 'mean_p_q8_G_nflank': 303 NaN values
+    Column 'mean_p_q8_H_nflank': 303 NaN values
+    Column 'mean_p_q8_I_nflank': 303 NaN values
+    Column 'mean_p_q8_B_nflank': 303 NaN values
+    Column 'mean_p_q8_E_nflank': 303 NaN values
+    Column 'mean_p_q8_S_nflank': 303 NaN values
+    Column 'mean_p_q8_T_nflank': 303 NaN values
+    Column 'mean_p_q8_C_nflank': 303 NaN values
+    Column 'mean_rsa_cflank': 320 NaN values
+    Column 'mean_disorder_cflank': 320 NaN values
+    Column 'frac_q8_G_cflank': 320 NaN values
+    Column 'frac_q8_H_cflank': 320 NaN values
+    Column 'frac_q8_I_cflank': 320 NaN values
+    Column 'frac_q8_B_cflank': 320 NaN values
+    Column 'frac_q8_E_cflank': 320 NaN values
+    Column 'frac_q8_S_cflank': 320 NaN values
+    Column 'frac_q8_T_cflank': 320 NaN values
+    Column 'frac_q8_C_cflank': 320 NaN values
+    Column 'mean_p_q8_G_cflank': 320 NaN values
+    Column 'mean_p_q8_H_cflank': 320 NaN values
+    Column 'mean_p_q8_I_cflank': 320 NaN values
+    Column 'mean_p_q8_B_cflank': 320 NaN values
+    Column 'mean_p_q8_E_cflank': 320 NaN values
+    Column 'mean_p_q8_S_cflank': 320 NaN values
+    Column 'mean_p_q8_T_cflank': 320 NaN values
+    Column 'mean_p_q8_C_cflank': 320 NaN values
+    Column 'mean_plddt_peptide': 996 NaN values
+    Column 'sd_plddt_peptide': 996 NaN values
+    Column 'min_plddt_peptide': 996 NaN values
+    Column 'frac_disordered_peptide': 996 NaN values
+    Column 'mean_plddt_nflank': 1001 NaN values
+    Column 'sd_plddt_nflank': 1010 NaN values
+    Column 'frac_disordered_nflank': 1001 NaN values
+    Column 'mean_plddt_cflank': 1017 NaN values
+    Column 'sd_plddt_cflank': 1026 NaN values
+    Column 'frac_disordered_cflank': 1017 NaN values
+  Fold 2: medians computed from 35401 training samples
+  Fold 2: imputed 116425 train values, 26634 test values
+  Train:  35401 samples (pos=15626, neg=19775, ratio=1.266)
+  Test:    8850 samples (pos=3924, neg=4926, ratio=1.255)
+  Features: 66
+  Training Random Forest (1000 trees) ...
+  Training time: 21.8s
+
+  Fold 2 results (22.2s):
+    AUC-ROC: 0.6362  |  AUC-PR: 0.5710  |  Acc: 0.6025  |  F1: 0.4724  |  MCC: 0.1762
+    Sens: 0.4014  |  Spec: 0.7627  |  PPV: 0.5740  |  NPV: 0.6153
+
+  Top 15 feature importances:
+  Rank   Feature                                    Importance
+  ------------------------------------------------------------
+  1      distance_from_n_terminus                     0.044232
+  2      distance_from_c_terminus                     0.043630
+  3      mean_plddt_nflank                            0.024645
+  4      sd_plddt_nflank                              0.024333
+  5      sd_plddt_cflank                              0.023921
+  6      sd_plddt_peptide                             0.023716
+  7      mean_rsa_cflank                              0.023524
+  8      mean_p_q8_I_nflank                           0.023375
+  9      mean_plddt_peptide                           0.023352
+  10     mean_rsa_peptide                             0.023330
+  11     mean_plddt_cflank                            0.023255
+  12     mean_p_q8_I_cflank                           0.023182
+  13     mean_rsa_nflank                              0.023084
+  14     mean_p_q8_I_peptide                          0.023028
+  15     mean_p_q8_G_peptide                          0.023027
+  Saved model: C:\Users\olive\Documents\R\special_course_spring2026\models\rf_model_fold2.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 3/4
+--------------------------------------------------------------------------------
+  WARNING: X_train: 114642 NaN, 0 Inf values
+    Column 'mean_rsa_peptide': 1301 NaN values
+    Column 'mean_disorder_peptide': 1301 NaN values
+    Column 'frac_q8_G_peptide': 1301 NaN values
+    Column 'frac_q8_H_peptide': 1301 NaN values
+    Column 'frac_q8_I_peptide': 1301 NaN values
+    Column 'frac_q8_B_peptide': 1301 NaN values
+    Column 'frac_q8_E_peptide': 1301 NaN values
+    Column 'frac_q8_S_peptide': 1301 NaN values
+    Column 'frac_q8_T_peptide': 1301 NaN values
+    Column 'frac_q8_C_peptide': 1301 NaN values
+    Column 'mean_p_q8_G_peptide': 1301 NaN values
+    Column 'mean_p_q8_H_peptide': 1301 NaN values
+    Column 'mean_p_q8_I_peptide': 1301 NaN values
+    Column 'mean_p_q8_B_peptide': 1301 NaN values
+    Column 'mean_p_q8_E_peptide': 1301 NaN values
+    Column 'mean_p_q8_S_peptide': 1301 NaN values
+    Column 'mean_p_q8_T_peptide': 1301 NaN values
+    Column 'mean_p_q8_C_peptide': 1301 NaN values
+    Column 'mean_rsa_nflank': 1327 NaN values
+    Column 'mean_disorder_nflank': 1327 NaN values
+    Column 'frac_q8_G_nflank': 1327 NaN values
+    Column 'frac_q8_H_nflank': 1327 NaN values
+    Column 'frac_q8_I_nflank': 1327 NaN values
+    Column 'frac_q8_B_nflank': 1327 NaN values
+    Column 'frac_q8_E_nflank': 1327 NaN values
+    Column 'frac_q8_S_nflank': 1327 NaN values
+    Column 'frac_q8_T_nflank': 1327 NaN values
+    Column 'frac_q8_C_nflank': 1327 NaN values
+    Column 'mean_p_q8_G_nflank': 1327 NaN values
+    Column 'mean_p_q8_H_nflank': 1327 NaN values
+    Column 'mean_p_q8_I_nflank': 1327 NaN values
+    Column 'mean_p_q8_B_nflank': 1327 NaN values
+    Column 'mean_p_q8_E_nflank': 1327 NaN values
+    Column 'mean_p_q8_S_nflank': 1327 NaN values
+    Column 'mean_p_q8_T_nflank': 1327 NaN values
+    Column 'mean_p_q8_C_nflank': 1327 NaN values
+    Column 'mean_rsa_cflank': 1374 NaN values
+    Column 'mean_disorder_cflank': 1374 NaN values
+    Column 'frac_q8_G_cflank': 1374 NaN values
+    Column 'frac_q8_H_cflank': 1374 NaN values
+    Column 'frac_q8_I_cflank': 1374 NaN values
+    Column 'frac_q8_B_cflank': 1374 NaN values
+    Column 'frac_q8_E_cflank': 1374 NaN values
+    Column 'frac_q8_S_cflank': 1374 NaN values
+    Column 'frac_q8_T_cflank': 1374 NaN values
+    Column 'frac_q8_C_cflank': 1374 NaN values
+    Column 'mean_p_q8_G_cflank': 1374 NaN values
+    Column 'mean_p_q8_H_cflank': 1374 NaN values
+    Column 'mean_p_q8_I_cflank': 1374 NaN values
+    Column 'mean_p_q8_B_cflank': 1374 NaN values
+    Column 'mean_p_q8_E_cflank': 1374 NaN values
+    Column 'mean_p_q8_S_cflank': 1374 NaN values
+    Column 'mean_p_q8_T_cflank': 1374 NaN values
+    Column 'mean_p_q8_C_cflank': 1374 NaN values
+    Column 'mean_plddt_peptide': 4222 NaN values
+    Column 'sd_plddt_peptide': 4222 NaN values
+    Column 'min_plddt_peptide': 4222 NaN values
+    Column 'frac_disordered_peptide': 4222 NaN values
+    Column 'mean_plddt_nflank': 4248 NaN values
+    Column 'sd_plddt_nflank': 4295 NaN values
+    Column 'frac_disordered_nflank': 4248 NaN values
+    Column 'mean_plddt_cflank': 4301 NaN values
+    Column 'sd_plddt_cflank': 4325 NaN values
+    Column 'frac_disordered_cflank': 4301 NaN values
+  WARNING: X_test: 28417 NaN, 0 Inf values
+    Column 'mean_rsa_peptide': 317 NaN values
+    Column 'mean_disorder_peptide': 317 NaN values
+    Column 'frac_q8_G_peptide': 317 NaN values
+    Column 'frac_q8_H_peptide': 317 NaN values
+    Column 'frac_q8_I_peptide': 317 NaN values
+    Column 'frac_q8_B_peptide': 317 NaN values
+    Column 'frac_q8_E_peptide': 317 NaN values
+    Column 'frac_q8_S_peptide': 317 NaN values
+    Column 'frac_q8_T_peptide': 317 NaN values
+    Column 'frac_q8_C_peptide': 317 NaN values
+    Column 'mean_p_q8_G_peptide': 317 NaN values
+    Column 'mean_p_q8_H_peptide': 317 NaN values
+    Column 'mean_p_q8_I_peptide': 317 NaN values
+    Column 'mean_p_q8_B_peptide': 317 NaN values
+    Column 'mean_p_q8_E_peptide': 317 NaN values
+    Column 'mean_p_q8_S_peptide': 317 NaN values
+    Column 'mean_p_q8_T_peptide': 317 NaN values
+    Column 'mean_p_q8_C_peptide': 317 NaN values
+    Column 'mean_rsa_nflank': 326 NaN values
+    Column 'mean_disorder_nflank': 326 NaN values
+    Column 'frac_q8_G_nflank': 326 NaN values
+    Column 'frac_q8_H_nflank': 326 NaN values
+    Column 'frac_q8_I_nflank': 326 NaN values
+    Column 'frac_q8_B_nflank': 326 NaN values
+    Column 'frac_q8_E_nflank': 326 NaN values
+    Column 'frac_q8_S_nflank': 326 NaN values
+    Column 'frac_q8_T_nflank': 326 NaN values
+    Column 'frac_q8_C_nflank': 326 NaN values
+    Column 'mean_p_q8_G_nflank': 326 NaN values
+    Column 'mean_p_q8_H_nflank': 326 NaN values
+    Column 'mean_p_q8_I_nflank': 326 NaN values
+    Column 'mean_p_q8_B_nflank': 326 NaN values
+    Column 'mean_p_q8_E_nflank': 326 NaN values
+    Column 'mean_p_q8_S_nflank': 326 NaN values
+    Column 'mean_p_q8_T_nflank': 326 NaN values
+    Column 'mean_p_q8_C_nflank': 326 NaN values
+    Column 'mean_rsa_cflank': 340 NaN values
+    Column 'mean_disorder_cflank': 340 NaN values
+    Column 'frac_q8_G_cflank': 340 NaN values
+    Column 'frac_q8_H_cflank': 340 NaN values
+    Column 'frac_q8_I_cflank': 340 NaN values
+    Column 'frac_q8_B_cflank': 340 NaN values
+    Column 'frac_q8_E_cflank': 340 NaN values
+    Column 'frac_q8_S_cflank': 340 NaN values
+    Column 'frac_q8_T_cflank': 340 NaN values
+    Column 'frac_q8_C_cflank': 340 NaN values
+    Column 'mean_p_q8_G_cflank': 340 NaN values
+    Column 'mean_p_q8_H_cflank': 340 NaN values
+    Column 'mean_p_q8_I_cflank': 340 NaN values
+    Column 'mean_p_q8_B_cflank': 340 NaN values
+    Column 'mean_p_q8_E_cflank': 340 NaN values
+    Column 'mean_p_q8_S_cflank': 340 NaN values
+    Column 'mean_p_q8_T_cflank': 340 NaN values
+    Column 'mean_p_q8_C_cflank': 340 NaN values
+    Column 'mean_plddt_peptide': 1060 NaN values
+    Column 'sd_plddt_peptide': 1060 NaN values
+    Column 'min_plddt_peptide': 1060 NaN values
+    Column 'frac_disordered_peptide': 1060 NaN values
+    Column 'mean_plddt_nflank': 1069 NaN values
+    Column 'sd_plddt_nflank': 1086 NaN values
+    Column 'frac_disordered_nflank': 1069 NaN values
+    Column 'mean_plddt_cflank': 1083 NaN values
+    Column 'sd_plddt_cflank': 1093 NaN values
+    Column 'frac_disordered_cflank': 1083 NaN values
+  Fold 3: medians computed from 35401 training samples
+  Fold 3: imputed 114642 train values, 28417 test values
+  Train:  35401 samples (pos=15659, neg=19742, ratio=1.261)
+  Test:    8850 samples (pos=3891, neg=4959, ratio=1.274)
+  Features: 66
+  Training Random Forest (1000 trees) ...
+  Training time: 22.7s
+
+  Fold 3 results (23.3s):
+    AUC-ROC: 0.6500  |  AUC-PR: 0.5765  |  Acc: 0.6127  |  F1: 0.4881  |  MCC: 0.1961
+    Sens: 0.4199  |  Spec: 0.7639  |  PPV: 0.5825  |  NPV: 0.6266
+
+  Top 15 feature importances:
+  Rank   Feature                                    Importance
+  ------------------------------------------------------------
+  1      distance_from_n_terminus                     0.044944
+  2      distance_from_c_terminus                     0.043724
+  3      sd_plddt_cflank                              0.023958
+  4      mean_rsa_cflank                              0.023913
+  5      sd_plddt_nflank                              0.023893
+  6      sd_plddt_peptide                             0.023886
+  7      mean_plddt_nflank                            0.023863
+  8      mean_plddt_cflank                            0.023464
+  9      mean_p_q8_I_nflank                           0.023410
+  10     mean_rsa_peptide                             0.023402
+  11     mean_plddt_peptide                           0.023362
+  12     mean_rsa_nflank                              0.023259
+  13     mean_p_q8_G_peptide                          0.023069
+  14     mean_p_q8_G_nflank                           0.022780
+  15     mean_p_q8_I_peptide                          0.022779
+  Saved model: C:\Users\olive\Documents\R\special_course_spring2026\models\rf_model_fold3.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 4/4
+--------------------------------------------------------------------------------
+  WARNING: X_train: 112795 NaN, 0 Inf values
+    Column 'mean_rsa_peptide': 1264 NaN values
+    Column 'mean_disorder_peptide': 1264 NaN values
+    Column 'frac_q8_G_peptide': 1264 NaN values
+    Column 'frac_q8_H_peptide': 1264 NaN values
+    Column 'frac_q8_I_peptide': 1264 NaN values
+    Column 'frac_q8_B_peptide': 1264 NaN values
+    Column 'frac_q8_E_peptide': 1264 NaN values
+    Column 'frac_q8_S_peptide': 1264 NaN values
+    Column 'frac_q8_T_peptide': 1264 NaN values
+    Column 'frac_q8_C_peptide': 1264 NaN values
+    Column 'mean_p_q8_G_peptide': 1264 NaN values
+    Column 'mean_p_q8_H_peptide': 1264 NaN values
+    Column 'mean_p_q8_I_peptide': 1264 NaN values
+    Column 'mean_p_q8_B_peptide': 1264 NaN values
+    Column 'mean_p_q8_E_peptide': 1264 NaN values
+    Column 'mean_p_q8_S_peptide': 1264 NaN values
+    Column 'mean_p_q8_T_peptide': 1264 NaN values
+    Column 'mean_p_q8_C_peptide': 1264 NaN values
+    Column 'mean_rsa_nflank': 1292 NaN values
+    Column 'mean_disorder_nflank': 1292 NaN values
+    Column 'frac_q8_G_nflank': 1292 NaN values
+    Column 'frac_q8_H_nflank': 1292 NaN values
+    Column 'frac_q8_I_nflank': 1292 NaN values
+    Column 'frac_q8_B_nflank': 1292 NaN values
+    Column 'frac_q8_E_nflank': 1292 NaN values
+    Column 'frac_q8_S_nflank': 1292 NaN values
+    Column 'frac_q8_T_nflank': 1292 NaN values
+    Column 'frac_q8_C_nflank': 1292 NaN values
+    Column 'mean_p_q8_G_nflank': 1292 NaN values
+    Column 'mean_p_q8_H_nflank': 1292 NaN values
+    Column 'mean_p_q8_I_nflank': 1292 NaN values
+    Column 'mean_p_q8_B_nflank': 1292 NaN values
+    Column 'mean_p_q8_E_nflank': 1292 NaN values
+    Column 'mean_p_q8_S_nflank': 1292 NaN values
+    Column 'mean_p_q8_T_nflank': 1292 NaN values
+    Column 'mean_p_q8_C_nflank': 1292 NaN values
+    Column 'mean_rsa_cflank': 1351 NaN values
+    Column 'mean_disorder_cflank': 1351 NaN values
+    Column 'frac_q8_G_cflank': 1351 NaN values
+    Column 'frac_q8_H_cflank': 1351 NaN values
+    Column 'frac_q8_I_cflank': 1351 NaN values
+    Column 'frac_q8_B_cflank': 1351 NaN values
+    Column 'frac_q8_E_cflank': 1351 NaN values
+    Column 'frac_q8_S_cflank': 1351 NaN values
+    Column 'frac_q8_T_cflank': 1351 NaN values
+    Column 'frac_q8_C_cflank': 1351 NaN values
+    Column 'mean_p_q8_G_cflank': 1351 NaN values
+    Column 'mean_p_q8_H_cflank': 1351 NaN values
+    Column 'mean_p_q8_I_cflank': 1351 NaN values
+    Column 'mean_p_q8_B_cflank': 1351 NaN values
+    Column 'mean_p_q8_E_cflank': 1351 NaN values
+    Column 'mean_p_q8_S_cflank': 1351 NaN values
+    Column 'mean_p_q8_T_cflank': 1351 NaN values
+    Column 'mean_p_q8_C_cflank': 1351 NaN values
+    Column 'mean_plddt_peptide': 4204 NaN values
+    Column 'sd_plddt_peptide': 4204 NaN values
+    Column 'min_plddt_peptide': 4204 NaN values
+    Column 'frac_disordered_peptide': 4204 NaN values
+    Column 'mean_plddt_nflank': 4232 NaN values
+    Column 'sd_plddt_nflank': 4285 NaN values
+    Column 'frac_disordered_nflank': 4232 NaN values
+    Column 'mean_plddt_cflank': 4291 NaN values
+    Column 'sd_plddt_cflank': 4322 NaN values
+    Column 'frac_disordered_cflank': 4291 NaN values
+  WARNING: X_test: 30264 NaN, 0 Inf values
+    Column 'mean_rsa_peptide': 354 NaN values
+    Column 'mean_disorder_peptide': 354 NaN values
+    Column 'frac_q8_G_peptide': 354 NaN values
+    Column 'frac_q8_H_peptide': 354 NaN values
+    Column 'frac_q8_I_peptide': 354 NaN values
+    Column 'frac_q8_B_peptide': 354 NaN values
+    Column 'frac_q8_E_peptide': 354 NaN values
+    Column 'frac_q8_S_peptide': 354 NaN values
+    Column 'frac_q8_T_peptide': 354 NaN values
+    Column 'frac_q8_C_peptide': 354 NaN values
+    Column 'mean_p_q8_G_peptide': 354 NaN values
+    Column 'mean_p_q8_H_peptide': 354 NaN values
+    Column 'mean_p_q8_I_peptide': 354 NaN values
+    Column 'mean_p_q8_B_peptide': 354 NaN values
+    Column 'mean_p_q8_E_peptide': 354 NaN values
+    Column 'mean_p_q8_S_peptide': 354 NaN values
+    Column 'mean_p_q8_T_peptide': 354 NaN values
+    Column 'mean_p_q8_C_peptide': 354 NaN values
+    Column 'mean_rsa_nflank': 361 NaN values
+    Column 'mean_disorder_nflank': 361 NaN values
+    Column 'frac_q8_G_nflank': 361 NaN values
+    Column 'frac_q8_H_nflank': 361 NaN values
+    Column 'frac_q8_I_nflank': 361 NaN values
+    Column 'frac_q8_B_nflank': 361 NaN values
+    Column 'frac_q8_E_nflank': 361 NaN values
+    Column 'frac_q8_S_nflank': 361 NaN values
+    Column 'frac_q8_T_nflank': 361 NaN values
+    Column 'frac_q8_C_nflank': 361 NaN values
+    Column 'mean_p_q8_G_nflank': 361 NaN values
+    Column 'mean_p_q8_H_nflank': 361 NaN values
+    Column 'mean_p_q8_I_nflank': 361 NaN values
+    Column 'mean_p_q8_B_nflank': 361 NaN values
+    Column 'mean_p_q8_E_nflank': 361 NaN values
+    Column 'mean_p_q8_S_nflank': 361 NaN values
+    Column 'mean_p_q8_T_nflank': 361 NaN values
+    Column 'mean_p_q8_C_nflank': 361 NaN values
+    Column 'mean_rsa_cflank': 363 NaN values
+    Column 'mean_disorder_cflank': 363 NaN values
+    Column 'frac_q8_G_cflank': 363 NaN values
+    Column 'frac_q8_H_cflank': 363 NaN values
+    Column 'frac_q8_I_cflank': 363 NaN values
+    Column 'frac_q8_B_cflank': 363 NaN values
+    Column 'frac_q8_E_cflank': 363 NaN values
+    Column 'frac_q8_S_cflank': 363 NaN values
+    Column 'frac_q8_T_cflank': 363 NaN values
+    Column 'frac_q8_C_cflank': 363 NaN values
+    Column 'mean_p_q8_G_cflank': 363 NaN values
+    Column 'mean_p_q8_H_cflank': 363 NaN values
+    Column 'mean_p_q8_I_cflank': 363 NaN values
+    Column 'mean_p_q8_B_cflank': 363 NaN values
+    Column 'mean_p_q8_E_cflank': 363 NaN values
+    Column 'mean_p_q8_S_cflank': 363 NaN values
+    Column 'mean_p_q8_T_cflank': 363 NaN values
+    Column 'mean_p_q8_C_cflank': 363 NaN values
+    Column 'mean_plddt_peptide': 1078 NaN values
+    Column 'sd_plddt_peptide': 1078 NaN values
+    Column 'min_plddt_peptide': 1078 NaN values
+    Column 'frac_disordered_peptide': 1078 NaN values
+    Column 'mean_plddt_nflank': 1085 NaN values
+    Column 'sd_plddt_nflank': 1096 NaN values
+    Column 'frac_disordered_nflank': 1085 NaN values
+    Column 'mean_plddt_cflank': 1093 NaN values
+    Column 'sd_plddt_cflank': 1096 NaN values
+    Column 'frac_disordered_cflank': 1093 NaN values
+  Fold 4: medians computed from 35401 training samples
+  Fold 4: imputed 112795 train values, 30264 test values
+  Train:  35401 samples (pos=15639, neg=19762, ratio=1.264)
+  Test:    8850 samples (pos=3911, neg=4939, ratio=1.263)
+  Features: 66
+  Training Random Forest (1000 trees) ...
+  Training time: 22.1s
+
+  Fold 4 results (22.5s):
+    AUC-ROC: 0.6433  |  AUC-PR: 0.5748  |  Acc: 0.6068  |  F1: 0.4672  |  MCC: 0.1833
+    Sens: 0.3902  |  Spec: 0.7783  |  PPV: 0.5822  |  NPV: 0.6171
+
+  Top 15 feature importances:
+  Rank   Feature                                    Importance
+  ------------------------------------------------------------
+  1      distance_from_n_terminus                     0.044431
+  2      distance_from_c_terminus                     0.043563
+  3      sd_plddt_peptide                             0.023934
+  4      sd_plddt_cflank                              0.023918
+  5      sd_plddt_nflank                              0.023848
+  6      mean_plddt_nflank                            0.023807
+  7      mean_rsa_cflank                              0.023785
+  8      mean_plddt_peptide                           0.023700
+  9      mean_plddt_cflank                            0.023548
+  10     mean_rsa_peptide                             0.023436
+  11     mean_p_q8_I_nflank                           0.023408
+  12     mean_rsa_nflank                              0.023172
+  13     mean_p_q8_I_cflank                           0.023069
+  14     mean_p_q8_G_peptide                          0.022863
+  15     mean_p_q8_I_peptide                          0.022743
+  Saved model: C:\Users\olive\Documents\R\special_course_spring2026\models\rf_model_fold4.pkl
+
+================================================================================
+CROSS-VALIDATION SUMMARY (mean +/- std)
+================================================================================
+  auc_roc         0.6384 +/- 0.0079    [0.6265  0.6362  0.6362  0.6500  0.6433]
+  auc_pr          0.5701 +/- 0.0061    [0.5592  0.5692  0.5710  0.5765  0.5748]
+  accuracy        0.6056 +/- 0.0044    [0.5996  0.6066  0.6025  0.6127  0.6068]
+  f1              0.4725 +/- 0.0093    [0.4599  0.4751  0.4724  0.4881  0.4672]
+  mcc             0.1814 +/- 0.0096    [0.1670  0.1845  0.1762  0.1961  0.1833]
+  sensitivity     0.4000 +/- 0.0117    [0.3866  0.4019  0.4014  0.4199  0.3902]
+  specificity     0.7684 +/- 0.0055    [0.7676  0.7693  0.7627  0.7639  0.7783]
+  ppv             0.5774 +/- 0.0059    [0.5675  0.5809  0.5740  0.5825  0.5822]
+  npv             0.6181 +/- 0.0046    [0.6134  0.6179  0.6153  0.6266  0.6171]
+
+  Best fold: 3 (AUC-ROC = 0.6500)
+
+================================================================================
+PER-FOLD METRIC COMPARISON
+================================================================================
+  Fold    auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
+  -----------------------------------------------------------------------------------------------------------------------------
+  0       0.6265       0.5592       0.5996       0.4599       0.1670       0.3866       0.7676       0.5675       0.6134       
+  1       0.6362       0.5692       0.6066       0.4751       0.1845       0.4019       0.7693       0.5809       0.6179       
+  2       0.6362       0.5710       0.6025       0.4724       0.1762       0.4014       0.7627       0.5740       0.6153       
+  3       0.6500       0.5765       0.6127       0.4881       0.1961       0.4199       0.7639       0.5825       0.6266       
+  4       0.6433       0.5748       0.6068       0.4672       0.1833       0.3902       0.7783       0.5822       0.6171       
+  -----------------------------------------------------------------------------------------------------------------------------
+  mean    0.6384       0.5701       0.6056       0.4725       0.1814       0.4000       0.7684       0.5774       0.6181       
+  std     0.0079       0.0061       0.0044       0.0093       0.0096       0.0117       0.0055       0.0059       0.0046       
+
+================================================================================
+AVERAGED FEATURE IMPORTANCE ACROSS ALL FOLDS
+================================================================================
+  Rank   Feature                                      Mean Imp          Std
+  ------------------------------------------------------------------------
+  1      distance_from_n_terminus                     0.044565     0.000236
+  2      distance_from_c_terminus                     0.043154     0.000662
+  3      mean_plddt_nflank                            0.024110     0.000300
+  4      sd_plddt_nflank                              0.024037     0.000215
+  5      sd_plddt_peptide                             0.024026     0.000257
+  6      sd_plddt_cflank                              0.023926     0.000108
+  7      mean_rsa_cflank                              0.023790     0.000171
+  8      mean_plddt_peptide                           0.023624     0.000254
+  9      mean_plddt_cflank                            0.023531     0.000164
+  10     mean_p_q8_I_nflank                           0.023479     0.000130
+  11     mean_rsa_peptide                             0.023403     0.000043
+  12     mean_rsa_nflank                              0.023155     0.000158
+  13     mean_p_q8_I_cflank                           0.023080     0.000216
+  14     mean_p_q8_G_peptide                          0.023054     0.000110
+  15     mean_p_q8_I_peptide                          0.022754     0.000182
+  16     mean_p_q8_B_peptide                          0.022720     0.000145
+  17     mean_p_q8_G_nflank                           0.022663     0.000214
+  18     min_plddt_peptide                            0.022448     0.000210
+  19     mean_p_q8_G_cflank                           0.022370     0.000087
+  20     mean_p_q8_S_peptide                          0.022212     0.000076
+  21     mean_p_q8_B_nflank                           0.022188     0.000183
+  22     mean_disorder_cflank                         0.022175     0.000178
+  23     mean_p_q8_E_peptide                          0.022099     0.000190
+  24     mean_p_q8_T_nflank                           0.022066     0.000094
+  25     mean_p_q8_S_nflank                           0.022052     0.000105
+  26     mean_p_q8_T_peptide                          0.021932     0.000091
+  27     mean_disorder_peptide                        0.021877     0.000037
+  28     mean_p_q8_T_cflank                           0.021814     0.000039
+  29     mean_p_q8_S_cflank                           0.021782     0.000108
+  30     mean_disorder_nflank                         0.021777     0.000116
+
+================================================================================
+HELD-OUT VALIDATION SET EVALUATION
+================================================================================
+  Using model from best fold (3)
+  Held-out samples: 8850 (pos=3920, neg=4930, ratio=1.258)
+
+  Held-out results (8850 samples):
+    AUC-ROC: 0.6367  |  AUC-PR: 0.5764  |  Acc: 0.6061  |  F1: 0.4770  |  MCC: 0.1838
+    Sens: 0.4056  |  Spec: 0.7655  |  PPV: 0.5790  |  NPV: 0.6183
+
+  Classification Report:
+              precision    recall  f1-score   support
+
+    Negative     0.6183    0.7655    0.6841      4930
+    Positive     0.5790    0.4056    0.4770      3920
+
+    accuracy                         0.6061      8850
+   macro avg     0.5987    0.5856    0.5806      8850
+weighted avg     0.6009    0.6061    0.5924      8850
+
+================================================================================
+CV AVERAGE vs HELD-OUT COMPARISON
+================================================================================
+  Metric             CV mean     CV std   Held-out      Delta
+  ---------------------------------------------------------
+  auc_roc             0.6384     0.0079     0.6367    -0.0017
+  auc_pr              0.5701     0.0061     0.5764    +0.0063
+  accuracy            0.6056     0.0044     0.6061    +0.0005
+  f1                  0.4725     0.0093     0.4770    +0.0045
+  mcc                 0.1814     0.0096     0.1838    +0.0023
+  sensitivity         0.4000     0.0117     0.4056    +0.0056
+  specificity         0.7684     0.0055     0.7655    -0.0028
+  ppv                 0.5774     0.0059     0.5790    +0.0016
+  npv                 0.6181     0.0046     0.6183    +0.0002
+
+Results saved: C:\Users\olive\Documents\R\special_course_spring2026\models\cv_results_RF_20260420_101003.json
+Best model saved: C:\Users\olive\Documents\R\special_course_spring2026\models\best_rf_model.pkl
+Best medians saved: C:\Users\olive\Documents\R\special_course_spring2026\models\best_rf_medians.pkl
+
+================================================================================
+RUN SUMMARY
+================================================================================
+  Total runtime:    127.5s (2.1 min)
+  Model:            Random Forest (1000 trees)
+  Features:         66
+  CV folds:         5
+  Best fold:        3 (AUC = 0.6500)
+  Held-out AUC:     0.6367
+  Held-out MCC:     0.1838
+  Models dir:       C:\Users\olive\Documents\R\special_course_spring2026\models/
+  Results file:     C:\Users\olive\Documents\R\special_course_spring2026\models\cv_results_RF_20260420_101003.json
+  Log file:         C:\Users\olive\Documents\R\special_course_spring2026\logs\02_cross_validation_RF_log_20260420_101003.txt
+  Completed:        2026-04-20 10:12:10
+================================================================================
