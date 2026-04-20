@@ -54,7 +54,7 @@ data/processed/alphafold*.rds
 # Model files (large binary)
 models/*.pkl
 models/*.pt
-
+models/*json
 # VS Code local settings
 .vscode/
 
