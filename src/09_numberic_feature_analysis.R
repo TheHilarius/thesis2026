@@ -490,26 +490,46 @@ logit_scaled <- map_dfr(all_numeric, ~ safe_logit(df_raw, .x, scale_feature = TR
   mutate(p_adj = p.adjust(p_value, method = "BH")) |> arrange(p_adj)
 write_csv(logit_scaled, file.path(results_dir, "numeric_logistic_regression_scaled.csv"))
 
+# All features OR plot
 all_or <- logit_scaled |>
   filter(!is.na(odds_ratio), !is.na(conf_low), !is.na(conf_high)) |>
   mutate(feature = fct_reorder(feature, odds_ratio))
 
-top_or <- all_or # |> slice_head(n = 20)
+max_log_dist_all <- max(abs(log10(c(all_or$conf_low, all_or$conf_high))), na.rm = TRUE) * 1.1
+sym_limits_all <- c(10^(-max_log_dist_all), 10^(max_log_dist_all))
 
-max_log_dist <- max(abs(log10(c(top_or$conf_low, top_or$conf_high))), na.rm = TRUE) * 1.1
-sym_limits <- c(10^(-max_log_dist), 10^(max_log_dist))
+p_or_all <- ggplot(all_or, aes(x = odds_ratio, y = feature)) +
+  geom_point(size = 2.5, color = "#2ecc71") +
+  geom_errorbarh(aes(xmin = conf_low, xmax = conf_high), height = 0.2, color = "grey30") +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  scale_x_log10(limits = sym_limits_all) +
+  labs(title = "All features — univariate logistic regression (scaled)",
+       x = "Odds ratio (log scale, symmetric around 1.0)", y = "Feature") +
+  theme_bw()
 
-p_or <- ggplot(top_or, aes(x = odds_ratio, y = feature)) + # top_or
+ggsave(file.path(figures_dir, "all_features_odds_ratios_scaled.png"),
+       plot = p_or_all, width = 9, height = max(6, nrow(all_or) * 0.3 + 2), dpi = 300)
+
+# Top 20 features OR plot
+top_or <- all_or |>
+  mutate(abs_log_or = abs(log(odds_ratio))) |> 
+  slice_max(abs_log_or, n = 20) |> # The largest OR in either direction
+  select(-abs_log_or) 
+
+max_log_dist_top <- max(abs(log10(c(top_or$conf_low, top_or$conf_high))), na.rm = TRUE) * 1.1
+sym_limits_top <- c(10^(-max_log_dist_top), 10^(max_log_dist_top))
+
+p_or_top <- ggplot(top_or, aes(x = odds_ratio, y = feature)) +
   geom_point(size = 3, color = "#2ecc71") +
   geom_errorbarh(aes(xmin = conf_low, xmax = conf_high), height = 0.2, color = "grey30") +
   geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
-  scale_x_log10(limits = sym_limits) +
-  labs(title = "Top features — univariate logistic regression (scaled)",
+  scale_x_log10(limits = sym_limits_top) +
+  labs(title = "Top 20 features — univariate logistic regression (scaled)",
        x = "Odds ratio (log scale, symmetric around 1.0)", y = "Feature") +
   theme_bw()
 
 ggsave(file.path(figures_dir, "top_features_odds_ratios_scaled.png"),
-       plot = p_or, width = 8, height = 6, dpi = 300)
+       plot = p_or_top, width = 8, height = 6, dpi = 300)
 
 # =============================================================================
 # PROTEIN LENGTH BIAS DIAGNOSTIC
@@ -518,19 +538,64 @@ message("Investigating protein_length signal...")
 
 if ("protein_length" %in% names(df_raw)) {
   
-  # 1. Distribution comparison
+  pos_len <- df_raw |> filter(label == 1) |> pull(protein_length)
+  neg_len <- df_raw |> filter(label == 0) |> pull(protein_length)
+  
+  # KS test
+  ks_len <- ks.test(pos_len, neg_len)
+  
+  # Cliff's Delta
+  cliff_len <- cliff_delta_sampled(pos_len, neg_len)
+  
+  cat("\n=== Protein Length Bias: Effect Sizes ===\n")
+  cat("KS D:          ", round(ks_len$statistic, 4), "\n")
+  cat("Cliff's Delta: ", round(cliff_len$estimate, 4),
+      " (", cliff_len$magnitude, ")\n")
+  cat("Median pos:    ", median(pos_len), "\n")
+  cat("Median neg:    ", median(neg_len), "\n")
+  cat("Median diff:   ", median(neg_len) - median(pos_len), "\n")
+  
+  # 1. Distribution comparison with effect sizes annotated
   p_prot_len <- ggplot(df_raw, aes(x = protein_length,
                                    fill = factor(label, labels = c("Not presented", "Presented")))) +
     geom_density(alpha = 0.5, color = "black", linewidth = 0.3) +
     scale_fill_manual(values = c("#e74c3c", "#2ecc71")) +
     scale_x_log10(labels = scales::comma) +
-    labs(title = "Protein length distribution by label",
-         subtitle = "Log scale — are positives concentrated in shorter proteins?",
+    annotate("text", x = 40000, y = Inf,
+             label = paste0("KS D = ", round(ks_len$statistic, 4),
+                            "\nCliff's \u0394 = ", round(cliff_len$estimate, 4),
+                            " (", cliff_len$magnitude, ")"),
+             vjust = 1.5, hjust = 1, size = 4, fontface = "bold", colour = "#e74c3c") +
+    labs(title = "Protein Length Bias: Distribution by Label",
+         subtitle = paste0("Positives skew shorter | KS D = ", round(ks_len$statistic, 4),
+                           " | Cliff's \u0394 = ", round(cliff_len$estimate, 4),
+                           " (", cliff_len$magnitude, ")"),
          x = "Protein length (log scale)", y = "Density", fill = "Label") +
-    theme_bw() + theme(legend.position = "top")
+    theme_bw(base_size = 13) +
+    theme(legend.position = "top", panel.grid.minor = element_blank(),
+          plot.title.position = "plot")
   
   ggsave(file.path(figures_dir, "protein_length_bias_density.png"),
          plot = p_prot_len, width = 8, height = 5, dpi = 300)
+  
+  # 2. ECDF comparison
+  p_prot_len_ecdf <- ggplot(df_raw, aes(x = protein_length,
+                                        colour = factor(label, labels = c("Not presented", "Presented")))) +
+    stat_ecdf(linewidth = 0.8) +
+    scale_colour_manual(values = c("#e74c3c", "#2ecc71")) +
+    scale_x_log10(labels = scales::comma) +
+    annotate("text", x = 50000, y = 0.08,
+             label = paste0("KS D = ", round(ks_len$statistic, 4)),
+             size = 4.5, fontface = "bold", hjust = 1, colour = "#e74c3c") +
+    labs(title = "Protein Length Bias: Cumulative Distribution",
+         subtitle = "Curve separation = protein length imbalance between classes",
+         x = "Protein length (log scale)", y = "Cumulative Proportion", colour = "Label") +
+    theme_bw(base_size = 13) +
+    theme(legend.position = "top", panel.grid.minor = element_blank(),
+          plot.title.position = "plot")
+  
+  ggsave(file.path(figures_dir, "protein_length_bias_ecdf.png"),
+         plot = p_prot_len_ecdf, width = 8, height = 5, dpi = 300)
   
   # 3. Protein-level stats
   cat("\n=== Protein Length Summary ===\n")
@@ -549,16 +614,16 @@ if ("protein_length" %in% names(df_raw)) {
   # 4. Logistic regression controlling for protein_length
   cat("\n=== pLDDT adjusted for protein length ===\n")
   if ("mean_plddt_peptide" %in% names(df_raw)) {
-    fit_unadj <- glm(label ~ scale(mean_plddt_peptide), 
+    fit_unadj <- glm(label ~ scale(mean_plddt_peptide),
                      data = df_raw, family = binomial())
-    fit_adj <- glm(label ~ scale(mean_plddt_peptide) + scale(protein_length), 
+    fit_adj <- glm(label ~ scale(mean_plddt_peptide) + scale(protein_length),
                    data = df_raw, family = binomial())
     
-    cat("Unadjusted pLDDT OR: ", 
+    cat("Unadjusted pLDDT OR: ",
         round(exp(coef(fit_unadj)["scale(mean_plddt_peptide)"]), 3), "\n")
-    cat("Adjusted pLDDT OR:   ", 
+    cat("Adjusted pLDDT OR:   ",
         round(exp(coef(fit_adj)["scale(mean_plddt_peptide)"]), 3), "\n")
-    cat("Protein length OR:   ", 
+    cat("Protein length OR:   ",
         round(exp(coef(fit_adj)["scale(protein_length)"]), 3), "\n")
     
     cat("\nIf pLDDT OR barely changes after adjustment, protein_length is\n")

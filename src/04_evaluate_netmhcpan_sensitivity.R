@@ -30,6 +30,25 @@ df_fasta <- read_fasta_df("data/raw/fasta/combined_9mer.fasta") |>
 df_iedb_pos <- df_iedb_pos |>
   semi_join(df_fasta, by = "uniprot_id")
 
+# Remove selenocysteine(U)-containing proteins
+n_before_sec <- nrow(df_iedb_pos)
+sec_proteins <- df_fasta |>
+  filter(str_detect(sequence, "U")) |>
+  pull(uniprot_id)
+
+cat("Selenocysteine (U) proteins found in FASTA:", length(sec_proteins), "\n")
+
+n_iedb_sec <- df_iedb_pos |>
+  filter(uniprot_id %in% sec_proteins) |>
+  nrow()
+
+df_iedb_pos <- df_iedb_pos |>
+  filter(!uniprot_id %in% sec_proteins)
+
+cat("Removed", n_iedb_sec, "IEDB positives from", length(sec_proteins),
+    "selenocysteine-containing proteins\n")
+cat("IEDB positives after Sec filter:", nrow(df_iedb_pos), "\n")
+
 write_csv(df_iedb_pos, "data/processed/pos_EL_9mers_epitopes_hla0201.csv")
 cat("IEDB positives:", nrow(df_iedb_pos), "\n")
 
@@ -95,7 +114,7 @@ df_iedb_pos <- df_iedb_pos |>
   left_join(
     df_netmhcpan_binders |>
       select(peptide, uniprot_id, rank) |>
-      slice_min(rank, n = 1, by = c(peptide, uniprot_id)),
+      slice_min(rank, n = 1, with_ties = FALSE, by = c(peptide, uniprot_id)),
     by = c("peptide", "uniprot_id")
   )
 cat("IEDB positives with rank (TP):", sum(!is.na(df_iedb_pos$rank)), "\n")
@@ -643,3 +662,97 @@ cat("   Positives:", scales::comma(sum(df_combined$label == 1)), "\n")
 cat("   Negatives:", scales::comma(sum(df_combined$label == 0)), "\n")
 cat("   Total:    ", scales::comma(nrow(df_combined)), "\n")
 
+# ============================================================================
+# DIAGNOSTIC + SAVE: Exact counts for Sankey diagram
+# ============================================================================
+
+cat("\n\n")
+cat(strrep("=", 70), "\n")
+cat("  SANKEY DIAGNOSTIC: Tracing the filtering cascade\n")
+cat(strrep("=", 70), "\n\n")
+
+# Replay cascade from df_raw (untouched input)
+df_diag_9mer   <- df_raw |> filter(pep_length == 9)
+n_diag_9mer    <- nrow(df_diag_9mer)
+n_diag_non9mer <- nrow(df_raw) - n_diag_9mer
+
+n_is_o60361 <- sum(df_diag_9mer$uniprot_id == "O60361", na.rm = TRUE)
+n_is_na     <- sum(is.na(df_diag_9mer$uniprot_id))
+
+df_diag_after_filter <- df_diag_9mer |> filter(uniprot_id != "O60361")
+
+df_diag_dedup <- df_diag_after_filter |>
+  distinct(peptide, uniprot_id, start, end, .keep_all = TRUE)
+n_diag_dedup <- nrow(df_diag_after_filter) - nrow(df_diag_dedup)
+
+df_diag_after_fasta <- df_diag_dedup |>
+  semi_join(df_fasta, by = "uniprot_id")
+n_diag_missing_fasta <- nrow(df_diag_dedup) - nrow(df_diag_after_fasta)
+
+df_diag_after_sec <- df_diag_after_fasta |>
+  filter(!uniprot_id %in% sec_proteins)
+n_diag_sec <- nrow(df_diag_after_fasta) - nrow(df_diag_after_sec)
+
+n_9mer_verified <- nrow(df_diag_after_sec)
+
+# IEDB-level split — use the CLEAN data before left_join corrupted df_iedb_pos
+n_iedb_recovered <- df_diag_after_sec |>
+  semi_join(df_netmhcpan_binders, by = c("peptide", "uniprot_id")) |>
+  nrow()
+
+n_iedb_missed <- df_diag_after_sec |>
+  anti_join(df_netmhcpan_binders, by = c("peptide", "uniprot_id")) |>
+  nrow()
+
+stopifnot(n_iedb_recovered + n_iedb_missed == n_9mer_verified)
+
+# Print summary
+cat("COMPLETE CASCADE:\n")
+cat(strrep("-", 50), "\n")
+cat("  Input file:           ", nrow(df_raw), "\n")
+cat("  Non-9-mers:           ", n_diag_non9mer, "\n")
+cat("  9-mers:               ", n_diag_9mer, "\n")
+cat("  - NA uniprot_id:      ", n_is_na, "\n")
+cat("  - O60361:             ", n_is_o60361, "\n")
+cat("  - Dedup:              ", n_diag_dedup, "\n")
+cat("  - Missing FASTA:      ", n_diag_missing_fasta, "\n")
+cat("  - Selenocysteine:     ", n_diag_sec, "\n")
+cat("  Final verified:       ", n_9mer_verified, "\n")
+cat("  Recovered by NetMHCpan:", n_iedb_recovered, "\n")
+cat("  Missed by NetMHCpan:  ", n_iedb_missed, "\n")
+cat("  TP in df_combined:    ", sum(df_combined$label == 1), "\n")
+cat("  FN in iedb_only:      ", nrow(df_iedb_only), "\n\n")
+
+# Flag the left_join inflation
+cat("⚠️  df_iedb_pos has", nrow(df_iedb_pos), "rows but cascade gives", n_9mer_verified, "\n")
+cat("   Difference of", nrow(df_iedb_pos) - n_9mer_verified,
+    "rows from left_join rank ties.\n")
+cat("   Fix: use slice_min(rank, n = 1, with_ties = FALSE)\n\n")
+
+# Save counts for Sankey script
+df_sankey_counts <- tibble(
+  stage = c(
+    "raw_assays", "duplicates", "unique_pairs", "ptm", "no_ptm",
+    "non_9mer", "9mer_all",
+    "na_uniprot", "o60361", "dedup", "missing_fasta", "selenocysteine",
+    "9mer_verified",
+    "iedb_recovered", "iedb_missed",
+    "tp_in_combined", "fn_in_iedb_only",
+    "predicted_binders", "netmhcpan_only",
+    "negatives_combined", "affinity_removed"
+  ),
+  count = c(
+    200381, 123531, 76850, 15138, 61712,
+    n_diag_non9mer, n_diag_9mer,
+    n_is_na, n_is_o60361, n_diag_dedup, n_diag_missing_fasta, n_diag_sec,
+    n_9mer_verified,
+    n_iedb_recovered, n_iedb_missed,
+    sum(df_combined$label == 1), nrow(df_iedb_only),
+    nrow(df_netmhcpan_binders), nrow(df_netmhcpan_only),
+    sum(df_combined$label == 0), nrow(df_netmhcpan_only) - sum(df_combined$label == 0)
+  )
+)
+
+write_csv(df_sankey_counts, "data/processed/sankey_counts.csv")
+cat("Saved: data/processed/sankey_counts.csv\n")
+print(df_sankey_counts, n = Inf)
