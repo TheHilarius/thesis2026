@@ -632,6 +632,158 @@ if ("protein_length" %in% names(df_raw)) {
 }
 
 # =============================================================================
+# RELATIVE POSITION BIAS DIAGNOSTIC
+# =============================================================================
+message("Investigating relative terminus distance signal...")
+
+if (all(c("rel_distance_from_n_terminus", "rel_distance_from_c_terminus") %in% names(df_raw))) {
+  
+  # --- N-terminus ---
+  pos_n_dist <- df_raw |> filter(label == 1) |> pull(rel_distance_from_n_terminus)
+  neg_n_dist <- df_raw |> filter(label == 0) |> pull(rel_distance_from_n_terminus)
+  
+  ks_n_dist <- ks.test(pos_n_dist, neg_n_dist)
+  cliff_n_dist <- cliff_delta_sampled(pos_n_dist, neg_n_dist)
+  
+  # --- C-terminus ---
+  pos_c_dist <- df_raw |> filter(label == 1) |> pull(rel_distance_from_c_terminus)
+  neg_c_dist <- df_raw |> filter(label == 0) |> pull(rel_distance_from_c_terminus)
+  
+  ks_c_dist <- ks.test(pos_c_dist, neg_c_dist)
+  cliff_c_dist <- cliff_delta_sampled(pos_c_dist, neg_c_dist)
+  
+  cat("\n=== Relative Position Bias: Effect Sizes ===\n")
+  cat("N-terminus distance:\n")
+  cat("  KS D:          ", round(ks_n_dist$statistic, 4), "\n")
+  cat("  Cliff's Delta: ", round(cliff_n_dist$estimate, 4),
+      " (", cliff_n_dist$magnitude, ")\n")
+  cat("  Median pos:    ", round(median(pos_n_dist, na.rm = TRUE), 4), "\n")
+  cat("  Median neg:    ", round(median(neg_n_dist, na.rm = TRUE), 4), "\n")
+  
+  cat("\nC-terminus distance:\n")
+  cat("  KS D:          ", round(ks_c_dist$statistic, 4), "\n")
+  cat("  Cliff's Delta: ", round(cliff_c_dist$estimate, 4),
+      " (", cliff_c_dist$magnitude, ")\n")
+  cat("  Median pos:    ", round(median(pos_c_dist, na.rm = TRUE), 4), "\n")
+  cat("  Median neg:    ", round(median(neg_c_dist, na.rm = TRUE), 4), "\n")
+  
+  # 1. Density — N-terminus
+  p_n_dist <- ggplot(df_raw, aes(x = rel_distance_from_n_terminus,
+                                 fill = factor(label, labels = c("Not presented", "Presented")))) +
+    geom_density(alpha = 0.5, color = "black", linewidth = 0.3) +
+    scale_fill_manual(values = c("#e74c3c", "#2ecc71")) +
+    annotate("text", x = 0.95, y = Inf,
+             label = paste0("KS D = ", round(ks_n_dist$statistic, 4),
+                            "\nCliff's \u0394 = ", round(cliff_n_dist$estimate, 4),
+                            " (", cliff_n_dist$magnitude, ")"),
+             vjust = 1.5, hjust = 1, size = 4, fontface = "bold", colour = "#e74c3c") +
+    labs(title = "Relative Distance from N-terminus: Distribution by Label",
+         subtitle = paste0("KS D = ", round(ks_n_dist$statistic, 4),
+                           " | Cliff's \u0394 = ", round(cliff_n_dist$estimate, 4),
+                           " (", cliff_n_dist$magnitude, ")"),
+         x = "Relative distance from N-terminus (0 = start, 1 = end)",
+         y = "Density", fill = "Label") +
+    theme_bw(base_size = 13) +
+    theme(legend.position = "top", panel.grid.minor = element_blank(),
+          plot.title.position = "plot")
+  
+  ggsave(file.path(figures_dir, "rel_distance_n_terminus_density.png"),
+         plot = p_n_dist, width = 8, height = 5, dpi = 300)
+  
+  # 2. Density — C-terminus
+  p_c_dist <- ggplot(df_raw, aes(x = rel_distance_from_c_terminus,
+                                 fill = factor(label, labels = c("Not presented", "Presented")))) +
+    geom_density(alpha = 0.5, color = "black", linewidth = 0.3) +
+    scale_fill_manual(values = c("#e74c3c", "#2ecc71")) +
+    annotate("text", x = 0.95, y = Inf,
+             label = paste0("KS D = ", round(ks_c_dist$statistic, 4),
+                            "\nCliff's \u0394 = ", round(cliff_c_dist$estimate, 4),
+                            " (", cliff_c_dist$magnitude, ")"),
+             vjust = 1.5, hjust = 1, size = 4, fontface = "bold", colour = "#e74c3c") +
+    labs(title = "Relative Distance from C-terminus: Distribution by Label",
+         subtitle = paste0("KS D = ", round(ks_c_dist$statistic, 4),
+                           " | Cliff's \u0394 = ", round(cliff_c_dist$estimate, 4),
+                           " (", cliff_c_dist$magnitude, ")"),
+         x = "Relative distance from C-terminus (0 = end, 1 = start)",
+         y = "Density", fill = "Label") +
+    theme_bw(base_size = 13) +
+    theme(legend.position = "top", panel.grid.minor = element_blank(),
+          plot.title.position = "plot")
+  
+  ggsave(file.path(figures_dir, "rel_distance_c_terminus_density.png"),
+         plot = p_c_dist, width = 8, height = 5, dpi = 300)
+  
+  # 3. ECDF — N-terminus
+  p_n_dist_ecdf <- ggplot(df_raw, aes(x = rel_distance_from_n_terminus,
+                                      colour = factor(label, labels = c("Not presented", "Presented")))) +
+    stat_ecdf(linewidth = 0.8) +
+    scale_colour_manual(values = c("#e74c3c", "#2ecc71")) +
+    annotate("text", x = 0.95, y = 0.08,
+             label = paste0("KS D = ", round(ks_n_dist$statistic, 4)),
+             size = 4.5, fontface = "bold", hjust = 1, colour = "#e74c3c") +
+    labs(title = "Relative Distance from N-terminus: Cumulative Distribution",
+         x = "Relative distance from N-terminus",
+         y = "Cumulative Proportion", colour = "Label") +
+    theme_bw(base_size = 13) +
+    theme(legend.position = "top", panel.grid.minor = element_blank(),
+          plot.title.position = "plot")
+  
+  ggsave(file.path(figures_dir, "rel_distance_n_terminus_ecdf.png"),
+         plot = p_n_dist_ecdf, width = 8, height = 5, dpi = 300)
+  
+  # 4. ECDF — C-terminus
+  p_c_dist_ecdf <- ggplot(df_raw, aes(x = rel_distance_from_c_terminus,
+                                      colour = factor(label, labels = c("Not presented", "Presented")))) +
+    stat_ecdf(linewidth = 0.8) +
+    scale_colour_manual(values = c("#e74c3c", "#2ecc71")) +
+    annotate("text", x = 0.95, y = 0.08,
+             label = paste0("KS D = ", round(ks_c_dist$statistic, 4)),
+             size = 4.5, fontface = "bold", hjust = 1, colour = "#e74c3c") +
+    labs(title = "Relative Distance from C-terminus: Cumulative Distribution",
+         x = "Relative distance from C-terminus",
+         y = "Cumulative Proportion", colour = "Label") +
+    theme_bw(base_size = 13) +
+    theme(legend.position = "top", panel.grid.minor = element_blank(),
+          plot.title.position = "plot")
+  
+  ggsave(file.path(figures_dir, "rel_distance_c_terminus_ecdf.png"),
+         plot = p_c_dist_ecdf, width = 8, height = 5, dpi = 300)
+  
+  # 5. Logistic regression — adjusted for protein length
+  cat("\n=== Relative Position adjusted for protein length ===\n")
+  
+  fit_n_unadj <- glm(label ~ scale(rel_distance_from_n_terminus),
+                     data = df_raw, family = binomial())
+  fit_n_adj <- glm(label ~ scale(rel_distance_from_n_terminus) + scale(protein_length),
+                   data = df_raw, family = binomial())
+  
+  fit_c_unadj <- glm(label ~ scale(rel_distance_from_c_terminus),
+                     data = df_raw, family = binomial())
+  fit_c_adj <- glm(label ~ scale(rel_distance_from_c_terminus) + scale(protein_length),
+                   data = df_raw, family = binomial())
+  
+  cat("N-terminus distance:\n")
+  cat("  Unadjusted OR: ",
+      round(exp(coef(fit_n_unadj)["scale(rel_distance_from_n_terminus)"]), 3), "\n")
+  cat("  Adjusted OR:   ",
+      round(exp(coef(fit_n_adj)["scale(rel_distance_from_n_terminus)"]), 3), "\n")
+  
+  cat("\nC-terminus distance:\n")
+  cat("  Unadjusted OR: ",
+      round(exp(coef(fit_c_unadj)["scale(rel_distance_from_c_terminus)"]), 3), "\n")
+  cat("  Adjusted OR:   ",
+      round(exp(coef(fit_c_adj)["scale(rel_distance_from_c_terminus)"]), 3), "\n")
+  
+  cat("\nProtein length OR (from N-dist model): ",
+      round(exp(coef(fit_n_adj)["scale(protein_length)"]), 3), "\n")
+  
+  cat("\nIf OR barely changes after adjustment, relative position is an\n")
+  cat("independent signal, not confounded by protein length.\n")
+  cat("If OR moves toward 1 after adjustment, protein length explains\n")
+  cat("some of the positional bias.\n")
+}
+
+# =============================================================================
 # 6. PLDDT QUADRATIC MODEL
 # =============================================================================
 message("Running quadratic model for mean_plddt_peptide...")
