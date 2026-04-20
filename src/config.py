@@ -36,7 +36,10 @@ PEPTIDE_COL = "peptide"
 LABEL_COL = "label"
 FOLD_COL = "fold"
 
+# Columns that are identifiers, text, or structural bookkeeping —
+# never used directly as numeric features.
 METADATA_COLS = [
+    # identifiers / text
     "start",
     "end",
     "peptide",
@@ -53,7 +56,24 @@ METADATA_COLS = [
     "c_flank",
     "full_context",
     "fold",
+    # flank boundary indices (positional bookkeeping, not predictive features)
+    "nflank_start",
+    "nflank_end",
+    "cflank_start",
+    "cflank_end",
 ]
+
+# Single-residue positional columns (object dtype).
+# These require encoding (one-hot, BLOSUM, AAindex, etc.) before use.
+# Kept in a dedicated list so the encoding step can reference them.
+POSITION_AA_COLS = [
+    "N4", "N3", "N2", "N1",
+    "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+    "C1", "C2", "C3", "C4",
+]
+
+# Union of all non-feature columns (metadata + unencoded AA positions)
+_EXCLUDE_COLS = set(METADATA_COLS) | set(POSITION_AA_COLS)
 
 # ──────────────────────────────────────────────
 # CLUSTERING
@@ -64,20 +84,27 @@ HAMMING_CUTOFF = 1
 # RANDOM FOREST HYPERPARAMETERS (no regularization baseline)
 # ──────────────────────────────────────────────
 RF_N_ESTIMATORS = 1000       # Number of trees
-RF_MAX_DEPTH = None         # No depth limit (no regularization)
-RF_MIN_SAMPLES_SPLIT = 2    # Default (minimal constraint)
-RF_MIN_SAMPLES_LEAF = 1     # Default (minimal constraint)
-RF_MAX_FEATURES = "sqrt"    # Standard for classification
-RF_N_JOBS = -1              # Use all CPU cores
-RF_CLASS_WEIGHT = None      # No class weighting (change to "balanced" if needed)
+RF_MAX_DEPTH = None          # No depth limit (no regularization)
+RF_MIN_SAMPLES_SPLIT = 2     # Default (minimal constraint)
+RF_MIN_SAMPLES_LEAF = 1      # Default (minimal constraint)
+RF_MAX_FEATURES = "sqrt"     # Standard for classification
+RF_N_JOBS = -1               # Use all CPU cores
+RF_CLASS_WEIGHT = None       # No class weighting (change to "balanced" if needed)
 
 # ──────────────────────────────────────────────
 # HELPERS
 # ──────────────────────────────────────────────
 
 def get_feature_cols(df_columns):
-    """Return list of feature columns = all columns minus metadata."""
-    return [c for c in df_columns if c not in METADATA_COLS]
+    """
+    Return list of feature columns = all columns minus metadata and
+    unencoded positional AA columns.
+
+    Once AA encoding is added upstream, the encoded columns will be
+    numeric and will NOT appear in _EXCLUDE_COLS, so they will be
+    picked up automatically.
+    """
+    return [c for c in df_columns if c not in _EXCLUDE_COLS]
 
 
 def validate_config():
