@@ -1,7 +1,8 @@
 """
 02_datasplit_analysis.py
 Post-split data quality report: label balance, feature dtypes,
-NaN / Inf audit, constant-column check, and summary statistics.
+NaN / Inf audit (with per-label breakdown), constant-column check,
+positional AA column audit, and summary statistics.
 Run AFTER 01_datasplit.py and BEFORE cross-validation.
 """
 
@@ -20,12 +21,13 @@ from config import (
     SPLIT_DATA_PATH, LOG_DIR,
     N_CV_FOLDS, HELD_OUT_INDEX,
     LABEL_COL, FOLD_COL,
+    METADATA_COLS, POSITION_AA_COLS,
     get_feature_cols, validate_config,
 )
 
 
 # ──────────────────────────────────────────────
-# 0. LOGGER  (same lightweight tee used elsewhere)
+# 0. LOGGER
 # ──────────────────────────────────────────────
 
 class Logger:
@@ -60,7 +62,7 @@ def validate_folds(df):
         return False
 
     actual_folds = sorted(df[FOLD_COL].unique())
-    expected_folds = list(range(N_CV_FOLDS + 1))  # 0..k-1 CV + held-out
+    expected_folds = list(range(N_CV_FOLDS + 1))
     if actual_folds != expected_folds:
         print(f"FATAL: Expected folds {expected_folds}, found {actual_folds}")
         print(f"  Check that config.N_CV_FOLDS={N_CV_FOLDS} matches 01_datasplit.py")
@@ -68,7 +70,6 @@ def validate_folds(df):
 
     print(f"[OK] Fold column validated: {actual_folds}")
 
-    # Per-fold sizes
     print(f"\nPer-fold sample counts:")
     print(f"  {'Fold':<8} {'Total':>8} {'Pos':>8} {'Neg':>8} {'Pos %':>8}")
     print(f"  {'-' * 42}")
@@ -97,7 +98,50 @@ def report_label_distribution(df):
 
 
 # ──────────────────────────────────────────────
-# 3. FEATURE-COLUMN IDENTIFICATION
+# 3. COLUMN INVENTORY
+# ──────────────────────────────────────────────
+
+def report_column_inventory(df):
+    """
+    Print a complete column inventory grouped by role:
+    metadata, positional AA (unencoded), and numeric features.
+    """
+    print(f"\n{'=' * 80}")
+    print("COLUMN INVENTORY")
+    print("=" * 80)
+
+    present_meta = [c for c in METADATA_COLS if c in df.columns]
+    missing_meta = [c for c in METADATA_COLS if c not in df.columns]
+    present_pos = [c for c in POSITION_AA_COLS if c in df.columns]
+    missing_pos = [c for c in POSITION_AA_COLS if c not in df.columns]
+
+    print(f"\n  Metadata columns ({len(present_meta)} present"
+          f"{f', {len(missing_meta)} missing' if missing_meta else ''}):")
+    for c in present_meta:
+        print(f"    {c:<40} dtype: {df[c].dtype}")
+    if missing_meta:
+        print(f"    MISSING: {missing_meta}")
+
+    print(f"\n  Positional AA columns ({len(present_pos)} present"
+          f"{f', {len(missing_pos)} missing' if missing_pos else ''}):")
+    for c in present_pos:
+        n_unique = df[c].nunique(dropna=False)
+        print(f"    {c:<40} dtype: {df[c].dtype}  unique: {n_unique}")
+    if missing_pos:
+        print(f"    MISSING: {missing_pos}")
+
+    # Anything in the dataframe that isn't metadata, positional, or fold
+    all_known = set(METADATA_COLS) | set(POSITION_AA_COLS)
+    unexpected = [c for c in df.columns if c not in all_known
+                  and c not in get_feature_cols(df.columns)]
+    if unexpected:
+        print(f"\n  Unclassified columns ({len(unexpected)}):")
+        for c in unexpected:
+            print(f"    {c:<40} dtype: {df[c].dtype}")
+
+
+# ──────────────────────────────────────────────
+# 4. FEATURE-COLUMN IDENTIFICATION
 # ──────────────────────────────────────────────
 
 def identify_features(df):
@@ -106,11 +150,10 @@ def identify_features(df):
     clean list of numeric feature column names.
     """
     feature_cols = get_feature_cols(df.columns)
-    print(f"\nFeature columns identified ({len(feature_cols)}):")
+    print(f"\nNumeric feature columns identified ({len(feature_cols)}):")
     for i, col in enumerate(feature_cols):
         print(f"  [{i:>3}] {col:<40} dtype: {df[col].dtype}")
 
-    # Non-numeric guard
     non_numeric = [c for c in feature_cols if not np.issubdtype(df[c].dtype, np.number)]
     if non_numeric:
         print(f"\nWARNING: Non-numeric feature columns ({len(non_numeric)}):")
@@ -123,42 +166,144 @@ def identify_features(df):
 
 
 # ──────────────────────────────────────────────
-# 4. NaN / Inf REPORT
+# 5. POSITIONAL AA COLUMN AUDIT
+# ──────────────────────────────────────────────
+
+def report_position_aa_columns(df):
+    """
+    Audit the 17 single-residue positional columns:
+    unique values, gap/padding characters, and NaN counts.
+    """
+    present = [c for c in POSITION_AA_COLS if c in df.columns]
+    if not present:
+        print(f"\n[SKIP] No positional AA columns found in dataframe")
+        return
+
+    print(f"\n{'=' * 80}")
+    print("POSITIONAL AA COLUMN AUDIT")
+    print("=" * 80)
+
+    canonical = set("ACDEFGHIKLMNPQRSTVWY")
+
+    print(f"\n  {'Position':<10} {'NaN':>6} {'NaN+ ':>6} {'NaN- ':>6} "
+          f"{'Unique':>7} {'Non-canonical':>15}")
+    print(f"  {'-' * 60}")
+
+    for col in present:
+        n_nan = df[col].isna().sum()
+        nan_mask = df[col].isna()
+        n_nan_pos = int((nan_mask & (df[LABEL_COL] == 1)).sum())
+        n_nan_neg = int((nan_mask & (df[LABEL_COL] == 0)).sum())
+        n_unique = df[col].nunique(dropna=True)
+
+        vals = set(df[col].dropna().unique())
+        non_canon = vals - canonical
+        non_canon_str = ", ".join(sorted(non_canon)) if non_canon else "-"
+
+        print(f"  {col:<10} {n_nan:>6} {n_nan_pos:>6} {n_nan_neg:>6} "
+              f"{n_unique:>7} {non_canon_str:>15}")
+
+    # Overall vocabulary
+    all_values = set()
+    for col in present:
+        all_values.update(df[col].dropna().unique())
+    non_canon_all = all_values - canonical
+    print(f"\n  Global AA vocabulary: {sorted(all_values)}")
+    if non_canon_all:
+        print(f"  Non-canonical residues: {sorted(non_canon_all)}")
+        print(f"  (These may represent gaps/padding at protein termini)")
+    else:
+        print(f"  [OK] All residues are canonical amino acids")
+
+
+# ──────────────────────────────────────────────
+# 6. NaN / Inf REPORT (with per-label breakdown)
 # ──────────────────────────────────────────────
 
 def report_nan(df, feature_cols):
-    """Per-column NaN and Inf audit."""
-    print(f"\nNaN REPORT:")
-    total_nan = 0
-    for col in feature_cols:
-        n_nan = df[col].isna().sum()
-        if n_nan > 0:
-            pct = n_nan / len(df) * 100
-            print(f"  {col:<40} {n_nan:>6} NaN ({pct:.1f}%)")
-            total_nan += n_nan
-    if total_nan == 0:
-        print("  No NaN values found in any feature column")
-    else:
-        print(f"  TOTAL: {total_nan} NaN values across all feature columns")
+    """Per-column NaN and Inf audit with positive/negative label breakdown."""
+    pos_mask = df[LABEL_COL] == 1
+    neg_mask = df[LABEL_COL] == 0
+    n_pos_total = int(pos_mask.sum())
+    n_neg_total = int(neg_mask.sum())
 
-    # Inf check (separate pass)
-    print(f"\nInf REPORT:")
+    # ── NaN ──
+    print(f"\nNaN REPORT (numeric features):")
+    print(f"  {'Column':<35} {'NaN':>6} {'%':>6}  "
+          f"{'NaN+':>6} {'%+':>6}  {'NaN-':>6} {'%-':>6}")
+    print(f"  {'-' * 83}")
+
+    total_nan = 0
+    cols_with_nan = []
+
+    for col in feature_cols:
+        nan_mask = df[col].isna()
+        n_nan = int(nan_mask.sum())
+        if n_nan == 0:
+            continue
+
+        n_nan_pos = int((nan_mask & pos_mask).sum())
+        n_nan_neg = int((nan_mask & neg_mask).sum())
+        pct = n_nan / len(df) * 100
+        pct_pos = n_nan_pos / n_pos_total * 100 if n_pos_total > 0 else 0.0
+        pct_neg = n_nan_neg / n_neg_total * 100 if n_neg_total > 0 else 0.0
+
+        print(f"  {col:<35} {n_nan:>6} {pct:>5.1f}%  "
+              f"{n_nan_pos:>6} {pct_pos:>5.1f}%  {n_nan_neg:>6} {pct_neg:>5.1f}%")
+        total_nan += n_nan
+        cols_with_nan.append(col)
+
+    if total_nan == 0:
+        print("  No NaN values found in any numeric feature column")
+    else:
+        print(f"  {'-' * 83}")
+        print(f"  TOTAL: {total_nan} NaN values across {len(cols_with_nan)} column(s)")
+
+    # ── Inf ──
+    print(f"\nInf REPORT (numeric features):")
+    print(f"  {'Column':<35} {'Inf':>6} {'%':>6}  "
+          f"{'Inf+':>6} {'%+':>6}  {'Inf-':>6} {'%-':>6}")
+    print(f"  {'-' * 83}")
+
     total_inf = 0
+    cols_with_inf = []
+
     for col in feature_cols:
         arr = df[col].values
-        n_inf = np.isinf(arr).sum() if np.issubdtype(arr.dtype, np.floating) else 0
-        if n_inf > 0:
-            pct = n_inf / len(df) * 100
-            print(f"  {col:<40} {n_inf:>6} Inf ({pct:.1f}%)")
-            total_inf += n_inf
+        if not np.issubdtype(arr.dtype, np.floating):
+            continue
+        inf_mask = np.isinf(arr)
+        n_inf = int(inf_mask.sum())
+        if n_inf == 0:
+            continue
+
+        n_inf_pos = int((inf_mask & pos_mask.values).sum())
+        n_inf_neg = int((inf_mask & neg_mask.values).sum())
+        pct = n_inf / len(df) * 100
+        pct_pos = n_inf_pos / n_pos_total * 100 if n_pos_total > 0 else 0.0
+        pct_neg = n_inf_neg / n_neg_total * 100 if n_neg_total > 0 else 0.0
+
+        print(f"  {col:<35} {n_inf:>6} {pct:>5.1f}%  "
+              f"{n_inf_pos:>6} {pct_pos:>5.1f}%  {n_inf_neg:>6} {pct_neg:>5.1f}%")
+        total_inf += n_inf
+        cols_with_inf.append(col)
+
     if total_inf == 0:
-        print("  No Inf values found in any feature column")
+        print("  No Inf values found in any numeric feature column")
     else:
-        print(f"  TOTAL: {total_inf} Inf values across all feature columns")
+        print(f"  {'-' * 83}")
+        print(f"  TOTAL: {total_inf} Inf values across {len(cols_with_inf)} column(s)")
+
+    # ── Label-bias check ──
+    if total_nan > 0 or total_inf > 0:
+        print(f"\n  LABEL-BIAS NOTE:")
+        print(f"  If NaN/Inf values are concentrated in one label class,")
+        print(f"  median imputation may introduce information leakage.")
+        print(f"  Baseline counts — positives: {n_pos_total}, negatives: {n_neg_total}")
 
 
 # ──────────────────────────────────────────────
-# 5. CONSTANT-COLUMN CHECK
+# 7. CONSTANT-COLUMN CHECK
 # ──────────────────────────────────────────────
 
 def report_constant_columns(df, feature_cols):
@@ -174,7 +319,7 @@ def report_constant_columns(df, feature_cols):
 
 
 # ──────────────────────────────────────────────
-# 6. SUMMARY STATISTICS
+# 8. SUMMARY STATISTICS
 # ──────────────────────────────────────────────
 
 def report_feature_summary(df, feature_cols):
@@ -190,7 +335,35 @@ def report_feature_summary(df, feature_cols):
 
 
 # ──────────────────────────────────────────────
-# 7. MAIN
+# 9. PER-FOLD MISSING-VALUE REPORT
+# ──────────────────────────────────────────────
+
+def report_nan_per_fold(df, feature_cols):
+    """
+    For each fold, report the total number of NaN values across
+    feature columns, split by label.
+    """
+    folds = sorted(df[FOLD_COL].unique())
+
+    print(f"\n{'=' * 80}")
+    print("NaN COUNTS PER FOLD (numeric features)")
+    print("=" * 80)
+    print(f"  {'Fold':<8} {'Role':<22} {'NaN total':>10} "
+          f"{'NaN+ ':>10} {'NaN- ':>10}")
+    print(f"  {'-' * 62}")
+
+    for fold in folds:
+        fold_df = df[df[FOLD_COL] == fold]
+        nan_total = int(fold_df[feature_cols].isna().sum().sum())
+        nan_pos = int(fold_df.loc[fold_df[LABEL_COL] == 1, feature_cols].isna().sum().sum())
+        nan_neg = int(fold_df.loc[fold_df[LABEL_COL] == 0, feature_cols].isna().sum().sum())
+        role = "Held-out" if fold == HELD_OUT_INDEX else f"CV fold {fold}"
+        print(f"  {fold:<8} {role:<22} {nan_total:>10} "
+              f"{nan_pos:>10} {nan_neg:>10}")
+
+
+# ──────────────────────────────────────────────
+# 10. MAIN
 # ──────────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -219,6 +392,9 @@ if __name__ == "__main__":
     df = pd.read_csv(SPLIT_DATA_PATH)
     print(f"Shape: {df.shape[0]} rows x {df.shape[1]} columns")
 
+    # -- Column inventory --
+    report_column_inventory(df)
+
     # -- Fold validation --
     if not validate_folds(df):
         logger.close()
@@ -230,8 +406,14 @@ if __name__ == "__main__":
     # -- Feature columns --
     feature_cols = identify_features(df)
 
-    # -- NaN / Inf --
+    # -- Positional AA audit --
+    report_position_aa_columns(df)
+
+    # -- NaN / Inf (with label breakdown) --
     report_nan(df, feature_cols)
+
+    # -- NaN per fold --
+    report_nan_per_fold(df, feature_cols)
 
     # -- Constant columns --
     report_constant_columns(df, feature_cols)
@@ -241,9 +423,12 @@ if __name__ == "__main__":
 
     # -- Footer --
     n_features = len(feature_cols)
+    n_pos_cols = len([c for c in POSITION_AA_COLS if c in df.columns])
     print(f"\n{'=' * 80}")
     print(f"DATA QUALITY REPORT COMPLETE")
-    print(f"  {n_features} numeric features, {N_CV_FOLDS} CV folds + 1 held-out")
+    print(f"  {n_features} numeric features")
+    print(f"  {n_pos_cols} positional AA columns (pending encoding)")
+    print(f"  {N_CV_FOLDS} CV folds + 1 held-out")
     print(f"  Log saved: {LOG_PATH}")
     print(f"  Completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 80)

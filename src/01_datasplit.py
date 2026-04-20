@@ -202,8 +202,15 @@ def verify_no_peptide_split(df, peptide_col, fold_col):
 
 def analyze_duplicate_peptides(df, peptide_col, label_col):
     """
-    Report on peptides that appear multiple times in the dataset,
-    potentially from different source proteins.
+    Report on peptides that appear multiple times in the dataset.
+
+    Distinguishes between:
+      - Exact duplicates: same peptide, same protein, same flanks, same position
+        (true duplicates — likely data-processing artefacts)
+      - Positional variants: same peptide, protein, flanks but different start
+        position (distinct cleavage sites that happen to share local context)
+      - Context variants: same peptide sequence but different protein or flanking
+        regions (biologically distinct observations)
     """
     print("\n" + "=" * 80)
     print("DUPLICATE PEPTIDE ANALYSIS")
@@ -218,18 +225,155 @@ def analyze_duplicate_peptides(df, peptide_col, label_col):
     print(f"  Duplicate rows:    {duplicate_rows} "
           f"({duplicate_rows / total_rows * 100:.1f}% of all rows)")
 
-    # Count how many times each peptide appears
+    # ── Context-aware uniqueness ──
+    # Two rows with the same peptide are only true duplicates if they
+    # also share the same protein, flanking regions, AND start position.
+    # Same peptide + protein + flanks but different position means a
+    # repeated local motif at a distinct site in the protein.
+    context_cols_available = [
+        c for c in ["uniprot_id", "n_flank", "c_flank"] if c in df.columns
+    ]
+    position_cols_available = [
+        c for c in ["start"] if c in df.columns
+    ]
+
+    # Full identity = peptide + context + position
+    full_id_cols = [peptide_col] + context_cols_available + position_cols_available
+
+    if context_cols_available:
+        # -- Level 1: unique (peptide + context) ignoring position --
+        context_group_cols = [peptide_col] + context_cols_available
+        unique_contexts = df.drop_duplicates(subset=context_group_cols).shape[0]
+        context_variants = unique_contexts - unique_peptides
+
+        # -- Level 2: unique (peptide + context + position) --
+        if position_cols_available:
+            unique_full = df.drop_duplicates(subset=full_id_cols).shape[0]
+            true_duplicates = total_rows - unique_full
+            positional_variants = unique_full - unique_contexts
+        else:
+            unique_full = unique_contexts
+            true_duplicates = total_rows - unique_contexts
+            positional_variants = 0
+
+        print(f"\n  Context-aware breakdown "
+              f"(using {', '.join(context_cols_available)}"
+              f"{', start' if position_cols_available else ''}):")
+        print(f"  Unique (peptide, context, position) tuples: {unique_full}")
+        print(f"  Context variants:    {context_variants:>6}  "
+              f"(same sequence, different protein/flanks)")
+        if position_cols_available:
+            print(f"  Positional variants: {positional_variants:>6}  "
+                  f"(same sequence + protein + flanks, different start position)")
+        print(f"  True duplicates:     {true_duplicates:>6}  "
+              f"(identical on all fields — likely data artefacts)")
+
+        # ── Show examples of context variants ──
+        if context_variants > 0:
+            pep_context_counts = (
+                df.groupby(peptide_col)[context_cols_available]
+                .apply(lambda g: g.drop_duplicates().shape[0])
+            )
+            multi_context = pep_context_counts[pep_context_counts > 1]
+
+            print(f"\n  Peptides appearing in multiple distinct contexts: "
+                  f"{len(multi_context)}")
+
+            if len(multi_context) > 0:
+                print(f"\n  Top 10 peptides by number of distinct contexts:")
+                print(f"  {'Peptide':<15} {'Contexts':>9} {'Rows':>6}", end="")
+                if "uniprot_id" in df.columns:
+                    print(f" {'Proteins':>9}", end="")
+                print(f" {'Label dist':>15}")
+                print(f"  {'-' * 65}")
+
+                for pep in multi_context.nlargest(10).index:
+                    n_ctx = multi_context[pep]
+                    pep_rows = df[df[peptide_col] == pep]
+                    n_rows = len(pep_rows)
+                    n_pos = (pep_rows[label_col] == 1).sum()
+                    n_neg = (pep_rows[label_col] == 0).sum()
+
+                    print(f"  {pep:<15} {n_ctx:>9} {n_rows:>6}", end="")
+                    if "uniprot_id" in df.columns:
+                        n_prots = pep_rows["uniprot_id"].nunique()
+                        print(f" {n_prots:>9}", end="")
+                    print(f"   pos={n_pos}, neg={n_neg}")
+
+        # ── Show positional variants ──
+        if position_cols_available and positional_variants > 0:
+            print(f"\n  Positional variant details:")
+            print(f"  (Same peptide + protein + flanks but different start position)")
+
+            pos_groups = (
+                df.groupby(context_group_cols)["start"]
+                .apply(lambda g: g.nunique())
+            )
+            multi_pos = pos_groups[pos_groups > 1]
+            print(f"  Affected (peptide, context) groups: {len(multi_pos)}")
+
+            if len(multi_pos) > 0:
+                multi_pos_sorted = multi_pos.sort_values(ascending=False)
+                print(f"\n  Top 5 groups with multiple positions:")
+                shown = 0
+                for keys, n_positions in multi_pos_sorted.items():
+                    if shown >= 5:
+                        break
+                    if isinstance(keys, tuple):
+                        pep = keys[0]
+                        ctx = dict(zip(context_cols_available, keys[1:]))
+                    else:
+                        pep = keys
+                        ctx = {}
+
+                    # Retrieve the actual start positions
+                    mask = df[peptide_col] == pep
+                    for col_name, col_val in ctx.items():
+                        if pd.isna(col_val):
+                            mask = mask & df[col_name].isna()
+                        else:
+                            mask = mask & (df[col_name] == col_val)
+                    starts = sorted(df.loc[mask, "start"].unique())
+
+                    prot_str = ctx.get("uniprot_id", "?")
+                    print(f"    {pep}  protein={prot_str}  "
+                          f"positions={starts}  ({n_positions} distinct)")
+                    shown += 1
+
+        # ── Show true duplicates ──
+        if true_duplicates > 0:
+            print(f"\n  WARNING: {true_duplicates} true duplicate rows detected")
+            print(f"  (identical peptide + protein + flanking regions + start position)")
+            dup_mask = df.duplicated(subset=full_id_cols, keep=False)
+            dup_df = df[dup_mask]
+            dup_groups = dup_df.groupby(full_id_cols).size()
+            dup_groups = dup_groups[dup_groups > 1].sort_values(ascending=False)
+            print(f"  Affected groups: {len(dup_groups)}")
+            print(f"\n  Top 5 duplicated groups:")
+            for keys, count in dup_groups.head(5).items():
+                if isinstance(keys, tuple):
+                    pep = keys[0]
+                    extra_keys = context_cols_available + position_cols_available
+                    ctx = dict(zip(extra_keys, keys[1:]))
+                else:
+                    pep = keys
+                    ctx = {}
+                print(f"    {pep}  x{count}  {ctx}")
+    else:
+        print(f"\n  NOTE: Context columns (uniprot_id, n_flank, c_flank) not found.")
+        print(f"  Cannot distinguish context variants from true duplicates.")
+
+    # ── Occurrence count distribution ──
     pep_counts = df[peptide_col].value_counts()
     multi_occurrence = pep_counts[pep_counts > 1]
 
     if len(multi_occurrence) == 0:
-        print("  No peptides appear more than once.")
+        print("\n  No peptides appear more than once.")
         return
 
     print(f"\n  Peptides appearing more than once: {len(multi_occurrence)}")
     print(f"  Total rows from multi-occurrence peptides: {multi_occurrence.sum()}")
 
-    # Distribution of occurrence counts
     print(f"\n  Occurrence count distribution:")
     print(f"  {'Times seen':<15} {'Peptides':>10} {'Total rows':>12}")
     print(f"  {'-' * 40}")
@@ -239,7 +383,7 @@ def analyze_duplicate_peptides(df, peptide_col, label_col):
         if n_peps > 0:
             print(f"  {count_val:<15} {n_peps:>10} {n_rows:>12}")
 
-    # If uniprot_id column exists, show protein overlap
+    # ── Protein overlap ──
     if "uniprot_id" in df.columns:
         print(f"\n  Peptide-protein relationships:")
         pep_proteins = df.groupby(peptide_col)["uniprot_id"].nunique()
@@ -261,7 +405,7 @@ def analyze_duplicate_peptides(df, peptide_col, label_col):
                 print(f"  {pep:<15} {n_prots:>10} {n_rows:>12} "
                       f"  pos={n_pos}, neg={n_neg}")
 
-    # Check label consistency for duplicate peptides
+    # ── Label consistency ──
     print(f"\n  Label consistency for duplicate peptides:")
     pep_label_nunique = df.groupby(peptide_col)[label_col].nunique()
     mixed_label = pep_label_nunique[pep_label_nunique > 1]
@@ -270,8 +414,32 @@ def analyze_duplicate_peptides(df, peptide_col, label_col):
 
     if len(mixed_label) > 0:
         print(f"\n  NOTE: {len(mixed_label)} peptides have both positive and negative labels.")
-        print(f"  This can happen when the same peptide is processed in one protein")
-        print(f"  context but not another. Examples:")
+        print(f"  This is expected when the same peptide is processed in one protein")
+        print(f"  context but not another (different flanking regions / source proteins).")
+
+        # Show whether mixed labels correlate with different contexts
+        if context_cols_available:
+            full_context_cols = context_cols_available + position_cols_available
+            mixed_explained = 0
+            for pep in mixed_label.index:
+                pep_rows = df[df[peptide_col] == pep]
+                ctx_label = pep_rows.groupby(full_context_cols)[label_col].nunique()
+                if (ctx_label == 1).all():
+                    mixed_explained += 1
+
+            mixed_unexplained = len(mixed_label) - mixed_explained
+            print(f"\n  Mixed-label breakdown "
+                  f"(grouping by {', '.join(full_context_cols)}):")
+            print(f"    Explained by context/position: "
+                  f"{mixed_explained}")
+            print(f"    Unexplained (same full identity, conflicting labels): "
+                  f"{mixed_unexplained}")
+            if mixed_unexplained > 0:
+                print(f"    WARNING: {mixed_unexplained} peptides have conflicting labels")
+                print(f"    within the SAME protein + flanks + position "
+                      f"(possible data issue)")
+
+        print(f"\n  Examples:")
         for pep in list(mixed_label.index)[:5]:
             pep_rows = df[df[peptide_col] == pep]
             n_pos = (pep_rows[label_col] == 1).sum()

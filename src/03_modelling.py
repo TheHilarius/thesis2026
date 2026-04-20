@@ -1,10 +1,12 @@
 """
-02_cross_validation.py
+03_modelling.py
 Cross-validation pipeline for MHC-I processing prediction.
 Baseline model: Random Forest (no regularization).
 
-Assumes 02_datasplit_analysis.py has already been run for data-quality
-checks.  This script focuses exclusively on training, evaluation, and
+Assumes:
+  - 01_datasplit.py has been run (fold column exists).
+  - 02_datasplit_analysis.py has been run for data-quality checks.
+This script focuses exclusively on training, evaluation, and
 model persistence.
 """
 
@@ -32,6 +34,7 @@ from config import (
     SPLIT_DATA_PATH, LOG_DIR, MODEL_DIR,
     N_CV_FOLDS, HELD_OUT_INDEX,
     PEPTIDE_COL, LABEL_COL, FOLD_COL,
+    POSITION_AA_COLS,
     RANDOM_STATE,
     RF_N_ESTIMATORS, RF_MAX_DEPTH, RF_MIN_SAMPLES_SPLIT,
     RF_MIN_SAMPLES_LEAF, RF_MAX_FEATURES, RF_N_JOBS,
@@ -309,7 +312,7 @@ if __name__ == "__main__":
     validate_config()
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    LOG_PATH = LOG_DIR / f"02_cross_validation_RF_log_{timestamp}.txt"
+    LOG_PATH = LOG_DIR / f"03_modelling_RF_log_{timestamp}.txt"
     os.makedirs(LOG_DIR, exist_ok=True)
     os.makedirs(MODEL_DIR, exist_ok=True)
     logger = Logger(str(LOG_PATH))
@@ -319,7 +322,7 @@ if __name__ == "__main__":
 
     # -- Header --
     print("=" * 80)
-    print("  02_CROSS_VALIDATION -- RANDOM FOREST BASELINE")
+    print("  03_MODELLING -- RANDOM FOREST BASELINE")
     print("=" * 80)
     print(f"  Timestamp:          {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"  Data path:          {SPLIT_DATA_PATH}")
@@ -355,10 +358,37 @@ if __name__ == "__main__":
         sys.exit(1)
     print(f"[OK] Fold column validated: {actual_folds}")
 
+    # -- Positional AA column status --
+    present_pos = [c for c in POSITION_AA_COLS if c in df.columns]
+    if present_pos:
+        # Check whether any encoded columns already exist (from a future
+        # encoding step).  Encoded columns are numeric and not in
+        # POSITION_AA_COLS, so they flow through get_feature_cols
+        # automatically.  Here we just log the status.
+        sample_vals = df[present_pos[0]].dropna().unique()[:5]
+        is_encoded = np.issubdtype(df[present_pos[0]].dtype, np.number)
+        if is_encoded:
+            print(f"  Positional AA columns appear already encoded (numeric)")
+        else:
+            print(f"  {len(present_pos)} positional AA columns present but UNENCODED "
+                  f"(dtype: object) -- excluded from features")
+            print(f"    Sample values from '{present_pos[0]}': {list(sample_vals)}")
+            print(f"    Run an encoding step to include these as features")
+
     # -- Resolve feature columns --
     feature_cols = resolve_feature_cols(df)
     n_features = len(feature_cols)
     print(f"  Using {n_features} numeric feature columns")
+
+    if n_features == 0:
+        print("FATAL: No numeric feature columns found. Check config and data.")
+        logger.close()
+        sys.exit(1)
+
+    # -- List features being used --
+    print(f"\n  Feature columns entering the model:")
+    for i, col in enumerate(feature_cols):
+        print(f"    [{i:>3}] {col}")
 
     print(f"\n{'=' * 80}")
     print(f"PIPELINE READY: {n_features} features, {N_CV_FOLDS} folds, Random Forest baseline")
@@ -522,6 +552,9 @@ if __name__ == "__main__":
             "rf_class_weight": str(RF_CLASS_WEIGHT),
             "n_features": n_features,
             "feature_cols": feature_cols,
+            "positional_aa_cols_status": "encoded" if (
+                present_pos and np.issubdtype(df[present_pos[0]].dtype, np.number)
+            ) else "unencoded (excluded)",
         },
         "cv_summary": {m: {"mean": s["mean"], "std": s["std"]}
                        for m, s in summary.items()},
@@ -532,7 +565,7 @@ if __name__ == "__main__":
         "fold_predictions": all_fold_predictions,
         "avg_feature_importances": {
             feature_cols[i]: float(avg_importances[i])
-            for i in sorted_indices[:50]
+            for i in sorted_indices[:min(50, len(feature_cols))]
         },
     }
 
@@ -553,6 +586,12 @@ if __name__ == "__main__":
         pickle.dump(best_fold_medians, f)
     print(f"Best medians saved: {medians_path}")
 
+    # Save feature column list for reproducibility
+    feature_cols_path = MODEL_DIR / "feature_cols.json"
+    with open(feature_cols_path, "w") as f:
+        json.dump(feature_cols, f, indent=2)
+    print(f"Feature columns saved: {feature_cols_path}")
+
     # ── Footer ──
     t_end = time.time()
     total_minutes = (t_end - t_start) / 60
@@ -562,12 +601,15 @@ if __name__ == "__main__":
     print(f"  Total runtime:    {t_end - t_start:.1f}s ({total_minutes:.1f} min)")
     print(f"  Model:            Random Forest ({RF_N_ESTIMATORS} trees)")
     print(f"  Features:         {n_features}")
+    print(f"  Positional AA:    {len(present_pos)} columns "
+          f"({'included' if present_pos and np.issubdtype(df[present_pos[0]].dtype, np.number) else 'excluded — not yet encoded'})")
     print(f"  CV folds:         {N_CV_FOLDS}")
     print(f"  Best fold:        {best_fold_id} (AUC = {best_fold_auc:.4f})")
     print(f"  Held-out AUC:     {ho_metrics['auc_roc']:.4f}")
     print(f"  Held-out MCC:     {ho_metrics['mcc']:.4f}")
     print(f"  Models dir:       {MODEL_DIR}/")
     print(f"  Results file:     {results_path}")
+    print(f"  Feature cols:     {feature_cols_path}")
     print(f"  Log file:         {LOG_PATH}")
     print(f"  Completed:        {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 80)
