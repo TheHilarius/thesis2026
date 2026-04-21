@@ -6,17 +6,32 @@ library(ggrepel)
 source("src/functions.R")
 set_working_directory()
 
-input_file <- "data/processed/df_all.csv"
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
+# Change this to "base", "sparse", or "blosum50"
+dataset_type <- "sparse" 
+
+if (dataset_type == "base") {
+  input_file <- "data/processed/df_all.csv"
+  run_suffix <- ""
+} else {
+  input_file <- paste0("data/processed/df_all_", dataset_type, ".csv")
+  run_suffix <- paste0("_", dataset_type)
+}
+
 results_dir <- "results"
-figures_dir <- file.path("results", "figures", "numeric_9mer")
-per_feature_dir <- file.path("results", "figures", "numeric_9mer", "per_feature")
-heatmap_dir <- file.path("results", "figures", "numeric_9mer", "heatmap")
+figures_dir <- file.path("results", "figures", paste0("numeric_9mer", run_suffix))
+per_feature_dir <- file.path(figures_dir, "per_feature")
+heatmap_dir <- file.path(figures_dir, "heatmap")
 
 dir.create(results_dir, showWarnings = FALSE, recursive = TRUE)
 dir.create(figures_dir, showWarnings = FALSE, recursive = TRUE)
 dir.create(per_feature_dir, showWarnings = FALSE, recursive = TRUE)
 dir.create(heatmap_dir, showWarnings = FALSE, recursive = TRUE)
+
 # Load data
+message("Loading dataset: ", input_file)
 df_raw <- read_csv(input_file, show_col_types = FALSE)
 
 df_raw %>%
@@ -64,11 +79,15 @@ binary_features <- list(
   trans_pep_c = names(df_raw)[str_detect(names(df_raw), "^q8trans_.*_pep_c$")]
 )
 
+# Identify the encoded sequence columns dynamically (N1-4, P1-9, C1-4 followed by _AminoAcid)
+sequence_features <- names(df_raw)[str_detect(names(df_raw), "^(N[1-4]|P[1-9]|C[1-4])_[A-Z]$")]
+
 cat("\n=== Feature Inventory ===\n")
 cat("Continuous features:\n")
 iwalk(continuous_features, ~ cat("  ", .y, ":", length(.x), "\n"))
 cat("Binary features:\n")
 iwalk(binary_features, ~ cat("  ", .y, ":", length(.x), "\n"))
+cat(sprintf("Sequence encoded features (%s): %d\n", dataset_type, length(sequence_features)))
 
 # Pretty labels
 pretty_feature_label <- function(x) {
@@ -218,27 +237,15 @@ plot_numeric_feature <- function(data, feature, outdir) {
 }
 
 # =============================================================================
-# 1. CORRELATION HEATMAPS (all features by region)
+# 1. CORRELATION HEATMAPS (structural features only, safely excludes sequences)
 # =============================================================================
 message("Generating correlation heatmaps...")
 
 heatmap_feature_groups <- list(
-  peptide = c(
-    continuous_features$peptide,
-    binary_features$peptide
-  ),
-  n_flank = c(
-    continuous_features$n_flank,
-    binary_features$n_flank
-  ),
-  c_flank = c(
-    continuous_features$c_flank,
-    binary_features$c_flank
-  ),
-  transitions = c(
-    binary_features$trans_n_pep,
-    binary_features$trans_pep_c
-  )
+  peptide = c(continuous_features$peptide, binary_features$peptide),
+  n_flank = c(continuous_features$n_flank, binary_features$n_flank),
+  c_flank = c(continuous_features$c_flank, binary_features$c_flank),
+  transitions = c(binary_features$trans_n_pep, binary_features$trans_pep_c)
 )
 
 heatmap_titles <- c(
@@ -253,7 +260,6 @@ for (group_name in names(heatmap_feature_groups)) {
   cols <- intersect(cols, names(df_raw))
   if (length(cols) < 2) next
   
-  # Drop zero-variance columns (e.g. q8point_I might be all 0)
   col_vars <- apply(df_raw[cols], 2, var, na.rm = TRUE)
   cols <- cols[col_vars > 0]
   if (length(cols) < 2) next
@@ -267,7 +273,6 @@ for (group_name in names(heatmap_feature_groups)) {
     rename(Feature_1 = Var1, Feature_2 = Var2, Correlation = Freq) |>
     filter(!is.na(Correlation))
   
-  # Scale plot size to number of features
   n_feats <- length(cols)
   plot_size <- max(7, n_feats * 0.6 + 2)
   
@@ -291,7 +296,7 @@ for (group_name in names(heatmap_feature_groups)) {
 }
 
 # =============================================================================
-# 2. BINARY FEATURE PROPORTIONS (q8point, q8trans)
+# 2. BINARY FEATURE PROPORTIONS
 # =============================================================================
 message("Analyzing binary feature proportions...")
 
@@ -299,7 +304,6 @@ all_binary <- unlist(binary_features, use.names = FALSE)
 
 binary_prop_results <- map_dfr(all_binary, function(feat) {
   sub <- df_raw |> filter(!is.na(.data[[feat]]), !is.na(label))
-  
   props <- sub |>
     group_by(label) |>
     summarise(n = n(), n_present = sum(.data[[feat]] == 1), .groups = "drop") |>
@@ -330,9 +334,9 @@ binary_prop_results <- map_dfr(all_binary, function(feat) {
   ) |>
   arrange(p_adj)
 
-write_csv(binary_prop_results, file.path(results_dir, "binary_feature_proportions.csv"))
+write_csv(binary_prop_results, file.path(results_dir, paste0("binary_feature_proportions", run_suffix, ".csv")))
 
-# Plot binary proportions by region
+# Plot binary proportions
 binary_plot_data <- binary_prop_results |>
   select(feature, feature_label, region, prop_0, prop_1) |>
   pivot_longer(cols = c(prop_0, prop_1), names_to = "label", values_to = "proportion") |>
@@ -353,19 +357,18 @@ for (reg in unique(binary_plot_data$region)) {
     theme(axis.text.x = element_text(angle = 45, hjust = 1),
           legend.position = "bottom", plot.title.position = "plot")
   
-  ggsave(file.path(figures_dir, paste0("binary_proportions_",
-                                       sanitize_filename(reg), ".png")),
+  ggsave(file.path(figures_dir, paste0("binary_proportions_", sanitize_filename(reg), ".png")),
          plot = p_binary, width = 10, height = 6, dpi = 300)
-  message("  Saved: binary_proportions_", reg)
 }
 
 # =============================================================================
-# 3. PCA (continuous features only)
+# 3. PCA (Continuous + Sequence Encoded Features)
 # =============================================================================
-message("Running PCA on continuous features...")
+message("Running PCA on continuous + sequence features...")
 
 all_continuous <- unlist(continuous_features, use.names = FALSE)
-df_pca_input <- df_raw |> select(all_of(all_continuous))
+# Include the sequence features dynamically if they exist!
+df_pca_input <- df_raw |> select(all_of(c(all_continuous, sequence_features)))
 
 for (col in names(df_pca_input)) {
   df_pca_input[[col]][is.na(df_pca_input[[col]])] <- median(df_pca_input[[col]], na.rm = TRUE)
@@ -377,14 +380,20 @@ if (length(valid_pca_cols) >= 2) {
   pca_res <- prcomp(df_pca_input[, valid_pca_cols], center = TRUE, scale. = TRUE)
   n_pcs <- min(5, ncol(pca_res$x))
   pca_df <- as_tibble(pca_res$x[, 1:n_pcs])
-  names(pca_df) <- paste0("NetSurfP_PC", 1:n_pcs)
+  names(pca_df) <- paste0("PC", 1:n_pcs)
   df_raw <- bind_cols(df_raw, pca_df)
   
   write_csv(as_tibble(pca_res$rotation[, 1:n_pcs], rownames = "feature"),
-            file.path(results_dir, "netsurfp_pca_loadings.csv"))
+            file.path(results_dir, paste0("pca_loadings", run_suffix, ".csv")))
   
   pca_var <- tibble(PC = seq_along(pca_res$sdev),
                     Variance = (pca_res$sdev^2) / sum(pca_res$sdev^2))
+  
+  subtitle_text <- if(length(sequence_features) > 0) {
+    paste0("PCA of Structural Features + ", length(sequence_features), " ", dataset_type, " encoded sequence features")
+  } else {
+    "PCA of continuous NetSurfP + AlphaFold features only"
+  }
   
   p_scree <- ggplot(pca_var |> slice_head(n = min(20, nrow(pca_var))),
                     aes(x = PC, y = Variance)) +
@@ -392,10 +401,10 @@ if (length(valid_pca_cols) >= 2) {
     geom_line(color = "#e74c3c", linewidth = 1) +
     geom_point(size = 2, color = "#e74c3c") +
     scale_y_continuous(labels = scales::percent) +
-    labs(title = "PCA Scree Plot: Continuous Structural Features",
+    labs(title = "PCA Scree Plot", subtitle = subtitle_text,
          x = "Principal Component", y = "Variance Explained") +
     theme_bw()
-  ggsave(file.path(figures_dir, "netsurfp_pca_scree_plot.png"),
+  ggsave(file.path(figures_dir, paste0("pca_scree_plot", run_suffix, ".png")),
          plot = p_scree, width = 8, height = 5, dpi = 300)
   
   if (n_pcs >= 2) {
@@ -403,28 +412,80 @@ if (length(valid_pca_cols) >= 2) {
     pc2_var <- pca_var$Variance[2] * 100
     
     p_pca <- ggplot(df_raw, aes(
-      x = NetSurfP_PC1, y = NetSurfP_PC2,
+      x = PC1, y = PC2,
       fill = factor(label, labels = c("Not presented", "Presented")),
       color = factor(label, labels = c("Not presented", "Presented"))
     )) +
       geom_point(shape = 21, alpha = 0.8, size = 1.5, stroke = 0.5) +
       scale_fill_manual(values = c("#e74c3c", "#2ecc71")) +
       scale_color_manual(values = c("#e74c3c", "#2ecc71")) +
-      labs(title = "Peptide Landscape by Structural Features",
-           subtitle = "PCA of continuous NetSurfP + AlphaFold features",
+      labs(title = "Peptide Landscape PCA",
+           subtitle = subtitle_text,
            x = sprintf("PC1 (%.1f%%)", pc1_var),
            y = sprintf("PC2 (%.1f%%)", pc2_var),
            fill = "Label", color = "Label") +
       theme_bw() + theme(legend.position = "bottom")
-    ggsave(file.path(figures_dir, "netsurfp_pca_scatter.png"),
+    ggsave(file.path(figures_dir, paste0("pca_scatter", run_suffix, ".png")),
            plot = p_pca, width = 8, height = 7, dpi = 300)
   }
-} else {
-  message("  Fewer than 2 valid continuous features — skipping PCA.")
 }
 
 # =============================================================================
-# 4. WILCOXON TESTS (continuous features)
+# 3b. UMAP (Continuous + Sequence Encoded Features)
+# =============================================================================
+message("Running UMAP on continuous + sequence features...")
+
+# We use the uwot package for speed on 50k+ rows.
+if (requireNamespace("uwot", quietly = TRUE)) {
+  
+  # Best practice: run UMAP on the top PCs to denoise and speed up computation.
+  # We use up to the top 50 PCs (or max available if fewer).
+  n_pcs_umap <- min(50, ncol(pca_res$x))
+  umap_input <- pca_res$x[, 1:n_pcs_umap]
+  
+  set.seed(42) # Crucial for reproducible UMAP layouts
+  umap_res <- uwot::umap(
+    umap_input, 
+    n_neighbors = 15,    # Controls local vs global structure (15 is standard)
+    min_dist = 0.1,      # Controls how tightly points pack together
+    metric = "euclidean",
+    fast_sgd = TRUE      # Speeds up processing for large datasets
+  )
+  
+  umap_df <- as_tibble(umap_res)
+  names(umap_df) <- c("UMAP1", "UMAP2")
+  
+  # Bind UMAP coordinates to the main dataframe
+  df_raw <- bind_cols(df_raw, umap_df)
+  
+  # Because 53k points will overplot heavily, we use a smaller size and alpha
+  p_umap <- ggplot(df_raw, aes(
+    x = UMAP1, y = UMAP2,
+    fill = factor(label, labels = c("Not presented", "Presented")),
+    color = factor(label, labels = c("Not presented", "Presented"))
+  )) +
+    geom_point(shape = 21, alpha = 0.6, size = 0.8, stroke = 0.2) +
+    scale_fill_manual(values = c("#e74c3c", "#2ecc71")) +
+    scale_color_manual(values = c("#e74c3c", "#2ecc71")) +
+    labs(title = "Peptide Landscape UMAP",
+         subtitle = paste0("UMAP based on top ", n_pcs_umap, " PCs (", subtitle_text, ")"),
+         x = "UMAP 1",
+         y = "UMAP 2",
+         fill = "Label", color = "Label") +
+    theme_bw() + 
+    theme(legend.position = "bottom")
+  
+  ggsave(file.path(figures_dir, paste0("umap_scatter", run_suffix, ".png")),
+         plot = p_umap, width = 8, height = 7, dpi = 300)
+  
+  message("  Saved: umap_scatter", run_suffix, ".png")
+  
+} else {
+  message("  Skipping UMAP: 'uwot' package not installed. Run install.packages('uwot').")
+}
+
+# =============================================================================
+# 4. WILCOXON TESTS (structural features only)
 # =============================================================================
 message("Running Wilcoxon tests on continuous features...")
 
@@ -441,16 +502,14 @@ wilcox_results_by_group <- imap(continuous_features, function(features, group_na
            abs_smd = abs(smd)) |>
     arrange(p_adj, desc(abs_smd))
   
-  write_csv(res, file.path(results_dir, paste0("wilcoxon_", group_name, "_features.csv")))
-  message("  Saved wilcoxon_", group_name)
+  write_csv(res, file.path(results_dir, paste0("wilcoxon_", group_name, run_suffix, ".csv")))
   res
 })
 
 numeric_test_results <- bind_rows(wilcox_results_by_group) |>
   mutate(p_adj_global = p.adjust(p_value, method = "BH"))
-write_csv(numeric_test_results, file.path(results_dir, "numeric_feature_tests_by_group.csv"))
+write_csv(numeric_test_results, file.path(results_dir, paste0("numeric_feature_tests", run_suffix, ".csv")))
 
-# Wilcoxon forest plots
 for (group_name in names(continuous_features)) {
   plot_df <- numeric_test_results |>
     filter(group == group_name, !is.na(smd), is.finite(smd)) |>
@@ -470,25 +529,26 @@ for (group_name in names(continuous_features)) {
          x = "Standardized mean difference (95% CI)", y = NULL, color = "Direction") +
     theme_bw() + theme(legend.position = "bottom")
   
-  ggsave(file.path(figures_dir, paste0("wilcoxon_", group_name, "_features.png")),
+  ggsave(file.path(figures_dir, paste0("wilcoxon_", group_name, ".png")),
          plot = p_wilcox, width = 8, height = 6, dpi = 300)
 }
 
 # =============================================================================
-# 5. LOGISTIC REGRESSION (all features)
+# 5. LOGISTIC REGRESSION (structural only, excludes sequences)
 # =============================================================================
 message("Running univariate logistic regressions...")
 
+# Using PCs dynamically generated from previous step
 all_numeric <- c(all_continuous, all_binary,
-                 intersect(paste0("NetSurfP_PC", 1:5), names(df_raw)))
+                 intersect(paste0("PC", 1:5), names(df_raw)))
 
 logit_results <- map_dfr(all_numeric, ~ safe_logit(df_raw, .x, scale_feature = FALSE)) |>
   mutate(p_adj = p.adjust(p_value, method = "BH")) |> arrange(p_adj)
-write_csv(logit_results, file.path(results_dir, "numeric_logistic_regression.csv"))
+write_csv(logit_results, file.path(results_dir, paste0("logistic_regression", run_suffix, ".csv")))
 
 logit_scaled <- map_dfr(all_numeric, ~ safe_logit(df_raw, .x, scale_feature = TRUE)) |>
   mutate(p_adj = p.adjust(p_value, method = "BH")) |> arrange(p_adj)
-write_csv(logit_scaled, file.path(results_dir, "numeric_logistic_regression_scaled.csv"))
+write_csv(logit_scaled, file.path(results_dir, paste0("logistic_regression_scaled", run_suffix, ".csv")))
 
 # All features OR plot
 all_or <- logit_scaled |>
@@ -503,17 +563,17 @@ p_or_all <- ggplot(all_or, aes(x = odds_ratio, y = feature)) +
   geom_errorbarh(aes(xmin = conf_low, xmax = conf_high), height = 0.2, color = "grey30") +
   geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
   scale_x_log10(limits = sym_limits_all) +
-  labs(title = "All features — univariate logistic regression (scaled)",
+  labs(title = "All structural features — univariate logistic regression (scaled)",
        x = "Odds ratio (log scale, symmetric around 1.0)", y = "Feature") +
   theme_bw()
 
-ggsave(file.path(figures_dir, "all_features_odds_ratios_scaled.png"),
+ggsave(file.path(figures_dir, paste0("odds_ratios_all_scaled", run_suffix, ".png")),
        plot = p_or_all, width = 9, height = max(6, nrow(all_or) * 0.3 + 2), dpi = 300)
 
-# Top 20 features OR plot
+# Top 30 features OR plot
 top_or <- all_or |>
   mutate(abs_log_or = abs(log(odds_ratio))) |> 
-  slice_max(abs_log_or, n = 20) |> # The largest OR in either direction
+  slice_max(abs_log_or, n = 30) |>
   select(-abs_log_or) 
 
 max_log_dist_top <- max(abs(log10(c(top_or$conf_low, top_or$conf_high))), na.rm = TRUE) * 1.1
@@ -524,11 +584,11 @@ p_or_top <- ggplot(top_or, aes(x = odds_ratio, y = feature)) +
   geom_errorbarh(aes(xmin = conf_low, xmax = conf_high), height = 0.2, color = "grey30") +
   geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
   scale_x_log10(limits = sym_limits_top) +
-  labs(title = "Top 20 features — univariate logistic regression (scaled)",
+  labs(title = "Top 20 structural features — univariate logistic regression (scaled)",
        x = "Odds ratio (log scale, symmetric around 1.0)", y = "Feature") +
   theme_bw()
 
-ggsave(file.path(figures_dir, "top_features_odds_ratios_scaled.png"),
+ggsave(file.path(figures_dir, paste0("odds_ratios_top20_scaled", run_suffix, ".png")),
        plot = p_or_top, width = 8, height = 6, dpi = 300)
 
 # =============================================================================
@@ -541,21 +601,14 @@ if ("protein_length" %in% names(df_raw)) {
   pos_len <- df_raw |> filter(label == 1) |> pull(protein_length)
   neg_len <- df_raw |> filter(label == 0) |> pull(protein_length)
   
-  # KS test
   ks_len <- ks.test(pos_len, neg_len)
-  
-  # Cliff's Delta
   cliff_len <- cliff_delta_sampled(pos_len, neg_len)
   
   cat("\n=== Protein Length Bias: Effect Sizes ===\n")
   cat("KS D:          ", round(ks_len$statistic, 4), "\n")
   cat("Cliff's Delta: ", round(cliff_len$estimate, 4),
       " (", cliff_len$magnitude, ")\n")
-  cat("Median pos:    ", median(pos_len), "\n")
-  cat("Median neg:    ", median(neg_len), "\n")
-  cat("Median diff:   ", median(neg_len) - median(pos_len), "\n")
   
-  # 1. Distribution comparison with effect sizes annotated
   p_prot_len <- ggplot(df_raw, aes(x = protein_length,
                                    fill = factor(label, labels = c("Not presented", "Presented")))) +
     geom_density(alpha = 0.5, color = "black", linewidth = 0.3) +
@@ -578,7 +631,6 @@ if ("protein_length" %in% names(df_raw)) {
   ggsave(file.path(figures_dir, "protein_length_bias_density.png"),
          plot = p_prot_len, width = 8, height = 5, dpi = 300)
   
-  # 2. ECDF comparison
   p_prot_len_ecdf <- ggplot(df_raw, aes(x = protein_length,
                                         colour = factor(label, labels = c("Not presented", "Presented")))) +
     stat_ecdf(linewidth = 0.8) +
@@ -596,39 +648,6 @@ if ("protein_length" %in% names(df_raw)) {
   
   ggsave(file.path(figures_dir, "protein_length_bias_ecdf.png"),
          plot = p_prot_len_ecdf, width = 8, height = 5, dpi = 300)
-  
-  # 3. Protein-level stats
-  cat("\n=== Protein Length Summary ===\n")
-  df_raw |>
-    mutate(label_name = ifelse(label == 1, "Presented", "Not presented")) |>
-    group_by(label_name) |>
-    summarise(
-      n_peptides = n(),
-      n_proteins = n_distinct(uniprot_id),
-      median_prot_len = median(protein_length),
-      mean_prot_len = round(mean(protein_length)),
-      .groups = "drop"
-    ) |>
-    print()
-  
-  # 4. Logistic regression controlling for protein_length
-  cat("\n=== pLDDT adjusted for protein length ===\n")
-  if ("mean_plddt_peptide" %in% names(df_raw)) {
-    fit_unadj <- glm(label ~ scale(mean_plddt_peptide),
-                     data = df_raw, family = binomial())
-    fit_adj <- glm(label ~ scale(mean_plddt_peptide) + scale(protein_length),
-                   data = df_raw, family = binomial())
-    
-    cat("Unadjusted pLDDT OR: ",
-        round(exp(coef(fit_unadj)["scale(mean_plddt_peptide)"]), 3), "\n")
-    cat("Adjusted pLDDT OR:   ",
-        round(exp(coef(fit_adj)["scale(mean_plddt_peptide)"]), 3), "\n")
-    cat("Protein length OR:   ",
-        round(exp(coef(fit_adj)["scale(protein_length)"]), 3), "\n")
-    
-    cat("\nIf pLDDT OR barely changes after adjustment, protein_length is\n")
-    cat("an independent signal, not a confounder of structural features.\n")
-  }
 }
 
 # =============================================================================
@@ -638,36 +657,16 @@ message("Investigating relative terminus distance signal...")
 
 if (all(c("rel_distance_from_n_terminus", "rel_distance_from_c_terminus") %in% names(df_raw))) {
   
-  # --- N-terminus ---
   pos_n_dist <- df_raw |> filter(label == 1) |> pull(rel_distance_from_n_terminus)
   neg_n_dist <- df_raw |> filter(label == 0) |> pull(rel_distance_from_n_terminus)
-  
   ks_n_dist <- ks.test(pos_n_dist, neg_n_dist)
   cliff_n_dist <- cliff_delta_sampled(pos_n_dist, neg_n_dist)
   
-  # --- C-terminus ---
   pos_c_dist <- df_raw |> filter(label == 1) |> pull(rel_distance_from_c_terminus)
   neg_c_dist <- df_raw |> filter(label == 0) |> pull(rel_distance_from_c_terminus)
-  
   ks_c_dist <- ks.test(pos_c_dist, neg_c_dist)
   cliff_c_dist <- cliff_delta_sampled(pos_c_dist, neg_c_dist)
   
-  cat("\n=== Relative Position Bias: Effect Sizes ===\n")
-  cat("N-terminus distance:\n")
-  cat("  KS D:          ", round(ks_n_dist$statistic, 4), "\n")
-  cat("  Cliff's Delta: ", round(cliff_n_dist$estimate, 4),
-      " (", cliff_n_dist$magnitude, ")\n")
-  cat("  Median pos:    ", round(median(pos_n_dist, na.rm = TRUE), 4), "\n")
-  cat("  Median neg:    ", round(median(neg_n_dist, na.rm = TRUE), 4), "\n")
-  
-  cat("\nC-terminus distance:\n")
-  cat("  KS D:          ", round(ks_c_dist$statistic, 4), "\n")
-  cat("  Cliff's Delta: ", round(cliff_c_dist$estimate, 4),
-      " (", cliff_c_dist$magnitude, ")\n")
-  cat("  Median pos:    ", round(median(pos_c_dist, na.rm = TRUE), 4), "\n")
-  cat("  Median neg:    ", round(median(neg_c_dist, na.rm = TRUE), 4), "\n")
-  
-  # 1. Density — N-terminus
   p_n_dist <- ggplot(df_raw, aes(x = rel_distance_from_n_terminus,
                                  fill = factor(label, labels = c("Not presented", "Presented")))) +
     geom_density(alpha = 0.5, color = "black", linewidth = 0.3) +
@@ -690,7 +689,6 @@ if (all(c("rel_distance_from_n_terminus", "rel_distance_from_c_terminus") %in% n
   ggsave(file.path(figures_dir, "rel_distance_n_terminus_density.png"),
          plot = p_n_dist, width = 8, height = 5, dpi = 300)
   
-  # 2. Density — C-terminus
   p_c_dist <- ggplot(df_raw, aes(x = rel_distance_from_c_terminus,
                                  fill = factor(label, labels = c("Not presented", "Presented")))) +
     geom_density(alpha = 0.5, color = "black", linewidth = 0.3) +
@@ -712,75 +710,6 @@ if (all(c("rel_distance_from_n_terminus", "rel_distance_from_c_terminus") %in% n
   
   ggsave(file.path(figures_dir, "rel_distance_c_terminus_density.png"),
          plot = p_c_dist, width = 8, height = 5, dpi = 300)
-  
-  # 3. ECDF — N-terminus
-  p_n_dist_ecdf <- ggplot(df_raw, aes(x = rel_distance_from_n_terminus,
-                                      colour = factor(label, labels = c("Not presented", "Presented")))) +
-    stat_ecdf(linewidth = 0.8) +
-    scale_colour_manual(values = c("#e74c3c", "#2ecc71")) +
-    annotate("text", x = 0.95, y = 0.08,
-             label = paste0("KS D = ", round(ks_n_dist$statistic, 4)),
-             size = 4.5, fontface = "bold", hjust = 1, colour = "#e74c3c") +
-    labs(title = "Relative Distance from N-terminus: Cumulative Distribution",
-         x = "Relative distance from N-terminus",
-         y = "Cumulative Proportion", colour = "Label") +
-    theme_bw(base_size = 13) +
-    theme(legend.position = "top", panel.grid.minor = element_blank(),
-          plot.title.position = "plot")
-  
-  ggsave(file.path(figures_dir, "rel_distance_n_terminus_ecdf.png"),
-         plot = p_n_dist_ecdf, width = 8, height = 5, dpi = 300)
-  
-  # 4. ECDF — C-terminus
-  p_c_dist_ecdf <- ggplot(df_raw, aes(x = rel_distance_from_c_terminus,
-                                      colour = factor(label, labels = c("Not presented", "Presented")))) +
-    stat_ecdf(linewidth = 0.8) +
-    scale_colour_manual(values = c("#e74c3c", "#2ecc71")) +
-    annotate("text", x = 0.95, y = 0.08,
-             label = paste0("KS D = ", round(ks_c_dist$statistic, 4)),
-             size = 4.5, fontface = "bold", hjust = 1, colour = "#e74c3c") +
-    labs(title = "Relative Distance from C-terminus: Cumulative Distribution",
-         x = "Relative distance from C-terminus",
-         y = "Cumulative Proportion", colour = "Label") +
-    theme_bw(base_size = 13) +
-    theme(legend.position = "top", panel.grid.minor = element_blank(),
-          plot.title.position = "plot")
-  
-  ggsave(file.path(figures_dir, "rel_distance_c_terminus_ecdf.png"),
-         plot = p_c_dist_ecdf, width = 8, height = 5, dpi = 300)
-  
-  # 5. Logistic regression — adjusted for protein length
-  cat("\n=== Relative Position adjusted for protein length ===\n")
-  
-  fit_n_unadj <- glm(label ~ scale(rel_distance_from_n_terminus),
-                     data = df_raw, family = binomial())
-  fit_n_adj <- glm(label ~ scale(rel_distance_from_n_terminus) + scale(protein_length),
-                   data = df_raw, family = binomial())
-  
-  fit_c_unadj <- glm(label ~ scale(rel_distance_from_c_terminus),
-                     data = df_raw, family = binomial())
-  fit_c_adj <- glm(label ~ scale(rel_distance_from_c_terminus) + scale(protein_length),
-                   data = df_raw, family = binomial())
-  
-  cat("N-terminus distance:\n")
-  cat("  Unadjusted OR: ",
-      round(exp(coef(fit_n_unadj)["scale(rel_distance_from_n_terminus)"]), 3), "\n")
-  cat("  Adjusted OR:   ",
-      round(exp(coef(fit_n_adj)["scale(rel_distance_from_n_terminus)"]), 3), "\n")
-  
-  cat("\nC-terminus distance:\n")
-  cat("  Unadjusted OR: ",
-      round(exp(coef(fit_c_unadj)["scale(rel_distance_from_c_terminus)"]), 3), "\n")
-  cat("  Adjusted OR:   ",
-      round(exp(coef(fit_c_adj)["scale(rel_distance_from_c_terminus)"]), 3), "\n")
-  
-  cat("\nProtein length OR (from N-dist model): ",
-      round(exp(coef(fit_n_adj)["scale(protein_length)"]), 3), "\n")
-  
-  cat("\nIf OR barely changes after adjustment, relative position is an\n")
-  cat("independent signal, not confounded by protein length.\n")
-  cat("If OR moves toward 1 after adjustment, protein length explains\n")
-  cat("some of the positional bias.\n")
 }
 
 # =============================================================================
@@ -796,7 +725,7 @@ if ("mean_plddt_peptide" %in% names(df_raw)) {
     mutate(odds_ratio = exp(estimate),
            conf_low = exp(estimate - 1.96 * std.error),
            conf_high = exp(estimate + 1.96 * std.error))
-  write_csv(plddt_quad_results, file.path(results_dir, "mean_plddt_peptide_quadratic_model.csv"))
+  write_csv(plddt_quad_results, file.path(results_dir, paste0("mean_plddt_peptide_quadratic_model", run_suffix, ".csv")))
 }
 
 # =============================================================================
@@ -827,7 +756,7 @@ p_volcano <- ggplot(volcano_data, aes(x = effect_size, y = log_p, color = type))
        subtitle = "Continuous: SMD from Wilcoxon | Binary: proportion diff from Fisher",
        x = "Effect size", y = "-log10(FDR-adjusted p-value)", color = "Type") +
   theme_bw()
-ggsave(file.path(figures_dir, "features_volcano.png"),
+ggsave(file.path(figures_dir, paste0("features_volcano", run_suffix, ".png")),
        plot = p_volcano, width = 8, height = 6, dpi = 300)
 
 # =============================================================================
@@ -842,7 +771,7 @@ top_plot_features <- intersect(
     "mean_plddt_nflank", "frac_disordered_nflank",
     "mean_rsa_cflank", "mean_disorder_cflank",
     "mean_plddt_cflank", "frac_disordered_cflank",
-    "NetSurfP_PC1", "NetSurfP_PC2"),
+    "PC1", "PC2"),
   names(df_raw)
 )
 
@@ -903,7 +832,7 @@ for (region_name in names(forest_regions)) {
     theme_bw() +
     theme(legend.position = "bottom", legend.box = "vertical")
   
-  ggsave(file.path(figures_dir, paste0("forest_", region_name, ".png")),
+  ggsave(file.path(figures_dir, paste0("forest_", region_name, run_suffix, ".png")),
          plot = p_forest, width = 9, height = max(4, nrow(plot_df) * 0.35 + 2), dpi = 300)
   message("  Saved: forest_", region_name)
 }
