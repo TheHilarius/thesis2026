@@ -1,16 +1,12 @@
 """
-03_modelling.py
+04_modelling.py
 Cross-validation pipeline for MHC-I processing prediction.
-Model-agnostic: select a model via --model <key> (default: rf).
-
-Assumes:
-  - 01_datasplit.py has been run  (fold column exists).
-  - 02_datasplit_analysis.py has been run for data-quality checks.
+Model-agnostic and feature-set-agnostic.
 
 Usage:
-    python 03_modelling.py               # runs default model (rf)
-    python 03_modelling.py --model rf    # Random Forest baseline
-    python 03_modelling.py --model lr    # Logistic Regression baseline
+    python 04_modelling.py --model rf  --features handcrafted
+    python 04_modelling.py --model lr  --features esmc
+    python 04_modelling.py --model rf  --features esmif
 """
 
 import sys
@@ -24,7 +20,9 @@ import argparse
 import importlib
 import pandas as pd
 import numpy as np
+import h5py
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 from sklearn.metrics import (
     roc_auc_score, average_precision_score,
     accuracy_score, f1_score, matthews_corrcoef,
@@ -39,9 +37,11 @@ from config import (
     SPLIT_DATA_PATH, LOG_DIR, MODEL_DIR,
     N_CV_FOLDS, HELD_OUT_INDEX,
     PEPTIDE_COL, LABEL_COL, FOLD_COL,
-    POSITION_AA_COLS, RANDOM_STATE,
-    DEFAULT_MODEL,
-    get_feature_cols, get_model_config, validate_config,
+    POSITION_AA_COLS, EMBEDDING_REGIONS,
+    RANDOM_STATE, DEFAULT_MODEL, DEFAULT_FEATURE_SET,
+    get_feature_cols, get_model_config,
+    get_feature_set_config, get_embedding_source,
+    validate_config,
 )
 
 
@@ -75,12 +75,7 @@ class Logger:
 # ──────────────────────────────────────────────
 
 def build_model(model_cfg):
-    """
-    Instantiate a sklearn model from a MODEL_REGISTRY entry.
-
-    The 'model_class' string (e.g. 'sklearn.ensemble.RandomForestClassifier')
-    is imported dynamically so config.py stays free of sklearn imports.
-    """
+    """Instantiate a sklearn model from a MODEL_REGISTRY entry."""
     class_path = model_cfg["model_class"]
     module_path, class_name = class_path.rsplit(".", 1)
     module = importlib.import_module(module_path)
@@ -93,9 +88,7 @@ def build_model(model_cfg):
 # ──────────────────────────────────────────────
 
 def compute_metrics(y_true, y_prob, threshold=0.5):
-    """Compute all classification metrics from true labels and predicted probabilities."""
     y_pred = (y_prob >= threshold).astype(int)
-
     metrics = {
         "auc_roc": roc_auc_score(y_true, y_prob),
         "auc_pr": average_precision_score(y_true, y_prob),
@@ -103,18 +96,15 @@ def compute_metrics(y_true, y_prob, threshold=0.5):
         "f1": f1_score(y_true, y_pred),
         "mcc": matthews_corrcoef(y_true, y_pred),
     }
-
     tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
     metrics["sensitivity"] = tp / (tp + fn) if (tp + fn) > 0 else 0.0
     metrics["specificity"] = tn / (tn + fp) if (tn + fp) > 0 else 0.0
     metrics["ppv"] = tp / (tp + fp) if (tp + fp) > 0 else 0.0
     metrics["npv"] = tn / (tn + fn) if (tn + fn) > 0 else 0.0
-
     return metrics
 
 
 def print_metrics(metrics, prefix=""):
-    """Pretty-print a metrics dictionary."""
     print(f"{prefix}  AUC-ROC: {metrics['auc_roc']:.4f}  |  AUC-PR: {metrics['auc_pr']:.4f}  |  "
           f"Acc: {metrics['accuracy']:.4f}  |  F1: {metrics['f1']:.4f}  |  "
           f"MCC: {metrics['mcc']:.4f}")
@@ -123,54 +113,79 @@ def print_metrics(metrics, prefix=""):
 
 
 # ──────────────────────────────────────────────
-# 3. DATA PREPARATION
+# 3. DATA LOADING
+# ──────────────────────────────────────────────
+
+def load_embedding_data(embedding_key):
+    """
+    Load a prepared embedding HDF5 into memory.
+
+    Returns dict with keys:
+        regions  -> dict of {region_name: np.array (N, D)}
+        labels   -> np.array (N,)
+        folds    -> np.array (N,)
+        emb_dim  -> int
+        n_samples -> int
+    """
+    emb_source = get_embedding_source(embedding_key)
+    prepared_path = emb_source["prepared_path"]
+
+    if not prepared_path.exists():
+        raise FileNotFoundError(
+            f"Prepared embedding not found: {prepared_path}\n"
+            f"Run: python 03_prepare_embeddings.py --embedding {embedding_key}"
+        )
+
+    print(f"  Loading prepared embeddings: {prepared_path}")
+
+    data = {"regions": {}}
+    with h5py.File(prepared_path, "r") as f:
+        data["labels"] = f["labels"][:]
+        data["folds"] = f["folds"][:]
+        data["emb_dim"] = int(f.attrs.get("emb_dim", 0))
+        data["n_samples"] = int(f.attrs.get("n_samples", len(data["labels"])))
+
+        for region in EMBEDDING_REGIONS:
+            if region in f:
+                data["regions"][region] = f[region][:]
+
+    n_regions = len(data["regions"])
+    first_region = list(data["regions"].values())[0]
+    emb_dim = first_region.shape[1]
+    data["emb_dim"] = emb_dim
+
+    print(f"  Loaded: {data['n_samples']} samples, {n_regions} regions, "
+          f"dim={emb_dim}")
+
+    return data
+
+
+# ──────────────────────────────────────────────
+# 4. DATA PREPARATION — HAND-CRAFTED
 # ──────────────────────────────────────────────
 
 def impute_nan(X_train, X_test, feature_cols, fold_id):
-    """
-    Replace Inf with NaN, then fill NaN with column median from train.
-    Returns cleaned arrays and the medians used (for held-out imputation).
-    """
     X_train = np.where(np.isinf(X_train), np.nan, X_train)
     X_test = np.where(np.isinf(X_test), np.nan, X_test)
 
     for name, arr in [("X_train", X_train), ("X_test", X_test)]:
         n_nan = np.isnan(arr).sum()
-        n_inf = np.isinf(arr).sum()
-        if n_nan > 0 or n_inf > 0:
-            print(f"  WARNING: {name}: {n_nan} NaN, {n_inf} Inf values")
-            nan_per_col = np.isnan(arr).sum(axis=0)
-            for col_idx in np.where(nan_per_col > 0)[0]:
-                print(f"    Column '{feature_cols[col_idx]}': "
-                      f"{nan_per_col[col_idx]} NaN values")
+        if n_nan > 0:
+            print(f"  WARNING: {name}: {n_nan} NaN values")
 
     col_medians = np.nanmedian(X_train, axis=0)
     col_medians = np.where(np.isnan(col_medians), 0.0, col_medians)
 
-    print(f"  Fold {fold_id}: medians computed from {X_train.shape[0]} training samples")
-
-    n_imputed_train = 0
-    n_imputed_test = 0
     for col_idx in range(X_train.shape[1]):
         train_nan = np.isnan(X_train[:, col_idx])
         test_nan = np.isnan(X_test[:, col_idx])
-        n_imputed_train += train_nan.sum()
-        n_imputed_test += test_nan.sum()
         X_train[train_nan, col_idx] = col_medians[col_idx]
         X_test[test_nan, col_idx] = col_medians[col_idx]
-
-    if n_imputed_train > 0 or n_imputed_test > 0:
-        print(f"  Fold {fold_id}: imputed {n_imputed_train} train values, "
-              f"{n_imputed_test} test values")
-
-    assert not np.isnan(X_train).any(), "NaN still in X_train"
-    assert not np.isnan(X_test).any(), "NaN still in X_test"
 
     return X_train, X_test, col_medians
 
 
 def impute_nan_single(X, col_medians):
-    """Impute NaN in a single array using pre-computed medians."""
     X = np.where(np.isinf(X), np.nan, X)
     for col_idx in range(X.shape[1]):
         nan_mask = np.isnan(X[:, col_idx])
@@ -179,10 +194,6 @@ def impute_nan_single(X, col_medians):
 
 
 def resolve_feature_cols(df):
-    """
-    Return the list of numeric feature columns, silently dropping any
-    non-numeric ones (the detailed report lives in 02_datasplit_analysis).
-    """
     feature_cols = get_feature_cols(df.columns)
     non_numeric = [c for c in feature_cols if not np.issubdtype(df[c].dtype, np.number)]
     if non_numeric:
@@ -191,16 +202,9 @@ def resolve_feature_cols(df):
     return feature_cols
 
 
-def prepare_fold_data(df, feature_cols, fold_id, needs_scaling):
-    """
-    Split CV data into train/test for a given fold.
-    Optionally standardises features (fit on train, transform both).
-
-    Returns:
-        X_train, y_train, X_test, y_test, col_medians, scaler, fold_info
-    """
+def prepare_fold_csv(df, feature_cols, fold_id, needs_scaling):
+    """Prepare fold data from CSV-based hand-crafted features."""
     cv_df = df[df[FOLD_COL] != HELD_OUT_INDEX].copy()
-
     train_df = cv_df[cv_df[FOLD_COL] != fold_id].copy()
     test_df = cv_df[cv_df[FOLD_COL] == fold_id].copy()
 
@@ -209,16 +213,13 @@ def prepare_fold_data(df, feature_cols, fold_id, needs_scaling):
     X_test = test_df[feature_cols].values.astype(np.float64)
     y_test = test_df[LABEL_COL].values.astype(np.int32)
 
-    # Impute NaN (always before scaling)
     X_train, X_test, col_medians = impute_nan(X_train, X_test, feature_cols, fold_id)
 
-    # Optional scaling
     scaler = None
     if needs_scaling:
         scaler = StandardScaler()
         X_train = scaler.fit_transform(X_train)
         X_test = scaler.transform(X_test)
-        print(f"  Fold {fold_id}: features standardised (mean=0, std=1)")
 
     fold_info = {
         "fold_id": fold_id,
@@ -228,85 +229,222 @@ def prepare_fold_data(df, feature_cols, fold_id, needs_scaling):
         "n_train_neg": int(len(y_train) - y_train.sum()),
         "n_test_pos": int(y_test.sum()),
         "n_test_neg": int(len(y_test) - y_test.sum()),
-        "n_features": len(feature_cols),
+        "n_features": X_train.shape[1],
     }
 
-    return X_train, y_train, X_test, y_test, col_medians, scaler, fold_info
+    fold_artifacts = {
+        "col_medians": col_medians,
+        "scaler": scaler,
+        "pca": None,
+    }
+
+    return X_train, y_train, X_test, y_test, fold_info, fold_artifacts
 
 
-def prepare_held_out_data(df, feature_cols, col_medians, scaler=None):
-    """Prepare the held-out set using pre-computed medians and optional scaler."""
+def prepare_held_out_csv(df, feature_cols, fold_artifacts):
+    """Prepare held-out data from CSV-based hand-crafted features."""
     ho_df = df[df[FOLD_COL] == HELD_OUT_INDEX].copy()
-
     X_ho = ho_df[feature_cols].values.astype(np.float64)
     y_ho = ho_df[LABEL_COL].values.astype(np.int32)
 
-    X_ho = impute_nan_single(X_ho, col_medians)
-
-    if scaler is not None:
-        X_ho = scaler.transform(X_ho)
+    X_ho = impute_nan_single(X_ho, fold_artifacts["col_medians"])
+    if fold_artifacts["scaler"] is not None:
+        X_ho = fold_artifacts["scaler"].transform(X_ho)
 
     return X_ho, y_ho
 
 
 # ──────────────────────────────────────────────
-# 4. MODEL TRAINING (one fold)
+# 5. DATA PREPARATION — EMBEDDINGS
+# ──────────────────────────────────────────────
+
+def concatenate_regions(emb_data, indices):
+    """
+    Concatenate all region embeddings for given sample indices.
+    E.g. peptide_emb(1152) + n_flank_emb(1152) + c_flank_emb(1152) = 3456 dims.
+    """
+    parts = []
+    for region_name in sorted(emb_data["regions"].keys()):
+        parts.append(emb_data["regions"][region_name][indices])
+    return np.concatenate(parts, axis=1).astype(np.float64)
+
+
+def prepare_fold_embedding(emb_data, fold_id, feat_cfg, needs_scaling):
+    """
+    Prepare fold data from embedding arrays.
+    Optionally applies PCA (fit on train, transform both) and scaling.
+    """
+    labels = emb_data["labels"]
+    folds = emb_data["folds"]
+
+    cv_mask = folds != HELD_OUT_INDEX
+    cv_indices = np.where(cv_mask)[0]
+    cv_folds = folds[cv_mask]
+
+    train_indices = cv_indices[cv_folds != fold_id]
+    test_indices = cv_indices[cv_folds == fold_id]
+
+    X_train = concatenate_regions(emb_data, train_indices)
+    y_train = labels[train_indices].astype(np.int32)
+    X_test = concatenate_regions(emb_data, test_indices)
+    y_test = labels[test_indices].astype(np.int32)
+
+    # Replace any NaN/Inf (should be rare in embeddings but be safe)
+    for arr in [X_train, X_test]:
+        arr[np.isinf(arr)] = 0.0
+        arr[np.isnan(arr)] = 0.0
+
+    # PCA reduction (fit on train only)
+    pca = None
+    if feat_cfg.get("needs_pca", False):
+        n_components = feat_cfg.get("pca_components", 50)
+        n_regions = len(emb_data["regions"])
+        total_components = n_components * n_regions
+        total_components = min(total_components, X_train.shape[1], X_train.shape[0])
+
+        print(f"  Fold {fold_id}: PCA {X_train.shape[1]} → {total_components} "
+              f"({n_components} per region × {n_regions} regions)")
+
+        pca = PCA(n_components=total_components, random_state=RANDOM_STATE)
+        X_train = pca.fit_transform(X_train)
+        X_test = pca.transform(X_test)
+
+        explained = pca.explained_variance_ratio_.sum() * 100
+        print(f"  Fold {fold_id}: PCA explains {explained:.1f}% of variance")
+
+    # Scaling
+    scaler = None
+    if needs_scaling:
+        scaler = StandardScaler()
+        X_train = scaler.fit_transform(X_train)
+        X_test = scaler.transform(X_test)
+
+    fold_info = {
+        "fold_id": fold_id,
+        "n_train": len(train_indices),
+        "n_test": len(test_indices),
+        "n_train_pos": int(y_train.sum()),
+        "n_train_neg": int(len(y_train) - y_train.sum()),
+        "n_test_pos": int(y_test.sum()),
+        "n_test_neg": int(len(y_test) - y_test.sum()),
+        "n_features": X_train.shape[1],
+    }
+
+    fold_artifacts = {
+        "col_medians": None,
+        "scaler": scaler,
+        "pca": pca,
+    }
+
+    return X_train, y_train, X_test, y_test, fold_info, fold_artifacts
+
+
+def prepare_held_out_embedding(emb_data, fold_artifacts):
+    """Prepare held-out data from embeddings using fold-fitted PCA and scaler."""
+    folds = emb_data["folds"]
+    labels = emb_data["labels"]
+
+    ho_indices = np.where(folds == HELD_OUT_INDEX)[0]
+    X_ho = concatenate_regions(emb_data, ho_indices)
+    y_ho = labels[ho_indices].astype(np.int32)
+
+    X_ho[np.isinf(X_ho)] = 0.0
+    X_ho[np.isnan(X_ho)] = 0.0
+
+    if fold_artifacts["pca"] is not None:
+        X_ho = fold_artifacts["pca"].transform(X_ho)
+    if fold_artifacts["scaler"] is not None:
+        X_ho = fold_artifacts["scaler"].transform(X_ho)
+
+    return X_ho, y_ho
+
+
+# ──────────────────────────────────────────────
+# 6. UNIFIED FOLD PREPARATION
+# ──────────────────────────────────────────────
+
+def prepare_fold(df, feature_cols, emb_data, feat_cfg, model_cfg, fold_id):
+    """
+    Dispatch to CSV or embedding preparation based on feature set config.
+    Returns unified (X_train, y_train, X_test, y_test, fold_info, fold_artifacts).
+    """
+    needs_scaling = model_cfg["needs_scaling"]
+
+    if feat_cfg["source"] == "csv":
+        return prepare_fold_csv(df, feature_cols, fold_id, needs_scaling)
+    elif feat_cfg["source"] == "embedding":
+        return prepare_fold_embedding(emb_data, fold_id, feat_cfg, needs_scaling)
+    else:
+        raise ValueError(f"Unknown feature source: {feat_cfg['source']}")
+
+
+def prepare_held_out(df, feature_cols, emb_data, feat_cfg, fold_artifacts):
+    """Dispatch to CSV or embedding held-out preparation."""
+    if feat_cfg["source"] == "csv":
+        return prepare_held_out_csv(df, feature_cols, fold_artifacts)
+    elif feat_cfg["source"] == "embedding":
+        return prepare_held_out_embedding(emb_data, fold_artifacts)
+    else:
+        raise ValueError(f"Unknown feature source: {feat_cfg['source']}")
+
+
+# ──────────────────────────────────────────────
+# 7. MODEL TRAINING
 # ──────────────────────────────────────────────
 
 def train_one_fold(model_cfg, X_train, y_train, X_test, y_test, fold_id):
-    """
-    Train a model on one CV fold and evaluate.
-
-    Returns:
-        model, test_metrics, y_prob
-    """
     model = build_model(model_cfg)
     display = model_cfg["display_name"]
 
     print(f"  Training {display} ...")
-    t_train_start = time.time()
+    t_start = time.time()
     model.fit(X_train, y_train)
-    t_train_end = time.time()
-    print(f"  Training time: {t_train_end - t_train_start:.1f}s")
+    t_end = time.time()
+    print(f"  Training time: {t_end - t_start:.1f}s")
 
-    # Predict probabilities (probability of class 1)
     if hasattr(model, "predict_proba"):
         y_prob = model.predict_proba(X_test)[:, 1]
     else:
-        # Fallback for models without predict_proba (e.g. SVM without probability)
         y_prob = model.decision_function(X_test)
 
     test_metrics = compute_metrics(y_test, y_prob)
-
     return model, test_metrics, y_prob
 
 
 # ──────────────────────────────────────────────
-# 5. FEATURE IMPORTANCE / COEFFICIENTS
+# 8. FEATURE WEIGHTS
 # ──────────────────────────────────────────────
 
 def extract_feature_weights(model, model_cfg):
-    """
-    Extract per-feature weight vector from a trained model.
-
-    Returns:
-        weights (1-D array, length n_features) or None
-    """
     attr = model_cfg.get("coef_attr")
     if attr is None or not hasattr(model, attr):
         return None
-
     raw = getattr(model, attr)
-    # coef_ is (1, n_features) for binary LR; feature_importances_ is (n_features,)
-    weights = np.asarray(raw).ravel()
-    return weights
+    return np.asarray(raw).ravel()
 
 
-def print_feature_weights(weights, feature_cols, model_cfg, top_n=20):
+def make_feature_names(feat_cfg, emb_data, feature_cols, n_features):
     """
-    Print top N features by absolute weight.
-    Label adapts to model type (importance vs coefficient).
+    Generate human-readable feature names.
+    For CSV: use actual column names.
+    For embeddings with PCA: generate PC_001, PC_002, ...
     """
+    if feat_cfg["source"] == "csv":
+        return list(feature_cols)
+
+    if feat_cfg.get("needs_pca", False):
+        return [f"PC_{i + 1:03d}" for i in range(n_features)]
+
+    # Raw embeddings without PCA
+    names = []
+    for region in sorted(emb_data["regions"].keys()):
+        dim = emb_data["regions"][region].shape[1]
+        short = region.replace("_emb", "")
+        names.extend([f"{short}_d{i}" for i in range(dim)])
+    return names[:n_features]
+
+
+def print_feature_weights(weights, feature_names, model_cfg, top_n=20):
     if weights is None:
         print("\n  (model does not expose feature weights)")
         return weights, None
@@ -317,27 +455,22 @@ def print_feature_weights(weights, feature_cols, model_cfg, top_n=20):
     is_coef = model_cfg["coef_attr"] == "coef_"
     col_label = "Coefficient" if is_coef else "Importance"
 
-    print(f"\n  Top {min(top_n, len(feature_cols))} feature {col_label.lower()}s:")
-    print(f"  {'Rank':<6} {'Feature':<40} {col_label:>12}"
-          f"{'  |Coef|':>10}" if is_coef else "")
+    print(f"\n  Top {min(top_n, len(feature_names))} feature {col_label.lower()}s:")
+    print(f"  {'Rank':<6} {'Feature':<40} {col_label:>12}")
     print(f"  {'-' * 60}")
-
-    for rank in range(min(top_n, len(feature_cols))):
+    for rank in range(min(top_n, len(feature_names))):
         idx = indices[rank]
-        line = f"  {rank + 1:<6} {feature_cols[idx]:<40} {weights[idx]:>12.6f}"
-        if is_coef:
-            line += f"  {abs_weights[idx]:>10.6f}"
+        line = f"  {rank + 1:<6} {feature_names[idx]:<40} {weights[idx]:>12.6f}"
         print(line)
 
     return weights, indices
 
 
 # ──────────────────────────────────────────────
-# 6. AGGREGATE CV RESULTS
+# 9. AGGREGATE CV RESULTS
 # ──────────────────────────────────────────────
 
 def aggregate_cv_results(all_fold_metrics):
-    """Compute mean +/- std across CV folds for each metric."""
     metric_names = all_fold_metrics[0].keys()
     summary = {}
     for m in metric_names:
@@ -351,7 +484,6 @@ def aggregate_cv_results(all_fold_metrics):
 
 
 def print_cv_summary(summary):
-    """Pretty-print aggregated CV results."""
     print(f"\n{'=' * 80}")
     print("CROSS-VALIDATION SUMMARY (mean +/- std)")
     print("=" * 80)
@@ -362,36 +494,45 @@ def print_cv_summary(summary):
 
 
 # ──────────────────────────────────────────────
-# 7. CLI
+# 10. CLI
 # ──────────────────────────────────────────────
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="03_modelling: cross-validation + held-out evaluation",
+        description="04_modelling: cross-validation + held-out evaluation",
     )
     parser.add_argument(
         "--model", type=str, default=DEFAULT_MODEL,
         help=f"Model key from MODEL_REGISTRY (default: {DEFAULT_MODEL})",
     )
+    parser.add_argument(
+        "--features", type=str, default=DEFAULT_FEATURE_SET,
+        help=f"Feature set key from FEATURE_SETS (default: {DEFAULT_FEATURE_SET})",
+    )
     return parser.parse_args()
 
 
 # ──────────────────────────────────────────────
-# 8. MAIN
+# 11. MAIN
 # ──────────────────────────────────────────────
 
 if __name__ == "__main__":
 
     args = parse_args()
     model_key = args.model
+    features_key = args.features
 
     validate_config()
     model_cfg = get_model_config(model_key)
+    feat_cfg = get_feature_set_config(features_key)
     display_name = model_cfg["display_name"]
-    needs_scaling = model_cfg["needs_scaling"]
+    feat_display = feat_cfg["display_name"]
+
+    # Run tag used for all output filenames
+    run_tag = f"{model_key}_{features_key}"
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    LOG_PATH = LOG_DIR / f"03_modelling_{model_key}_log_{timestamp}.txt"
+    LOG_PATH = LOG_DIR / f"04_modelling_{run_tag}_log_{timestamp}.txt"
     os.makedirs(LOG_DIR, exist_ok=True)
     os.makedirs(MODEL_DIR, exist_ok=True)
     logger = Logger(str(LOG_PATH))
@@ -401,28 +542,33 @@ if __name__ == "__main__":
 
     # -- Header --
     print("=" * 80)
-    print(f"  03_MODELLING -- {display_name.upper()} BASELINE")
+    print(f"  04_MODELLING -- {display_name.upper()} + {feat_display.upper()}")
     print("=" * 80)
-    print(f"  Timestamp:          {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"  Model key:          {model_key}")
-    print(f"  Model class:        {model_cfg['model_class']}")
-    print(f"  Data path:          {SPLIT_DATA_PATH}")
-    print(f"  Log path:           {LOG_PATH}")
-    print(f"  CV folds (k):       {N_CV_FOLDS}")
-    print(f"  Held-out bucket:    {HELD_OUT_INDEX}")
-    print(f"  Random state:       {RANDOM_STATE}")
-    print(f"  Needs scaling:      {needs_scaling}")
-    print(f"\n  Hyperparameters:")
+    print(f"  Timestamp:       {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"  Model key:       {model_key}")
+    print(f"  Model class:     {model_cfg['model_class']}")
+    print(f"  Feature set:     {features_key} ({feat_display})")
+    print(f"  Feature source:  {feat_cfg['source']}")
+    print(f"  Data path:       {SPLIT_DATA_PATH}")
+    print(f"  Log path:        {LOG_PATH}")
+    print(f"  CV folds (k):    {N_CV_FOLDS}")
+    print(f"  Held-out bucket: {HELD_OUT_INDEX}")
+    print(f"  Random state:    {RANDOM_STATE}")
+    print(f"  Needs scaling:   {model_cfg['needs_scaling']}")
+    if feat_cfg.get("needs_pca"):
+        print(f"  PCA components:  {feat_cfg.get('pca_components', '?')} per region")
+    print(f"\n  Model hyperparameters:")
     for k, v in model_cfg["params"].items():
         print(f"    {k:<25} {v}")
     print("=" * 80)
 
-    # -- Load split data --
-    print(f"\nLoading split data from: {SPLIT_DATA_PATH}")
+    # -- Load split data (always needed for labels/folds in CSV mode,
+    #    and for metadata in embedding mode) --
+    print(f"\nLoading split data: {SPLIT_DATA_PATH}")
     df = pd.read_csv(SPLIT_DATA_PATH)
-    print(f"Shape: {df.shape[0]} rows x {df.shape[1]} columns")
+    print(f"  Shape: {df.shape[0]} rows x {df.shape[1]} columns")
 
-    # -- Quick fold sanity check --
+    # Fold validation
     if FOLD_COL not in df.columns:
         print(f"FATAL: Column '{FOLD_COL}' not found. Run 01_datasplit.py first.")
         logger.close()
@@ -434,34 +580,44 @@ if __name__ == "__main__":
         print(f"FATAL: Expected folds {expected_folds}, found {actual_folds}")
         logger.close()
         sys.exit(1)
-    print(f"[OK] Fold column validated: {actual_folds}")
+    print(f"  [OK] Fold column validated: {actual_folds}")
 
-    # -- Positional AA column status --
-    present_pos = [c for c in POSITION_AA_COLS if c in df.columns]
-    if present_pos:
-        is_encoded = np.issubdtype(df[present_pos[0]].dtype, np.number)
-        if is_encoded:
-            print(f"  Positional AA columns appear already encoded (numeric)")
+    # -- Load feature-set-specific data --
+    feature_cols = []
+    emb_data = None
+
+    if feat_cfg["source"] == "csv":
+        feature_cols = resolve_feature_cols(df)
+        n_features_initial = len(feature_cols)
+        if n_features_initial == 0:
+            print("FATAL: No numeric feature columns found.")
+            logger.close()
+            sys.exit(1)
+        print(f"  Using {n_features_initial} hand-crafted feature columns")
+
+    elif feat_cfg["source"] == "embedding":
+        embedding_key = feat_cfg["embedding_key"]
+        emb_data = load_embedding_data(embedding_key)
+
+        n_regions = len(emb_data["regions"])
+        emb_dim = emb_data["emb_dim"]
+        raw_dim = n_regions * emb_dim
+
+        if feat_cfg.get("needs_pca"):
+            pca_per = feat_cfg.get("pca_components", 50)
+            n_features_initial = pca_per * n_regions
+            print(f"  Raw embedding dim: {raw_dim} "
+                  f"({n_regions} regions × {emb_dim})")
+            print(f"  After PCA: {n_features_initial} "
+                  f"({pca_per} per region × {n_regions} regions)")
         else:
-            print(f"  {len(present_pos)} positional AA columns present but UNENCODED "
-                  f"(dtype: object) -- excluded from features")
-
-    # -- Resolve feature columns --
-    feature_cols = resolve_feature_cols(df)
-    n_features = len(feature_cols)
-    print(f"  Using {n_features} numeric feature columns")
-
-    if n_features == 0:
-        print("FATAL: No numeric feature columns found. Check config and data.")
-        logger.close()
-        sys.exit(1)
-
-    print(f"\n  Feature columns entering the model:")
-    for i, col in enumerate(feature_cols):
-        print(f"    [{i:>3}] {col}")
+            n_features_initial = raw_dim
+            print(f"  Embedding dim: {raw_dim} "
+                  f"({n_regions} regions × {emb_dim})")
 
     print(f"\n{'=' * 80}")
-    print(f"PIPELINE READY: {n_features} features, {N_CV_FOLDS} folds, {display_name}")
+    print(f"PIPELINE READY: ~{n_features_initial} features, "
+          f"{N_CV_FOLDS} folds, {display_name} + {feat_display}")
     print(f"{'=' * 80}")
 
     # ── Cross-Validation Loop ──
@@ -471,8 +627,8 @@ if __name__ == "__main__":
     best_fold_auc = -1
     best_fold_id = -1
     best_fold_model = None
-    best_fold_medians = None
-    best_fold_scaler = None
+    best_fold_artifacts = None
+    feature_names = None
 
     for fold_id in range(N_CV_FOLDS):
         print(f"\n{'-' * 80}")
@@ -481,10 +637,15 @@ if __name__ == "__main__":
 
         t_fold_start = time.time()
 
-        # Prepare data
-        X_train, y_train, X_test, y_test, col_medians, scaler, fold_info = (
-            prepare_fold_data(df, feature_cols, fold_id, needs_scaling)
+        X_train, y_train, X_test, y_test, fold_info, fold_artifacts = prepare_fold(
+            df, feature_cols, emb_data, feat_cfg, model_cfg, fold_id,
         )
+
+        # Build feature names on first fold (PCA dims are known now)
+        if feature_names is None:
+            feature_names = make_feature_names(
+                feat_cfg, emb_data, feature_cols, fold_info["n_features"],
+            )
 
         train_ratio = fold_info["n_train_neg"] / fold_info["n_train_pos"] if fold_info["n_train_pos"] > 0 else float("inf")
         test_ratio = fold_info["n_test_neg"] / fold_info["n_test_pos"] if fold_info["n_test_pos"] > 0 else float("inf")
@@ -507,13 +668,12 @@ if __name__ == "__main__":
         print(f"\n  Fold {fold_id} results ({t_fold_end - t_fold_start:.1f}s):")
         print_metrics(test_metrics, prefix="  ")
 
-        # Feature weights for this fold
+        # Feature weights
         weights = extract_feature_weights(model, model_cfg)
-        print_feature_weights(weights, feature_cols, model_cfg, top_n=15)
+        print_feature_weights(weights, feature_names, model_cfg, top_n=15)
         if weights is not None:
             all_fold_weights.append(weights)
 
-        # Store predictions
         all_fold_predictions[fold_id] = {
             "y_true": y_test.tolist(),
             "y_prob": y_prob.tolist(),
@@ -521,16 +681,13 @@ if __name__ == "__main__":
 
         all_fold_metrics.append(test_metrics)
 
-        # Track best fold
         if test_metrics["auc_roc"] > best_fold_auc:
             best_fold_auc = test_metrics["auc_roc"]
             best_fold_id = fold_id
             best_fold_model = model
-            best_fold_medians = col_medians
-            best_fold_scaler = scaler
+            best_fold_artifacts = fold_artifacts
 
-        # Save fold model
-        fold_model_path = MODEL_DIR / f"{model_key}_model_fold{fold_id}.pkl"
+        fold_model_path = MODEL_DIR / f"{run_tag}_model_fold{fold_id}.pkl"
         with open(fold_model_path, "wb") as f:
             pickle.dump(model, f)
         print(f"  Saved model: {fold_model_path}")
@@ -573,9 +730,9 @@ if __name__ == "__main__":
         col_label = "Mean Coef" if is_coef else "Mean Imp"
         print(f"  {'Rank':<6} {'Feature':<40} {col_label:>12} {'Std':>12}")
         print(f"  {'-' * 72}")
-        for rank in range(min(30, len(feature_cols))):
+        for rank in range(min(30, len(feature_names))):
             idx = sorted_indices[rank]
-            print(f"  {rank + 1:<6} {feature_cols[idx]:<40} "
+            print(f"  {rank + 1:<6} {feature_names[idx]:<40} "
                   f"{avg_weights[idx]:>12.6f} {std_weights[idx]:>12.6f}")
 
     # ── Held-Out Evaluation ──
@@ -584,8 +741,8 @@ if __name__ == "__main__":
     print(f"{'=' * 80}")
     print(f"  Using model from best fold ({best_fold_id})")
 
-    X_ho, y_ho = prepare_held_out_data(
-        df, feature_cols, best_fold_medians, scaler=best_fold_scaler,
+    X_ho, y_ho = prepare_held_out(
+        df, feature_cols, emb_data, feat_cfg, best_fold_artifacts,
     )
 
     n_ho_pos = int(y_ho.sum())
@@ -623,24 +780,26 @@ if __name__ == "__main__":
         print(f"  {m:<15} {cv_mean:>10.4f} {cv_std:>10.4f} {ho_val:>10.4f} {delta:>+10.4f}")
 
     # ── Save All Results ──
-    pos_status = "encoded" if (
-        present_pos and np.issubdtype(df[present_pos[0]].dtype, np.number)
-    ) else "unencoded (excluded)"
+    n_features_final = fold_info["n_features"]
 
     results = {
         "timestamp": timestamp,
         "model_key": model_key,
         "model_type": display_name,
         "model_class": model_cfg["model_class"],
+        "features_key": features_key,
+        "features_display": feat_display,
+        "features_source": feat_cfg["source"],
         "config": {
             "n_cv_folds": N_CV_FOLDS,
             "held_out_index": HELD_OUT_INDEX,
             "random_state": RANDOM_STATE,
-            "needs_scaling": needs_scaling,
+            "needs_scaling": model_cfg["needs_scaling"],
+            "needs_pca": feat_cfg.get("needs_pca", False),
+            "pca_components_per_region": feat_cfg.get("pca_components"),
             "hyperparameters": {k: str(v) for k, v in model_cfg["params"].items()},
-            "n_features": n_features,
-            "feature_cols": feature_cols,
-            "positional_aa_cols_status": pos_status,
+            "n_features": n_features_final,
+            "feature_names": feature_names,
         },
         "cv_summary": {m: {"mean": s["mean"], "std": s["std"]}
                        for m, s in summary.items()},
@@ -651,42 +810,34 @@ if __name__ == "__main__":
         "fold_predictions": all_fold_predictions,
     }
 
-    # Add averaged feature weights
     if all_fold_weights:
         results["avg_feature_weights"] = {
-            feature_cols[i]: float(avg_weights[i])
-            for i in sorted_indices[:min(50, len(feature_cols))]
+            feature_names[i]: float(avg_weights[i])
+            for i in sorted_indices[:min(50, len(feature_names))]
         }
 
-    results_path = MODEL_DIR / f"cv_results_{model_key}_{timestamp}.json"
+    results_path = MODEL_DIR / f"cv_results_{run_tag}_{timestamp}.json"
     with open(results_path, "w") as f:
         json.dump(results, f, indent=2, default=str)
     print(f"\nResults saved: {results_path}")
 
     # Save best model
-    best_model_path = MODEL_DIR / f"best_{model_key}_model.pkl"
+    best_model_path = MODEL_DIR / f"best_{run_tag}_model.pkl"
     with open(best_model_path, "wb") as f:
         pickle.dump(best_fold_model, f)
     print(f"Best model saved: {best_model_path}")
 
-    # Save best medians
-    medians_path = MODEL_DIR / f"best_{model_key}_medians.pkl"
-    with open(medians_path, "wb") as f:
-        pickle.dump(best_fold_medians, f)
-    print(f"Best medians saved: {medians_path}")
+    # Save fold artifacts (medians, scaler, PCA)
+    artifacts_path = MODEL_DIR / f"best_{run_tag}_artifacts.pkl"
+    with open(artifacts_path, "wb") as f:
+        pickle.dump(best_fold_artifacts, f)
+    print(f"Fold artifacts saved: {artifacts_path}")
 
-    # Save best scaler (if scaling was used)
-    if best_fold_scaler is not None:
-        scaler_path = MODEL_DIR / f"best_{model_key}_scaler.pkl"
-        with open(scaler_path, "wb") as f:
-            pickle.dump(best_fold_scaler, f)
-        print(f"Best scaler saved: {scaler_path}")
-
-    # Save feature column list
-    feature_cols_path = MODEL_DIR / f"{model_key}_feature_cols.json"
-    with open(feature_cols_path, "w") as f:
-        json.dump(feature_cols, f, indent=2)
-    print(f"Feature columns saved: {feature_cols_path}")
+    # Save feature names
+    feat_names_path = MODEL_DIR / f"{run_tag}_feature_names.json"
+    with open(feat_names_path, "w") as f:
+        json.dump(feature_names, f, indent=2)
+    print(f"Feature names saved: {feat_names_path}")
 
     # ── Footer ──
     t_end = time.time()
@@ -696,16 +847,18 @@ if __name__ == "__main__":
     print("=" * 80)
     print(f"  Total runtime:    {t_end - t_start:.1f}s ({total_minutes:.1f} min)")
     print(f"  Model:            {display_name} ({model_key})")
-    print(f"  Scaling:          {'yes' if needs_scaling else 'no'}")
-    print(f"  Features:         {n_features}")
-    print(f"  Positional AA:    {len(present_pos)} columns ({pos_status})")
+    print(f"  Features:         {feat_display} ({features_key})")
+    print(f"  Feature source:   {feat_cfg['source']}")
+    print(f"  Scaling:          {'yes' if model_cfg['needs_scaling'] else 'no'}")
+    print(f"  PCA:              {'yes (' + str(feat_cfg.get('pca_components', '?')) + '/region)' if feat_cfg.get('needs_pca') else 'no'}")
+    print(f"  Features (final): {n_features_final}")
     print(f"  CV folds:         {N_CV_FOLDS}")
     print(f"  Best fold:        {best_fold_id} (AUC = {best_fold_auc:.4f})")
     print(f"  Held-out AUC:     {ho_metrics['auc_roc']:.4f}")
     print(f"  Held-out MCC:     {ho_metrics['mcc']:.4f}")
     print(f"  Models dir:       {MODEL_DIR}/")
     print(f"  Results file:     {results_path}")
-    print(f"  Feature cols:     {feature_cols_path}")
+    print(f"  Feature names:    {feat_names_path}")
     print(f"  Log file:         {LOG_PATH}")
     print(f"  Completed:        {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 80)
