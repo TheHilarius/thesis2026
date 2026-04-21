@@ -217,8 +217,8 @@ write_csv(enrichment_all, "results/residue_enrichment_tables.csv")
 cat("\n--- Generating plots ---\n")
 
 for (feat in all_pos_features) {
-  ggsave(paste0("results/figures/categorical/grouped_bar_", feat, ".png"), plot = plot_grouped_bar(df_clean, feat), width = 10, height = 5, dpi = 150)
-  ggsave(paste0("results/figures/categorical/stacked_prop_", feat, ".png"), plot = plot_stacked_proportion(df_clean, feat), width = 10, height = 5, dpi = 150)
+  ggsave(paste0("results/figures/categorical/residue_bars/grouped_bar_", feat, ".png"), plot = plot_grouped_bar(df_clean, feat), width = 10, height = 5, dpi = 150)
+  ggsave(paste0("results/figures/categorical/residue_stacked/stacked_prop_", feat, ".png"), plot = plot_stacked_proportion(df_clean, feat), width = 10, height = 5, dpi = 150)
 }
 
 # -----------------------------------------------------------------------------
