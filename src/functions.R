@@ -1204,4 +1204,100 @@ sample_bin_matched <- function(df_pos, df_neg, n_bins, seed = 42) {
     mutate(label = 0)
 }
 
+# =============================================================================
+# Amino Acid Encoding Functions
+# =============================================================================
+
+#' BLOSUM50 substitution matrix
+#' Each amino acid is represented by its 20-dimensional BLOSUM50 row vector.
+#' Source: NCBI, same encoding used by NetMHCpan 4.0–4.2
+#' NAs are encoded as all-zero vectors.
+BLOSUM50 <- matrix(c(
+  # A   C   D   E   F   G   H   I   K   L   M   N   P   Q   R   S   T   V   W   Y
+  5, -1, -2, -1, -3,  0, -2, -1, -1, -2, -1, -1, -1, -1, -2,  1,  0,  0, -3, -2, # A
+  -1, 13, -4, -3, -2, -3, -3, -2, -3, -2, -2, -2, -4, -3, -4, -1, -1, -1, -5, -3, # C
+  -2, -4,  8,  2, -5, -1, -1, -4, -1, -4, -4,  2, -1,  0, -2,  0, -1, -4, -5, -3, # D
+  -1, -3,  2,  6, -3, -3,  0, -4,  1, -3, -2,  0, -1,  2,  0, -1, -1, -3, -3, -2, # E
+  -3, -2, -5, -3,  8, -4, -1,  0, -4,  1,  0, -4, -4, -4, -3, -3, -2, -1,  1,  4, # F
+  0, -3, -1, -3, -4,  8, -2, -4, -2, -4, -3,  0, -2, -2, -3,  0, -2, -4, -3, -3, # G
+  -2, -3, -1,  0, -1, -2, 10, -4,  0, -3, -1,  1, -2,  1,  0, -1, -2, -4, -3,  2, # H
+  -1, -2, -4, -4,  0, -4, -4,  5, -3,  2,  2, -3, -3, -3, -4, -3, -1,  4, -3, -1, # I
+  -1, -3, -1,  1, -4, -2,  0, -3,  6, -3, -2,  0, -1,  2,  3,  0, -1, -3, -3, -2, # K
+  -2, -2, -4, -3,  1, -4, -3,  2, -3,  5,  3, -4, -4, -2, -3, -3, -1,  1, -2, -1, # L
+  -1, -2, -4, -2,  0, -3, -1,  2, -2,  3,  7, -2, -3,  0, -2, -2, -1,  1, -1,  0, # M
+  -1, -2,  2,  0, -4,  0,  1, -3,  0, -4, -2,  7, -2,  0, -1,  1,  0, -3, -4, -2, # N
+  -1, -4, -1, -1, -4, -2, -2, -3, -1, -4, -3, -2, 10, -1, -3, -1, -1, -3, -4, -3, # P
+  -1, -3,  0,  2, -4, -2,  1, -3,  2, -2,  0,  0, -1,  7,  1,  0, -1, -3, -1, -1, # Q
+  -2, -4, -2,  0, -3, -3,  0, -4,  3, -3, -2, -1, -3,  1,  7, -1, -1, -3, -3, -1, # R
+  1, -1,  0, -1, -3,  0, -1, -3,  0, -3, -2,  1, -1,  0, -1,  5,  2, -2, -4, -2, # S
+  0, -1, -1, -1, -2, -2, -2, -1, -1, -1, -1,  0, -1, -1, -1,  2,  5,  0, -3, -2, # T
+  0, -1, -4, -3, -1, -4, -4,  4, -3,  1,  1, -3, -3, -3, -3, -2,  0,  5, -3, -1, # V
+  -3, -5, -5, -3,  1, -3, -3, -3, -3, -2, -1, -4, -4, -1, -3, -4, -3, -3, 15,  2, # W
+  -2, -3, -3, -2,  4, -3,  2, -1, -2, -1,  0, -2, -3, -1, -1, -2, -2, -1,  2,  8  # Y
+), nrow = 20, ncol = 20, byrow = TRUE,
+dimnames = list(
+  c("A","C","D","E","F","G","H","I","K","L","M","N","P","Q","R","S","T","V","W","Y"),
+  c("A","C","D","E","F","G","H","I","K","L","M","N","P","Q","R","S","T","V","W","Y")
+))
+
+#' Sparse (one-hot) encode a single position column
+#'
+#' @param df        A data frame
+#' @param pos_col   Name of the position column (character)
+#' @param alphabet  Character vector of valid amino acid levels
+#' @return A tibble with one binary column per level, named {pos_col}_{aa}.
+#'         NAs and unexpected characters become all-zero rows.
+sparse_encode_position <- function(df, pos_col, alphabet = c(
+  "A","C","D","E","F","G","H","I","K","L","M","N","P","Q","R","S","T","V","W","Y"
+)) {
+  values <- df[[pos_col]]
+  
+  unexpected <- setdiff(na.omit(unique(values)), alphabet)
+  if (length(unexpected) > 0) {
+    warning(
+      "Position '", pos_col, "' contains unexpected values: ",
+      paste(unexpected, collapse = ", "),
+      " — these will be treated as NA (all zeros)."
+    )
+    values[values %in% unexpected] <- NA
+  }
+  
+  map_dfc(alphabet, \(aa) {
+    tibble(!!paste0(pos_col, "_", aa) := as.integer(!is.na(values) & values == aa))
+  })
+}
+
+#' BLOSUM50 encode a single position column
+#'
+#' @param df        A data frame
+#' @param pos_col   Name of the position column (character)
+#' @param blosum    BLOSUM50 matrix (20x20, rownames = amino acids)
+#' @return A tibble with 20 columns named {pos_col}_{aa}, containing the
+#'         BLOSUM50 row vector for each residue. NAs become all-zero rows.
+blosum50_encode_position <- function(df, pos_col, blosum = BLOSUM50) {
+  values <- df[[pos_col]]
+  aa_names <- rownames(blosum)
+  
+  unexpected <- setdiff(na.omit(unique(values)), aa_names)
+  if (length(unexpected) > 0) {
+    warning(
+      "Position '", pos_col, "' contains unexpected values: ",
+      paste(unexpected, collapse = ", "),
+      " — these will be treated as NA (all zeros)."
+    )
+    values[values %in% unexpected] <- NA
+  }
+  
+  # Build index: map each value to a row in the BLOSUM matrix
+  idx <- match(values, aa_names)
+  
+  # Extract rows; NAs get a zero vector
+  encoded <- matrix(0, nrow = length(values), ncol = ncol(blosum))
+  valid <- !is.na(idx)
+  encoded[valid, ] <- blosum[idx[valid], ]
+  
+  colnames(encoded) <- paste0(pos_col, "_", aa_names)
+  as_tibble(encoded)
+}
+
 cat("functions.R loaded successfully.\n")
