@@ -240,13 +240,15 @@ def load_all_components(df_split, feat_cfg):
     """
     csv_components, emb_components = resolve_components(feat_cfg)
 
-    df = df_split.copy()
+    df = df_split
     component_info = {
         "csv_components": [],
         "emb_components": [],
     }
 
     # ── Load CSV components ──
+    new_col_frames = []      # collect DataFrames to concat at the end
+
     for comp in csv_components:
         comp_key = comp["_key"]
         csv_path = comp.get("csv_path")
@@ -254,17 +256,13 @@ def load_all_components(df_split, feat_cfg):
         if csv_path is not None:
             print(f"\n  Loading CSV component: {comp['display_name']}")
             new_cols_df = load_alternate_csv(csv_path, df)
+            new_col_frames.append(new_cols_df)
 
-            for col in new_cols_df.columns:
-                df[col] = new_cols_df[col].values
-            del new_cols_df
-
-            n_new = len([c for c in df.columns if c not in df_split.columns])
             component_info["csv_components"].append({
                 "key": comp_key,
                 "display_name": comp["display_name"],
                 "source": str(csv_path),
-                "n_new_cols": n_new,
+                "n_new_cols": len(new_cols_df.columns),
             })
         else:
             component_info["csv_components"].append({
@@ -272,6 +270,14 @@ def load_all_components(df_split, feat_cfg):
                 "display_name": comp["display_name"],
                 "source": "split_data (built-in)",
             })
+
+    # Merge all new columns at once (avoids DataFrame fragmentation)
+    if new_col_frames:
+        df = pd.concat([df] + new_col_frames, axis=1)
+        total_new = sum(len(f.columns) for f in new_col_frames)
+        print(f"\n  Merged {total_new} new columns → "
+              f"{df.shape[0]} rows x {df.shape[1]} columns")
+        del new_col_frames
 
     # Resolve CSV feature columns (everything numeric, not in exclude set)
     csv_feature_cols = []

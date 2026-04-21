@@ -4,11 +4,12 @@ Post-modelling analysis and visualisation.
 
 Reads the JSON results and pickled models produced by 04_modelling.py,
 generates publication-ready figures and a detailed stats report.
+Each result file gets its own subfolder under the figures directory,
+named by the run tag (model_key + features_key).
 
 Usage:
-    python 05_model_analysis.py --results models/cv_results_rf_20260420_135549.json
-    python 05_model_analysis.py --results models/cv_results_lr_20260420_140717.json
-    python 05_model_analysis.py --results models/cv_results_rf_*.json models/cv_results_lr_*.json
+    python 05_model_analysis.py --results models/cv_results_rf_handcrafted_20260421_*.json
+    python 05_model_analysis.py --results models/cv_results_*.json
 """
 
 import sys
@@ -20,13 +21,10 @@ if SRC_DIR not in sys.path:
 
 import argparse
 import json
-import pickle
 import numpy as np
-import pandas as pd
 import matplotlib
-matplotlib.use("Agg")  # non-interactive backend for server/CI
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 from sklearn.metrics import (
     roc_curve, precision_recall_curve, auc,
     confusion_matrix,
@@ -68,7 +66,7 @@ plt.rcParams.update({
 
 
 # ──────────────────────────────────────────────
-# 1. LOADERS
+# 1. HELPERS
 # ──────────────────────────────────────────────
 
 def load_results(results_path):
@@ -81,17 +79,32 @@ def get_model_color(model_key):
     return COLORS.get(model_key, COLORS["default"])
 
 
+def get_run_tag(results):
+    """
+    Build a unique run tag for output folder naming.
+    Uses model_key + features_key from the results.
+    """
+    model_key = results.get("model_key", "unknown")
+    features_key = results.get("features_key", "unknown")
+    return f"{model_key}_{features_key}"
+
+
+def get_display_title(results):
+    """Build a human-readable title string for plots."""
+    model_type = results.get("model_type", results.get("model_key", "Model"))
+    feat_display = results.get("features_display", results.get("features_key", ""))
+    return f"{model_type} — {feat_display}"
+
+
 # ──────────────────────────────────────────────
 # 2. ROC CURVE (per-fold + mean)
 # ──────────────────────────────────────────────
 
 def plot_roc_curves(results, out_dir):
-    """
-    Plot per-fold ROC curves, the mean ROC, and the chance line.
-    """
     model_key = results["model_key"]
-    display = results["model_type"]
+    display = get_display_title(results)
     fold_preds = results["fold_predictions"]
+    run_tag = get_run_tag(results)
 
     fig, ax = plt.subplots(figsize=(7, 6))
 
@@ -115,7 +128,6 @@ def plot_roc_curves(results, out_dir):
         ax.plot(fpr, tpr, color=FOLD_COLORS[fold_id], alpha=0.4, lw=1,
                 label=f"Fold {fold_id} (AUC = {fold_auc:.3f})")
 
-    # Mean ROC
     mean_tpr = np.mean(tprs, axis=0)
     mean_tpr[-1] = 1.0
     mean_auc = np.mean(aucs)
@@ -124,7 +136,6 @@ def plot_roc_curves(results, out_dir):
     ax.plot(mean_fpr, mean_tpr, color=get_model_color(model_key), lw=2.5,
             label=f"Mean ROC (AUC = {mean_auc:.3f} ± {std_auc:.3f})")
 
-    # Confidence band
     std_tpr = np.std(tprs, axis=0)
     ax.fill_between(mean_fpr,
                      np.clip(mean_tpr - std_tpr, 0, 1),
@@ -132,19 +143,18 @@ def plot_roc_curves(results, out_dir):
                      color=get_model_color(model_key), alpha=0.15,
                      label="± 1 std")
 
-    # Chance line
     ax.plot([0, 1], [0, 1], "k--", lw=1, alpha=0.5, label="Chance")
 
     ax.set_xlabel("False Positive Rate")
     ax.set_ylabel("True Positive Rate")
-    ax.set_title(f"ROC Curve — {display} ({N_CV_FOLDS}-fold CV)")
+    ax.set_title(f"ROC Curve — {display}")
     ax.legend(loc="lower right", framealpha=0.9)
     ax.set_xlim([-0.02, 1.02])
     ax.set_ylim([-0.02, 1.02])
     ax.set_aspect("equal")
     ax.grid(True, alpha=0.3)
 
-    path = out_dir / f"roc_curve_{model_key}.png"
+    path = out_dir / f"roc_curve_{run_tag}.png"
     fig.savefig(path)
     plt.close(fig)
     print(f"  Saved: {path}")
@@ -157,12 +167,10 @@ def plot_roc_curves(results, out_dir):
 # ──────────────────────────────────────────────
 
 def plot_pr_curves(results, out_dir):
-    """
-    Plot per-fold Precision-Recall curves and the mean PR.
-    """
     model_key = results["model_key"]
-    display = results["model_type"]
+    display = get_display_title(results)
     fold_preds = results["fold_predictions"]
+    run_tag = get_run_tag(results)
 
     fig, ax = plt.subplots(figsize=(7, 6))
 
@@ -170,7 +178,6 @@ def plot_pr_curves(results, out_dir):
     aucs = []
     mean_recall = np.linspace(0, 1, 200)
 
-    # Baseline = positive class prevalence
     all_y = []
     for data in fold_preds.values():
         all_y.extend(data["y_true"])
@@ -185,14 +192,12 @@ def plot_pr_curves(results, out_dir):
         pr_auc = auc(recall, precision)
         aucs.append(pr_auc)
 
-        # Interpolate (precision-recall is non-monotonic, flip for interp)
         interp_prec = np.interp(mean_recall, recall[::-1], precision[::-1])
         precisions_interp.append(interp_prec)
 
         ax.plot(recall, precision, color=FOLD_COLORS[fold_id], alpha=0.4, lw=1,
                 label=f"Fold {fold_id} (AUC = {pr_auc:.3f})")
 
-    # Mean PR
     mean_prec = np.mean(precisions_interp, axis=0)
     mean_auc = np.mean(aucs)
     std_auc = np.std(aucs)
@@ -207,19 +212,18 @@ def plot_pr_curves(results, out_dir):
                      color=get_model_color(model_key), alpha=0.15,
                      label="± 1 std")
 
-    # Baseline
     ax.axhline(y=prevalence, color="k", ls="--", lw=1, alpha=0.5,
                label=f"Baseline (prevalence = {prevalence:.3f})")
 
     ax.set_xlabel("Recall")
     ax.set_ylabel("Precision")
-    ax.set_title(f"Precision-Recall Curve — {display} ({N_CV_FOLDS}-fold CV)")
+    ax.set_title(f"Precision-Recall Curve — {display}")
     ax.legend(loc="upper right", framealpha=0.9)
     ax.set_xlim([-0.02, 1.02])
     ax.set_ylim([0, 1.05])
     ax.grid(True, alpha=0.3)
 
-    path = out_dir / f"pr_curve_{model_key}.png"
+    path = out_dir / f"pr_curve_{run_tag}.png"
     fig.savefig(path)
     plt.close(fig)
     print(f"  Saved: {path}")
@@ -232,17 +236,12 @@ def plot_pr_curves(results, out_dir):
 # ──────────────────────────────────────────────
 
 def plot_confusion_matrices(results, out_dir):
-    """
-    Plot two confusion matrices side by side:
-      - Aggregated CV (all fold predictions combined)
-      - Held-out set (from held-out metrics)
-    """
     model_key = results["model_key"]
-    display = results["model_type"]
+    display = get_display_title(results)
     fold_preds = results["fold_predictions"]
     ho_metrics = results["held_out_metrics"]
+    run_tag = get_run_tag(results)
 
-    # Aggregate CV predictions
     all_y_true = []
     all_y_prob = []
     for data in fold_preds.values():
@@ -253,39 +252,26 @@ def plot_confusion_matrices(results, out_dir):
 
     cv_cm = confusion_matrix(all_y_true, all_y_pred)
 
-    # Held-out CM from metrics
-    sens = ho_metrics["sensitivity"]
-    spec = ho_metrics["specificity"]
-    ppv = ho_metrics["ppv"]
-
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     labels = ["Negative", "Positive"]
 
-    for ax, cm, title in [
-        (axes[0], cv_cm, f"CV Aggregated ({len(all_y_true)} samples)"),
-    ]:
-        _plot_single_cm(ax, cm, labels, title, get_model_color(model_key))
+    _plot_single_cm(axes[0], cv_cm, labels,
+                    f"CV Aggregated ({len(all_y_true)} samples)",
+                    get_model_color(model_key))
 
-    # For held-out, we only have metrics, not raw predictions
-    # Reconstruct CM from sensitivity/specificity if possible
-    # But we also have fold predictions — check if held-out preds are saved
-    # They aren't in the current results, so use the aggregated CV only
-    # and put a metrics summary in the second panel
-    ax2 = axes[1]
-    _plot_held_out_metrics_panel(ax2, ho_metrics, display)
+    _plot_held_out_metrics_panel(axes[1], ho_metrics, display)
 
     fig.suptitle(f"Confusion Matrix & Held-Out Metrics — {display}",
                  fontsize=13, fontweight="bold", y=1.02)
     fig.tight_layout()
 
-    path = out_dir / f"confusion_matrix_{model_key}.png"
+    path = out_dir / f"confusion_matrix_{run_tag}.png"
     fig.savefig(path)
     plt.close(fig)
     print(f"  Saved: {path}")
 
 
 def _plot_single_cm(ax, cm, labels, title, color):
-    """Plot a single annotated confusion matrix heatmap."""
     im = ax.imshow(cm, interpolation="nearest", cmap="Blues")
     ax.figure.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
 
@@ -295,7 +281,6 @@ def _plot_single_cm(ax, cm, labels, title, color):
            ylabel="True label", xlabel="Predicted label",
            title=title)
 
-    # Annotate cells
     thresh = cm.max() / 2
     for i in range(n_classes):
         for j in range(n_classes):
@@ -307,7 +292,6 @@ def _plot_single_cm(ax, cm, labels, title, color):
 
 
 def _plot_held_out_metrics_panel(ax, ho_metrics, display):
-    """Render held-out metrics as a clean text panel."""
     ax.axis("off")
     ax.set_title("Held-Out Set Metrics", fontsize=12)
 
@@ -328,7 +312,6 @@ def _plot_held_out_metrics_panel(ax, ho_metrics, display):
     for i, (label, key) in enumerate(metrics_order):
         y = y_start - i * y_step
         val = ho_metrics[key]
-        # Color code: green if good, red if poor
         if key in ("auc_roc", "auc_pr"):
             fc = "#27ae60" if val > 0.7 else "#e67e22" if val > 0.5 else "#e74c3c"
         elif key == "mcc":
@@ -347,13 +330,10 @@ def _plot_held_out_metrics_panel(ax, ho_metrics, display):
 # ──────────────────────────────────────────────
 
 def plot_fold_metrics_bars(results, out_dir):
-    """
-    Grouped bar chart showing each metric across folds,
-    with mean ± std overlay.
-    """
     model_key = results["model_key"]
-    display = results["model_type"]
+    display = get_display_title(results)
     fold_metrics = results["fold_metrics"]
+    run_tag = get_run_tag(results)
 
     metrics_to_plot = ["auc_roc", "auc_pr", "f1", "mcc", "sensitivity", "specificity"]
     n_folds = len(fold_metrics)
@@ -363,14 +343,14 @@ def plot_fold_metrics_bars(results, out_dir):
 
     x = np.arange(n_metrics)
     width = 0.12
-    offsets = np.linspace(-(n_folds - 1) / 2 * width, (n_folds - 1) / 2 * width, n_folds)
+    offsets = np.linspace(-(n_folds - 1) / 2 * width,
+                          (n_folds - 1) / 2 * width, n_folds)
 
     for fold_id, fold_m in enumerate(fold_metrics):
         vals = [fold_m[m] for m in metrics_to_plot]
         ax.bar(x + offsets[fold_id], vals, width, color=FOLD_COLORS[fold_id],
                alpha=0.7, label=f"Fold {fold_id}", edgecolor="white", lw=0.5)
 
-    # Mean + std overlay
     for i, m in enumerate(metrics_to_plot):
         vals = [fm[m] for fm in fold_metrics]
         mean_val = np.mean(vals)
@@ -387,7 +367,7 @@ def plot_fold_metrics_bars(results, out_dir):
     ax.set_ylim([0, 1.05])
     ax.grid(True, axis="y", alpha=0.3)
 
-    path = out_dir / f"fold_metrics_{model_key}.png"
+    path = out_dir / f"fold_metrics_{run_tag}.png"
     fig.savefig(path)
     plt.close(fig)
     print(f"  Saved: {path}")
@@ -398,21 +378,18 @@ def plot_fold_metrics_bars(results, out_dir):
 # ──────────────────────────────────────────────
 
 def plot_feature_weights(results, out_dir, top_n=25):
-    """
-    Horizontal bar chart of top features by importance/coefficient.
-    """
     model_key = results["model_key"]
-    display = results["model_type"]
+    display = get_display_title(results)
+    run_tag = get_run_tag(results)
 
     weights = results.get("avg_feature_weights")
     if not weights:
         print("  (no feature weights to plot)")
         return
 
-    # Sort by absolute value
     sorted_feats = sorted(weights.items(), key=lambda x: abs(x[1]), reverse=True)
     sorted_feats = sorted_feats[:top_n]
-    sorted_feats.reverse()  # bottom-to-top for horizontal bar
+    sorted_feats.reverse()
 
     names = [f[0] for f in sorted_feats]
     vals = [f[1] for f in sorted_feats]
@@ -431,7 +408,7 @@ def plot_feature_weights(results, out_dir, top_n=25):
     ax.axvline(x=0, color="black", lw=0.8)
     ax.grid(True, axis="x", alpha=0.3)
 
-    path = out_dir / f"feature_weights_{model_key}.png"
+    path = out_dir / f"feature_weights_{run_tag}.png"
     fig.savefig(path)
     plt.close(fig)
     print(f"  Saved: {path}")
@@ -442,13 +419,10 @@ def plot_feature_weights(results, out_dir, top_n=25):
 # ──────────────────────────────────────────────
 
 def plot_score_distributions(results, out_dir):
-    """
-    Histogram of predicted probabilities, split by true label.
-    Aggregated across all CV folds.
-    """
     model_key = results["model_key"]
-    display = results["model_type"]
+    display = get_display_title(results)
     fold_preds = results["fold_predictions"]
+    run_tag = get_run_tag(results)
 
     all_y_true = []
     all_y_prob = []
@@ -462,11 +436,14 @@ def plot_score_distributions(results, out_dir):
 
     bins = np.linspace(0, 1, 51)
     ax.hist(all_y_prob[all_y_true == 0], bins=bins, alpha=0.6,
-            color="#3498db", label="Negative", density=True, edgecolor="white", lw=0.3)
+            color="#3498db", label="Negative", density=True,
+            edgecolor="white", lw=0.3)
     ax.hist(all_y_prob[all_y_true == 1], bins=bins, alpha=0.6,
-            color="#e74c3c", label="Positive", density=True, edgecolor="white", lw=0.3)
+            color="#e74c3c", label="Positive", density=True,
+            edgecolor="white", lw=0.3)
 
-    ax.axvline(x=0.5, color="black", ls="--", lw=1, alpha=0.7, label="Threshold (0.5)")
+    ax.axvline(x=0.5, color="black", ls="--", lw=1, alpha=0.7,
+               label="Threshold (0.5)")
 
     ax.set_xlabel("Predicted Probability")
     ax.set_ylabel("Density")
@@ -474,7 +451,7 @@ def plot_score_distributions(results, out_dir):
     ax.legend(framealpha=0.9)
     ax.grid(True, alpha=0.3)
 
-    path = out_dir / f"score_distribution_{model_key}.png"
+    path = out_dir / f"score_distribution_{run_tag}.png"
     fig.savefig(path)
     plt.close(fig)
     print(f"  Saved: {path}")
@@ -485,12 +462,10 @@ def plot_score_distributions(results, out_dir):
 # ──────────────────────────────────────────────
 
 def plot_calibration(results, out_dir, n_bins=10):
-    """
-    Reliability diagram: predicted probability vs observed frequency.
-    """
     model_key = results["model_key"]
-    display = results["model_type"]
+    display = get_display_title(results)
     fold_preds = results["fold_predictions"]
+    run_tag = get_run_tag(results)
 
     all_y_true = []
     all_y_prob = []
@@ -509,7 +484,8 @@ def plot_calibration(results, out_dir, n_bins=10):
 
     ax1.plot(prob_pred, prob_true, "s-", color=get_model_color(model_key),
              lw=2, markersize=6, label=display)
-    ax1.plot([0, 1], [0, 1], "k--", lw=1, alpha=0.5, label="Perfectly calibrated")
+    ax1.plot([0, 1], [0, 1], "k--", lw=1, alpha=0.5,
+             label="Perfectly calibrated")
     ax1.set_xlabel("Mean predicted probability")
     ax1.set_ylabel("Observed frequency")
     ax1.set_title(f"Calibration Plot — {display}")
@@ -519,7 +495,6 @@ def plot_calibration(results, out_dir, n_bins=10):
     ax1.grid(True, alpha=0.3)
     ax1.set_aspect("equal")
 
-    # Histogram of predictions below
     ax2.hist(all_y_prob, bins=50, color=get_model_color(model_key),
              alpha=0.6, edgecolor="white", lw=0.3)
     ax2.set_xlabel("Predicted probability")
@@ -527,7 +502,7 @@ def plot_calibration(results, out_dir, n_bins=10):
     ax2.grid(True, alpha=0.3)
 
     fig.tight_layout()
-    path = out_dir / f"calibration_{model_key}.png"
+    path = out_dir / f"calibration_{run_tag}.png"
     fig.savefig(path)
     plt.close(fig)
     print(f"  Saved: {path}")
@@ -538,29 +513,30 @@ def plot_calibration(results, out_dir, n_bins=10):
 # ──────────────────────────────────────────────
 
 def write_summary_report(results, out_dir):
-    """Write a plain-text stats summary alongside the figures."""
     model_key = results["model_key"]
-    display = results["model_type"]
+    display = get_display_title(results)
     cv_summary = results["cv_summary"]
     ho_metrics = results["held_out_metrics"]
     fold_metrics = results["fold_metrics"]
+    run_tag = get_run_tag(results)
 
-    path = out_dir / f"summary_report_{model_key}.txt"
+    path = out_dir / f"summary_report_{run_tag}.txt"
 
     lines = []
     lines.append("=" * 70)
     lines.append(f"  MODEL ANALYSIS REPORT — {display.upper()}")
     lines.append("=" * 70)
-    lines.append(f"  Generated:    {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    lines.append(f"  Model key:    {model_key}")
-    lines.append(f"  Model class:  {results['model_class']}")
-    lines.append(f"  Features:     {results['config']['n_features']}")
-    lines.append(f"  CV folds:     {len(fold_metrics)}")
-    lines.append(f"  Best fold:    {results['best_fold_id']} "
+    lines.append(f"  Generated:      {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    lines.append(f"  Model key:      {model_key}")
+    lines.append(f"  Model class:    {results['model_class']}")
+    lines.append(f"  Feature set:    {results.get('features_key', 'N/A')}")
+    lines.append(f"  Components:     {results.get('components', 'N/A')}")
+    lines.append(f"  Features:       {results['config']['n_features']}")
+    lines.append(f"  CV folds:       {len(fold_metrics)}")
+    lines.append(f"  Best fold:      {results['best_fold_id']} "
                  f"(AUC = {results['best_fold_auc']:.4f})")
     lines.append("")
 
-    # CV summary
     lines.append("-" * 70)
     lines.append("CROSS-VALIDATION RESULTS (mean ± std)")
     lines.append("-" * 70)
@@ -570,8 +546,6 @@ def write_summary_report(results, out_dir):
         lines.append(f"  {m:<15} {stats['mean']:>10.4f} {stats['std']:>10.4f}")
 
     lines.append("")
-
-    # Held-out
     lines.append("-" * 70)
     lines.append("HELD-OUT SET RESULTS")
     lines.append("-" * 70)
@@ -581,8 +555,6 @@ def write_summary_report(results, out_dir):
         lines.append(f"  {m:<15} {v:>10.4f}")
 
     lines.append("")
-
-    # CV vs held-out delta
     lines.append("-" * 70)
     lines.append("CV vs HELD-OUT DELTA")
     lines.append("-" * 70)
@@ -594,8 +566,6 @@ def write_summary_report(results, out_dir):
         lines.append(f"  {m:<15} {stats['mean']:>10.4f} {ho_val:>10.4f} {delta:>+10.4f}")
 
     lines.append("")
-
-    # Per-fold table
     lines.append("-" * 70)
     lines.append("PER-FOLD METRICS")
     lines.append("-" * 70)
@@ -608,8 +578,6 @@ def write_summary_report(results, out_dir):
         lines.append(row)
 
     lines.append("")
-
-    # Hyperparameters
     lines.append("-" * 70)
     lines.append("HYPERPARAMETERS")
     lines.append("-" * 70)
@@ -629,7 +597,7 @@ def write_summary_report(results, out_dir):
 
 
 # ──────────────────────────────────────────────
-# 10. MULTI-MODEL COMPARISON (if multiple results)
+# 10. MULTI-MODEL COMPARISON
 # ──────────────────────────────────────────────
 
 def plot_model_comparison(all_results, out_dir):
@@ -644,13 +612,14 @@ def plot_model_comparison(all_results, out_dir):
     n_models = len(all_results)
     n_metrics = len(metrics_to_compare)
 
-    fig, ax = plt.subplots(figsize=(10, 5))
+    fig, ax = plt.subplots(figsize=(max(10, n_models * 2.5), 5))
     x = np.arange(n_metrics)
     width = 0.7 / n_models
 
     for i, res in enumerate(all_results):
         model_key = res["model_key"]
-        display = res["model_type"]
+        run_tag = get_run_tag(res)
+        display = get_display_title(res)
         cv_summary = res["cv_summary"]
 
         means = [cv_summary[m]["mean"] for m in metrics_to_compare]
@@ -660,18 +629,17 @@ def plot_model_comparison(all_results, out_dir):
         ax.bar(x + offset, means, width, yerr=stds,
                color=get_model_color(model_key), alpha=0.8,
                capsize=3, edgecolor="white", lw=0.5,
-               label=f"{display} (CV)")
+               label=f"{run_tag} (CV)")
 
-        # Held-out as markers
         ho_vals = [res["held_out_metrics"][m] for m in metrics_to_compare]
         ax.scatter(x + offset, ho_vals, marker="D", s=40, color="black",
-                   zorder=5, label=f"{display} (held-out)" if i == 0 else "")
+                   zorder=5)
 
     ax.set_xticks(x)
     ax.set_xticklabels([m.replace("_", " ").upper() for m in metrics_to_compare])
     ax.set_ylabel("Score")
-    ax.set_title("Model Comparison — CV Mean (bars) vs Held-Out (diamonds)")
-    ax.legend(framealpha=0.9)
+    ax.set_title("Model Comparison — CV Mean (bars) vs Held-Out (◆)")
+    ax.legend(framealpha=0.9, fontsize=8)
     ax.set_ylim([0, 1.05])
     ax.grid(True, axis="y", alpha=0.3)
 
@@ -687,7 +655,7 @@ def plot_model_comparison(all_results, out_dir):
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="04_model_analysis: generate figures and reports from model results",
+        description="05_model_analysis: generate figures and reports from model results",
     )
     parser.add_argument(
         "--results", nargs="+", required=True,
@@ -700,13 +668,11 @@ if __name__ == "__main__":
 
     args = parse_args()
 
-    os.makedirs(FIGURES_DIR, exist_ok=True)
-
     print("=" * 70)
-    print("  04_MODEL_ANALYSIS — POST-MODELLING FIGURES & STATS")
+    print("  05_MODEL_ANALYSIS — POST-MODELLING FIGURES & STATS")
     print("=" * 70)
-    print(f"  Output dir: {FIGURES_DIR}")
-    print(f"  Results files: {len(args.results)}")
+    print(f"  Base output dir:  {FIGURES_DIR}")
+    print(f"  Results files:    {len(args.results)}")
 
     all_results = []
 
@@ -719,33 +685,46 @@ if __name__ == "__main__":
         results = load_results(results_path)
         all_results.append(results)
 
-        model_key = results["model_key"]
-        display = results["model_type"]
+        run_tag = get_run_tag(results)
+        display = get_display_title(results)
+
+        # Create per-run output directory
+        run_out_dir = FIGURES_DIR / run_tag
+        os.makedirs(run_out_dir, exist_ok=True)
 
         print(f"\n{'=' * 70}")
-        print(f"  Analysing: {display} ({model_key})")
-        print(f"  Source: {results_path}")
+        print(f"  Analysing: {display}")
+        print(f"  Run tag:   {run_tag}")
+        print(f"  Source:    {results_path}")
+        print(f"  Output:    {run_out_dir}")
         print(f"{'=' * 70}")
 
-        # Generate all plots for this model
-        plot_roc_curves(results, FIGURES_DIR)
-        plot_pr_curves(results, FIGURES_DIR)
-        plot_confusion_matrices(results, FIGURES_DIR)
-        plot_fold_metrics_bars(results, FIGURES_DIR)
-        plot_feature_weights(results, FIGURES_DIR)
-        plot_score_distributions(results, FIGURES_DIR)
-        plot_calibration(results, FIGURES_DIR)
-        write_summary_report(results, FIGURES_DIR)
+        # Generate all plots into the per-run folder
+        plot_roc_curves(results, run_out_dir)
+        plot_pr_curves(results, run_out_dir)
+        plot_confusion_matrices(results, run_out_dir)
+        plot_fold_metrics_bars(results, run_out_dir)
+        plot_feature_weights(results, run_out_dir)
+        plot_score_distributions(results, run_out_dir)
+        plot_calibration(results, run_out_dir)
+        write_summary_report(results, run_out_dir)
 
-    # Multi-model comparison
+    # Multi-model comparison goes in the base figures dir
     if len(all_results) > 1:
         print(f"\n{'=' * 70}")
         print(f"  Generating multi-model comparison ({len(all_results)} models)")
         print(f"{'=' * 70}")
+        os.makedirs(FIGURES_DIR, exist_ok=True)
         plot_model_comparison(all_results, FIGURES_DIR)
 
     # Footer
+    run_tags = [get_run_tag(r) for r in all_results]
     print(f"\n{'=' * 70}")
     print(f"  COMPLETE — {len(all_results)} model(s) analysed")
-    print(f"  Figures saved to: {FIGURES_DIR}")
+    print(f"  Run tags: {', '.join(run_tags)}")
+    print(f"  Figures saved under: {FIGURES_DIR}/")
+    for tag in run_tags:
+        print(f"    └── {tag}/")
+    if len(all_results) > 1:
+        print(f"    └── model_comparison.png")
     print(f"{'=' * 70}")
