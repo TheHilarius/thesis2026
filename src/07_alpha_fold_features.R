@@ -148,9 +148,9 @@ alphafold_features <- df_af_clean |>
     sd_plddt_cflank  = map_dbl(plddt_vec_cflank,  ~ sd(.x, na.rm = TRUE)),
     
     # Fraction of residues with pLDDT < 70 (disordered proxy)
-    frac_disordered_peptide = map_dbl(plddt_vec_peptide, ~ mean(.x < 70, na.rm = TRUE)),
-    frac_disordered_nflank  = map_dbl(plddt_vec_nflank,  ~ mean(.x < 70, na.rm = TRUE)),
-    frac_disordered_cflank  = map_dbl(plddt_vec_cflank,  ~ mean(.x < 70, na.rm = TRUE)),
+    # frac_disordered_peptide = map_dbl(plddt_vec_peptide, ~ mean(.x < 70, na.rm = TRUE)),
+    # frac_disordered_nflank  = map_dbl(plddt_vec_nflank,  ~ mean(.x < 70, na.rm = TRUE)),
+    # frac_disordered_cflank  = map_dbl(plddt_vec_cflank,  ~ mean(.x < 70, na.rm = TRUE)),
     
     # Min pLDDT in peptide (weakest-confidence residue)
     min_plddt_peptide = map_dbl(plddt_vec_peptide, ~ min(.x, na.rm = TRUE))
@@ -192,15 +192,15 @@ alphafold_scalar <- alphafold_features |>
     mean_plddt_peptide,
     #sd_plddt_peptide,
     #min_plddt_peptide,
-    frac_disordered_peptide,
+    #frac_disordered_peptide,
     # pLDDT features: N-flank
     mean_plddt_nflank,
     #sd_plddt_nflank,
-    frac_disordered_nflank,
+    #frac_disordered_nflank,
     # pLDDT features: C-flank
     mean_plddt_cflank,
     #sd_plddt_cflank,
-    frac_disordered_cflank
+    #frac_disordered_cflank
   )
 
 df_all <- df_raw |>
