@@ -22,6 +22,55 @@ RAW_DATA_PATH = DATA_DIR / "df_all.csv"
 SPLIT_DATA_PATH = DATA_DIR / "df_all_with_folds.csv"
 
 # ──────────────────────────────────────────────
+# EMBEDDING PATHS & SCHEMAS
+# ──────────────────────────────────────────────
+EMBEDDING_DIR = PROJECT_ROOT / "data" / "processed" / "embeddings"
+PREPARED_EMBEDDING_DIR = DATA_DIR / "embeddings_prepared"
+
+# Each source defines its HDF5 layout so the prepare script
+# knows exactly which datasets to read and how to align.
+EMBEDDING_SOURCES = {
+    "esmc": {
+        "display_name": "ESM-C (600M)",
+        "raw_path": EMBEDDING_DIR / "esmc_protein_embeddings.h5",
+        "prepared_path": PREPARED_EMBEDDING_DIR / "esmc_prepared.h5",
+        "emb_dim": 1152,
+        # Dataset names for the three regions inside the HDF5
+        "region_map": {
+            "peptide": "peptide_emb",
+            "n_flank": "n_flank_emb",
+            "c_flank": "c_flank_emb",
+        },
+        # Column names for alignment keys
+        "peptide_id_col": "peptide_seqs",
+        "uniprot_id_col": "uniprot_ids",
+        "has_row_indices": True,
+        "has_start_end": True,
+    },
+    "esmif": {
+        "display_name": "ESM-IF1",
+        "raw_path": EMBEDDING_DIR / "esmif_structure_embeddings.h5",
+        "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_prepared.h5",
+        "emb_dim": 512,
+        "region_map": {
+            "peptide": "peptide_if_struct",
+            "n_flank": "n_flank_if_struct",
+            "c_flank": "c_flank_if_struct",
+        },
+        "peptide_id_col": "peptide_ids",
+        "uniprot_id_col": "uniprot_ids",
+        "has_row_indices": False,
+        "has_start_end": False,
+    },
+}
+
+# Canonical region keys (used in prepared HDF5 — always these names)
+EMBEDDING_REGIONS = ["peptide_emb", "n_flank_emb", "c_flank_emb"]
+
+# PCA reduction settings
+PCA_COMPONENTS_PER_REGION = 50
+
+# ──────────────────────────────────────────────
 # CROSS-VALIDATION SETTINGS
 # ──────────────────────────────────────────────
 N_CV_FOLDS = 5
@@ -74,22 +123,36 @@ _EXCLUDE_COLS = set(METADATA_COLS) | set(POSITION_AA_COLS)
 HAMMING_CUTOFF = 1
 
 # ──────────────────────────────────────────────
+# FEATURE SET REGISTRY
+# ──────────────────────────────────────────────
+FEATURE_SETS = {
+    "handcrafted": {
+        "display_name": "Hand-crafted features",
+        "source": "csv",
+        "needs_pca": False,
+    },
+    "esmc": {
+        "display_name": "ESM-C embeddings (PCA-reduced)",
+        "source": "embedding",
+        "embedding_key": "esmc",
+        "needs_pca": True,
+        "pca_components": PCA_COMPONENTS_PER_REGION,
+    },
+    "esmif": {
+        "display_name": "ESM-IF embeddings (PCA-reduced)",
+        "source": "embedding",
+        "embedding_key": "esmif",
+        "needs_pca": True,
+        "pca_components": PCA_COMPONENTS_PER_REGION,
+    },
+}
+
+DEFAULT_FEATURE_SET = "handcrafted"
+
+# ──────────────────────────────────────────────
 # MODEL REGISTRY
 # ──────────────────────────────────────────────
-# Each entry defines everything 03_modelling.py needs to
-# instantiate, train, and interpret a model.
-#
-#   model_class:   fully qualified sklearn class name (string)
-#   params:        dict passed as **kwargs to the constructor
-#   needs_scaling: whether features must be standardised before training
-#   coef_attr:     attribute name for feature weights (None if N/A)
-#
-# To add a new model: add an entry here, then run
-#   python 03_modelling.py --model <key>
-
 MODEL_REGISTRY = {
-
-    # ── Random Forest (no-regularisation baseline) ──
     "rf": {
         "display_name": "Random Forest",
         "model_class": "sklearn.ensemble.RandomForestClassifier",
@@ -105,15 +168,13 @@ MODEL_REGISTRY = {
             "verbose": 0,
         },
         "needs_scaling": False,
-        "coef_attr": "feature_importances_",   # Gini importance
+        "coef_attr": "feature_importances_",
     },
-
-    # ── Logistic Regression (no-regularisation baseline) ──
     "lr": {
         "display_name": "Logistic Regression",
         "model_class": "sklearn.linear_model.LogisticRegression",
         "params": {
-            "penalty": None,           # no regularisation
+            "penalty": None,
             "solver": "lbfgs",
             "max_iter": 5000,
             "class_weight": None,
@@ -121,11 +182,10 @@ MODEL_REGISTRY = {
             "verbose": 0,
         },
         "needs_scaling": True,
-        "coef_attr": "coef_",          # weight vector (shape 1×p)
+        "coef_attr": "coef_",
     },
 }
 
-# Convenience: default model key when --model is not supplied
 DEFAULT_MODEL = "rf"
 
 # ──────────────────────────────────────────────
@@ -133,29 +193,31 @@ DEFAULT_MODEL = "rf"
 # ──────────────────────────────────────────────
 
 def get_feature_cols(df_columns):
-    """
-    Return list of feature columns = all columns minus metadata and
-    unencoded positional AA columns.
-    """
     return [c for c in df_columns if c not in _EXCLUDE_COLS]
 
 
 def get_model_config(model_key):
-    """
-    Look up a model configuration by its short key (e.g. 'rf', 'lr').
-    Raises KeyError with a helpful message if the key is unknown.
-    """
     if model_key not in MODEL_REGISTRY:
         valid = ", ".join(sorted(MODEL_REGISTRY.keys()))
-        raise KeyError(
-            f"Unknown model key '{model_key}'. "
-            f"Valid keys: {valid}"
-        )
+        raise KeyError(f"Unknown model key '{model_key}'. Valid keys: {valid}")
     return MODEL_REGISTRY[model_key]
 
 
+def get_feature_set_config(features_key):
+    if features_key not in FEATURE_SETS:
+        valid = ", ".join(sorted(FEATURE_SETS.keys()))
+        raise KeyError(f"Unknown feature set '{features_key}'. Valid keys: {valid}")
+    return FEATURE_SETS[features_key]
+
+
+def get_embedding_source(embedding_key):
+    if embedding_key not in EMBEDDING_SOURCES:
+        valid = ", ".join(sorted(EMBEDDING_SOURCES.keys()))
+        raise KeyError(f"Unknown embedding key '{embedding_key}'. Valid keys: {valid}")
+    return EMBEDDING_SOURCES[embedding_key]
+
+
 def validate_config():
-    """Sanity-check the configuration."""
     assert N_CV_FOLDS >= 2, f"Need at least 2 CV folds, got {N_CV_FOLDS}"
     assert HELD_OUT_INDEX == N_CV_FOLDS, "HELD_OUT_INDEX must equal N_CV_FOLDS"
     assert HAMMING_CUTOFF >= 0, "HAMMING_CUTOFF must be non-negative"
@@ -166,8 +228,10 @@ def validate_config():
         print(f"[OK] Data file found: {RAW_DATA_PATH}")
 
     print(f"[OK] Config validated: {N_CV_FOLDS}-fold CV + 1 held-out = {N_BUCKETS} buckets")
-    print(f"     Project root: {PROJECT_ROOT}")
-    print(f"     Data dir:     {DATA_DIR}")
-    print(f"     Log dir:      {LOG_DIR}")
-    print(f"     Model dir:    {MODEL_DIR}")
-    print(f"     Models registered: {', '.join(sorted(MODEL_REGISTRY.keys()))}")
+    print(f"     Project root:  {PROJECT_ROOT}")
+    print(f"     Data dir:      {DATA_DIR}")
+    print(f"     Embedding dir: {EMBEDDING_DIR}")
+    print(f"     Log dir:       {LOG_DIR}")
+    print(f"     Model dir:     {MODEL_DIR}")
+    print(f"     Models:        {', '.join(sorted(MODEL_REGISTRY.keys()))}")
+    print(f"     Feature sets:  {', '.join(sorted(FEATURE_SETS.keys()))}")
