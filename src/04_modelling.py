@@ -339,7 +339,7 @@ def impute_nan(X_train, X_test, feature_cols, fold_id):
     for name, arr in [("X_train", X_train), ("X_test", X_test)]:
         n_nan = np.isnan(arr).sum()
         if n_nan > 0:
-            print(f"    WARNING: {name}: {n_nan} NaN values")
+            print(f"    WARNING: {name}: {n_nan} NaN values replaced with medians")
 
     col_medians = np.nanmedian(X_train, axis=0)
     col_medians = np.where(np.isnan(col_medians), 0.0, col_medians)
