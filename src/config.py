@@ -21,27 +21,27 @@ FIGURES_DIR = PROJECT_ROOT / "results" / "figures" / "models"
 RAW_DATA_PATH = DATA_DIR / "df_all.csv"
 SPLIT_DATA_PATH = DATA_DIR / "df_all_with_folds.csv"
 
+# Alternate CSVs with encoded positional AA columns
+SPARSE_DATA_PATH = DATA_DIR / "df_all_sparse.csv"
+BLOSUM_DATA_PATH = DATA_DIR / "df_all_blosum50.csv"
+
 # ──────────────────────────────────────────────
 # EMBEDDING PATHS & SCHEMAS
 # ──────────────────────────────────────────────
 EMBEDDING_DIR = PROJECT_ROOT / "data" / "processed" / "embeddings"
 PREPARED_EMBEDDING_DIR = DATA_DIR / "embeddings_prepared"
 
-# Each source defines its HDF5 layout so the prepare script
-# knows exactly which datasets to read and how to align.
 EMBEDDING_SOURCES = {
     "esmc": {
         "display_name": "ESM-C (600M)",
         "raw_path": EMBEDDING_DIR / "esmc_protein_embeddings.h5",
         "prepared_path": PREPARED_EMBEDDING_DIR / "esmc_prepared.h5",
         "emb_dim": 1152,
-        # Dataset names for the three regions inside the HDF5
         "region_map": {
             "peptide": "peptide_emb",
             "n_flank": "n_flank_emb",
             "c_flank": "c_flank_emb",
         },
-        # Column names for alignment keys
         "peptide_id_col": "peptide_seqs",
         "uniprot_id_col": "uniprot_ids",
         "has_row_indices": True,
@@ -64,10 +64,8 @@ EMBEDDING_SOURCES = {
     },
 }
 
-# Canonical region keys (used in prepared HDF5 — always these names)
 EMBEDDING_REGIONS = ["peptide_emb", "n_flank_emb", "c_flank_emb"]
 
-# PCA reduction settings
 PCA_COMPONENTS_PER_REGION = 50
 
 # ──────────────────────────────────────────────
@@ -115,6 +113,8 @@ POSITION_AA_COLS = [
     "C1", "C2", "C3", "C4",
 ]
 
+AMINO_ACID_ALPHABET = list("ACDEFGHIKLMNPQRSTVWY")
+
 _EXCLUDE_COLS = set(METADATA_COLS) | set(POSITION_AA_COLS)
 
 # ──────────────────────────────────────────────
@@ -123,27 +123,89 @@ _EXCLUDE_COLS = set(METADATA_COLS) | set(POSITION_AA_COLS)
 HAMMING_CUTOFF = 1
 
 # ──────────────────────────────────────────────
-# FEATURE SET REGISTRY
+# FEATURE COMPONENTS (atomic building blocks)
 # ──────────────────────────────────────────────
-FEATURE_SETS = {
+FEATURE_COMPONENTS = {
     "handcrafted": {
-        "display_name": "Hand-crafted features",
-        "source": "csv",
-        "needs_pca": False,
+        "display_name": "Structural features",
+        "type": "csv",
+        "csv_path": None,       # columns already in split data
+    },
+    "sparse": {
+        "display_name": "One-hot AA encoding",
+        "type": "csv",
+        "csv_path": SPARSE_DATA_PATH,
+    },
+    "blosum": {
+        "display_name": "BLOSUM50 AA encoding",
+        "type": "csv",
+        "csv_path": BLOSUM_DATA_PATH,
     },
     "esmc": {
-        "display_name": "ESM-C embeddings (PCA-reduced)",
-        "source": "embedding",
+        "display_name": "ESM-C (600M) embeddings",
+        "type": "embedding",
         "embedding_key": "esmc",
-        "needs_pca": True,
         "pca_components": PCA_COMPONENTS_PER_REGION,
     },
     "esmif": {
-        "display_name": "ESM-IF embeddings (PCA-reduced)",
-        "source": "embedding",
+        "display_name": "ESM-IF1 embeddings",
+        "type": "embedding",
         "embedding_key": "esmif",
-        "needs_pca": True,
         "pca_components": PCA_COMPONENTS_PER_REGION,
+    },
+}
+
+# ──────────────────────────────────────────────
+# FEATURE SETS (named combinations of components)
+# ──────────────────────────────────────────────
+FEATURE_SETS = {
+    # ── Single-source baselines ──
+    "handcrafted": {
+        "display_name": "Structural features only",
+        "components": ["handcrafted"],
+    },
+    "esmc": {
+        "display_name": "ESM-C embeddings only",
+        "components": ["esmc"],
+    },
+    "esmif": {
+        "display_name": "ESM-IF1 embeddings only",
+        "components": ["esmif"],
+    },
+    # ── Structural + AA encoding ──
+    "handcrafted_sparse": {
+        "display_name": "Structural + one-hot AA",
+        "components": ["handcrafted", "sparse"],
+    },
+    "handcrafted_blosum": {
+        "display_name": "Structural + BLOSUM50 AA",
+        "components": ["handcrafted", "blosum"],
+    },
+    # ── Structural + AA + single embedding ──
+    "handcrafted_sparse_esmc": {
+        "display_name": "Structural + one-hot + ESM-C",
+        "components": ["handcrafted", "sparse", "esmc"],
+    },
+    "handcrafted_sparse_esmif": {
+        "display_name": "Structural + one-hot + ESM-IF",
+        "components": ["handcrafted", "sparse", "esmif"],
+    },
+    "handcrafted_blosum_esmc": {
+        "display_name": "Structural + BLOSUM50 + ESM-C",
+        "components": ["handcrafted", "blosum", "esmc"],
+    },
+    "handcrafted_blosum_esmif": {
+        "display_name": "Structural + BLOSUM50 + ESM-IF",
+        "components": ["handcrafted", "blosum", "esmif"],
+    },
+    # ── Kitchen sink ──
+    "all_sparse": {
+        "display_name": "Structural + one-hot + ESM-C + ESM-IF",
+        "components": ["handcrafted", "sparse", "esmc", "esmif"],
+    },
+    "all_blosum": {
+        "display_name": "Structural + BLOSUM50 + ESM-C + ESM-IF",
+        "components": ["handcrafted", "blosum", "esmc", "esmif"],
     },
 }
 
@@ -193,6 +255,7 @@ DEFAULT_MODEL = "rf"
 # ──────────────────────────────────────────────
 
 def get_feature_cols(df_columns):
+    """Return all columns that are not metadata or raw AA letters."""
     return [c for c in df_columns if c not in _EXCLUDE_COLS]
 
 
@@ -210,11 +273,39 @@ def get_feature_set_config(features_key):
     return FEATURE_SETS[features_key]
 
 
+def get_feature_component(comp_key):
+    if comp_key not in FEATURE_COMPONENTS:
+        valid = ", ".join(sorted(FEATURE_COMPONENTS.keys()))
+        raise KeyError(f"Unknown component '{comp_key}'. Valid: {valid}")
+    return FEATURE_COMPONENTS[comp_key]
+
+
 def get_embedding_source(embedding_key):
     if embedding_key not in EMBEDDING_SOURCES:
         valid = ", ".join(sorted(EMBEDDING_SOURCES.keys()))
         raise KeyError(f"Unknown embedding key '{embedding_key}'. Valid keys: {valid}")
     return EMBEDDING_SOURCES[embedding_key]
+
+
+def validate_feature_set(feat_cfg):
+    """Check that a feature set's components are valid and compatible."""
+    components = feat_cfg["components"]
+
+    # Each component must exist
+    for comp_key in components:
+        get_feature_component(comp_key)
+
+    # Cannot combine sparse + blosum (same column names, different values)
+    aa_encodings = [c for c in components if c in ("sparse", "blosum")]
+    if len(aa_encodings) > 1:
+        raise ValueError(
+            f"Cannot combine multiple AA encodings in one feature set: "
+            f"{aa_encodings}. Use either 'sparse' or 'blosum', not both."
+        )
+
+    # No duplicate components
+    if len(components) != len(set(components)):
+        raise ValueError(f"Duplicate components in feature set: {components}")
 
 
 def validate_config():
@@ -235,3 +326,4 @@ def validate_config():
     print(f"     Model dir:     {MODEL_DIR}")
     print(f"     Models:        {', '.join(sorted(MODEL_REGISTRY.keys()))}")
     print(f"     Feature sets:  {', '.join(sorted(FEATURE_SETS.keys()))}")
+    print(f"     Components:    {', '.join(sorted(FEATURE_COMPONENTS.keys()))}")

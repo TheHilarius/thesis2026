@@ -1,14 +1,14 @@
 """
-04_model_analysis.py
+05_model_analysis.py
 Post-modelling analysis and visualisation.
 
-Reads the JSON results and pickled models produced by 03_modelling.py,
+Reads the JSON results and pickled models produced by 04_modelling.py,
 generates publication-ready figures and a detailed stats report.
 
 Usage:
-    python 04_model_analysis.py --results models/cv_results_rf_20260420_135549.json
-    python 04_model_analysis.py --results models/cv_results_lr_20260420_140717.json
-    python 04_model_analysis.py --results models/cv_results_rf_*.json models/cv_results_lr_*.json
+    python 05_model_analysis.py --results models/cv_results_rf_20260420_135549.json
+    python 05_model_analysis.py --results models/cv_results_lr_20260420_140717.json
+    python 05_model_analysis.py --results models/cv_results_rf_*.json models/cv_results_lr_*.json
 """
 
 import sys

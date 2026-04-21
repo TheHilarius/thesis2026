@@ -1,0 +1,148 @@
+================================================================================
+  03_PREPARE_EMBEDDINGS -- ESM-C (600M)
+================================================================================
+  Timestamp:       2026-04-21 11:20:25
+  Embedding key:   esmc
+  Raw HDF5:        C:\Users\olive\Documents\R\special_course_spring2026\data\processed\embeddings\esmc_protein_embeddings.h5
+  Split data:      C:\Users\olive\Documents\R\special_course_spring2026\data\processed\df_all_with_folds.csv
+  Output:          C:\Users\olive\Documents\R\special_course_spring2026\data\processed\embeddings_prepared\esmc_prepared.h5
+  Log:             C:\Users\olive\Documents\R\special_course_spring2026\logs\03_prepare_embeddings_esmc_log_20260421_112025.txt
+
+  Source schema:
+    Embedding dim:   1152
+    Region mapping:
+      peptide      → peptide_emb
+      n_flank      → n_flank_emb
+      c_flank      → c_flank_emb
+    Peptide ID col:  peptide_seqs
+    UniProt ID col:  uniprot_ids
+    Has row_indices: True
+    Has start/end:   True
+================================================================================
+
+Loading split data: C:\Users\olive\Documents\R\special_course_spring2026\data\processed\df_all_with_folds.csv
+  Shape: 53089 rows x 95 columns
+  Folds: [0, 1, 2, 3, 4, 5]
+  Positives: 23457  Negatives: 29632
+
+Loading raw embeddings: C:\Users\olive\Documents\R\special_course_spring2026\data\processed\embeddings\esmc_protein_embeddings.h5
+
+  HDF5 metadata:
+    coord_convention          1idx_inclusive
+    csv_source                data/processed/df_all.csv
+    device                    cuda
+    emb_dim                   1152
+    fallback_window           2048
+    max_seq_len               None
+    model                     esmc_600m
+    n_fallback                0
+    n_oom_proteins            0
+    n_proteins                9628
+    n_samples                 53198
+    total_time_sec            2213.3990166187286
+
+  HDF5 datasets (raw):
+    c_flank_emb
+    end
+    fallback_flag
+    n_flank_emb
+    peptide_emb
+    peptide_seqs
+    row_indices
+    start
+    uniprot_ids
+
+  Loaded canonical datasets:
+    c_flank_emb               shape=(53198, 1152)        dtype=float32
+    end                       shape=(53198,)             dtype=int32
+    fallback_flag             shape=(53198,)             dtype=int8
+    n_flank_emb               shape=(53198, 1152)        dtype=float32
+    peptide_emb               shape=(53198, 1152)        dtype=float32
+    peptide_ids               shape=(53198,)             dtype=<U9
+    row_indices               shape=(53198,)             dtype=int64
+    start                     shape=(53198,)             dtype=int32
+    uniprot_ids               shape=(53198,)             dtype=<U10
+
+  Canonical regions available: ['peptide_emb', 'n_flank_emb', 'c_flank_emb']
+  Embedding dim: 1152
+  Embedding samples: 53198
+
+================================================================================
+ALIGNMENT
+================================================================================
+
+  Trying strategy: peptide+uniprot_id+start
+    Aligned: 40187 (75.7% coverage)
+    Spot-check: 0 peptide mismatches, 0 uniprot mismatches out of 500
+  [OK] Strategy 'peptide+uniprot_id+start' passed validation
+
+  Final alignment results:
+    Method:              peptide+uniprot_id+start
+    Embedding samples:   53198
+    Split data rows:     53089
+    Successfully aligned: 40187
+    Embedding unmatched: 13011
+    Split data unmatched: 12902
+    Coverage: 75.7% of split data
+
+  NOTE: 12902 split-data rows have no embedding match
+  These samples will be excluded from embedding-based models.
+  This is a TEMPORARY limitation until embeddings are recomputed
+  on the current version of the split data.
+
+  Zero vector report:
+  Region                  Zeros        %
+  --------------------------------------
+  peptide_emb                 0    0.00%
+  n_flank_emb                27    0.07%
+  c_flank_emb               131    0.33%
+
+  NOTE: 158 total zero vectors detected.
+  These represent samples without structural/sequence coverage.
+  They will map to the PCA mean after transformation.
+
+================================================================================
+SAVING PREPARED EMBEDDINGS
+================================================================================
+  Output: C:\Users\olive\Documents\R\special_course_spring2026\data\processed\embeddings_prepared\esmc_prepared.h5
+    peptide_emb: shape=(40187, 1152)
+    n_flank_emb: shape=(40187, 1152)
+    c_flank_emb: shape=(40187, 1152)
+  [OK] Saved successfully
+
+  Label distribution per fold:
+  Fold        Total      Pos      Neg    Pos %
+  ------------------------------------------
+  0            6678     3876     2802    58.0%
+  1            6701     3907     2794    58.3%
+  2            6700     3903     2797    58.3%
+  3            6687     3914     2773    58.5%
+  4            6718     3917     2801    58.3%
+  5            6703     3940     2763    58.8% (held-out)
+
+  Embedding norm stats per fold (peptide_emb):
+  Fold      Samples   Norm med   Norm std  Zero vecs
+  --------------------------------------------------
+  0            6678     1.2161     0.1486          0
+  1            6701     1.2136     0.1487          0
+  2            6700     1.2160     0.1504          0
+  3            6687     1.2134     0.1502          0
+  4            6718     1.2144     0.1479          0
+  5            6703     1.2147     0.1493          0
+
+================================================================================
+RUN SUMMARY
+================================================================================
+  Runtime:          18.8s
+  Embedding:        ESM-C (600M)
+  Embedding dim:    1152
+  Alignment method: peptide+uniprot_id+start
+  Aligned samples:  40187
+  Coverage:         75.7%
+  Regions:          ['peptide_emb', 'n_flank_emb', 'c_flank_emb']
+  Zero vectors:     {'peptide_emb': 0, 'n_flank_emb': 27, 'c_flank_emb': 131}
+  Output:           C:\Users\olive\Documents\R\special_course_spring2026\data\processed\embeddings_prepared\esmc_prepared.h5
+  Output size:      491.9 MB
+  Log:              C:\Users\olive\Documents\R\special_course_spring2026\logs\03_prepare_embeddings_esmc_log_20260421_112025.txt
+  Completed:        2026-04-21 11:20:44
+================================================================================

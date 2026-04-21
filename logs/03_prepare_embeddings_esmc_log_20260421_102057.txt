@@ -1,0 +1,36 @@
+================================================================================
+  03_PREPARE_EMBEDDINGS -- ESM-C (600M)
+================================================================================
+  Timestamp:       2026-04-21 10:20:57
+  Embedding key:   esmc
+  Raw HDF5:        C:\Users\olive\Documents\R\special_course_spring2026\data\processed\embeddings\esmc_embeddings.h5
+  Split data:      C:\Users\olive\Documents\R\special_course_spring2026\data\processed\df_all_with_folds.csv
+  Output:          C:\Users\olive\Documents\R\special_course_spring2026\data\processed\embeddings_prepared\esmc_prepared.h5
+  Log:             C:\Users\olive\Documents\R\special_course_spring2026\logs\03_prepare_embeddings_esmc_log_20260421_102057.txt
+================================================================================
+
+Loading split data: C:\Users\olive\Documents\R\special_course_spring2026\data\processed\df_all_with_folds.csv
+  Shape: 53089 rows x 95 columns
+  Folds: [0, 1, 2, 3, 4, 5]
+  Positives: 23457  Negatives: 29632
+
+Loading raw embeddings: C:\Users\olive\Documents\R\special_course_spring2026\data\processed\embeddings\esmc_embeddings.h5
+
+  HDF5 metadata:
+    csv_source                data/processed/epitopes_pos_and_neg_features.csv
+    emb_dim                   1152
+    model                     esmc_600m
+    n_samples                 203178
+
+  HDF5 datasets:
+    c_flank_in_context        shape=(203178, 1152)  dtype=float32
+    n_flank_in_context        shape=(203178, 1152)  dtype=float32
+    peptide_ids               shape=(203178,)  dtype=<U14
+    peptide_in_context        shape=(203178, 1152)  dtype=float32
+    row_indices               shape=(203178,)  dtype=int64
+    uniprot_ids               shape=(203178,)  dtype=<U10
+
+  Available regions: []
+  WARNING: Missing regions: ['peptide_emb', 'n_flank_emb', 'c_flank_emb']
+
+FATAL: No embedding regions found in HDF5

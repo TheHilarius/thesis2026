@@ -1,0 +1,359 @@
+================================================================================
+  04_MODELLING -- RANDOM FOREST + STRUCTURAL FEATURES ONLY
+================================================================================
+  Timestamp:       2026-04-21 14:15:56
+  Model key:       rf
+  Model class:     sklearn.ensemble.RandomForestClassifier
+  Feature set:     handcrafted (Structural features only)
+  Components:      ['handcrafted']
+  Data path:       C:\Users\olive\Documents\R\special_course_spring2026\data\processed\df_all_with_folds.csv
+  Log path:        C:\Users\olive\Documents\R\special_course_spring2026\logs\04_modelling_rf_handcrafted_log_20260421_141556.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   False
+
+  Model hyperparameters:
+    n_estimators              1000
+    max_depth                 None
+    min_samples_split         2
+    min_samples_leaf          1
+    max_features              sqrt
+    class_weight              None
+    n_jobs                    -1
+    random_state              42
+    verbose                   0
+================================================================================
+
+Loading split data: C:\Users\olive\Documents\R\special_course_spring2026\data\processed\df_all_with_folds.csv
+  Shape: 53072 rows x 95 columns
+  [OK] Fold column validated: [0, 1, 2, 3, 4, 5]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  CSV components (1):
+    [handcrafted] Structural features
+      Source: split_data (built-in)
+  Total CSV features: 58
+    Structural: 58
+    AA-encoded: 0
+
+  Estimated total features: ~58
+    CSV:        58
+    Embeddings: 0 (after PCA)
+
+================================================================================
+PIPELINE READY: ~58 features, 5 folds, Random Forest
+================================================================================
+
+--------------------------------------------------------------------------------
+  FOLD 0/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 103968 NaN values
+    WARNING: X_test: 25462 NaN values
+    CSV features: 58 columns
+    Train:  35381 samples (pos=15643, neg=19738, ratio=1.262)
+    Test:    8846 samples (pos=3897, neg=4949, ratio=1.270)
+    Features: 58
+    Training Random Forest ...
+    Training time: 11.5s
+
+    Fold 0 results (12.0s):
+      AUC-ROC: 0.6066  |  AUC-PR: 0.5306  |  Acc: 0.5840  |  F1: 0.4431  |  MCC: 0.1332
+      Sens: 0.3757  |  Spec: 0.7480  |  PPV: 0.5400  |  NPV: 0.6034
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      rel_distance_from_c_terminus                      0.066981
+    2      rel_distance_from_n_terminus                      0.066117
+    3      mean_rsa_cflank                                   0.060281
+    4      mean_rsa_nflank                                   0.058754
+    5      mean_disorder_cflank                              0.058544
+    6      mean_rsa_peptide                                  0.058479
+    7      mean_disorder_nflank                              0.058119
+    8      mean_disorder_peptide                             0.057872
+    9      mean_plddt_nflank                                 0.054136
+    10     sd_plddt_nflank                                   0.053583
+    11     sd_plddt_peptide                                  0.053269
+    12     mean_plddt_peptide                                0.053098
+    13     sd_plddt_cflank                                   0.053030
+    14     mean_plddt_cflank                                 0.052741
+    15     min_plddt_peptide                                 0.050388
+    Saved model: C:\Users\olive\Documents\R\special_course_spring2026\models\rf_handcrafted_model_fold0.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 1/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 103384 NaN values
+    WARNING: X_test: 26046 NaN values
+    CSV features: 58 columns
+    Train:  35381 samples (pos=15617, neg=19764, ratio=1.266)
+    Test:    8846 samples (pos=3923, neg=4923, ratio=1.255)
+    Features: 58
+    Training Random Forest ...
+    Training time: 12.5s
+
+    Fold 1 results (13.0s):
+      AUC-ROC: 0.6054  |  AUC-PR: 0.5355  |  Acc: 0.5834  |  F1: 0.4494  |  MCC: 0.1352
+      Sens: 0.3834  |  Spec: 0.7428  |  PPV: 0.5430  |  NPV: 0.6019
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      rel_distance_from_c_terminus                      0.066830
+    2      rel_distance_from_n_terminus                      0.065789
+    3      mean_rsa_cflank                                   0.060135
+    4      mean_disorder_cflank                              0.058821
+    5      mean_rsa_peptide                                  0.058690
+    6      mean_rsa_nflank                                   0.058680
+    7      mean_disorder_nflank                              0.058236
+    8      mean_disorder_peptide                             0.058153
+    9      mean_plddt_nflank                                 0.054099
+    10     mean_plddt_peptide                                0.053399
+    11     sd_plddt_nflank                                   0.053219
+    12     sd_plddt_peptide                                  0.053217
+    13     sd_plddt_cflank                                   0.052671
+    14     mean_plddt_cflank                                 0.052425
+    15     min_plddt_peptide                                 0.050304
+    Saved model: C:\Users\olive\Documents\R\special_course_spring2026\models\rf_handcrafted_model_fold1.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 2/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 102041 NaN values
+    WARNING: X_test: 27389 NaN values
+    CSV features: 58 columns
+    Train:  35382 samples (pos=15622, neg=19760, ratio=1.265)
+    Test:    8845 samples (pos=3918, neg=4927, ratio=1.258)
+    Features: 58
+    Training Random Forest ...
+    Training time: 12.7s
+
+    Fold 2 results (13.3s):
+      AUC-ROC: 0.6063  |  AUC-PR: 0.5304  |  Acc: 0.5794  |  F1: 0.4353  |  MCC: 0.1246
+      Sens: 0.3660  |  Spec: 0.7491  |  PPV: 0.5371  |  NPV: 0.5977
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      rel_distance_from_c_terminus                      0.065376
+    2      rel_distance_from_n_terminus                      0.065102
+    3      mean_rsa_cflank                                   0.060388
+    4      mean_rsa_nflank                                   0.059101
+    5      mean_rsa_peptide                                  0.058785
+    6      mean_disorder_nflank                              0.058417
+    7      mean_disorder_cflank                              0.058244
+    8      mean_disorder_peptide                             0.058048
+    9      mean_plddt_nflank                                 0.054749
+    10     sd_plddt_nflank                                   0.053626
+    11     mean_plddt_peptide                                0.053383
+    12     sd_plddt_peptide                                  0.053377
+    13     mean_plddt_cflank                                 0.053011
+    14     sd_plddt_cflank                                   0.052963
+    15     min_plddt_peptide                                 0.050323
+    Saved model: C:\Users\olive\Documents\R\special_course_spring2026\models\rf_handcrafted_model_fold2.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 3/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 103199 NaN values
+    WARNING: X_test: 26231 NaN values
+    CSV features: 58 columns
+    Train:  35382 samples (pos=15643, neg=19739, ratio=1.262)
+    Test:    8845 samples (pos=3897, neg=4948, ratio=1.270)
+    Features: 58
+    Training Random Forest ...
+    Training time: 12.7s
+
+    Fold 3 results (13.3s):
+      AUC-ROC: 0.6088  |  AUC-PR: 0.5350  |  Acc: 0.5877  |  F1: 0.4523  |  MCC: 0.1421
+      Sens: 0.3865  |  Spec: 0.7462  |  PPV: 0.5453  |  NPV: 0.6069
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      rel_distance_from_c_terminus                      0.066428
+    2      rel_distance_from_n_terminus                      0.065475
+    3      mean_rsa_cflank                                   0.060320
+    4      mean_rsa_peptide                                  0.058747
+    5      mean_disorder_cflank                              0.058537
+    6      mean_rsa_nflank                                   0.058504
+    7      mean_disorder_nflank                              0.058192
+    8      mean_disorder_peptide                             0.057856
+    9      mean_plddt_nflank                                 0.054366
+    10     sd_plddt_peptide                                  0.053856
+    11     sd_plddt_nflank                                   0.053334
+    12     mean_plddt_cflank                                 0.053055
+    13     mean_plddt_peptide                                0.052866
+    14     sd_plddt_cflank                                   0.052725
+    15     min_plddt_peptide                                 0.050479
+    Saved model: C:\Users\olive\Documents\R\special_course_spring2026\models\rf_handcrafted_model_fold3.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 4/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 105128 NaN values
+    WARNING: X_test: 24302 NaN values
+    CSV features: 58 columns
+    Train:  35382 samples (pos=15635, neg=19747, ratio=1.263)
+    Test:    8845 samples (pos=3905, neg=4940, ratio=1.265)
+    Features: 58
+    Training Random Forest ...
+    Training time: 11.4s
+
+    Fold 4 results (11.9s):
+      AUC-ROC: 0.6029  |  AUC-PR: 0.5273  |  Acc: 0.5786  |  F1: 0.4330  |  MCC: 0.1216
+      Sens: 0.3644  |  Spec: 0.7480  |  PPV: 0.5334  |  NPV: 0.5982
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      rel_distance_from_c_terminus                      0.066945
+    2      rel_distance_from_n_terminus                      0.066212
+    3      mean_rsa_cflank                                   0.060450
+    4      mean_rsa_nflank                                   0.058784
+    5      mean_disorder_cflank                              0.058407
+    6      mean_rsa_peptide                                  0.058375
+    7      mean_disorder_peptide                             0.057866
+    8      mean_disorder_nflank                              0.057793
+    9      mean_plddt_nflank                                 0.054463
+    10     mean_plddt_peptide                                0.053208
+    11     sd_plddt_nflank                                   0.053111
+    12     sd_plddt_peptide                                  0.052915
+    13     sd_plddt_cflank                                   0.052851
+    14     mean_plddt_cflank                                 0.052786
+    15     min_plddt_peptide                                 0.050460
+    Saved model: C:\Users\olive\Documents\R\special_course_spring2026\models\rf_handcrafted_model_fold4.pkl
+
+================================================================================
+CROSS-VALIDATION SUMMARY (mean +/- std)
+================================================================================
+  auc_roc         0.6060 +/- 0.0019    [0.6066  0.6054  0.6063  0.6088  0.6029]
+  auc_pr          0.5317 +/- 0.0031    [0.5306  0.5355  0.5304  0.5350  0.5273]
+  accuracy        0.5826 +/- 0.0033    [0.5840  0.5834  0.5794  0.5877  0.5786]
+  f1              0.4426 +/- 0.0076    [0.4431  0.4494  0.4353  0.4523  0.4330]
+  mcc             0.1313 +/- 0.0074    [0.1332  0.1352  0.1246  0.1421  0.1216]
+  sensitivity     0.3752 +/- 0.0089    [0.3757  0.3834  0.3660  0.3865  0.3644]
+  specificity     0.7468 +/- 0.0022    [0.7480  0.7428  0.7491  0.7462  0.7480]
+  ppv             0.5397 +/- 0.0042    [0.5400  0.5430  0.5371  0.5453  0.5334]
+  npv             0.6016 +/- 0.0034    [0.6034  0.6019  0.5977  0.6069  0.5982]
+
+  Best fold: 3 (AUC-ROC = 0.6088)
+
+================================================================================
+PER-FOLD METRIC COMPARISON
+================================================================================
+  Fold    auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
+  -----------------------------------------------------------------------------------------------------------------------------
+  0       0.6066       0.5306       0.5840       0.4431       0.1332       0.3757       0.7480       0.5400       0.6034       
+  1       0.6054       0.5355       0.5834       0.4494       0.1352       0.3834       0.7428       0.5430       0.6019       
+  2       0.6063       0.5304       0.5794       0.4353       0.1246       0.3660       0.7491       0.5371       0.5977       
+  3       0.6088       0.5350       0.5877       0.4523       0.1421       0.3865       0.7462       0.5453       0.6069       
+  4       0.6029       0.5273       0.5786       0.4330       0.1216       0.3644       0.7480       0.5334       0.5982       
+  -----------------------------------------------------------------------------------------------------------------------------
+  mean    0.6060       0.5317       0.5826       0.4426       0.1313       0.3752       0.7468       0.5397       0.6016       
+  std     0.0019       0.0031       0.0033       0.0076       0.0074       0.0089       0.0022       0.0042       0.0034       
+
+================================================================================
+AVERAGED FEATURE IMPORTANCE ACROSS ALL FOLDS
+================================================================================
+  Rank   Feature                                           Mean Imp          Std
+  -----------------------------------------------------------------------------
+  1      rel_distance_from_c_terminus                      0.066512     0.000601
+  2      rel_distance_from_n_terminus                      0.065739     0.000411
+  3      mean_rsa_cflank                                   0.060315     0.000107
+  4      mean_rsa_nflank                                   0.058765     0.000194
+  5      mean_rsa_peptide                                  0.058615     0.000160
+  6      mean_disorder_cflank                              0.058511     0.000190
+  7      mean_disorder_nflank                              0.058151     0.000204
+  8      mean_disorder_peptide                             0.057959     0.000121
+  9      mean_plddt_nflank                                 0.054363     0.000237
+  10     sd_plddt_nflank                                   0.053374     0.000201
+  11     sd_plddt_peptide                                  0.053327     0.000306
+  12     mean_plddt_peptide                                0.053191     0.000197
+  13     sd_plddt_cflank                                   0.052848     0.000136
+  14     mean_plddt_cflank                                 0.052804     0.000225
+  15     min_plddt_peptide                                 0.050391     0.000070
+  16     frac_disordered_cflank                            0.008301     0.000069
+  17     frac_disordered_nflank                            0.008092     0.000054
+  18     q8point_T_cflank                                  0.006715     0.000060
+  19     q8point_T_nflank                                  0.006418     0.000057
+  20     q8point_C_nflank                                  0.006149     0.000049
+  21     q8point_S_cflank                                  0.006010     0.000068
+  22     q8point_C_cflank                                  0.005936     0.000055
+  23     q8point_S_nflank                                  0.005860     0.000042
+  24     q8point_C_peptide                                 0.005789     0.000033
+  25     q8point_T_peptide                                 0.005548     0.000050
+  26     q8point_H_cflank                                  0.005503     0.000046
+  27     q8trans_H_pep_c                                   0.005496     0.000083
+  28     q8point_E_cflank                                  0.005094     0.000030
+  29     frac_disordered_peptide                           0.005092     0.000031
+  30     q8point_E_nflank                                  0.004821     0.000048
+
+================================================================================
+HELD-OUT VALIDATION SET EVALUATION
+================================================================================
+  Using model from best fold (3)
+  Held-out samples: 8845 (pos=3901, neg=4944, ratio=1.267)
+
+  Held-out results (8845 samples):
+    AUC-ROC: 0.5945  |  AUC-PR: 0.5206  |  Acc: 0.5709  |  F1: 0.4285  |  MCC: 0.1057
+    Sens: 0.3648  |  Spec: 0.7336  |  PPV: 0.5193  |  NPV: 0.5941
+
+  Classification Report:
+              precision    recall  f1-score   support
+
+    Negative     0.5941    0.7336    0.6565      4944
+    Positive     0.5193    0.3648    0.4285      3901
+
+    accuracy                         0.5709      8845
+   macro avg     0.5567    0.5492    0.5425      8845
+weighted avg     0.5611    0.5709    0.5560      8845
+
+================================================================================
+CV AVERAGE vs HELD-OUT COMPARISON
+================================================================================
+  Metric             CV mean     CV std   Held-out      Delta
+  ---------------------------------------------------------
+  auc_roc             0.6060     0.0019     0.5945    -0.0115
+  auc_pr              0.5317     0.0031     0.5206    -0.0111
+  accuracy            0.5826     0.0033     0.5709    -0.0117
+  f1                  0.4426     0.0076     0.4285    -0.0141
+  mcc                 0.1313     0.0074     0.1057    -0.0257
+  sensitivity         0.3752     0.0089     0.3648    -0.0104
+  specificity         0.7468     0.0022     0.7336    -0.0132
+  ppv                 0.5397     0.0042     0.5193    -0.0204
+  npv                 0.6016     0.0034     0.5941    -0.0075
+
+Results saved: C:\Users\olive\Documents\R\special_course_spring2026\models\cv_results_rf_handcrafted_20260421_141556.json
+Best model saved: C:\Users\olive\Documents\R\special_course_spring2026\models\best_rf_handcrafted_model.pkl
+Fold artifacts saved: C:\Users\olive\Documents\R\special_course_spring2026\models\best_rf_handcrafted_artifacts.pkl
+Feature names saved: C:\Users\olive\Documents\R\special_course_spring2026\models\rf_handcrafted_feature_names.json
+
+================================================================================
+RUN SUMMARY
+================================================================================
+  Total runtime:    172.2s (2.9 min)
+  Model:            Random Forest (rf)
+  Feature set:      Structural features only (handcrafted)
+  Components:       ['handcrafted']
+  Scaling:          no
+  Features (final): 58
+    CSV features:   58
+  CV folds:         5
+  Best fold:        3 (AUC = 0.6088)
+  Held-out AUC:     0.5945
+  Held-out MCC:     0.1057
+  Models dir:       C:\Users\olive\Documents\R\special_course_spring2026\models/
+  Results file:     C:\Users\olive\Documents\R\special_course_spring2026\models\cv_results_rf_handcrafted_20260421_141556.json
+  Feature names:    C:\Users\olive\Documents\R\special_course_spring2026\models\rf_handcrafted_feature_names.json
+  Log file:         C:\Users\olive\Documents\R\special_course_spring2026\logs\04_modelling_rf_handcrafted_log_20260421_141556.txt
+  Completed:        2026-04-21 14:18:48
+================================================================================

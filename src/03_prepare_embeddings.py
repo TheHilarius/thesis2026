@@ -64,14 +64,14 @@ class Logger:
 def load_raw_embeddings(h5_path, emb_source):
     """
     Load a raw embedding HDF5 using the schema defined in
-    EMBEDDING_SOURCES.  Returns (data_dict, metadata_dict).
+    EMBEDDING_SOURCES.  Returns (data_dict, metadata_dict, all_dataset_names).
 
     The data_dict uses CANONICAL keys:
-      - "peptide_emb", "n_flank_emb", "c_flank_emb" (remapped from source names)
-      - "peptide_ids", "uniprot_ids" (remapped from source column names)
+      - "peptide_emb", "n_flank_emb", "c_flank_emb"
+      - "peptide_ids", "uniprot_ids"
       - "row_indices", "start", "end" (if available)
     """
-    region_map = emb_source["region_map"]         # canonical → HDF5 name
+    region_map = emb_source["region_map"]
     pep_id_col = emb_source["peptide_id_col"]
     uni_id_col = emb_source["uniprot_id_col"]
 
@@ -79,14 +79,12 @@ def load_raw_embeddings(h5_path, emb_source):
     metadata = {}
 
     with h5py.File(h5_path, "r") as f:
-        # Metadata attributes
         for key in f.attrs:
             val = f.attrs[key]
             if isinstance(val, bytes):
                 val = val.decode("utf-8")
             metadata[key] = val
 
-        # List all datasets for reporting
         all_datasets = list(f.keys())
 
         # Embedding regions → canonical names
@@ -113,18 +111,18 @@ def load_raw_embeddings(h5_path, emb_source):
                                 for x in arr])
             data["uniprot_ids"] = arr
 
-        # Row indices (ESM-C has them, ESM-IF does not)
+        # Row indices
         if emb_source["has_row_indices"] and "row_indices" in f:
             data["row_indices"] = f["row_indices"][:]
 
-        # Start/end positions (ESM-C has them, ESM-IF does not)
+        # Start/end positions
         if emb_source["has_start_end"]:
             if "start" in f:
                 data["start"] = f["start"][:]
             if "end" in f:
                 data["end"] = f["end"][:]
 
-        # Fallback flags (optional)
+        # Fallback flags
         if "fallback_flag" in f:
             data["fallback_flag"] = f["fallback_flag"][:]
 
@@ -137,8 +135,7 @@ def load_raw_embeddings(h5_path, emb_source):
 
 def align_by_row_indices(emb_data, df):
     """
-    Align using row_indices stored in the HDF5 (point to positions
-    in the original df_all.csv / df_all_with_folds.csv).
+    Align using row_indices stored in the HDF5.
     """
     emb_row_idx = emb_data["row_indices"]
     n_df = len(df)
@@ -162,7 +159,7 @@ def align_by_row_indices(emb_data, df):
 def align_by_peptide_uniprot(emb_data, df):
     """
     Align by joining on (peptide, uniprot_id).
-    Used when row_indices are not available (e.g. ESM-IF).
+    Used when row_indices are not available or unreliable.
     """
     emb_peps = emb_data["peptide_ids"]
     emb_unis = emb_data["uniprot_ids"]
@@ -175,23 +172,19 @@ def align_by_peptide_uniprot(emb_data, df):
 
     df_indexed = df.reset_index().rename(columns={"index": "_df_idx"})
 
-    # Join on peptide + uniprot_id
     merged = emb_df.merge(
         df_indexed[["peptide", "uniprot_id", "_df_idx"]],
         on=["peptide", "uniprot_id"],
         how="inner",
     )
 
-    # If multiple df rows match one embedding row (e.g. same peptide+protein
-    # at different positions), keep all — each is a distinct sample in the
-    # split data with its own fold assignment
-    # If multiple embedding rows match one df row, keep first
+    # Keep one embedding per df row (first match)
     merged = merged.drop_duplicates(subset=["_df_idx"], keep="first")
 
     emb_positions = merged["_emb_idx"].values.astype(int)
     df_rows = merged["_df_idx"].values.astype(int)
 
-    # Sort by df row index for consistent ordering
+    # Sort by df row index
     sort_order = np.argsort(df_rows)
     emb_positions = emb_positions[sort_order]
     df_rows = df_rows[sort_order]
@@ -200,7 +193,52 @@ def align_by_peptide_uniprot(emb_data, df):
         "method": "peptide+uniprot_id",
         "n_emb_total": len(emb_peps),
         "n_df_total": len(df),
-        "n_aligned": len(merged),
+        "n_aligned": len(df_rows),
+        "n_emb_unmatched": len(emb_peps) - len(set(emb_positions)),
+        "n_df_unmatched": len(df) - len(set(df_rows)),
+    }
+
+    return emb_positions, df_rows, report
+
+
+def align_by_peptide_uniprot_start(emb_data, df):
+    """
+    Align by joining on (peptide, uniprot_id, start).
+    Most precise — used when embeddings have start positions.
+    """
+    emb_peps = emb_data["peptide_ids"]
+    emb_unis = emb_data["uniprot_ids"]
+    emb_starts = emb_data["start"]
+
+    emb_df = pd.DataFrame({
+        "peptide": emb_peps,
+        "uniprot_id": emb_unis,
+        "start": emb_starts,
+        "_emb_idx": np.arange(len(emb_peps)),
+    })
+
+    df_indexed = df.reset_index().rename(columns={"index": "_df_idx"})
+
+    merged = emb_df.merge(
+        df_indexed[["peptide", "uniprot_id", "start", "_df_idx"]],
+        on=["peptide", "uniprot_id", "start"],
+        how="inner",
+    )
+
+    merged = merged.drop_duplicates(subset=["_df_idx"], keep="first")
+
+    emb_positions = merged["_emb_idx"].values.astype(int)
+    df_rows = merged["_df_idx"].values.astype(int)
+
+    sort_order = np.argsort(df_rows)
+    emb_positions = emb_positions[sort_order]
+    df_rows = df_rows[sort_order]
+
+    report = {
+        "method": "peptide+uniprot_id+start",
+        "n_emb_total": len(emb_peps),
+        "n_df_total": len(df),
+        "n_aligned": len(df_rows),
         "n_emb_unmatched": len(emb_peps) - len(set(emb_positions)),
         "n_df_unmatched": len(df) - len(set(df_rows)),
     }
@@ -212,12 +250,12 @@ def align_by_peptide_uniprot(emb_data, df):
 # 3. VALIDATION
 # ──────────────────────────────────────────────
 
-def validate_alignment(emb_data, df, emb_positions, df_rows, emb_source):
+def spot_check_alignment(emb_data, df, emb_positions, df_rows, n_check=500):
     """
-    Spot-check that aligned rows match on peptide sequence.
-    Adapts to available ID columns.
+    Spot-check that aligned rows match on peptide sequence and uniprot ID.
+    Returns (peptide_mismatches, uniprot_mismatches, n_checked).
     """
-    n_check = min(500, len(emb_positions))
+    n_check = min(n_check, len(emb_positions))
     check_idx = np.random.choice(len(emb_positions), n_check, replace=False)
 
     mismatches_pep = 0
@@ -229,7 +267,6 @@ def validate_alignment(emb_data, df, emb_positions, df_rows, emb_source):
 
         emb_pep = emb_data["peptide_ids"][emb_idx]
         df_pep = df.iloc[df_idx][PEPTIDE_COL]
-
         if emb_pep != df_pep:
             mismatches_pep += 1
 
@@ -290,10 +327,7 @@ def report_label_distribution(labels, folds):
 def save_prepared(out_path, emb_data, emb_positions, df, df_rows,
                   emb_metadata, embedding_key, emb_source):
     """
-    Save a self-contained HDF5 with:
-      - Embedding arrays under canonical names (peptide_emb, n_flank_emb, c_flank_emb)
-      - Labels, folds, identifiers
-      - Full provenance metadata
+    Save a self-contained HDF5 with canonical dataset names.
     """
     labels = df.iloc[df_rows][LABEL_COL].values.astype(np.int32)
     folds = df.iloc[df_rows][FOLD_COL].values.astype(np.int32)
@@ -306,6 +340,10 @@ def save_prepared(out_path, emb_data, emb_positions, df, df_rows,
               else np.zeros(len(df_rows), dtype=np.int32))
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
+
+    # Convert strings to bytes for h5py compatibility
+    peptides_bytes = np.array([s.encode("utf-8") for s in peptides])
+    uniprot_bytes = np.array([str(s).encode("utf-8") for s in uniprot_ids])
 
     with h5py.File(out_path, "w") as f:
         # Embedding arrays under CANONICAL names
@@ -321,13 +359,12 @@ def save_prepared(out_path, emb_data, emb_positions, df, df_rows,
         f.create_dataset("folds", data=folds)
         f.create_dataset("starts", data=starts)
 
-        # Identifiers
-        dt_str = h5py.string_dtype()
-        f.create_dataset("peptide_seqs", data=peptides.astype(str), dtype=dt_str)
-        f.create_dataset("uniprot_ids", data=uniprot_ids.astype(str), dtype=dt_str)
+        # Identifiers (as byte strings — universally compatible with h5py)
+        f.create_dataset("peptide_seqs", data=peptides_bytes)
+        f.create_dataset("uniprot_ids", data=uniprot_bytes)
 
         # Row mapping back to df_all_with_folds.csv
-        f.create_dataset("df_row_indices", data=df_rows.astype(np.int64))
+        f.create_dataset("df_row_indices", data=np.array(df_rows).astype(np.int64))
 
         # Metadata
         f.attrs["embedding_key"] = embedding_key
@@ -341,7 +378,6 @@ def save_prepared(out_path, emb_data, emb_positions, df, df_rows,
         f.attrs["source_csv"] = str(SPLIT_DATA_PATH)
         f.attrs["source_h5"] = str(emb_source["raw_path"])
 
-        # Copy original embedding metadata
         for k, v in emb_metadata.items():
             f.attrs[f"orig_{k}"] = str(v)
 
@@ -424,7 +460,6 @@ if __name__ == "__main__":
     print(f"\nLoading raw embeddings: {raw_path}")
     emb_data, emb_metadata, all_datasets = load_raw_embeddings(raw_path, emb_source)
 
-    # Report
     print(f"\n  HDF5 metadata:")
     for k, v in sorted(emb_metadata.items()):
         print(f"    {k:<25} {v}")
@@ -437,10 +472,7 @@ if __name__ == "__main__":
     for key, arr in sorted(emb_data.items()):
         if hasattr(arr, "shape"):
             print(f"    {key:<25} shape={str(arr.shape):<20} dtype={arr.dtype}")
-        else:
-            print(f"    {key:<25} type={type(arr).__name__}")
 
-    # Verify regions
     available_regions = [r for r in EMBEDDING_REGIONS if r in emb_data]
     missing_regions = [r for r in EMBEDDING_REGIONS if r not in emb_data]
     print(f"\n  Canonical regions available: {available_regions}")
@@ -449,8 +481,6 @@ if __name__ == "__main__":
 
     if not available_regions:
         print(f"\nFATAL: No embedding regions found after remapping")
-        print(f"  Raw datasets: {all_datasets}")
-        print(f"  Region map: {emb_source['region_map']}")
         logger.close()
         sys.exit(1)
 
@@ -459,25 +489,76 @@ if __name__ == "__main__":
     print(f"  Embedding dim: {emb_dim}")
     print(f"  Embedding samples: {n_emb_samples}")
 
-    # Verify dim matches config
     if emb_dim != emb_source["emb_dim"]:
-        print(f"  WARNING: Config says emb_dim={emb_source['emb_dim']}, "
-              f"actual={emb_dim}")
+        print(f"  WARNING: Config says emb_dim={emb_source['emb_dim']}, actual={emb_dim}")
 
     # -- Alignment --
+    # Strategy: try the most precise method available, validate it,
+    # and fall back to less precise methods if validation fails.
     print(f"\n{'=' * 80}")
     print("ALIGNMENT")
     print("=" * 80)
 
-    if emb_source["has_row_indices"] and "row_indices" in emb_data:
-        print(f"  Strategy: row_indices (direct positional mapping)")
-        emb_positions, df_rows, align_report = align_by_row_indices(emb_data, df)
-    else:
-        print(f"  Strategy: peptide + uniprot_id join "
-              f"(row_indices not available)")
-        emb_positions, df_rows, align_report = align_by_peptide_uniprot(emb_data, df)
+    np.random.seed(42)
+    emb_positions = None
+    df_rows = None
+    align_report = None
 
-    print(f"\n  Alignment results:")
+    # Build list of alignment strategies in order of preference
+    strategies = []
+
+    if (emb_source["has_start_end"] and "start" in emb_data
+            and "peptide_ids" in emb_data and "uniprot_ids" in emb_data):
+        strategies.append(("peptide+uniprot_id+start", align_by_peptide_uniprot_start))
+
+    if emb_source["has_row_indices"] and "row_indices" in emb_data:
+        strategies.append(("row_indices", align_by_row_indices))
+
+    if "peptide_ids" in emb_data and "uniprot_ids" in emb_data:
+        strategies.append(("peptide+uniprot_id", align_by_peptide_uniprot))
+
+    for strategy_name, strategy_fn in strategies:
+        print(f"\n  Trying strategy: {strategy_name}")
+
+        try:
+            ep, dr, ar = strategy_fn(emb_data, df)
+        except Exception as e:
+            print(f"  Strategy failed with error: {e}")
+            continue
+
+        if ar["n_aligned"] == 0:
+            print(f"  No rows aligned — skipping")
+            continue
+
+        # Spot-check
+        mis_pep, mis_uni, n_checked = spot_check_alignment(
+            emb_data, df, ep, dr, n_check=500,
+        )
+
+        coverage = ar["n_aligned"] / ar["n_df_total"] * 100
+        print(f"    Aligned: {ar['n_aligned']} ({coverage:.1f}% coverage)")
+        print(f"    Spot-check: {mis_pep} peptide mismatches, "
+              f"{mis_uni} uniprot mismatches out of {n_checked}")
+
+        if mis_pep == 0:
+            print(f"  [OK] Strategy '{strategy_name}' passed validation")
+            emb_positions = ep
+            df_rows = dr
+            align_report = ar
+            break
+        else:
+            print(f"  Strategy '{strategy_name}' FAILED validation — "
+                  f"trying next strategy")
+
+    if emb_positions is None:
+        print(f"\nFATAL: All alignment strategies failed.")
+        print(f"  The embedding HDF5 and split CSV may be from different "
+              f"data versions.")
+        logger.close()
+        sys.exit(1)
+
+    # Print final alignment report
+    print(f"\n  Final alignment results:")
     print(f"    Method:              {align_report['method']}")
     print(f"    Embedding samples:   {align_report['n_emb_total']}")
     print(f"    Split data rows:     {align_report['n_df_total']}")
@@ -488,34 +569,12 @@ if __name__ == "__main__":
     coverage = align_report["n_aligned"] / align_report["n_df_total"] * 100
     print(f"    Coverage: {coverage:.1f}% of split data")
 
-    if align_report["n_aligned"] == 0:
-        print(f"\nFATAL: No rows could be aligned.")
-        print(f"  Check that the embedding HDF5 corresponds to the same dataset")
-        print(f"  version as {SPLIT_DATA_PATH}")
-        logger.close()
-        sys.exit(1)
-
-    if coverage < 95:
-        print(f"\n  WARNING: Coverage below 95% ({coverage:.1f}%)")
-        print(f"  {align_report['n_df_unmatched']} split-data rows have no embedding")
-    elif coverage < 100:
-        print(f"\n  NOTE: {align_report['n_df_unmatched']} split-data rows unmatched "
-              f"({100 - coverage:.1f}%)")
-
-    # -- Validate alignment --
-    print(f"\n  Spot-checking alignment ...")
-    np.random.seed(42)
-    mis_pep, mis_uni, n_checked = validate_alignment(
-        emb_data, df, emb_positions, df_rows, emb_source,
-    )
-    if mis_pep == 0 and mis_uni == 0:
-        print(f"  [OK] {n_checked} spot-checks passed "
-              f"(0 peptide mismatches, 0 uniprot mismatches)")
-    else:
-        print(f"  Peptide mismatches:  {mis_pep}/{n_checked}")
-        print(f"  UniProt mismatches:  {mis_uni}/{n_checked}")
-        if mis_pep > 0:
-            print(f"  WARNING: Peptide mismatches detected — alignment unreliable!")
+    if coverage < 100:
+        n_missing = align_report["n_df_unmatched"]
+        print(f"\n  NOTE: {n_missing} split-data rows have no embedding match")
+        print(f"  These samples will be excluded from embedding-based models.")
+        print(f"  This is a TEMPORARY limitation until embeddings are recomputed")
+        print(f"  on the current version of the split data.")
 
     # -- Zero vector report --
     zero_counts = report_zero_vectors(emb_data, emb_positions)
@@ -533,7 +592,7 @@ if __name__ == "__main__":
     )
     print(f"  [OK] Saved successfully")
 
-    # -- Label distribution per fold --
+    # -- Label distribution --
     report_label_distribution(labels, folds)
 
     # -- Embedding stats per fold --
@@ -562,6 +621,7 @@ if __name__ == "__main__":
     print(f"  Runtime:          {t_end - t_start:.1f}s")
     print(f"  Embedding:        {emb_source['display_name']}")
     print(f"  Embedding dim:    {emb_dim}")
+    print(f"  Alignment method: {align_report['method']}")
     print(f"  Aligned samples:  {align_report['n_aligned']}")
     print(f"  Coverage:         {coverage:.1f}%")
     print(f"  Regions:          {available_regions}")

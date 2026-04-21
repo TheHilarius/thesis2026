@@ -40,6 +40,8 @@ data/processed/nsp3/
 data/processed/protein_lookup.csv
 data/processed/structures/
 data/processed/df_combined*
+data/processed/embeddings/*.h5 
+data/processed/embeddings_prepared/*.h5
 data/processed/epitopes_pos_and_neg_features.csv
 *tar.gz
 data/processed/epitopes_*

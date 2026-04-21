@@ -1,0 +1,17 @@
+================================================================================
+  03_PREPARE_EMBEDDINGS -- ESM-C (600M)
+================================================================================
+  Timestamp:       2026-04-21 10:19:55
+  Embedding key:   esmc
+  Raw HDF5:        C:\Users\olive\Documents\R\special_course_spring2026\data\processed\embeddings\esmc_protein_embeddings.h5
+  Split data:      C:\Users\olive\Documents\R\special_course_spring2026\data\processed\df_all_with_folds.csv
+  Output:          C:\Users\olive\Documents\R\special_course_spring2026\data\processed\embeddings_prepared\esmc_prepared.h5
+  Log:             C:\Users\olive\Documents\R\special_course_spring2026\logs\03_prepare_embeddings_esmc_log_20260421_101955.txt
+================================================================================
+
+Loading split data: C:\Users\olive\Documents\R\special_course_spring2026\data\processed\df_all_with_folds.csv
+  Shape: 53089 rows x 95 columns
+  Folds: [0, 1, 2, 3, 4, 5]
+  Positives: 23457  Negatives: 29632
+
+FATAL: Embedding file not found: C:\Users\olive\Documents\R\special_course_spring2026\data\processed\embeddings\esmc_protein_embeddings.h5
