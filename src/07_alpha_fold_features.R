@@ -190,16 +190,16 @@ alphafold_scalar <- alphafold_features |>
     pep_start, pep_end,
     # pLDDT features: peptide
     mean_plddt_peptide,
-    sd_plddt_peptide,
-    min_plddt_peptide,
+    #sd_plddt_peptide,
+    #min_plddt_peptide,
     frac_disordered_peptide,
     # pLDDT features: N-flank
     mean_plddt_nflank,
-    sd_plddt_nflank,
+    #sd_plddt_nflank,
     frac_disordered_nflank,
     # pLDDT features: C-flank
     mean_plddt_cflank,
-    sd_plddt_cflank,
+    #sd_plddt_cflank,
     frac_disordered_cflank
   )
 

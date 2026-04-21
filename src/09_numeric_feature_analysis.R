@@ -584,11 +584,11 @@ p_or_top <- ggplot(top_or, aes(x = odds_ratio, y = feature)) +
   geom_errorbarh(aes(xmin = conf_low, xmax = conf_high), height = 0.2, color = "grey30") +
   geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
   scale_x_log10(limits = sym_limits_top) +
-  labs(title = "Top 20 structural features — univariate logistic regression (scaled)",
+  labs(title = "Top 30 structural features — univariate logistic regression (scaled)",
        x = "Odds ratio (log scale, symmetric around 1.0)", y = "Feature") +
   theme_bw()
 
-ggsave(file.path(figures_dir, paste0("odds_ratios_top20_scaled", run_suffix, ".png")),
+ggsave(file.path(figures_dir, paste0("odds_ratios_top30_scaled", run_suffix, ".png")),
        plot = p_or_top, width = 8, height = 6, dpi = 300)
 
 # =============================================================================
