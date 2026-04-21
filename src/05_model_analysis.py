@@ -686,15 +686,18 @@ if __name__ == "__main__":
         all_results.append(results)
 
         run_tag = get_run_tag(results)
+        run_timestamp = results.get("timestamp", "unknown")
+        run_folder = f"{run_tag}_{run_timestamp}"
         display = get_display_title(results)
 
         # Create per-run output directory
-        run_out_dir = FIGURES_DIR / run_tag
+        run_out_dir = FIGURES_DIR / run_folder
         os.makedirs(run_out_dir, exist_ok=True)
 
         print(f"\n{'=' * 70}")
         print(f"  Analysing: {display}")
         print(f"  Run tag:   {run_tag}")
+        print(f"  Timestamp: {run_timestamp}")
         print(f"  Source:    {results_path}")
         print(f"  Output:    {run_out_dir}")
         print(f"{'=' * 70}")
@@ -718,13 +721,17 @@ if __name__ == "__main__":
         plot_model_comparison(all_results, FIGURES_DIR)
 
     # Footer
-    run_tags = [get_run_tag(r) for r in all_results]
+    run_folders = []
+    for r in all_results:
+        tag = get_run_tag(r)
+        ts = r.get("timestamp", "unknown")
+        run_folders.append(f"{tag}_{ts}")
+
     print(f"\n{'=' * 70}")
     print(f"  COMPLETE — {len(all_results)} model(s) analysed")
-    print(f"  Run tags: {', '.join(run_tags)}")
     print(f"  Figures saved under: {FIGURES_DIR}/")
-    for tag in run_tags:
-        print(f"    └── {tag}/")
+    for folder in run_folders:
+        print(f"    └── {folder}/")
     if len(all_results) > 1:
         print(f"    └── model_comparison.png")
     print(f"{'=' * 70}")

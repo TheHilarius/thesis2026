@@ -1,0 +1,367 @@
+================================================================================
+  04_MODELLING -- LOGISTIC REGRESSION + STRUCTURAL + ONE-HOT AA
+================================================================================
+  Timestamp:       2026-04-21 15:25:53
+  Model key:       lr
+  Model class:     sklearn.linear_model.LogisticRegression
+  Feature set:     handcrafted_sparse (Structural + one-hot AA)
+  Components:      ['handcrafted', 'sparse']
+  Data path:       C:\Users\olive\Documents\R\special_course_spring2026\data\processed\df_all_with_folds.csv
+  Log path:        C:\Users\olive\Documents\R\special_course_spring2026\logs\04_modelling_lr_handcrafted_sparse_log_20260421_152553.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   True
+
+  Model hyperparameters:
+    penalty                   None
+    solver                    lbfgs
+    max_iter                  5000
+    class_weight              None
+    random_state              42
+    verbose                   0
+================================================================================
+
+Loading split data: C:\Users\olive\Documents\R\special_course_spring2026\data\processed\df_all_with_folds.csv
+  Shape: 53072 rows x 88 columns
+  [OK] Fold column validated: [0, 1, 2, 3, 4, 5]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+  Loading CSV component: One-hot AA encoding
+    Loading: df_all_sparse.csv
+    Shape: 53072 rows x 410 columns
+    [OK] Alignment verified
+    New columns: 340
+
+  Merged 340 new columns → 53072 rows x 428 columns
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  CSV components (2):
+    [handcrafted] Structural features
+      Source: split_data (built-in)
+    [sparse] One-hot AA encoding
+      Source: C:\Users\olive\Documents\R\special_course_spring2026\data\processed\df_all_sparse.csv
+      New columns added: 340
+  Total CSV features: 391
+    Structural: 51
+    AA-encoded: 340
+
+  Estimated total features: ~391
+    CSV:        391
+    Embeddings: 0 (after PCA)
+
+================================================================================
+PIPELINE READY: ~391 features, 5 folds, Logistic Regression
+================================================================================
+
+--------------------------------------------------------------------------------
+  FOLD 0/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 73836 NaN values
+    WARNING: X_test: 18141 NaN values
+    CSV features: 391 columns
+    Train:  35381 samples (pos=15643, neg=19738, ratio=1.262)
+    Test:    8846 samples (pos=3897, neg=4949, ratio=1.270)
+    Features: 391
+    Training Logistic Regression ...
+    Training time: 1.5s
+
+    Fold 0 results (2.2s):
+      AUC-ROC: 0.7197  |  AUC-PR: 0.6673  |  Acc: 0.6631  |  F1: 0.5928  |  MCC: 0.3095
+      Sens: 0.5566  |  Spec: 0.7470  |  PPV: 0.6340  |  NPV: 0.6815
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      rel_distance_from_n_terminus                     -9.172681
+    2      rel_distance_from_c_terminus                     -9.169662
+    3      C1_L                                             -0.993575
+    4      P2_W                                              0.813218
+    5      C1_E                                             -0.801411
+    6      P9_E                                             -0.762981
+    7      C1_V                                             -0.747706
+    8      C1_I                                             -0.727524
+    9      C1_P                                             -0.720131
+    10     C1_D                                             -0.691656
+    11     C1_S                                             -0.689162
+    12     C1_T                                             -0.673726
+    13     C1_G                                             -0.666121
+    14     C1_F                                             -0.662813
+    15     C1_A                                             -0.660010
+    Saved model: C:\Users\olive\Documents\R\special_course_spring2026\models\lr_handcrafted_sparse_model_fold0.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 1/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 73443 NaN values
+    WARNING: X_test: 18534 NaN values
+    CSV features: 391 columns
+    Train:  35381 samples (pos=15617, neg=19764, ratio=1.266)
+    Test:    8846 samples (pos=3923, neg=4923, ratio=1.255)
+    Features: 391
+    Training Logistic Regression ...
+    Training time: 1.4s
+
+    Fold 1 results (2.0s):
+      AUC-ROC: 0.7422  |  AUC-PR: 0.6890  |  Acc: 0.6840  |  F1: 0.6196  |  MCC: 0.3539
+      Sens: 0.5802  |  Spec: 0.7668  |  PPV: 0.6647  |  NPV: 0.6962
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      rel_distance_from_n_terminus                     -8.823820
+    2      rel_distance_from_c_terminus                     -8.809451
+    3      q8point_I_nflank                                 -1.836284
+    4      q8trans_I_n_pep                                   1.506260
+    5      P2_W                                              1.166342
+    6      C1_L                                             -0.911640
+    7      P9_E                                             -0.830145
+    8      C1_E                                             -0.721584
+    9      P9_W                                              0.719000
+    10     P2_P                                              0.711857
+    11     C1_V                                             -0.675265
+    12     C1_P                                             -0.670062
+    13     C1_I                                             -0.665833
+    14     P2_C                                              0.662045
+    15     C1_D                                             -0.644821
+    Saved model: C:\Users\olive\Documents\R\special_course_spring2026\models\lr_handcrafted_sparse_model_fold1.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 2/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 72354 NaN values
+    WARNING: X_test: 19623 NaN values
+    CSV features: 391 columns
+    Train:  35382 samples (pos=15622, neg=19760, ratio=1.265)
+    Test:    8845 samples (pos=3918, neg=4927, ratio=1.258)
+    Features: 391
+    Training Logistic Regression ...
+    Training time: 1.3s
+
+    Fold 2 results (1.9s):
+      AUC-ROC: 0.7212  |  AUC-PR: 0.6580  |  Acc: 0.6703  |  F1: 0.6023  |  MCC: 0.3253
+      Sens: 0.5636  |  Spec: 0.7552  |  PPV: 0.6467  |  NPV: 0.6851
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      rel_distance_from_n_terminus                     -9.326103
+    2      rel_distance_from_c_terminus                     -9.303438
+    3      P2_W                                              1.044995
+    4      C1_L                                             -0.832060
+    5      P9_W                                              0.720255
+    6      P2_K                                             -0.660298
+    7      P9_E                                             -0.648205
+    8      C1_E                                             -0.645946
+    9      C1_I                                             -0.626926
+    10     C1_V                                             -0.607549
+    11     C1_P                                             -0.603549
+    12     C1_D                                             -0.589584
+    13     C1_F                                             -0.551535
+    14     C1_T                                             -0.548429
+    15     C1_S                                             -0.546112
+    Saved model: C:\Users\olive\Documents\R\special_course_spring2026\models\lr_handcrafted_sparse_model_fold2.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 3/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 73282 NaN values
+    WARNING: X_test: 18695 NaN values
+    CSV features: 391 columns
+    Train:  35382 samples (pos=15643, neg=19739, ratio=1.262)
+    Test:    8845 samples (pos=3897, neg=4948, ratio=1.270)
+    Features: 391
+    Training Logistic Regression ...
+    Training time: 1.2s
+
+    Fold 3 results (1.8s):
+      AUC-ROC: 0.7247  |  AUC-PR: 0.6695  |  Acc: 0.6725  |  F1: 0.6024  |  MCC: 0.3285
+      Sens: 0.5633  |  Spec: 0.7585  |  PPV: 0.6475  |  NPV: 0.6880
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      rel_distance_from_n_terminus                     -9.548012
+    2      rel_distance_from_c_terminus                     -9.521469
+    3      P2_Y                                              1.903097
+    4      P2_W                                              1.106539
+    5      P9_E                                             -0.911520
+    6      C1_L                                             -0.893196
+    7      C1_E                                             -0.692143
+    8      P2_C                                              0.681452
+    9      C1_V                                             -0.663739
+    10     C1_I                                             -0.655179
+    11     P2_K                                             -0.642974
+    12     C1_P                                             -0.642054
+    13     C1_D                                             -0.612998
+    14     P9_W                                              0.603334
+    15     C1_S                                             -0.603300
+    Saved model: C:\Users\olive\Documents\R\special_course_spring2026\models\lr_handcrafted_sparse_model_fold3.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 4/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 74993 NaN values
+    WARNING: X_test: 16984 NaN values
+    CSV features: 391 columns
+    Train:  35382 samples (pos=15635, neg=19747, ratio=1.263)
+    Test:    8845 samples (pos=3905, neg=4940, ratio=1.265)
+    Features: 391
+    Training Logistic Regression ...
+    Training time: 1.5s
+
+    Fold 4 results (2.1s):
+      AUC-ROC: 0.7323  |  AUC-PR: 0.6781  |  Acc: 0.6726  |  F1: 0.6046  |  MCC: 0.3294
+      Sens: 0.5670  |  Spec: 0.7561  |  PPV: 0.6476  |  NPV: 0.6884
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      rel_distance_from_n_terminus                     -8.914620
+    2      rel_distance_from_c_terminus                     -8.899175
+    3      C1_L                                             -0.918694
+    4      P2_W                                              0.834106
+    5      C1_E                                             -0.711646
+    6      P2_K                                             -0.692526
+    7      C1_V                                             -0.664955
+    8      C1_I                                             -0.663572
+    9      C1_P                                             -0.662560
+    10     P2_P                                              0.643528
+    11     P9_W                                              0.642597
+    12     C1_D                                             -0.625915
+    13     C1_T                                             -0.615141
+    14     C1_G                                             -0.602181
+    15     C1_F                                             -0.592175
+    Saved model: C:\Users\olive\Documents\R\special_course_spring2026\models\lr_handcrafted_sparse_model_fold4.pkl
+
+================================================================================
+CROSS-VALIDATION SUMMARY (mean +/- std)
+================================================================================
+  auc_roc         0.7280 +/- 0.0083    [0.7197  0.7422  0.7212  0.7247  0.7323]
+  auc_pr          0.6724 +/- 0.0105    [0.6673  0.6890  0.6580  0.6695  0.6781]
+  accuracy        0.6725 +/- 0.0067    [0.6631  0.6840  0.6703  0.6725  0.6726]
+  f1              0.6043 +/- 0.0086    [0.5928  0.6196  0.6023  0.6024  0.6046]
+  mcc             0.3293 +/- 0.0142    [0.3095  0.3539  0.3253  0.3285  0.3294]
+  sensitivity     0.5661 +/- 0.0078    [0.5566  0.5802  0.5636  0.5633  0.5670]
+  specificity     0.7567 +/- 0.0064    [0.7470  0.7668  0.7552  0.7585  0.7561]
+  ppv             0.6481 +/- 0.0098    [0.6340  0.6647  0.6467  0.6475  0.6476]
+  npv             0.6878 +/- 0.0049    [0.6815  0.6962  0.6851  0.6880  0.6884]
+
+  Best fold: 1 (AUC-ROC = 0.7422)
+
+================================================================================
+PER-FOLD METRIC COMPARISON
+================================================================================
+  Fold    auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
+  -----------------------------------------------------------------------------------------------------------------------------
+  0       0.7197       0.6673       0.6631       0.5928       0.3095       0.5566       0.7470       0.6340       0.6815       
+  1       0.7422       0.6890       0.6840       0.6196       0.3539       0.5802       0.7668       0.6647       0.6962       
+  2       0.7212       0.6580       0.6703       0.6023       0.3253       0.5636       0.7552       0.6467       0.6851       
+  3       0.7247       0.6695       0.6725       0.6024       0.3285       0.5633       0.7585       0.6475       0.6880       
+  4       0.7323       0.6781       0.6726       0.6046       0.3294       0.5670       0.7561       0.6476       0.6884       
+  -----------------------------------------------------------------------------------------------------------------------------
+  mean    0.7280       0.6724       0.6725       0.6043       0.3293       0.5661       0.7567       0.6481       0.6878       
+  std     0.0083       0.0105       0.0067       0.0086       0.0142       0.0078       0.0064       0.0098       0.0049       
+
+================================================================================
+AVERAGED COEFFICIENTS ACROSS ALL FOLDS
+================================================================================
+  Rank   Feature                                          Mean Coef          Std
+  -----------------------------------------------------------------------------
+  1      rel_distance_from_n_terminus                     -9.157047     0.265137
+  2      rel_distance_from_c_terminus                     -9.140639     0.260909
+  3      P2_W                                              0.993040     0.143674
+  4      C1_L                                             -0.909833     0.051807
+  5      C1_E                                             -0.714546     0.050619
+  6      P9_E                                             -0.708932     0.180505
+  7      C1_V                                             -0.671843     0.044752
+  8      C1_I                                             -0.667807     0.032920
+  9      P9_W                                              0.664764     0.046837
+  10     C1_P                                             -0.659671     0.038031
+  11     C1_D                                             -0.632995     0.034396
+  12     C1_S                                             -0.611641     0.046950
+  13     C1_T                                             -0.608275     0.041112
+  14     P2_K                                             -0.608217     0.071817
+  15     C1_G                                             -0.602899     0.041088
+  16     P2_C                                              0.600651     0.063669
+  17     C1_F                                             -0.597730     0.036027
+  18     P2_P                                              0.594984     0.071415
+  19     C1_Q                                             -0.579443     0.042244
+  20     C1_A                                             -0.577093     0.049551
+  21     C1_K                                             -0.561782     0.036980
+  22     C1_R                                             -0.544651     0.044668
+  23     C1_N                                             -0.494406     0.032989
+  24     C1_Y                                             -0.465221     0.030940
+  25     P9_Q                                              0.461593     0.103484
+  26     P2_Y                                              0.442982     0.730102
+  27     q8point_I_nflank                                 -0.409051     0.713636
+  28     C1_H                                             -0.387338     0.031598
+  29     C1_M                                             -0.373423     0.022708
+  30     P9_K                                              0.365100     0.184970
+
+================================================================================
+HELD-OUT VALIDATION SET EVALUATION
+================================================================================
+  Using model from best fold (1)
+  Held-out samples: 8845 (pos=3901, neg=4944, ratio=1.267)
+
+  Held-out results (8845 samples):
+    AUC-ROC: 0.7363  |  AUC-PR: 0.6841  |  Acc: 0.6823  |  F1: 0.6141  |  MCC: 0.3490
+    Sens: 0.5732  |  Spec: 0.7684  |  PPV: 0.6613  |  NPV: 0.6953
+
+  Classification Report:
+              precision    recall  f1-score   support
+
+    Negative     0.6953    0.7684    0.7300      4944
+    Positive     0.6613    0.5732    0.6141      3901
+
+    accuracy                         0.6823      8845
+   macro avg     0.6783    0.6708    0.6721      8845
+weighted avg     0.6803    0.6823    0.6789      8845
+
+================================================================================
+CV AVERAGE vs HELD-OUT COMPARISON
+================================================================================
+  Metric             CV mean     CV std   Held-out      Delta
+  ---------------------------------------------------------
+  auc_roc             0.7280     0.0083     0.7363    +0.0083
+  auc_pr              0.6724     0.0105     0.6841    +0.0118
+  accuracy            0.6725     0.0067     0.6823    +0.0098
+  f1                  0.6043     0.0086     0.6141    +0.0098
+  mcc                 0.3293     0.0142     0.3490    +0.0197
+  sensitivity         0.5661     0.0078     0.5732    +0.0071
+  specificity         0.7567     0.0064     0.7684    +0.0117
+  ppv                 0.6481     0.0098     0.6613    +0.0132
+  npv                 0.6878     0.0049     0.6953    +0.0074
+
+Results saved: C:\Users\olive\Documents\R\special_course_spring2026\models\cv_results_lr_handcrafted_sparse_20260421_152553.json
+Best model saved: C:\Users\olive\Documents\R\special_course_spring2026\models\best_lr_handcrafted_sparse_model.pkl
+Fold artifacts saved: C:\Users\olive\Documents\R\special_course_spring2026\models\best_lr_handcrafted_sparse_artifacts.pkl
+Feature names saved: C:\Users\olive\Documents\R\special_course_spring2026\models\lr_handcrafted_sparse_feature_names.json
+
+================================================================================
+RUN SUMMARY
+================================================================================
+  Total runtime:    12.4s (0.2 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      Structural + one-hot AA (handcrafted_sparse)
+  Components:       ['handcrafted', 'sparse']
+  Scaling:          yes
+  Features (final): 391
+    CSV features:   391
+  CV folds:         5
+  Best fold:        1 (AUC = 0.7422)
+  Held-out AUC:     0.7363
+  Held-out MCC:     0.3490
+  Models dir:       C:\Users\olive\Documents\R\special_course_spring2026\models/
+  Results file:     C:\Users\olive\Documents\R\special_course_spring2026\models\cv_results_lr_handcrafted_sparse_20260421_152553.json
+  Feature names:    C:\Users\olive\Documents\R\special_course_spring2026\models\lr_handcrafted_sparse_feature_names.json
+  Log file:         C:\Users\olive\Documents\R\special_course_spring2026\logs\04_modelling_lr_handcrafted_sparse_log_20260421_152553.txt
+  Completed:        2026-04-21 15:26:06
+================================================================================
