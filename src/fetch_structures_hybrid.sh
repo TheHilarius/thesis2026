@@ -169,6 +169,13 @@ fetch_one() {
     # STEP 1: Try experimental PDB structures (sorted by resolution)
     # ══════════════════════════════════════════════════════════════════════
 
+    # Track best partial PDB in case AF2 also fails
+    local BEST_PARTIAL_FILE=""
+    local BEST_PARTIAL_PDB_ID=""
+    local BEST_PARTIAL_COVERAGE=""
+    local BEST_PARTIAL_RESOLUTION=""
+    local BEST_PARTIAL_PCT=0
+
     QUERY=$(printf '{
       "query": {
         "type": "terminal",
@@ -221,7 +228,6 @@ except:
 
             COVERAGE=$(check_coverage "${TMP_PDB}" "${START}" "${END}")
 
-            # Accept full coverage OR >=80% overlap
             if [[ "${COVERAGE}" == "ok" ]]; then
                 RESOLUTION=$(get_resolution "${TMP_PDB}")
                 FINAL_NAME="${OUT_DIR}/selected/${UNIPROT}.pdb"
@@ -237,7 +243,6 @@ except:
                 break
 
             elif [[ "${COVERAGE}" == partial:*pct ]]; then
-                # Extract percentage
                 local pct_val
                 pct_val=$(echo "${COVERAGE}" | grep -oP '[0-9.]+(?=pct)')
 
@@ -255,8 +260,20 @@ except:
                     echo "  [PDB] ✓ ${PDB_ID} (resolution: ${RESOLUTION}Å, coverage: ${COVERAGE} — accepted ≥80%)"
                     break
                 else
+                    # Track best partial for last-resort fallback
+                    if (( $(echo "${pct_val} > ${BEST_PARTIAL_PCT}" | bc -l) )); then
+                        # Save this as best partial so far
+                        rm -f "${BEST_PARTIAL_FILE}"
+                        BEST_PARTIAL_FILE="${TMP_PDB}"
+                        BEST_PARTIAL_PDB_ID="${PDB_ID}"
+                        BEST_PARTIAL_COVERAGE="${COVERAGE}"
+                        BEST_PARTIAL_RESOLUTION=$(get_resolution "${TMP_PDB}")
+                        BEST_PARTIAL_PCT=$(echo "${pct_val}" | bc -l)
+                    else
+                        rm -f "${TMP_PDB}"
+                    fi
+
                     echo "  [PDB] ✗ ${PDB_ID} coverage: ${COVERAGE} — below 80% threshold"
-                    rm -f "${TMP_PDB}"
                 fi
             else
                 echo "  [PDB] ✗ ${PDB_ID} coverage: ${COVERAGE}"
@@ -268,6 +285,7 @@ except:
         echo "  [PDB] No experimental structures found for ${BASE_ID}"
     fi
 
+    
     # ══════════════════════════════════════════════════════════════════════
     # STEP 2: AlphaFold fallback (if no suitable PDB found)
     # ══════════════════════════════════════════════════════════════════════
@@ -288,7 +306,6 @@ except:
             SELECTED_RESOLUTION="NA"
 
         elif [[ "${UNIPROT}" != "${BASE_ID}" ]]; then
-            # Isoform — try canonical base
             echo "  [AF2] Trying canonical base: ${BASE_ID}"
             BASE_AF2_FILE="${OUT_DIR}/selected/${UNIPROT}.pdb"
             BASE_VERSION=$(fetch_af2 "${BASE_ID}" "${BASE_AF2_FILE}" || true)
@@ -306,13 +323,35 @@ except:
     fi
 
     # ══════════════════════════════════════════════════════════════════════
-    # STEP 3: Log result
+    # STEP 3: Last resort — best partial PDB (if AF2 also failed)
+    # ══════════════════════════════════════════════════════════════════════
+
+    if [[ -z "${SELECTED_FILE}" && -n "${BEST_PARTIAL_FILE}" ]]; then
+        FINAL_NAME="${OUT_DIR}/selected/${UNIPROT}.pdb"
+        mv "${BEST_PARTIAL_FILE}" "${FINAL_NAME}"
+
+        SELECTED_FILE="${FINAL_NAME}"
+        SELECTED_SOURCE="pdb_partial"
+        SELECTED_PDB_ID="${BEST_PARTIAL_PDB_ID}"
+        SELECTED_COVERAGE="${BEST_PARTIAL_COVERAGE}"
+        SELECTED_RESOLUTION="${BEST_PARTIAL_RESOLUTION}"
+
+        echo "  [PDB] ✓ Last resort: ${BEST_PARTIAL_PDB_ID} (resolution: ${BEST_PARTIAL_RESOLUTION}Å, coverage: ${BEST_PARTIAL_COVERAGE})"
+    fi
+
+    # Clean up any remaining temp partial file
+    if [[ -n "${BEST_PARTIAL_FILE}" && -f "${BEST_PARTIAL_FILE}" ]]; then
+        rm -f "${BEST_PARTIAL_FILE}"
+    fi
+
+    # ══════════════════════════════════════════════════════════════════════
+    # STEP 4: Log result
     # ══════════════════════════════════════════════════════════════════════
 
     if [[ -n "${SELECTED_FILE}" ]]; then
         echo -e "${UNIPROT}\t${START}\t${END}\t${SELECTED_SOURCE}\t${SELECTED_PDB_ID}\t${SELECTED_FILE}\t${SELECTED_COVERAGE}\t${SELECTED_RESOLUTION}" >> "${LOG}"
 
-        if [[ "${SELECTED_SOURCE}" == "pdb" ]]; then
+        if [[ "${SELECTED_SOURCE}" == pdb* ]]; then
             COUNT_PDB=$((COUNT_PDB + 1))
         else
             COUNT_AF2=$((COUNT_AF2 + 1))
@@ -330,7 +369,6 @@ except:
 
     sleep 0.3
 }
-
 # ── Process one fetch list ────────────────────────────────────────────────────
 process_list() {
     local fetch_list="${1}"
