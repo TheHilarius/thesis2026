@@ -51,7 +51,7 @@ env_*
 results/*.csv
 data/processed/*.csv
 data/processed/alphafold*.rds
-
+data/processed/structures_hybrid/*
 
 # Model files (large binary)
 models/*.pkl

@@ -62,6 +62,21 @@ EMBEDDING_SOURCES = {
         "has_row_indices": False,
         "has_start_end": False,
     },
+    "esmif_hybrid": {
+        "display_name": "ESM-IF1 (hybrid PDB+AF2)",
+        "raw_path": EMBEDDING_DIR / "esmif_hybrid_structure_embeddings.h5",
+        "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_hybrid_prepared.h5",
+        "emb_dim": 512,
+        "region_map": {
+            "peptide": "peptide_if_struct",
+            "n_flank": "n_flank_if_struct",
+            "c_flank": "c_flank_if_struct",
+        },
+        "peptide_id_col": "peptide_ids",
+        "uniprot_id_col": "uniprot_ids",
+        "has_row_indices": False,
+        "has_start_end": False,
+    },
 }
 
 EMBEDDING_REGIONS = ["peptide_emb", "n_flank_emb", "c_flank_emb"]
@@ -153,6 +168,12 @@ FEATURE_COMPONENTS = {
         "embedding_key": "esmif",
         "pca_components": PCA_COMPONENTS_PER_REGION,
     },
+    "esmif_hybrid": {
+        "display_name": "ESM-IF1 hybrid (PDB+AF2) embeddings",
+        "type": "embedding",
+        "embedding_key": "esmif_hybrid",
+        "pca_components": PCA_COMPONENTS_PER_REGION,
+    },
 }
 
 # ──────────────────────────────────────────────
@@ -172,6 +193,10 @@ FEATURE_SETS = {
         "display_name": "ESM-IF1 embeddings only",
         "components": ["esmif"],
     },
+    "esmif_hybrid": {
+        "display_name": "ESM-IF1 hybrid embeddings only",
+        "components": ["esmif_hybrid"],
+    },
     # ── Structural + AA encoding ──
     "handcrafted_sparse": {
         "display_name": "Structural + one-hot AA",
@@ -189,6 +214,10 @@ FEATURE_SETS = {
     "handcrafted_sparse_esmif": {
         "display_name": "Structural + one-hot + ESM-IF",
         "components": ["handcrafted", "sparse", "esmif"],
+    },
+    "handcrafted_sparse_esmif_hybrid": {
+        "display_name": "Structural + one-hot + ESM-IF hybrid",
+        "components": ["handcrafted", "sparse", "esmif_hybrid"],
     },
     "handcrafted_blosum_esmc": {
         "display_name": "Structural + BLOSUM50 + ESM-C",
