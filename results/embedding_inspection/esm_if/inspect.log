@@ -7,54 +7,54 @@ Loading data/processed/embeddings/esmif_structure_embeddings.h5...
 ── HDF5 Metadata ──────────────────────────────────────────
   emb_dim               : 512
   model                 : esm_if1_gvp4_t16_142M_UR50
-  n_samples             : 53198
+  n_samples             : 53072
 
 ── Datasets ───────────────────────────────────────────────
-  c_flank_if_struct       : shape=(53198, 512)  dtype=float32
-  n_flank_if_struct       : shape=(53198, 512)  dtype=float32
-  peptide_ids             : shape=(53198,)  dtype=|S20
-  peptide_if_struct       : shape=(53198, 512)  dtype=float32
-  uniprot_ids             : shape=(53198,)  dtype=|S20
+  c_flank_if_struct       : shape=(53072, 512)  dtype=float32
+  n_flank_if_struct       : shape=(53072, 512)  dtype=float32
+  peptide_ids             : shape=(53072,)  dtype=|S20
+  peptide_if_struct       : shape=(53072, 512)  dtype=float32
+  uniprot_ids             : shape=(53072,)  dtype=|S20
 
   Detected format: ESM-IF
 
-  Loaded 53198 samples, embedding dim = 512
+  Loaded 53072 samples, embedding dim = 512
   Model type: ESM-IF
 
 Loading data/processed/df_all.csv...
-  Positives (label=1) : 23496
-  Negatives (label=0) : 29702
+  Positives (label=1) : 23441
+  Negatives (label=0) : 29631
 
 =================================================================
   1. Basic Embedding Statistics
 =================================================================
 
-  ── peptide embeddings ((53198, 512)) ──
-    Zero vectors       : 6321 / 53198  (11.9%)
-    Value range        : [-1.9606, 1.7665]
-    Mean (all dims)    : 0.004014
-    Std  (all dims)    : 0.242464
-    L2 norm  min/med/max : 0.000 / 5.453 / 11.644
-    Per-dim mean range : [-0.6818, 0.4933]
-    Per-dim std range  : [0.1014, 0.4255]
+  ── peptide embeddings ((53072, 512)) ──
+    Zero vectors       : 6290 / 53072  (11.9%)
+    Value range        : [-1.9606, 1.8730]
+    Mean (all dims)    : 0.004027
+    Std  (all dims)    : 0.242411
+    L2 norm  min/med/max : 0.000 / 5.452 / 11.644
+    Per-dim mean range : [-0.6818, 0.4936]
+    Per-dim std range  : [0.1011, 0.4254]
 
-  ── n_flank embeddings ((53198, 512)) ──
-    Zero vectors       : 6354 / 53198  (11.9%)
-    Value range        : [-2.1190, 1.7635]
-    Mean (all dims)    : 0.004259
-    Std  (all dims)    : 0.238454
-    L2 norm  min/med/max : 0.000 / 5.346 / 10.697
-    Per-dim mean range : [-0.6354, 0.4585]
-    Per-dim std range  : [0.0988, 0.3982]
+  ── n_flank embeddings ((53072, 512)) ──
+    Zero vectors       : 6325 / 53072  (11.9%)
+    Value range        : [-1.9863, 1.7635]
+    Mean (all dims)    : 0.004269
+    Std  (all dims)    : 0.238358
+    L2 norm  min/med/max : 0.000 / 5.344 / 10.697
+    Per-dim mean range : [-0.6352, 0.4578]
+    Per-dim std range  : [0.0985, 0.3981]
 
-  ── c_flank embeddings ((53198, 512)) ──
-    Zero vectors       : 6456 / 53198  (12.1%)
-    Value range        : [-2.7540, 2.1468]
-    Mean (all dims)    : 0.004135
-    Std  (all dims)    : 0.238456
-    L2 norm  min/med/max : 0.000 / 5.342 / 11.508
-    Per-dim mean range : [-0.6266, 0.4618]
-    Per-dim std range  : [0.0994, 0.3948]
+  ── c_flank embeddings ((53072, 512)) ──
+    Zero vectors       : 6427 / 53072  (12.1%)
+    Value range        : [-1.9866, 1.8559]
+    Mean (all dims)    : 0.004152
+    Std  (all dims)    : 0.238402
+    L2 norm  min/med/max : 0.000 / 5.343 / 11.657
+    Per-dim mean range : [-0.6271, 0.4609]
+    Per-dim std range  : [0.0990, 0.3953]
 
   ── Fallback flags: not available (ESM-IF) ──
 
@@ -71,17 +71,17 @@ Loading data/processed/df_all.csv...
 =================================================================
   4. Cosine similarity between peptide / n_flank / c_flank...
 =================================================================
-  peptide↔n_flank       : median(pos)=0.656  median(neg)=0.670  (n_valid=46843)
-  peptide↔c_flank       : median(pos)=0.647  median(neg)=0.669  (n_valid=46742)
-  n_flank↔c_flank       : median(pos)=0.589  median(neg)=0.614  (n_valid=46708)
+  peptide↔n_flank       : median(pos)=0.655  median(neg)=0.668  (n_valid=46747)
+  peptide↔c_flank       : median(pos)=0.646  median(neg)=0.667  (n_valid=46645)
+  n_flank↔c_flank       : median(pos)=0.588  median(neg)=0.612  (n_valid=46610)
   Saved: results/embedding_inspection/esm_if/cosine_similarity.png
 
 =================================================================
   5. Inter-sample cosine similarity (sampling 2000 pairs)...
 =================================================================
-  peptide: pos↔pos=0.289  neg↔neg=0.298  pos↔neg=0.295
-  n_flank: pos↔pos=0.296  neg↔neg=0.303  pos↔neg=0.303
-  c_flank: pos↔pos=0.303  neg↔neg=0.310  pos↔neg=0.308
+  peptide: pos↔pos=0.289  neg↔neg=0.302  pos↔neg=0.289
+  n_flank: pos↔pos=0.294  neg↔neg=0.314  pos↔neg=0.299
+  c_flank: pos↔pos=0.299  neg↔neg=0.308  pos↔neg=0.302
   Saved: results/embedding_inspection/esm_if/inter_sample_cosine.png
 
 =================================================================
@@ -90,7 +90,7 @@ Loading data/processed/df_all.csv...
   peptide: 50% variance in 18 PCs
   peptide: 75% variance in 50 PCs
   peptide: 90% variance in 50 PCs
-  n_flank: 50% variance in 16 PCs
+  n_flank: 50% variance in 17 PCs
   n_flank: 75% variance in 50 PCs
   n_flank: 90% variance in 50 PCs
   c_flank: 50% variance in 17 PCs
@@ -107,12 +107,12 @@ Loading data/processed/df_all.csv...
 =================================================================
   8. Top discriminative dimensions (Mann-Whitney per dim)...
 =================================================================
-  peptide: 328/512 dims significant (Bonferroni p<0.05)
-    Top 5 effect sizes: d471=0.1507, d122=0.1329, d193=0.1267, d474=0.1220, d290=-0.1159
-  n_flank: 325/512 dims significant (Bonferroni p<0.05)
-    Top 5 effect sizes: d471=0.1541, d122=0.1355, d474=0.1227, d164=0.1069, d193=0.1010
-  c_flank: 304/512 dims significant (Bonferroni p<0.05)
-    Top 5 effect sizes: d471=0.1313, d509=-0.1105, d290=-0.1079, d474=0.1053, d151=0.1040
+  peptide: 333/512 dims significant (Bonferroni p<0.05)
+    Top 5 effect sizes: d471=0.1484, d122=0.1342, d193=0.1256, d474=0.1236, d290=-0.1151
+  n_flank: 320/512 dims significant (Bonferroni p<0.05)
+    Top 5 effect sizes: d471=0.1531, d122=0.1369, d474=0.1240, d164=0.1067, d227=-0.1021
+  c_flank: 309/512 dims significant (Bonferroni p<0.05)
+    Top 5 effect sizes: d471=0.1287, d509=-0.1111, d290=-0.1070, d474=0.1058, d151=0.1031
   Saved: results/embedding_inspection/esm_if/top_discriminative_dims.png
 
 =================================================================
@@ -124,9 +124,9 @@ Loading data/processed/df_all.csv...
   10. Summary
 =================================================================
  model  region  n_samples  emb_dim  n_zero_vecs norm_median norm_std value_mean value_std
-ESM-IF peptide      53198      512         6321       5.453    2.056   0.004014  0.242464
-ESM-IF n_flank      53198      512         6354       5.346    2.035   0.004259  0.238454
-ESM-IF c_flank      53198      512         6456       5.342    2.049   0.004135  0.238456
+ESM-IF peptide      53072      512         6290       5.452    2.052   0.004027  0.242411
+ESM-IF n_flank      53072      512         6325       5.344    2.032   0.004269  0.238358
+ESM-IF c_flank      53072      512         6427       5.343    2.047   0.004152  0.238402
 
   Saved: results/embedding_inspection/esm_if/embedding_summary.csv
 
