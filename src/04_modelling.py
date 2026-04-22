@@ -443,23 +443,51 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id):
         X_emb_train = concatenate_regions(emb_data, train_indices)
         X_emb_test = concatenate_regions(emb_data, test_indices)
 
-        # Clean
+        # Clean inf values
         for arr in [X_emb_train, X_emb_test]:
             arr[np.isinf(arr)] = 0.0
             arr[np.isnan(arr)] = 0.0
 
-        # PCA (fit on train)
+        # ── Zero-vector handling ──
+        # Identify samples where ALL embedding dims are zero
+        # (unresolved structures produce all-zero rows)
+        train_norms = np.linalg.norm(X_emb_train, axis=1)
+        test_norms = np.linalg.norm(X_emb_test, axis=1)
+
+        train_nonzero_mask = train_norms > 0.0
+        test_nonzero_mask = test_norms > 0.0
+
+        n_train_zero = (~train_nonzero_mask).sum()
+        n_test_zero = (~test_nonzero_mask).sum()
+        pct_train_zero = n_train_zero / len(train_norms) * 100
+        pct_test_zero = n_test_zero / len(test_norms) * 100
+
+        print(f"    {comp_key}: zero-vector samples: "
+              f"train={n_train_zero}/{len(train_norms)} ({pct_train_zero:.1f}%), "
+              f"test={n_test_zero}/{len(test_norms)} ({pct_test_zero:.1f}%)")
+
+        # Fit PCA only on non-zero training samples
+        X_emb_train_valid = X_emb_train[train_nonzero_mask]
+
         total_components = pca_components * n_regions
-        total_components = min(total_components, X_emb_train.shape[1], X_emb_train.shape[0])
+        total_components = min(
+            total_components,
+            X_emb_train_valid.shape[1],
+            X_emb_train_valid.shape[0],
+        )
 
         pca = PCA(n_components=total_components, random_state=RANDOM_STATE)
-        X_emb_train = pca.fit_transform(X_emb_train)
+        pca.fit(X_emb_train_valid)
+
+        # Transform ALL samples (non-zero get real projections,
+        # zero vectors project to origin in PC space)
+        X_emb_train = pca.transform(X_emb_train)
         X_emb_test = pca.transform(X_emb_test)
 
         explained = pca.explained_variance_ratio_.sum() * 100
         print(f"    {comp_key}: PCA {emb_data['emb_dim'] * n_regions} → {total_components} "
               f"({pca_components}/region × {n_regions} regions, "
-              f"{explained:.1f}% variance)")
+              f"{explained:.1f}% variance, fitted on {train_nonzero_mask.sum()} non-zero samples)")
 
         fold_artifacts["pca_dict"][comp_key] = pca
 
@@ -629,8 +657,12 @@ def parse_args():
         "--features", type=str, default=DEFAULT_FEATURE_SET,
         help=f"Feature set key from FEATURE_SETS (default: {DEFAULT_FEATURE_SET})",
     )
+    parser.add_argument(
+        "--pca", type=int, default=None,
+        help="Override PCA components per region for ALL embedding components "
+             "(default: use config.py value)",
+    )
     return parser.parse_args()
-
 
 # ──────────────────────────────────────────────
 # 12. MAIN
@@ -646,6 +678,11 @@ if __name__ == "__main__":
     model_cfg = get_model_config(model_key)
     feat_cfg = get_feature_set_config(features_key)
     validate_feature_set(feat_cfg)
+
+    # ── PCA override ──
+    pca_override = args.pca
+    if pca_override is not None:
+        print(f"  [CLI OVERRIDE] PCA components per region: {pca_override}")
 
     display_name = model_cfg["display_name"]
     feat_display = feat_cfg["display_name"]
@@ -707,6 +744,16 @@ if __name__ == "__main__":
     df, csv_feature_cols, emb_data_dict, component_info = load_all_components(
         df_split, feat_cfg,
     )
+
+    # Apply PCA override if specified
+    if pca_override is not None:
+        for comp_key, emb_data in emb_data_dict.items():
+            emb_data["pca_components"] = pca_override
+        # Update component_info for logging
+        for info in component_info["emb_components"]:
+            info["pca_components"] = pca_override
+            info["pca_total"] = pca_override * info["n_regions"]
+            
     del df_split  # free the original copy
 
     # -- Summary --
