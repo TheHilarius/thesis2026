@@ -1,0 +1,382 @@
+================================================================================
+  04_MODELLING -- LOGISTIC REGRESSION + STRUCTURAL + ONE-HOT + ESM-IF
+================================================================================
+  Timestamp:       2026-04-22 13:52:34
+  Model key:       lr
+  Model class:     sklearn.linear_model.LogisticRegression
+  Feature set:     handcrafted_sparse_esmif (Structural + one-hot + ESM-IF)
+  Components:      ['handcrafted', 'sparse', 'esmif']
+  Data path:       /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Log path:        /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_handcrafted_sparse_esmif_log_20260422_135234.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   True
+
+  Model hyperparameters:
+    penalty                   None
+    solver                    lbfgs
+    max_iter                  5000
+    class_weight              None
+    random_state              42
+    verbose                   0
+================================================================================
+
+Loading split data: /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Shape: 53072 rows x 88 columns
+  [OK] Fold column validated: [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5)]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+  Loading CSV component: One-hot AA encoding
+    Loading: df_all_sparse.csv
+    Shape: 53072 rows x 410 columns
+    [OK] Alignment verified
+    New columns: 340
+
+  Merged 340 new columns → 53072 rows x 428 columns
+
+  Loading embedding component: ESM-IF1 embeddings
+    Loading prepared embeddings: /home/hilarius/special_course/special_course_spring2026/data/processed/embeddings_prepared/esmif_prepared.h5
+    Loaded: 53072 samples, 3 regions, dim=512
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  CSV components (2):
+    [handcrafted] Structural features
+      Source: split_data (built-in)
+    [sparse] One-hot AA encoding
+      Source: /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_sparse.csv
+      New columns added: 340
+  Total CSV features: 391
+    Structural: 51
+    AA-encoded: 340
+
+  Embedding components (1):
+    [esmif] ESM-IF1 embeddings
+      Raw dim: 1536 (3 regions × 512)
+      After PCA: 150 (50/region × 3 regions)
+
+  Estimated total features: ~541
+    CSV:        391
+    Embeddings: 150 (after PCA)
+
+================================================================================
+PIPELINE READY: ~541 features, 5 folds, Logistic Regression
+================================================================================
+
+--------------------------------------------------------------------------------
+  FOLD 0/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 73836 NaN values replaced with medians
+    WARNING: X_test: 18141 NaN values replaced with medians
+    CSV features: 391 columns
+    esmif: PCA 1536 → 150 (50/region × 3 regions, 76.8% variance)
+    Train:  35381 samples (pos=15643, neg=19738, ratio=1.262)
+    Test:    8846 samples (pos=3897, neg=4949, ratio=1.270)
+    Features: 541
+    Training Logistic Regression ...
+    Training time: 4.3s
+
+    Fold 0 results (10.1s):
+      AUC-ROC: 0.7307  |  AUC-PR: 0.6773  |  Acc: 0.6739  |  F1: 0.6103  |  MCC: 0.3326
+      Sens: 0.5797  |  Spec: 0.7480  |  PPV: 0.6443  |  NPV: 0.6933
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      rel_distance_from_n_terminus                     -6.223436
+    2      rel_distance_from_c_terminus                     -6.217220
+    3      C1_L                                             -1.498706
+    4      C1_E                                             -1.214155
+    5      C1_V                                             -1.145471
+    6      C1_S                                             -1.125713
+    7      C1_A                                             -1.091421
+    8      C1_P                                             -1.084070
+    9      C1_I                                             -1.053868
+    10     C1_G                                             -1.043887
+    11     C1_T                                             -1.042999
+    12     C1_K                                             -1.040636
+    13     C1_D                                             -1.040459
+    14     C1_Q                                             -1.032044
+    15     C1_R                                             -1.009948
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_sparse_esmif_model_fold0.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 1/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 73443 NaN values replaced with medians
+    WARNING: X_test: 18534 NaN values replaced with medians
+    CSV features: 391 columns
+    esmif: PCA 1536 → 150 (50/region × 3 regions, 76.8% variance)
+    Train:  35381 samples (pos=15617, neg=19764, ratio=1.266)
+    Test:    8846 samples (pos=3923, neg=4923, ratio=1.255)
+    Features: 541
+    Training Logistic Regression ...
+    Training time: 7.7s
+
+    Fold 1 results (13.1s):
+      AUC-ROC: 0.7535  |  AUC-PR: 0.7027  |  Acc: 0.6917  |  F1: 0.6334  |  MCC: 0.3705
+      Sens: 0.6006  |  Spec: 0.7644  |  PPV: 0.6701  |  NPV: 0.7060
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      rel_distance_from_n_terminus                     -7.145209
+    2      rel_distance_from_c_terminus                     -7.115027
+    3      C1_L                                             -1.314477
+    4      C1_E                                             -1.049492
+    5      C1_V                                             -0.993633
+    6      C1_S                                             -0.978760
+    7      C1_P                                             -0.960703
+    8      C1_A                                             -0.933483
+    9      C1_I                                             -0.926504
+    10     C1_D                                             -0.924019
+    11     C1_G                                             -0.921350
+    12     C1_T                                             -0.917567
+    13     C1_Q                                             -0.899943
+    14     C1_K                                             -0.891905
+    15     C1_R                                             -0.867596
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_sparse_esmif_model_fold1.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 2/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 72354 NaN values replaced with medians
+    WARNING: X_test: 19623 NaN values replaced with medians
+    CSV features: 391 columns
+    esmif: PCA 1536 → 150 (50/region × 3 regions, 76.8% variance)
+    Train:  35382 samples (pos=15622, neg=19760, ratio=1.265)
+    Test:    8845 samples (pos=3918, neg=4927, ratio=1.258)
+    Features: 541
+    Training Logistic Regression ...
+    Training time: 6.4s
+
+    Fold 2 results (11.9s):
+      AUC-ROC: 0.7323  |  AUC-PR: 0.6717  |  Acc: 0.6764  |  F1: 0.6146  |  MCC: 0.3388
+      Sens: 0.5824  |  Spec: 0.7512  |  PPV: 0.6505  |  NPV: 0.6935
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      rel_distance_from_n_terminus                     -7.446326
+    2      rel_distance_from_c_terminus                     -7.432337
+    3      C1_L                                             -1.190084
+    4      C1_E                                             -0.935118
+    5      C1_V                                             -0.892272
+    6      C1_I                                             -0.861497
+    7      C1_P                                             -0.861109
+    8      C1_S                                             -0.852778
+    9      C1_D                                             -0.844128
+    10     C1_A                                             -0.814594
+    11     C1_T                                             -0.814087
+    12     C1_G                                             -0.808086
+    13     C1_K                                             -0.804925
+    14     C1_Q                                             -0.797038
+    15     C1_F                                             -0.770519
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_sparse_esmif_model_fold2.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 3/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 73282 NaN values replaced with medians
+    WARNING: X_test: 18695 NaN values replaced with medians
+    CSV features: 391 columns
+    esmif: PCA 1536 → 150 (50/region × 3 regions, 76.8% variance)
+    Train:  35382 samples (pos=15643, neg=19739, ratio=1.262)
+    Test:    8845 samples (pos=3897, neg=4948, ratio=1.270)
+    Features: 541
+    Training Logistic Regression ...
+    Training time: 3.8s
+
+    Fold 3 results (9.7s):
+      AUC-ROC: 0.7340  |  AUC-PR: 0.6780  |  Acc: 0.6764  |  F1: 0.6110  |  MCC: 0.3374
+      Sens: 0.5769  |  Spec: 0.7549  |  PPV: 0.6495  |  NPV: 0.6937
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      rel_distance_from_n_terminus                     -6.127374
+    2      rel_distance_from_c_terminus                     -6.090405
+    3      C1_L                                             -1.253764
+    4      C1_E                                             -0.986943
+    5      C1_V                                             -0.949340
+    6      C1_S                                             -0.918075
+    7      C1_P                                             -0.899978
+    8      C1_I                                             -0.891530
+    9      C1_G                                             -0.868285
+    10     C1_D                                             -0.866438
+    11     C1_A                                             -0.862079
+    12     C1_T                                             -0.852616
+    13     C1_K                                             -0.848743
+    14     C1_Q                                             -0.826408
+    15     C1_F                                             -0.817869
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_sparse_esmif_model_fold3.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 4/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 74993 NaN values replaced with medians
+    WARNING: X_test: 16984 NaN values replaced with medians
+    CSV features: 391 columns
+    esmif: PCA 1536 → 150 (50/region × 3 regions, 76.8% variance)
+    Train:  35382 samples (pos=15635, neg=19747, ratio=1.263)
+    Test:    8845 samples (pos=3905, neg=4940, ratio=1.265)
+    Features: 541
+    Training Logistic Regression ...
+    Training time: 6.6s
+
+    Fold 4 results (12.5s):
+      AUC-ROC: 0.7433  |  AUC-PR: 0.6889  |  Acc: 0.6826  |  F1: 0.6216  |  MCC: 0.3511
+      Sens: 0.5905  |  Spec: 0.7555  |  PPV: 0.6562  |  NPV: 0.7001
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      rel_distance_from_n_terminus                     -6.031873
+    2      rel_distance_from_c_terminus                     -6.018510
+    3      C1_L                                             -1.413377
+    4      C1_E                                             -1.109520
+    5      C1_V                                             -1.051315
+    6      C1_S                                             -1.015786
+    7      C1_P                                             -1.013619
+    8      C1_A                                             -1.002542
+    9      C1_I                                             -0.981724
+    10     C1_T                                             -0.980726
+    11     C1_G                                             -0.974660
+    12     C1_D                                             -0.970890
+    13     C1_K                                             -0.967113
+    14     C1_R                                             -0.947552
+    15     C1_Q                                             -0.929200
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_sparse_esmif_model_fold4.pkl
+
+================================================================================
+CROSS-VALIDATION SUMMARY (mean +/- std)
+================================================================================
+  auc_roc         0.7388 +/- 0.0086    [0.7307  0.7535  0.7323  0.7340  0.7433]
+  auc_pr          0.6837 +/- 0.0110    [0.6773  0.7027  0.6717  0.6780  0.6889]
+  accuracy        0.6802 +/- 0.0064    [0.6739  0.6917  0.6764  0.6764  0.6826]
+  f1              0.6182 +/- 0.0086    [0.6103  0.6334  0.6146  0.6110  0.6216]
+  mcc             0.3461 +/- 0.0136    [0.3326  0.3705  0.3388  0.3374  0.3511]
+  sensitivity     0.5860 +/- 0.0086    [0.5797  0.6006  0.5824  0.5769  0.5905]
+  specificity     0.7548 +/- 0.0055    [0.7480  0.7644  0.7512  0.7549  0.7555]
+  ppv             0.6541 +/- 0.0088    [0.6443  0.6701  0.6505  0.6495  0.6562]
+  npv             0.6973 +/- 0.0050    [0.6933  0.7060  0.6935  0.6937  0.7001]
+
+  Best fold: 1 (AUC-ROC = 0.7535)
+
+================================================================================
+PER-FOLD METRIC COMPARISON
+================================================================================
+  Fold    auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
+  -----------------------------------------------------------------------------------------------------------------------------
+  0       0.7307       0.6773       0.6739       0.6103       0.3326       0.5797       0.7480       0.6443       0.6933       
+  1       0.7535       0.7027       0.6917       0.6334       0.3705       0.6006       0.7644       0.6701       0.7060       
+  2       0.7323       0.6717       0.6764       0.6146       0.3388       0.5824       0.7512       0.6505       0.6935       
+  3       0.7340       0.6780       0.6764       0.6110       0.3374       0.5769       0.7549       0.6495       0.6937       
+  4       0.7433       0.6889       0.6826       0.6216       0.3511       0.5905       0.7555       0.6562       0.7001       
+  -----------------------------------------------------------------------------------------------------------------------------
+  mean    0.7388       0.6837       0.6802       0.6182       0.3461       0.5860       0.7548       0.6541       0.6973       
+  std     0.0086       0.0110       0.0064       0.0086       0.0136       0.0086       0.0055       0.0088       0.0050       
+
+================================================================================
+AVERAGED COEFFICIENTS ACROSS ALL FOLDS
+================================================================================
+  Rank   Feature                                          Mean Coef          Std
+  -----------------------------------------------------------------------------
+  1      rel_distance_from_n_terminus                     -6.594844     0.583323
+  2      rel_distance_from_c_terminus                     -6.574700     0.582954
+  3      C1_L                                             -1.334081     0.110417
+  4      C1_E                                             -1.059046     0.097216
+  5      C1_V                                             -1.006406     0.086951
+  6      C1_S                                             -0.978223     0.092216
+  7      C1_P                                             -0.963896     0.079467
+  8      C1_I                                             -0.943025     0.068345
+  9      C1_A                                             -0.940824     0.098668
+  10     C1_D                                             -0.929187     0.071161
+  11     C1_G                                             -0.923254     0.081834
+  12     C1_T                                             -0.921599     0.083148
+  13     C1_K                                             -0.910664     0.084197
+  14     C1_Q                                             -0.896927     0.082774
+  15     C1_R                                             -0.878102     0.091680
+  16     C1_F                                             -0.858498     0.069268
+  17     C1_N                                             -0.768678     0.072181
+  18     C1_Y                                             -0.681340     0.060750
+  19     C1_H                                             -0.616584     0.059757
+  20     C1_M                                             -0.571971     0.048269
+  21     C1_C                                             -0.549895     0.049033
+  22     C1_W                                             -0.458758     0.037615
+  23     C2_L                                              0.422212     0.096650
+  24     C2_G                                              0.393968     0.080021
+  25     P2_W                                              0.388679     0.056192
+  26     C2_K                                              0.367197     0.084981
+  27     C2_S                                              0.365204     0.093344
+  28     C2_A                                              0.363880     0.090865
+  29     C2_R                                              0.350439     0.078342
+  30     N1_P                                             -0.342326     0.043807
+
+================================================================================
+HELD-OUT VALIDATION SET EVALUATION
+================================================================================
+  Using model from best fold (1)
+  Held-out samples: 8845 (pos=3901, neg=4944, ratio=1.267)
+
+  Held-out results (8845 samples):
+    AUC-ROC: 0.7423  |  AUC-PR: 0.6933  |  Acc: 0.6863  |  F1: 0.6258  |  MCC: 0.3584
+    Sens: 0.5947  |  Spec: 0.7585  |  PPV: 0.6602  |  NPV: 0.7034
+
+  Classification Report:
+              precision    recall  f1-score   support
+
+    Negative     0.7034    0.7585    0.7299      4944
+    Positive     0.6602    0.5947    0.6258      3901
+
+    accuracy                         0.6863      8845
+   macro avg     0.6818    0.6766    0.6778      8845
+weighted avg     0.6844    0.6863    0.6840      8845
+
+================================================================================
+CV AVERAGE vs HELD-OUT COMPARISON
+================================================================================
+  Metric             CV mean     CV std   Held-out      Delta
+  ---------------------------------------------------------
+  auc_roc             0.7388     0.0086     0.7423    +0.0035
+  auc_pr              0.6837     0.0110     0.6933    +0.0096
+  accuracy            0.6802     0.0064     0.6863    +0.0060
+  f1                  0.6182     0.0086     0.6258    +0.0076
+  mcc                 0.3461     0.0136     0.3584    +0.0123
+  sensitivity         0.5860     0.0086     0.5947    +0.0087
+  specificity         0.7548     0.0055     0.7585    +0.0037
+  ppv                 0.6541     0.0088     0.6602    +0.0061
+  npv                 0.6973     0.0050     0.7034    +0.0061
+
+Results saved: /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_handcrafted_sparse_esmif_20260422_135234.json
+Best model saved: /home/hilarius/special_course/special_course_spring2026/models/best_lr_handcrafted_sparse_esmif_model.pkl
+Fold artifacts saved: /home/hilarius/special_course/special_course_spring2026/models/best_lr_handcrafted_sparse_esmif_artifacts.pkl
+Feature names saved: /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_sparse_esmif_feature_names.json
+
+================================================================================
+RUN SUMMARY
+================================================================================
+  Total runtime:    62.1s (1.0 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      Structural + one-hot + ESM-IF (handcrafted_sparse_esmif)
+  Components:       ['handcrafted', 'sparse', 'esmif']
+  Scaling:          yes
+  Features (final): 541
+    CSV features:   391
+    esmif PCA:     150
+  CV folds:         5
+  Best fold:        1 (AUC = 0.7535)
+  Held-out AUC:     0.7423
+  Held-out MCC:     0.3584
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_handcrafted_sparse_esmif_20260422_135234.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_sparse_esmif_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_handcrafted_sparse_esmif_log_20260422_135234.txt
+  Completed:        2026-04-22 13:53:36
+================================================================================

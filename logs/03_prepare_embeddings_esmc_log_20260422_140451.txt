@@ -1,0 +1,143 @@
+================================================================================
+  03_PREPARE_EMBEDDINGS -- ESM-C (600M)
+================================================================================
+  Timestamp:       2026-04-22 14:04:51
+  Embedding key:   esmc
+  Raw HDF5:        /home/hilarius/special_course/special_course_spring2026/data/processed/embeddings/esmc_protein_embeddings.h5
+  Split data:      /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Output:          /home/hilarius/special_course/special_course_spring2026/data/processed/embeddings_prepared/esmc_prepared.h5
+  Log:             /home/hilarius/special_course/special_course_spring2026/logs/03_prepare_embeddings_esmc_log_20260422_140451.txt
+
+  Source schema:
+    Embedding dim:   1152
+    Region mapping:
+      peptide      → peptide_emb
+      n_flank      → n_flank_emb
+      c_flank      → c_flank_emb
+    Peptide ID col:  peptide_seqs
+    UniProt ID col:  uniprot_ids
+    Has row_indices: True
+    Has start/end:   True
+================================================================================
+
+Loading split data: /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Shape: 53072 rows x 88 columns
+  Folds: [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5)]
+  Positives: 23441  Negatives: 29631
+
+Loading raw embeddings: /home/hilarius/special_course/special_course_spring2026/data/processed/embeddings/esmc_protein_embeddings.h5
+
+  HDF5 metadata:
+    coord_convention          1idx_inclusive
+    csv_source                data/processed/df_all.csv
+    device                    cuda
+    emb_dim                   1152
+    fallback_window           2048
+    max_seq_len               None
+    model                     esmc_600m
+    n_fallback                0
+    n_oom_proteins            0
+    n_proteins                9616
+    n_samples                 53072
+    total_time_sec            48442.310346364975
+
+  HDF5 datasets (raw):
+    c_flank_emb
+    end
+    fallback_flag
+    n_flank_emb
+    peptide_emb
+    peptide_seqs
+    row_indices
+    start
+    uniprot_ids
+
+  Loaded canonical datasets:
+    c_flank_emb               shape=(53072, 1152)        dtype=float32
+    end                       shape=(53072,)             dtype=int32
+    fallback_flag             shape=(53072,)             dtype=int8
+    n_flank_emb               shape=(53072, 1152)        dtype=float32
+    peptide_emb               shape=(53072, 1152)        dtype=float32
+    peptide_ids               shape=(53072,)             dtype=<U9
+    row_indices               shape=(53072,)             dtype=int64
+    start                     shape=(53072,)             dtype=int32
+    uniprot_ids               shape=(53072,)             dtype=<U10
+
+  Canonical regions available: ['peptide_emb', 'n_flank_emb', 'c_flank_emb']
+  Embedding dim: 1152
+  Embedding samples: 53072
+
+================================================================================
+ALIGNMENT
+================================================================================
+
+  Trying strategy: peptide+uniprot_id+start
+    Aligned: 53072 (100.0% coverage)
+    Spot-check: 0 peptide mismatches, 0 uniprot mismatches out of 500
+  [OK] Strategy 'peptide+uniprot_id+start' passed validation
+
+  Final alignment results:
+    Method:              peptide+uniprot_id+start
+    Embedding samples:   53072
+    Split data rows:     53072
+    Successfully aligned: 53072
+    Embedding unmatched: 0
+    Split data unmatched: 0
+    Coverage: 100.0% of split data
+
+  Zero vector report:
+  Region                  Zeros        %
+  --------------------------------------
+  peptide_emb                 0    0.00%
+  n_flank_emb                37    0.07%
+  c_flank_emb               142    0.27%
+
+  NOTE: 179 total zero vectors detected.
+  These represent samples without structural/sequence coverage.
+  They will map to the PCA mean after transformation.
+
+================================================================================
+SAVING PREPARED EMBEDDINGS
+================================================================================
+  Output: /home/hilarius/special_course/special_course_spring2026/data/processed/embeddings_prepared/esmc_prepared.h5
+    peptide_emb: shape=(53072, 1152)
+    n_flank_emb: shape=(53072, 1152)
+    c_flank_emb: shape=(53072, 1152)
+  [OK] Saved successfully
+
+  Label distribution per fold:
+  Fold        Total      Pos      Neg    Pos %
+  ------------------------------------------
+  0            8846     3897     4949    44.1%
+  1            8846     3923     4923    44.3%
+  2            8845     3918     4927    44.3%
+  3            8845     3897     4948    44.1%
+  4            8845     3905     4940    44.1%
+  5            8845     3901     4944    44.1% (held-out)
+
+  Embedding norm stats per fold (peptide_emb):
+  Fold      Samples   Norm med   Norm std  Zero vecs
+  --------------------------------------------------
+  0            8846     1.2165     0.1504          0
+  1            8846     1.2168     0.1528          0
+  2            8845     1.2190     0.1512          0
+  3            8845     1.2167     0.1510          0
+  4            8845     1.2150     0.1521          0
+  5            8845     1.2171     0.1516          0
+
+================================================================================
+RUN SUMMARY
+================================================================================
+  Runtime:          27.0s
+  Embedding:        ESM-C (600M)
+  Embedding dim:    1152
+  Alignment method: peptide+uniprot_id+start
+  Aligned samples:  53072
+  Coverage:         100.0%
+  Regions:          ['peptide_emb', 'n_flank_emb', 'c_flank_emb']
+  Zero vectors:     {'peptide_emb': 0, 'n_flank_emb': 37, 'c_flank_emb': 142}
+  Output:           /home/hilarius/special_course/special_course_spring2026/data/processed/embeddings_prepared/esmc_prepared.h5
+  Output size:      649.6 MB
+  Log:              /home/hilarius/special_course/special_course_spring2026/logs/03_prepare_embeddings_esmc_log_20260422_140451.txt
+  Completed:        2026-04-22 14:05:18
+================================================================================

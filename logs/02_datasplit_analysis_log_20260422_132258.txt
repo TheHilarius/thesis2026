@@ -1,0 +1,297 @@
+================================================================================
+  02_DATASPLIT_ANALYSIS -- POST-SPLIT DATA QUALITY REPORT
+================================================================================
+  Timestamp:       2026-04-22 13:22:58
+  Data path:       /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Log path:        /home/hilarius/special_course/special_course_spring2026/logs/02_datasplit_analysis_log_20260422_132258.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+================================================================================
+
+Loading split data from: /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+Shape: 53072 rows x 88 columns
+
+================================================================================
+COLUMN INVENTORY
+================================================================================
+
+  Metadata columns (20 present):
+    start                                    dtype: int64
+    end                                      dtype: int64
+    peptide                                  dtype: object
+    pep_length                               dtype: int64
+    rank                                     dtype: float64
+    uniprot_id                               dtype: object
+    source_molecule                          dtype: object
+    molecule_parent                          dtype: object
+    label                                    dtype: int64
+    sequence                                 dtype: object
+    protein_length                           dtype: int64
+    position_shift                           dtype: float64
+    n_flank                                  dtype: object
+    c_flank                                  dtype: object
+    full_context                             dtype: object
+    fold                                     dtype: int64
+    nflank_start                             dtype: float64
+    nflank_end                               dtype: int64
+    cflank_start                             dtype: int64
+    cflank_end                               dtype: float64
+
+  Positional AA columns (17 present):
+    N4                                       dtype: object  unique: 21
+    N3                                       dtype: object  unique: 21
+    N2                                       dtype: object  unique: 21
+    N1                                       dtype: object  unique: 21
+    P1                                       dtype: object  unique: 20
+    P2                                       dtype: object  unique: 18
+    P3                                       dtype: object  unique: 20
+    P4                                       dtype: object  unique: 20
+    P5                                       dtype: object  unique: 20
+    P6                                       dtype: object  unique: 20
+    P7                                       dtype: object  unique: 20
+    P8                                       dtype: object  unique: 20
+    P9                                       dtype: object  unique: 19
+    C1                                       dtype: object  unique: 21
+    C2                                       dtype: object  unique: 21
+    C3                                       dtype: object  unique: 21
+    C4                                       dtype: object  unique: 21
+[OK] Fold column validated: [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5)]
+
+Per-fold sample counts:
+  Fold        Total      Pos      Neg    Pos %
+  ------------------------------------------
+  0            8846     3897     4949    44.1%
+  1            8846     3923     4923    44.3%
+  2            8845     3918     4927    44.3%
+  3            8845     3897     4948    44.1%
+  4            8845     3905     4940    44.1%
+  5            8845     3901     4944    44.1% (held-out)
+
+Label distribution (full dataset):
+  0 (negative):    29631  (55.8%)
+  1 (positive):    23441  (44.2%)
+
+Numeric feature columns identified (51):
+  [  0] rel_distance_from_n_terminus             dtype: float64
+  [  1] rel_distance_from_c_terminus             dtype: float64
+  [  2] mean_rsa_peptide                         dtype: float64
+  [  3] mean_disorder_peptide                    dtype: float64
+  [  4] mean_rsa_nflank                          dtype: float64
+  [  5] mean_disorder_nflank                     dtype: float64
+  [  6] mean_rsa_cflank                          dtype: float64
+  [  7] mean_disorder_cflank                     dtype: float64
+  [  8] q8point_H_peptide                        dtype: float64
+  [  9] q8point_G_peptide                        dtype: float64
+  [ 10] q8point_I_peptide                        dtype: float64
+  [ 11] q8point_E_peptide                        dtype: float64
+  [ 12] q8point_B_peptide                        dtype: float64
+  [ 13] q8point_T_peptide                        dtype: float64
+  [ 14] q8point_S_peptide                        dtype: float64
+  [ 15] q8point_C_peptide                        dtype: float64
+  [ 16] q8point_H_nflank                         dtype: float64
+  [ 17] q8point_G_nflank                         dtype: float64
+  [ 18] q8point_I_nflank                         dtype: float64
+  [ 19] q8point_E_nflank                         dtype: float64
+  [ 20] q8point_B_nflank                         dtype: float64
+  [ 21] q8point_T_nflank                         dtype: float64
+  [ 22] q8point_S_nflank                         dtype: float64
+  [ 23] q8point_C_nflank                         dtype: float64
+  [ 24] q8point_H_cflank                         dtype: float64
+  [ 25] q8point_G_cflank                         dtype: float64
+  [ 26] q8point_I_cflank                         dtype: float64
+  [ 27] q8point_E_cflank                         dtype: float64
+  [ 28] q8point_B_cflank                         dtype: float64
+  [ 29] q8point_T_cflank                         dtype: float64
+  [ 30] q8point_S_cflank                         dtype: float64
+  [ 31] q8point_C_cflank                         dtype: float64
+  [ 32] q8trans_H_n_pep                          dtype: float64
+  [ 33] q8trans_G_n_pep                          dtype: float64
+  [ 34] q8trans_I_n_pep                          dtype: float64
+  [ 35] q8trans_E_n_pep                          dtype: float64
+  [ 36] q8trans_B_n_pep                          dtype: float64
+  [ 37] q8trans_T_n_pep                          dtype: float64
+  [ 38] q8trans_S_n_pep                          dtype: float64
+  [ 39] q8trans_C_n_pep                          dtype: float64
+  [ 40] q8trans_H_pep_c                          dtype: float64
+  [ 41] q8trans_G_pep_c                          dtype: float64
+  [ 42] q8trans_I_pep_c                          dtype: float64
+  [ 43] q8trans_E_pep_c                          dtype: float64
+  [ 44] q8trans_B_pep_c                          dtype: float64
+  [ 45] q8trans_T_pep_c                          dtype: float64
+  [ 46] q8trans_S_pep_c                          dtype: float64
+  [ 47] q8trans_C_pep_c                          dtype: float64
+  [ 48] mean_plddt_peptide                       dtype: float64
+  [ 49] mean_plddt_nflank                        dtype: float64
+  [ 50] mean_plddt_cflank                        dtype: float64
+
+================================================================================
+POSITIONAL AA COLUMN AUDIT
+================================================================================
+
+  Position      NaN  NaN+   NaN-   Unique   Non-canonical
+  ------------------------------------------------------------
+  N4            287    167    120      20               -
+  N3            220    125     95      20               -
+  N2            120     70     50      20               -
+  N1             37     19     18      20               -
+  P1              0      0      0      20               -
+  P2              0      0      0      18               -
+  P3              0      0      0      20               -
+  P4              0      0      0      20               -
+  P5              0      0      0      20               -
+  P6              0      0      0      20               -
+  P7              0      0      0      20               -
+  P8              0      0      0      20               -
+  P9              0      0      0      19               -
+  C1            142    121     21      20               -
+  C2            194    138     56      20               -
+  C3            278    181     97      20               -
+  C4            363    226    137      20               -
+
+  Global AA vocabulary: ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'V', 'W', 'Y']
+  [OK] All residues are canonical amino acids
+
+NaN REPORT (numeric features):
+  Column                                 NaN      %    NaN+     %+    NaN-     %-
+  -----------------------------------------------------------------------------------
+  mean_rsa_peptide                      1956   3.7%     738   3.1%    1218   4.1%
+  mean_disorder_peptide                 1956   3.7%     738   3.1%    1218   4.1%
+  mean_rsa_nflank                       1991   3.8%     756   3.2%    1235   4.2%
+  mean_disorder_nflank                  1991   3.8%     756   3.2%    1235   4.2%
+  mean_rsa_cflank                       2083   3.9%     845   3.6%    1238   4.2%
+  mean_disorder_cflank                  2083   3.9%     845   3.6%    1238   4.2%
+  q8point_H_peptide                     1956   3.7%     738   3.1%    1218   4.1%
+  q8point_G_peptide                     1956   3.7%     738   3.1%    1218   4.1%
+  q8point_I_peptide                     1956   3.7%     738   3.1%    1218   4.1%
+  q8point_E_peptide                     1956   3.7%     738   3.1%    1218   4.1%
+  q8point_B_peptide                     1956   3.7%     738   3.1%    1218   4.1%
+  q8point_T_peptide                     1956   3.7%     738   3.1%    1218   4.1%
+  q8point_S_peptide                     1956   3.7%     738   3.1%    1218   4.1%
+  q8point_C_peptide                     1956   3.7%     738   3.1%    1218   4.1%
+  q8point_H_nflank                      1956   3.7%     738   3.1%    1218   4.1%
+  q8point_G_nflank                      1956   3.7%     738   3.1%    1218   4.1%
+  q8point_I_nflank                      1956   3.7%     738   3.1%    1218   4.1%
+  q8point_E_nflank                      1956   3.7%     738   3.1%    1218   4.1%
+  q8point_B_nflank                      1956   3.7%     738   3.1%    1218   4.1%
+  q8point_T_nflank                      1956   3.7%     738   3.1%    1218   4.1%
+  q8point_S_nflank                      1956   3.7%     738   3.1%    1218   4.1%
+  q8point_C_nflank                      1956   3.7%     738   3.1%    1218   4.1%
+  q8point_H_cflank                      1956   3.7%     738   3.1%    1218   4.1%
+  q8point_G_cflank                      1956   3.7%     738   3.1%    1218   4.1%
+  q8point_I_cflank                      1956   3.7%     738   3.1%    1218   4.1%
+  q8point_E_cflank                      1956   3.7%     738   3.1%    1218   4.1%
+  q8point_B_cflank                      1956   3.7%     738   3.1%    1218   4.1%
+  q8point_T_cflank                      1956   3.7%     738   3.1%    1218   4.1%
+  q8point_S_cflank                      1956   3.7%     738   3.1%    1218   4.1%
+  q8point_C_cflank                      1956   3.7%     738   3.1%    1218   4.1%
+  q8trans_H_n_pep                       1956   3.7%     738   3.1%    1218   4.1%
+  q8trans_G_n_pep                       1956   3.7%     738   3.1%    1218   4.1%
+  q8trans_I_n_pep                       1956   3.7%     738   3.1%    1218   4.1%
+  q8trans_E_n_pep                       1956   3.7%     738   3.1%    1218   4.1%
+  q8trans_B_n_pep                       1956   3.7%     738   3.1%    1218   4.1%
+  q8trans_T_n_pep                       1956   3.7%     738   3.1%    1218   4.1%
+  q8trans_S_n_pep                       1956   3.7%     738   3.1%    1218   4.1%
+  q8trans_C_n_pep                       1956   3.7%     738   3.1%    1218   4.1%
+  q8trans_H_pep_c                       1956   3.7%     738   3.1%    1218   4.1%
+  q8trans_G_pep_c                       1956   3.7%     738   3.1%    1218   4.1%
+  q8trans_I_pep_c                       1956   3.7%     738   3.1%    1218   4.1%
+  q8trans_E_pep_c                       1956   3.7%     738   3.1%    1218   4.1%
+  q8trans_B_pep_c                       1956   3.7%     738   3.1%    1218   4.1%
+  q8trans_T_pep_c                       1956   3.7%     738   3.1%    1218   4.1%
+  q8trans_S_pep_c                       1956   3.7%     738   3.1%    1218   4.1%
+  q8trans_C_pep_c                       1956   3.7%     738   3.1%    1218   4.1%
+  mean_plddt_peptide                    6326  11.9%    1641   7.0%    4685  15.8%
+  mean_plddt_nflank                     6361  12.0%    1659   7.1%    4702  15.9%
+  mean_plddt_cflank                     6463  12.2%    1757   7.5%    4706  15.9%
+  -----------------------------------------------------------------------------------
+  TOTAL: 109450 NaN values across 49 column(s)
+
+Inf REPORT (numeric features):
+  Column                                 Inf      %    Inf+     %+    Inf-     %-
+  -----------------------------------------------------------------------------------
+  No Inf values found in any numeric feature column
+
+  LABEL-BIAS NOTE:
+  If NaN/Inf values are concentrated in one label class,
+  median imputation may introduce information leakage.
+  Baseline counts — positives: 23441, negatives: 29631
+
+================================================================================
+NaN COUNTS PER FOLD (numeric features)
+================================================================================
+  Fold     Role                    NaN total      NaN+       NaN- 
+  --------------------------------------------------------------
+  0        CV fold 0                   18141       6278      11863
+  1        CV fold 1                   18534       6790      11744
+  2        CV fold 2                   19623       7489      12134
+  3        CV fold 3                   18695       6947      11748
+  4        CV fold 4                   16984       5702      11282
+  5        Held-out                    17473       6049      11424
+
+WARNING: Constant feature columns (zero variance):
+  - q8trans_B_n_pep (unique values: 1)
+  - q8trans_B_pep_c (unique values: 1)
+
+Feature summary statistics:
+  Column                                    mean        std        min        max
+  -----------------------------------------------------------------------------
+  rel_distance_from_n_terminus             0.495      0.281      0.000      0.998
+  rel_distance_from_c_terminus             0.491      0.281      0.000      0.998
+  mean_rsa_peptide                         0.311      0.143      0.006      0.831
+  mean_disorder_peptide                    0.131      0.275      0.000      1.000
+  mean_rsa_nflank                          0.360      0.153      0.013      0.932
+  mean_disorder_nflank                     0.160      0.299      0.000      1.000
+  mean_rsa_cflank                          0.369      0.150      0.008      0.852
+  mean_disorder_cflank                     0.162      0.297      0.000      1.000
+  q8point_H_peptide                        0.630      0.483      0.000      1.000
+  q8point_G_peptide                        0.056      0.230      0.000      1.000
+  q8point_I_peptide                        0.001      0.032      0.000      1.000
+  q8point_E_peptide                        0.243      0.429      0.000      1.000
+  q8point_B_peptide                        0.004      0.064      0.000      1.000
+  q8point_T_peptide                        0.197      0.398      0.000      1.000
+  q8point_S_peptide                        0.134      0.341      0.000      1.000
+  q8point_C_peptide                        0.607      0.488      0.000      1.000
+  q8point_H_nflank                         0.585      0.493      0.000      1.000
+  q8point_G_nflank                         0.056      0.230      0.000      1.000
+  q8point_I_nflank                         0.001      0.032      0.000      1.000
+  q8point_E_nflank                         0.219      0.414      0.000      1.000
+  q8point_B_nflank                         0.005      0.069      0.000      1.000
+  q8point_T_nflank                         0.227      0.419      0.000      1.000
+  q8point_S_nflank                         0.170      0.376      0.000      1.000
+  q8point_C_nflank                         0.737      0.440      0.000      1.000
+  q8point_H_cflank                         0.558      0.497      0.000      1.000
+  q8point_G_cflank                         0.046      0.210      0.000      1.000
+  q8point_I_cflank                         0.001      0.024      0.000      1.000
+  q8point_E_cflank                         0.237      0.426      0.000      1.000
+  q8point_B_cflank                         0.006      0.074      0.000      1.000
+  q8point_T_cflank                         0.251      0.434      0.000      1.000
+  q8point_S_cflank                         0.179      0.383      0.000      1.000
+  q8point_C_cflank                         0.768      0.422      0.000      1.000
+  q8trans_H_n_pep                          0.477      0.499      0.000      1.000
+  q8trans_G_n_pep                          0.019      0.138      0.000      1.000
+  q8trans_I_n_pep                          0.001      0.023      0.000      1.000
+  q8trans_E_n_pep                          0.108      0.311      0.000      1.000
+  q8trans_B_n_pep                          0.000      0.000      0.000      0.000
+  q8trans_T_n_pep                          0.026      0.160      0.000      1.000
+  q8trans_S_n_pep                          0.004      0.066      0.000      1.000
+  q8trans_C_n_pep                          0.234      0.423      0.000      1.000
+  q8trans_H_pep_c                          0.446      0.497      0.000      1.000
+  q8trans_G_pep_c                          0.007      0.082      0.000      1.000
+  q8trans_I_pep_c                          0.000      0.017      0.000      1.000
+  q8trans_E_pep_c                          0.132      0.339      0.000      1.000
+  q8trans_B_pep_c                          0.000      0.000      0.000      0.000
+  q8trans_T_pep_c                          0.020      0.140      0.000      1.000
+  q8trans_S_pep_c                          0.001      0.038      0.000      1.000
+  q8trans_C_pep_c                          0.256      0.437      0.000      1.000
+  mean_plddt_peptide                      82.623     19.240     19.094     98.960
+  mean_plddt_nflank                       80.548     20.073     20.039     98.940
+  mean_plddt_cflank                       80.476     19.914     18.634     98.928
+
+================================================================================
+DATA QUALITY REPORT COMPLETE
+  51 numeric features
+  17 positional AA columns (pending encoding)
+  5 CV folds + 1 held-out
+  Log saved: /home/hilarius/special_course/special_course_spring2026/logs/02_datasplit_analysis_log_20260422_132258.txt
+  Completed: 2026-04-22 13:23:00
+================================================================================
