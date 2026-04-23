@@ -1,0 +1,3687 @@
+
+════════════════════════════════════════
+  HYBRID STRUCTURE FETCHER v2
+════════════════════════════════════════
+  Coverage threshold : 80%
+  Max PDB candidates : 25
+  Output dir         : data/processed/structures_hybrid_80/selected/
+════════════════════════════════════════
+Fresh run — logs initialized
+
+════════════════════════════════════════
+Processing canonical IDs (9905 entries)
+════════════════════════════════════════
+[1/9905] A0A024R6N5 (region: 53-416, n_pep: 23)
+  [PDB] No experimental structures found for A0A024R6N5
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[2/9905] A0A075B6F3 (region: 71-4697, n_pep: 253)
+  [PDB] No experimental structures found for A0A075B6F3
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[3/9905] A0A075B6W5 (region: 3-82, n_pep: 4)
+  [PDB] No experimental structures found for A0A075B6W5
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[4/9905] A0A087WTI6 (region: 161-645, n_pep: 21)
+  [PDB] No experimental structures found for A0A087WTI6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[5/9905] A0A087WUL8 (region: 16-3838, n_pep: 112)
+  [PDB] No experimental structures found for A0A087WUL8
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[6/9905] A0A087WX93 (region: 20-28, n_pep: 1)
+  [PDB] No experimental structures found for A0A087WX93
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[7/9905] A0A087WXS9 (region: 105-458, n_pep: 12)
+  [PDB] No experimental structures found for A0A087WXS9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[8/9905] A0A087WZ13 (region: 100-572, n_pep: 22)
+  [PDB] No experimental structures found for A0A087WZ13
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[9/9905] A0A087WZB7 (region: 19-45, n_pep: 2)
+  [PDB] No experimental structures found for A0A087WZB7
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[10/9905] A0A087X131 (region: 7-166, n_pep: 7)
+  [PDB] No experimental structures found for A0A087X131
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[11/9905] A0A096LNH2 (region: 46-1243, n_pep: 48)
+  [PDB] No experimental structures found for A0A096LNH2
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[12/9905] A0A096LP25 (region: 40-1159, n_pep: 33)
+  [PDB] No experimental structures found for A0A096LP25
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[13/9905] A0A0A6YYJ5 (region: 96-1666, n_pep: 53)
+  [PDB] No experimental structures found for A0A0A6YYJ5
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[14/9905] A0A0B4J1Z8 (region: 10-99, n_pep: 5)
+  [PDB] No experimental structures found for A0A0B4J1Z8
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[15/9905] A0A0B4J287 (region: 14-169, n_pep: 10)
+  [PDB] No experimental structures found for A0A0B4J287
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[16/9905] A0A0C4DGP1 (region: 4-63, n_pep: 5)
+  [PDB] No experimental structures found for A0A0C4DGP1
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[17/9905] A0A0F7UNS9 (region: 37-115, n_pep: 6)
+  [PDB] No experimental structures found for A0A0F7UNS9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[18/9905] A0A0F7URF8 (region: 7-783, n_pep: 41)
+  [PDB] No experimental structures found for A0A0F7URF8
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[19/9905] A0A0F7US18 (region: 107-427, n_pep: 13)
+  [PDB] No experimental structures found for A0A0F7US18
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[20/9905] A0A0F7UVN4 (region: 34-545, n_pep: 31)
+  [PDB] No experimental structures found for A0A0F7UVN4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[21/9905] A0A0F7UVP8 (region: 25-118, n_pep: 6)
+  [PDB] No experimental structures found for A0A0F7UVP8
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[22/9905] A0A0F7UZ13 (region: 19-224, n_pep: 7)
+  [PDB] No experimental structures found for A0A0F7UZ13
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[23/9905] A0A0F7V4E5 (region: 26-294, n_pep: 14)
+  [PDB] No experimental structures found for A0A0F7V4E5
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[24/9905] A0A0F7V4M1 (region: 123-619, n_pep: 22)
+  [PDB] No experimental structures found for A0A0F7V4M1
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[25/9905] A0A0F7V5E7 (region: 18-173, n_pep: 12)
+  [PDB] No experimental structures found for A0A0F7V5E7
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[26/9905] A0A0F7V6C1 (region: 47-147, n_pep: 6)
+  [PDB] No experimental structures found for A0A0F7V6C1
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[27/9905] A0A0F7V6V4 (region: 9-294, n_pep: 13)
+  [PDB] No experimental structures found for A0A0F7V6V4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[28/9905] A0A0G2JH50 (region: 3-331, n_pep: 11)
+  [PDB] No experimental structures found for A0A0G2JH50
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[29/9905] A0A0G2JI36 (region: 2-237, n_pep: 6)
+  [PDB] No experimental structures found for A0A0G2JI36
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[30/9905] A0A0G2JPD3 (region: 2-330, n_pep: 8)
+  [PDB] ✗ 8XES — no DBREF maps to A0A0G2JPD3 (wrong protein / MHC complex)
+  [PDB] ✗ 8XG2 — no DBREF maps to A0A0G2JPD3 (wrong protein / MHC complex)
+  [PDB] ✗ 8XKC — no DBREF maps to A0A0G2JPD3 (wrong protein / MHC complex)
+  [PDB] ✗ 8XFZ — no DBREF maps to A0A0G2JPD3 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[31/9905] A0A0G2JPH3 (region: 5-976, n_pep: 38)
+  [PDB] No experimental structures found for A0A0G2JPH3
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[32/9905] A0A0G2JPU2 (region: 14-842, n_pep: 45)
+  [PDB] No experimental structures found for A0A0G2JPU2
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[33/9905] A0A0G2JQM2 (region: 32-513, n_pep: 25)
+  [PDB] No experimental structures found for A0A0G2JQM2
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[34/9905] A0A0J9YXY3 (region: 13-101, n_pep: 3)
+  [PDB] No experimental structures found for A0A0J9YXY3
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[35/9905] A0A0K0K1A5 (region: 13-71, n_pep: 2)
+  [PDB] ✗ 2BNU — no DBREF maps to A0A0K0K1A5 (wrong protein / MHC complex)
+  [PDB] ✗ 2BNQ — no DBREF maps to A0A0K0K1A5 (wrong protein / MHC complex)
+  [PDB] ✗ 2BNR — no DBREF maps to A0A0K0K1A5 (wrong protein / MHC complex)
+  [PDB] ✗ 8RLT — no DBREF maps to A0A0K0K1A5 (wrong protein / MHC complex)
+  [PDB] ✗ 8RLU — no DBREF maps to A0A0K0K1A5 (wrong protein / MHC complex)
+  [PDB] ✗ 1BD2 — no DBREF maps to A0A0K0K1A5 (wrong protein / MHC complex)
+  [PDB] ✗ 6Q3S — no DBREF maps to A0A0K0K1A5 (wrong protein / MHC complex)
+  [PDB] ✗ 5E9D — no DBREF maps to A0A0K0K1A5 (wrong protein / MHC complex)
+  [PDB] ✗ 8RLV — no DBREF maps to A0A0K0K1A5 (wrong protein / MHC complex)
+  [PDB] ✗ 5MEN — no DBREF maps to A0A0K0K1A5 (wrong protein / MHC complex)
+  [PDB] ✗ 7FJE — no DBREF maps to A0A0K0K1A5 (wrong protein / MHC complex)
+  [PDB] ✗ 4WWK — no DBREF maps to A0A0K0K1A5 (wrong protein / MHC complex)
+  [PDB] ✗ 7FJF — no DBREF maps to A0A0K0K1A5 (wrong protein / MHC complex)
+  [PDB] ✗ 8TW6 — no DBREF maps to A0A0K0K1A5 (wrong protein / MHC complex)
+  [PDB] ✗ 7FJD — no DBREF maps to A0A0K0K1A5 (wrong protein / MHC complex)
+  [PDB] ✗ 8TW4 — no DBREF maps to A0A0K0K1A5 (wrong protein / MHC complex)
+  [PDB] ✗ 6JXR — no DBREF maps to A0A0K0K1A5 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[36/9905] A0A0K0K1D8 (region: 13-95, n_pep: 2)
+  [PDB] No experimental structures found for A0A0K0K1D8
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[37/9905] A0A0M3V1U8 (region: 102-779, n_pep: 28)
+  [PDB] No experimental structures found for A0A0M3V1U8
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[38/9905] A0A0U1RQK7 (region: 59-1717, n_pep: 65)
+  [PDB] No experimental structures found for A0A0U1RQK7
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[39/9905] A0A0U1RR48 (region: 22-175, n_pep: 20)
+  [PDB] No experimental structures found for A0A0U1RR48
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[40/9905] A0A125YGP5 (region: 1-1367, n_pep: 53)
+  [PDB] No experimental structures found for A0A125YGP5
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[41/9905] A0A125YJ41 (region: 24-483, n_pep: 29)
+  [PDB] No experimental structures found for A0A125YJ41
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[42/9905] A0A125YJK4 (region: 22-1532, n_pep: 43)
+  [PDB] No experimental structures found for A0A125YJK4
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[43/9905] A0A125YRD7 (region: 20-161, n_pep: 4)
+  [PDB] No experimental structures found for A0A125YRD7
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[44/9905] A0A125YWY4 (region: 21-315, n_pep: 21)
+  [PDB] No experimental structures found for A0A125YWY4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[45/9905] A0A140T8Y4 (region: 2-330, n_pep: 8)
+  [PDB] No experimental structures found for A0A140T8Y4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[46/9905] A0A140T912 (region: 3-331, n_pep: 13)
+  [PDB] No experimental structures found for A0A140T912
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[47/9905] A0A140T913 (region: 2-330, n_pep: 10)
+  [PDB] ✗ 6O53 — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 6O4Z — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 7QPJ — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 6O51 — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 6O4Y — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 7MJ7 — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 7P3D — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 7MJ9 — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 7MJ8 — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 7SA2 — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 7MKB — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 7U21 — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 7MJ6 — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 7P3E — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 6Z9V — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 7N1A — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 8TBW — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 7Q9A — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 7LG3 — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 7N1E — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 7N6D — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 7M8S — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 6VR1 — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 6VR5 — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [PDB] ✗ 7N1F — no DBREF maps to A0A140T913 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[48/9905] A0A140T951 (region: 13-203, n_pep: 9)
+  [PDB] No experimental structures found for A0A140T951
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[49/9905] A0A140T9B3 (region: 3-384, n_pep: 14)
+  [PDB] No experimental structures found for A0A140T9B3
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[50/9905] A0A140T9G0 (region: 13-203, n_pep: 9)
+  [PDB] No experimental structures found for A0A140T9G0
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[51/9905] A0A140T9H3 (region: 52-203, n_pep: 9)
+  [PDB] No experimental structures found for A0A140T9H3
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[52/9905] A0A140T9I0 (region: 2-330, n_pep: 10)
+  [PDB] No experimental structures found for A0A140T9I0
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[53/9905] A0A140T9M0 (region: 3-331, n_pep: 13)
+  [PDB] No experimental structures found for A0A140T9M0
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[54/9905] A0A140TA02 (region: 11-203, n_pep: 4)
+  [PDB] No experimental structures found for A0A140TA02
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[55/9905] A0A140TA18 (region: 10-236, n_pep: 9)
+  [PDB] No experimental structures found for A0A140TA18
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[56/9905] A0A175Y5H9 (region: 28-483, n_pep: 31)
+  [PDB] No experimental structures found for A0A175Y5H9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[57/9905] A0A1B0GUD6 (region: 59-860, n_pep: 24)
+  [PDB] No experimental structures found for A0A1B0GUD6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[58/9905] A0A1B0GUI1 (region: 17-2489, n_pep: 119)
+  [PDB] No experimental structures found for A0A1B0GUI1
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[59/9905] A0A1B0GUS4 (region: 6-112, n_pep: 5)
+  [PDB] No experimental structures found for A0A1B0GUS4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[60/9905] A0A1B0GUS5 (region: 33-134, n_pep: 4)
+  [PDB] No experimental structures found for A0A1B0GUS5
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[61/9905] A0A1B0GVH5 (region: 18-555, n_pep: 21)
+  [PDB] No experimental structures found for A0A1B0GVH5
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[62/9905] A0A1B0GVP4 (region: 39-1731, n_pep: 37)
+  [PDB] No experimental structures found for A0A1B0GVP4
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[63/9905] A0A1B0GVS8 (region: 128-1832, n_pep: 75)
+  [PDB] No experimental structures found for A0A1B0GVS8
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: partial:1-723:35.0pct)
+[64/9905] A0A1B0GWC6 (region: 37-76, n_pep: 2)
+  [PDB] No experimental structures found for A0A1B0GWC6
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[65/9905] A0A1B0GWI6 (region: 59-518, n_pep: 13)
+  [PDB] No experimental structures found for A0A1B0GWI6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[66/9905] A0A1B0GX49 (region: 13-97, n_pep: 3)
+  [PDB] No experimental structures found for A0A1B0GX49
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[67/9905] A0A1W2PQS8 (region: 2-237, n_pep: 6)
+  [PDB] No experimental structures found for A0A1W2PQS8
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[68/9905] A0A1W2PRQ6 (region: 3-263, n_pep: 19)
+  [PDB] No experimental structures found for A0A1W2PRQ6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[69/9905] A0A1X9RU27 (region: 93-546, n_pep: 16)
+  [PDB] No experimental structures found for A0A1X9RU27
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[70/9905] A0A2A3YGA7 (region: 17-308, n_pep: 15)
+  [PDB] No experimental structures found for A0A2A3YGA7
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[71/9905] A0A2A3YGK1 (region: 9-323, n_pep: 16)
+  [PDB] No experimental structures found for A0A2A3YGK1
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[72/9905] A0A2A3YJ57 (region: 35-268, n_pep: 23)
+  [PDB] No experimental structures found for A0A2A3YJ57
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[73/9905] A0A2A3YM07 (region: 115-655, n_pep: 28)
+  [PDB] No experimental structures found for A0A2A3YM07
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[74/9905] A0A2A3YP00 (region: 47-216, n_pep: 21)
+  [PDB] No experimental structures found for A0A2A3YP00
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[75/9905] A0A2R8Y445 (region: 152-1654, n_pep: 39)
+  [PDB] No experimental structures found for A0A2R8Y445
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[76/9905] A0A2R8Y4L2 (region: 15-170, n_pep: 8)
+  [PDB] No experimental structures found for A0A2R8Y4L2
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[77/9905] A0A2R8Y619 (region: 37-115, n_pep: 8)
+  [PDB] No experimental structures found for A0A2R8Y619
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[78/9905] A0A2R8Y7B3 (region: 1-621, n_pep: 27)
+  [PDB] No experimental structures found for A0A2R8Y7B3
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[79/9905] A0A2R8Y7T9 (region: 20-43, n_pep: 3)
+  [PDB] No experimental structures found for A0A2R8Y7T9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[80/9905] A0A2R8Y8D9 (region: 47-694, n_pep: 24)
+  [PDB] No experimental structures found for A0A2R8Y8D9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[81/9905] A0A2X0VFN3 (region: 14-1993, n_pep: 85)
+  [PDB] No experimental structures found for A0A2X0VFN3
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[82/9905] A0A2X0VRU2 (region: 38-453, n_pep: 35)
+  [PDB] No experimental structures found for A0A2X0VRU2
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[83/9905] A0A2Z4LIS9 (region: 59-255, n_pep: 7)
+  [PDB] No experimental structures found for A0A2Z4LIS9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[84/9905] A0A3B3IRR3 (region: 308-999, n_pep: 21)
+  [PDB] No experimental structures found for A0A3B3IRR3
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[85/9905] A0A3B3IRV3 (region: 28-177, n_pep: 11)
+  [PDB] No experimental structures found for A0A3B3IRV3
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[86/9905] A0A3B3IS79 (region: 36-1371, n_pep: 45)
+  [PDB] No experimental structures found for A0A3B3IS79
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[87/9905] A0A3B3ISF6 (region: 27-1225, n_pep: 36)
+  [PDB] No experimental structures found for A0A3B3ISF6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[88/9905] A0A3B3ISJ8 (region: 32-821, n_pep: 58)
+  [PDB] No experimental structures found for A0A3B3ISJ8
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[89/9905] A0A494C0S0 (region: 55-992, n_pep: 53)
+  [PDB] No experimental structures found for A0A494C0S0
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[90/9905] A0A494C110 (region: 7-79, n_pep: 6)
+  [PDB] No experimental structures found for A0A494C110
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[91/9905] A0A494C1N0 (region: 1-163, n_pep: 7)
+  [PDB] No experimental structures found for A0A494C1N0
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[92/9905] A0A499FJF3 (region: 41-256, n_pep: 11)
+  [PDB] No experimental structures found for A0A499FJF3
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[93/9905] A0A590UJ20 (region: 2-235, n_pep: 8)
+  [PDB] No experimental structures found for A0A590UJ20
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[94/9905] A0A5F9ZHN9 (region: 12-493, n_pep: 26)
+  [PDB] No experimental structures found for A0A5F9ZHN9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[95/9905] A0A5S8K798 (region: 46-230, n_pep: 3)
+  [PDB] No experimental structures found for A0A5S8K798
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[96/9905] A0A6Q8PF18 (region: 14-897, n_pep: 39)
+  [PDB] No experimental structures found for A0A6Q8PF18
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[97/9905] A0A6Q8PFC9 (region: 7-15, n_pep: 1)
+  [PDB] No experimental structures found for A0A6Q8PFC9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[98/9905] A0A6Q8PHC9 (region: 33-1291, n_pep: 59)
+  [PDB] No experimental structures found for A0A6Q8PHC9
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[99/9905] A0A7I2RVZ4 (region: 4-525, n_pep: 29)
+  [PDB] No experimental structures found for A0A7I2RVZ4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[100/9905] A0A7I2V3W8 (region: 2-909, n_pep: 33)
+  [PDB] No experimental structures found for A0A7I2V3W8
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[101/9905] A0A7I2V4U8 (region: 15-23, n_pep: 1)
+  [PDB] No experimental structures found for A0A7I2V4U8
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[102/9905] A0A804HJV0 (region: 2-731, n_pep: 26)
+  [PDB] No experimental structures found for A0A804HJV0
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[103/9905] A0A804HJX8 (region: 22-4408, n_pep: 218)
+  [PDB] No experimental structures found for A0A804HJX8
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[104/9905] A0A804HLA8 (region: 18-26, n_pep: 1)
+  [PDB] No experimental structures found for A0A804HLA8
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[105/9905] A0A804HLD3 (region: 84-4531, n_pep: 234)
+  [PDB] No experimental structures found for A0A804HLD3
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[106/9905] A0A8C8P5L8 (region: 71-2573, n_pep: 87)
+  [PDB] No experimental structures found for A0A8C8P5L8
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[107/9905] A0A8I5KZ38 (region: 6-1965, n_pep: 86)
+  [PDB] No experimental structures found for A0A8I5KZ38
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[108/9905] A0A8I5QL06 (region: 18-1729, n_pep: 65)
+  [PDB] No experimental structures found for A0A8I5QL06
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[109/9905] A0A8J8YUZ5 (region: 32-1204, n_pep: 51)
+  [PDB] No experimental structures found for A0A8J8YUZ5
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[110/9905] A0A8Q3SIK5 (region: 7-365, n_pep: 22)
+  [PDB] No experimental structures found for A0A8Q3SIK5
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[111/9905] A0A8V8TLA2 (region: 113-1252, n_pep: 65)
+  [PDB] No experimental structures found for A0A8V8TLA2
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[112/9905] A0A9L9PXT0 (region: 9-534, n_pep: 22)
+  [PDB] No experimental structures found for A0A9L9PXT0
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[113/9905] A0AAG2TVC3 (region: 9-247, n_pep: 10)
+  [PDB] No experimental structures found for A0AAG2TVC3
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[114/9905] A0AAQ5BI93 (region: 53-472, n_pep: 17)
+  [PDB] No experimental structures found for A0AAQ5BI93
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[115/9905] A0ABB0MUZ6 (region: 3-512, n_pep: 9)
+  [PDB] No experimental structures found for A0ABB0MUZ6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[116/9905] A0ABM6TP76 (region: 17-809, n_pep: 48)
+  [PDB] No experimental structures found for A0ABM6TP76
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[117/9905] A0ABM6TP97 (region: 33-343, n_pep: 16)
+  [PDB] No experimental structures found for A0ABM6TP97
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[118/9905] A0ABM6TRQ2 (region: 5-478, n_pep: 30)
+  [PDB] No experimental structures found for A0ABM6TRQ2
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[119/9905] A0ABN0PSG5 (region: 18-328, n_pep: 26)
+  [PDB] No experimental structures found for A0ABN0PSG5
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[120/9905] A0ABN5IZY2 (region: 18-204, n_pep: 9)
+  [PDB] No experimental structures found for A0ABN5IZY2
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[121/9905] A0ABN5J0M8 (region: 12-1288, n_pep: 58)
+  [PDB] No experimental structures found for A0ABN5J0M8
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[122/9905] A0ABN5J312 (region: 17-635, n_pep: 34)
+  [PDB] No experimental structures found for A0ABN5J312
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[123/9905] A0ABN5J5C8 (region: 4-2338, n_pep: 70)
+  [PDB] No experimental structures found for A0ABN5J5C8
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[124/9905] A0ABN5J5X9 (region: 24-332, n_pep: 14)
+  [PDB] No experimental structures found for A0ABN5J5X9
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[125/9905] A0ABX8KJ08 (region: 12-256, n_pep: 9)
+  [PDB] No experimental structures found for A0ABX8KJ08
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[126/9905] A0ABY7UUA0 (region: 27-209, n_pep: 7)
+  [PDB] No experimental structures found for A0ABY7UUA0
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[127/9905] A0AUZ9 (region: 57-828, n_pep: 21)
+  [PDB] No experimental structures found for A0AUZ9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[128/9905] A0AV02 (region: 2-686, n_pep: 47)
+  [PDB] No experimental structures found for A0AV02
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[129/9905] A0AV96 (region: 21-589, n_pep: 28)
+  [PDB] ✗ 2DIS — no DBREF maps to A0AV96 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[130/9905] A0AVF1 (region: 2-542, n_pep: 33)
+  [PDB] No experimental structures found for A0AVF1
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[131/9905] A0AVI4 (region: 9-274, n_pep: 17)
+  [PDB] No experimental structures found for A0AVI4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[132/9905] A0AVK6 (region: 31-861, n_pep: 29)
+  [PDB] ✗ 4YO2 — no DBREF maps to A0AVK6 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[133/9905] A0AVT1 (region: 31-1012, n_pep: 39)
+  [PDB] ✓ 7SOL (resolution: 2Å, coverage: ok) — accepted immediately
+[134/9905] A0FGR8 (region: 104-895, n_pep: 41)
+  [PDB] ✗ 4NPJ — no DBREF maps to A0FGR8 (wrong protein / MHC complex)
+  [PDB] ✗ 4P42 — no DBREF maps to A0FGR8 (wrong protein / MHC complex)
+  [PDB] ✗ 4NPK — no DBREF maps to A0FGR8 (wrong protein / MHC complex)
+  [PDB] ✗ 2DMG — no DBREF maps to A0FGR8 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[135/9905] A0JLT2 (region: 66-144, n_pep: 5)
+  [PDB] ✗ 7EMF — chain for A0JLT2 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 8TRH — chain for A0JLT2 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 7ENJ — chain for A0JLT2 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 7NVR — chain for A0JLT2 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 8TQW — chain for A0JLT2 only 24 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[136/9905] A0JNW5 (region: 12-1461, n_pep: 60)
+  [PDB] No experimental structures found for A0JNW5
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[137/9905] A0MZ66 (region: 8-582, n_pep: 23)
+  [PDB] No experimental structures found for A0MZ66
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[138/9905] A0PG75 (region: 12-269, n_pep: 14)
+  [PDB] No experimental structures found for A0PG75
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[139/9905] A0PJE2 (region: 36-312, n_pep: 9)
+  [PDB] No experimental structures found for A0PJE2
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[140/9905] A0PJK1 (region: 17-541, n_pep: 42)
+  [PDB] No experimental structures found for A0PJK1
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[141/9905] A0PJW6 (region: 11-198, n_pep: 9)
+  [PDB] No experimental structures found for A0PJW6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[142/9905] A0PJX8 (region: 3-302, n_pep: 31)
+  [PDB] No experimental structures found for A0PJX8
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[143/9905] A1A4S6 (region: 45-761, n_pep: 27)
+  [PDB] ✗ 2MIO — no DBREF maps to A1A4S6 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[144/9905] A1A4V9 (region: 13-321, n_pep: 16)
+  [PDB] No experimental structures found for A1A4V9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[145/9905] A1A5B4 (region: 1-754, n_pep: 38)
+  [PDB] No experimental structures found for A1A5B4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[146/9905] A1A5C7 (region: 26-606, n_pep: 32)
+  [PDB] No experimental structures found for A1A5C7
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[147/9905] A1KXE4 (region: 53-177, n_pep: 5)
+  [PDB] No experimental structures found for A1KXE4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[148/9905] A1L0T0 (region: 12-589, n_pep: 28)
+  [PDB] No experimental structures found for A1L0T0
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[149/9905] A1L157 (region: 21-230, n_pep: 10)
+  [PDB] No experimental structures found for A1L157
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[150/9905] A1L167 (region: 9-89, n_pep: 5)
+  [PDB] No experimental structures found for A1L167
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[151/9905] A1L390 (region: 93-1215, n_pep: 36)
+  [PDB] No experimental structures found for A1L390
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[152/9905] A1L3X0 (region: 40-250, n_pep: 13)
+  [PDB] ✗ 6Y7F — chain for A1L3X0 only 28 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[153/9905] A1X283 (region: 12-878, n_pep: 18)
+  [PDB] No experimental structures found for A1X283
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[154/9905] A1XBS5 (region: 15-234, n_pep: 10)
+  [PDB] ✗ 8CEG — chain for A1XBS5 only 21 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[155/9905] A2A2Z9 (region: 3-1011, n_pep: 48)
+  [PDB] No experimental structures found for A2A2Z9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[156/9905] A2A3K4 (region: 39-714, n_pep: 22)
+  [PDB] No experimental structures found for A2A3K4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[157/9905] A2A3N6 (region: 36-837, n_pep: 29)
+  [PDB] No experimental structures found for A2A3N6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[158/9905] A2RRH5 (region: 23-824, n_pep: 31)
+  [PDB] No experimental structures found for A2RRH5
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[159/9905] A2RRP1 (region: 22-2320, n_pep: 103)
+  [PDB] No experimental structures found for A2RRP1
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[160/9905] A2RTX5 (region: 24-790, n_pep: 21)
+  [PDB] No experimental structures found for A2RTX5
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[161/9905] A2RU49 (region: 24-355, n_pep: 20)
+  [PDB] No experimental structures found for A2RU49
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[162/9905] A2RUB1 (region: 45-923, n_pep: 24)
+  [PDB] No experimental structures found for A2RUB1
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[163/9905] A2RUB6 (region: 6-929, n_pep: 24)
+  [PDB] No experimental structures found for A2RUB6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[164/9905] A2RUR9 (region: 21-1379, n_pep: 44)
+  [PDB] No experimental structures found for A2RUR9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[165/9905] A2RUS2 (region: 32-1170, n_pep: 51)
+  [PDB] No experimental structures found for A2RUS2
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[166/9905] A2VDF0 (region: 2-154, n_pep: 10)
+  [PDB] No experimental structures found for A2VDF0
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[167/9905] A2VDJ0 (region: 17-1591, n_pep: 70)
+  [PDB] No experimental structures found for A2VDJ0
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[168/9905] A3KMH1 (region: 59-1905, n_pep: 91)
+  [PDB] No experimental structures found for A3KMH1
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[169/9905] A3KN83 (region: 34-1355, n_pep: 46)
+  [PDB] No experimental structures found for A3KN83
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[170/9905] A4D0T7 (region: 3-41, n_pep: 7)
+  [PDB] No experimental structures found for A4D0T7
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[171/9905] A4D0V7 (region: 18-969, n_pep: 42)
+  [PDB] No experimental structures found for A4D0V7
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[172/9905] A4D1B5 (region: 38-852, n_pep: 49)
+  [PDB] No experimental structures found for A4D1B5
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[173/9905] A4D1P6 (region: 26-740, n_pep: 28)
+  [PDB] ✗ 8KB9 — no DBREF maps to A4D1P6 (wrong protein / MHC complex)
+  [PDB] ✗ 6VYC — no DBREF maps to A4D1P6 (wrong protein / MHC complex)
+  [PDB] ✗ 8T55 — no DBREF maps to A4D1P6 (wrong protein / MHC complex)
+  [PDB] ✗ 8SHJ — no DBREF maps to A4D1P6 (wrong protein / MHC complex)
+  [PDB] ✗ 8KB8 — no DBREF maps to A4D1P6 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[174/9905] A4D1U4 (region: 61-441, n_pep: 19)
+  [PDB] No experimental structures found for A4D1U4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[175/9905] A4D2P6 (region: 42-1191, n_pep: 47)
+  [PDB] No experimental structures found for A4D2P6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[176/9905] A4QPB2 (region: 7-214, n_pep: 10)
+  [PDB] No experimental structures found for A4QPB2
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[177/9905] A4UGR9 (region: 34-3322, n_pep: 70)
+  [PDB] ✗ 4F14 — no DBREF maps to A4UGR9 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[178/9905] A5A3E0 (region: 127-1031, n_pep: 33)
+  [PDB] No experimental structures found for A5A3E0
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[179/9905] A5D8W1 (region: 25-939, n_pep: 47)
+  [PDB] No experimental structures found for A5D8W1
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[180/9905] A5PL33 (region: 15-1013, n_pep: 23)
+  [PDB] No experimental structures found for A5PL33
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[181/9905] A5PLK6 (region: 14-1061, n_pep: 40)
+  [PDB] No experimental structures found for A5PLK6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[182/9905] A5PLN9 (region: 11-406, n_pep: 16)
+  [PDB] No experimental structures found for A5PLN9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[183/9905] A5YKK6 (region: 2-2359, n_pep: 139)
+  [PDB] ✗ 4J8S — no DBREF maps to A5YKK6 (wrong protein / MHC complex)
+  [PDB] ✗ 4CRU — no DBREF maps to A5YKK6 (wrong protein / MHC complex)
+  [PDB] ✗ 4CRW — no DBREF maps to A5YKK6 (wrong protein / MHC complex)
+  [PDB] ✗ 4CT7 — no DBREF maps to A5YKK6 (wrong protein / MHC complex)
+  [PDB] ✗ 4CRV — no DBREF maps to A5YKK6 (wrong protein / MHC complex)
+  [PDB] ✗ 4CT6 — no DBREF maps to A5YKK6 (wrong protein / MHC complex)
+  [PDB] ✗ 5ANR — no DBREF maps to A5YKK6 (wrong protein / MHC complex)
+  [PDB] ✗ 4CT4 — no DBREF maps to A5YKK6 (wrong protein / MHC complex)
+  [PDB] ✗ 9FL8 — no DBREF maps to A5YKK6 (wrong protein / MHC complex)
+  [PDB] ✗ 4GMJ — no DBREF maps to A5YKK6 (wrong protein / MHC complex)
+  [PDB] ✗ 5ONA — no DBREF maps to A5YKK6 (wrong protein / MHC complex)
+  [PDB] ✗ 4CQO — no DBREF maps to A5YKK6 (wrong protein / MHC complex)
+  [PDB] ✗ 9E7T — no DBREF maps to A5YKK6 (wrong protein / MHC complex)
+  [PDB] ✗ 8FY3 coverage: partial:6-692:29.1pct — below 80% threshold
+  [PDB] ✗ 4GML — no DBREF maps to A5YKK6 (wrong protein / MHC complex)
+  [PDB] ✗ 5FU6 — no DBREF maps to A5YKK6 (wrong protein / MHC complex)
+  [PDB] ✗ 8BFI coverage: partial:-3-713:30.2pct — below 80% threshold
+  [PDB] ✗ 5FU7 — no DBREF maps to A5YKK6 (wrong protein / MHC complex)
+  [PDB] ✗ 4C0D — no DBREF maps to A5YKK6 (wrong protein / MHC complex)
+  [PDB] ✗ 9E7U — no DBREF maps to A5YKK6 (wrong protein / MHC complex)
+  [PDB] ✗ 7VOI — no DBREF maps to A5YKK6 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[184/9905] A5YM72 (region: 36-819, n_pep: 39)
+  [PDB] No experimental structures found for A5YM72
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[185/9905] A6NC57 (region: 46-917, n_pep: 29)
+  [PDB] No experimental structures found for A6NC57
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[186/9905] A6NC97 (region: 39-336, n_pep: 17)
+  [PDB] No experimental structures found for A6NC97
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[187/9905] A6NC98 (region: 16-1323, n_pep: 58)
+  [PDB] No experimental structures found for A6NC98
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[188/9905] A6NCE7 (region: 46-98, n_pep: 6)
+  [PDB] No experimental structures found for A6NCE7
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[189/9905] A6NCF5 (region: 20-529, n_pep: 30)
+  [PDB] No experimental structures found for A6NCF5
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[190/9905] A6NCK2 (region: 21-424, n_pep: 20)
+  [PDB] No experimental structures found for A6NCK2
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[191/9905] A6NCL7 (region: 82-398, n_pep: 12)
+  [PDB] No experimental structures found for A6NCL7
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[192/9905] A6ND36 (region: 54-622, n_pep: 26)
+  [PDB] No experimental structures found for A6ND36
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[193/9905] A6NDG6 (region: 23-319, n_pep: 14)
+  [PDB] No experimental structures found for A6NDG6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[194/9905] A6NDU8 (region: 4-267, n_pep: 13)
+  [PDB] No experimental structures found for A6NDU8
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[195/9905] A6NDV4 (region: 11-466, n_pep: 31)
+  [PDB] No experimental structures found for A6NDV4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[196/9905] A6NEQ2 (region: 6-353, n_pep: 12)
+  [PDB] ✗ 6SEO — no DBREF maps to A6NEQ2 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[197/9905] A6NES4 (region: 32-1647, n_pep: 87)
+  [PDB] No experimental structures found for A6NES4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[198/9905] A6NF34 (region: 16-624, n_pep: 22)
+  [PDB] No experimental structures found for A6NF34
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[199/9905] A6NFI3 (region: 59-683, n_pep: 15)
+  [PDB] No experimental structures found for A6NFI3
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[200/9905] A6NFQ2 (region: 32-903, n_pep: 42)
+  [PDB] No experimental structures found for A6NFQ2
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[201/9905] A6NFX1 (region: 48-477, n_pep: 22)
+  [PDB] No experimental structures found for A6NFX1
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[202/9905] A6NFY4 (region: 10-402, n_pep: 25)
+  [PDB] No experimental structures found for A6NFY4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[203/9905] A6NGB9 (region: 49-423, n_pep: 6)
+  [PDB] No experimental structures found for A6NGB9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[204/9905] A6NGR9 (region: 20-657, n_pep: 34)
+  [PDB] No experimental structures found for A6NGR9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[205/9905] A6NGW2 (region: 2-1768, n_pep: 111)
+  [PDB] No experimental structures found for A6NGW2
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[206/9905] A6NHG4 (region: 30-100, n_pep: 3)
+  [PDB] No experimental structures found for A6NHG4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[207/9905] A6NHR9 (region: 39-1961, n_pep: 84)
+  [PDB] ✗ 6MW7 — chain for A6NHR9 only 35 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[208/9905] A6NHT5 (region: 54-351, n_pep: 12)
+  [PDB] No experimental structures found for A6NHT5
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[209/9905] A6NHX0 (region: 4-321, n_pep: 19)
+  [PDB] ✗ 9KPG — chain for A6NHX0 only 32 residues (peptide-in-groove)
+  [PDB] ✗ 9KPB — chain for A6NHX0 only 32 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[210/9905] A6NHY2 (region: 27-514, n_pep: 20)
+  [PDB] No experimental structures found for A6NHY2
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[211/9905] A6NI28 (region: 21-872, n_pep: 27)
+  [PDB] No experimental structures found for A6NI28
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[212/9905] A6NIE6 (region: 91-335, n_pep: 17)
+  [PDB] No experimental structures found for A6NIE6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[213/9905] A6NIH7 (region: 93-246, n_pep: 5)
+  [PDB] ✗ 7OK7 — no DBREF maps to A6NIH7 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[214/9905] A6NJ78 (region: 18-390, n_pep: 20)
+  [PDB] ✗ 8IPK — chain for A6NJ78 only 33 residues (peptide-in-groove)
+  [PDB] ✗ 8IPI — chain for A6NJ78 only 33 residues (peptide-in-groove)
+  [PDB] ✗ 8IPL — chain for A6NJ78 only 33 residues (peptide-in-groove)
+  [PDB] ✗ 9G5C — chain for A6NJ78 only 40 residues (peptide-in-groove)
+  [PDB] ✗ 9G5D — chain for A6NJ78 only 40 residues (peptide-in-groove)
+  [PDB] ✗ 8IPM — chain for A6NJ78 only 33 residues (peptide-in-groove)
+  [PDB] ✗ 8QRL — chain for A6NJ78 only 40 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[215/9905] A6NJU9 (region: 12-986, n_pep: 40)
+  [PDB] No experimental structures found for A6NJU9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[216/9905] A6NJZ3 (region: 15-306, n_pep: 24)
+  [PDB] No experimental structures found for A6NJZ3
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[217/9905] A6NJZ7 (region: 165-1573, n_pep: 43)
+  [PDB] No experimental structures found for A6NJZ7
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[218/9905] A6NKD9 (region: 10-391, n_pep: 14)
+  [PDB] No experimental structures found for A6NKD9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[219/9905] A6NKF1 (region: 114-390, n_pep: 17)
+  [PDB] No experimental structures found for A6NKF1
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[220/9905] A6NKT7 (region: 68-1740, n_pep: 64)
+  [PDB] No experimental structures found for A6NKT7
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[221/9905] A6NMB9 (region: 110-634, n_pep: 16)
+  [PDB] No experimental structures found for A6NMB9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[222/9905] A6NMY6 (region: 3-248, n_pep: 5)
+  [PDB] No experimental structures found for A6NMY6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[223/9905] A6NN90 (region: 21-549, n_pep: 23)
+  [PDB] No experimental structures found for A6NN90
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[224/9905] A6NND4 (region: 29-297, n_pep: 23)
+  [PDB] No experimental structures found for A6NND4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[225/9905] A6NNE9 (region: 48-399, n_pep: 12)
+  [PDB] No experimental structures found for A6NNE9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[226/9905] A6NNP5 (region: 30-182, n_pep: 10)
+  [PDB] No experimental structures found for A6NNP5
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[227/9905] A6NNY8 (region: 25-430, n_pep: 12)
+  [PDB] No experimental structures found for A6NNY8
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[228/9905] A6NNZ2 (region: 15-395, n_pep: 15)
+  [PDB] No experimental structures found for A6NNZ2
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[229/9905] A6QL63 (region: 65-1094, n_pep: 38)
+  [PDB] No experimental structures found for A6QL63
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[230/9905] A6XGL2 (region: 2-42, n_pep: 4)
+  [PDB] ✗ 6PXW — chain for A6XGL2 only 7 residues (peptide-in-groove)
+  [PDB] ✗ 6PXV — chain for A6XGL2 only 7 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[231/9905] A6ZKI3 (region: 6-105, n_pep: 9)
+  [PDB] No experimental structures found for A6ZKI3
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[232/9905] A7E2Y1 (region: 25-1924, n_pep: 81)
+  [PDB] No experimental structures found for A7E2Y1
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[233/9905] A7MCY6 (region: 3-579, n_pep: 17)
+  [PDB] No experimental structures found for A7MCY6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[234/9905] A7XYQ1 (region: 123-857, n_pep: 22)
+  [PDB] No experimental structures found for A7XYQ1
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[235/9905] A8CG34 (region: 38-1172, n_pep: 32)
+  [PDB] No experimental structures found for A8CG34
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[236/9905] A8K0Z3 (region: 9-448, n_pep: 19)
+  [PDB] No experimental structures found for A8K0Z3
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[237/9905] A8K554 (region: 7-127, n_pep: 5)
+  [PDB] No experimental structures found for A8K554
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[238/9905] A8K8P3 (region: 61-1222, n_pep: 37)
+  [PDB] ✗ 2K2I — no DBREF maps to A8K8P3 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[239/9905] A8K979 (region: 32-583, n_pep: 23)
+  [PDB] ✗ 7N8V — chain for A8K979 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 7N8W — chain for A8K979 only 24 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[240/9905] A8MPP1 (region: 22-895, n_pep: 41)
+  [PDB] No experimental structures found for A8MPP1
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[241/9905] A8MPS7 (region: 29-293, n_pep: 11)
+  [PDB] No experimental structures found for A8MPS7
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[242/9905] A8MQ14 (region: 35-320, n_pep: 7)
+  [PDB] No experimental structures found for A8MQ14
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[243/9905] A8MQ27 (region: 8-370, n_pep: 11)
+  [PDB] No experimental structures found for A8MQ27
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[244/9905] A8MT70 (region: 74-718, n_pep: 16)
+  [PDB] No experimental structures found for A8MT70
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[245/9905] A8MTJ3 (region: 77-342, n_pep: 11)
+  [PDB] ✗ 9M8K — no DBREF maps to A8MTJ3 (wrong protein / MHC complex)
+  [PDB] ✗ 9OXB — chain for A8MTJ3 only 35 residues (peptide-in-groove)
+  [PDB] ✗ 8RQL — chain for A8MTJ3 only 5 residues (peptide-in-groove)
+  [PDB] ✗ 8XQP — no DBREF maps to A8MTJ3 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[246/9905] A8MTT3 (region: 11-54, n_pep: 5)
+  [PDB] No experimental structures found for A8MTT3
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[247/9905] A8MV65 (region: 18-308, n_pep: 8)
+  [PDB] No experimental structures found for A8MV65
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[248/9905] A8MVW0 (region: 8-797, n_pep: 32)
+  [PDB] No experimental structures found for A8MVW0
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[249/9905] A8MVX0 (region: 25-777, n_pep: 27)
+  [PDB] No experimental structures found for A8MVX0
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[250/9905] A8MW92 (region: 11-971, n_pep: 20)
+  [PDB] ✗ 6L1P — chain for A8MW92 only 3 residues (peptide-in-groove)
+  [PDB] ✗ 6L0X — chain for A8MW92 only 3 residues (peptide-in-groove)
+  [PDB] ✗ 6L1C — chain for A8MW92 only 3 residues (peptide-in-groove)
+  [PDB] ✗ 6L10 — chain for A8MW92 only 3 residues (peptide-in-groove)
+  [PDB] ✗ 6L1I — chain for A8MW92 only 3 residues (peptide-in-groove)
+  [PDB] ✗ 6L1F — chain for A8MW92 only 3 residues (peptide-in-groove)
+  [PDB] ✗ 2EQM — no DBREF maps to A8MW92 (wrong protein / MHC complex)
+  [PDB] ✗ 2EQU — no DBREF maps to A8MW92 (wrong protein / MHC complex)
+  [PDB] ✗ 2JTF — no DBREF maps to A8MW92 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[251/9905] A8MWD9 (region: 30-76, n_pep: 3)
+  [PDB] No experimental structures found for A8MWD9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[252/9905] A8MWX3 (region: 77-461, n_pep: 19)
+  [PDB] No experimental structures found for A8MWX3
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[253/9905] A8MWY0 (region: 148-1007, n_pep: 15)
+  [PDB] No experimental structures found for A8MWY0
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[254/9905] A8MXV4 (region: 66-370, n_pep: 12)
+  [PDB] No experimental structures found for A8MXV4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[255/9905] A8MYZ6 (region: 93-479, n_pep: 14)
+  [PDB] No experimental structures found for A8MYZ6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[256/9905] A8MZ36 (region: 41-255, n_pep: 7)
+  [PDB] No experimental structures found for A8MZ36
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[257/9905] A9UHW6 (region: 97-194, n_pep: 7)
+  [PDB] No experimental structures found for A9UHW6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[258/9905] A9YTQ3 (region: 39-683, n_pep: 23)
+  [PDB] ✗ 5Y7Y — chain for A9YTQ3 only 2 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[259/9905] B0FP48 (region: 12-223, n_pep: 15)
+  [PDB] No experimental structures found for B0FP48
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[260/9905] B0I1T2 (region: 21-943, n_pep: 39)
+  [PDB] No experimental structures found for B0I1T2
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[261/9905] B0YJ81 (region: 77-284, n_pep: 19)
+  [PDB] No experimental structures found for B0YJ81
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[262/9905] B1AJZ9 (region: 12-1391, n_pep: 65)
+  [PDB] No experimental structures found for B1AJZ9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[263/9905] B1AK53 (region: 2-844, n_pep: 19)
+  [PDB] No experimental structures found for B1AK53
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[264/9905] B1ANS9 (region: 21-1078, n_pep: 43)
+  [PDB] No experimental structures found for B1ANS9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[265/9905] B2RBV5 (region: 48-113, n_pep: 4)
+  [PDB] No experimental structures found for B2RBV5
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[266/9905] B2RNG4 (region: 8-798, n_pep: 27)
+  [PDB] No experimental structures found for B2RNG4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[267/9905] B2RTY4 (region: 41-2547, n_pep: 88)
+  [PDB] No experimental structures found for B2RTY4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[268/9905] B2RXH8 (region: 19-236, n_pep: 11)
+  [PDB] No experimental structures found for B2RXH8
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[269/9905] B3EWG3 (region: 12-69, n_pep: 7)
+  [PDB] No experimental structures found for B3EWG3
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[270/9905] B3KW44 (region: 21-369, n_pep: 13)
+  [PDB] No experimental structures found for B3KW44
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[271/9905] B4DEV8 (region: 4-131, n_pep: 8)
+  [PDB] No experimental structures found for B4DEV8
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[272/9905] B5MCY1 (region: 80-1909, n_pep: 99)
+  [PDB] No experimental structures found for B5MCY1
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[273/9905] B5ME19 (region: 62-874, n_pep: 36)
+  [PDB] No experimental structures found for B5ME19
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[274/9905] B6KJP5 (region: 92-2472, n_pep: 98)
+  [PDB] No experimental structures found for B6KJP5
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[275/9905] B6KR25 (region: 26-1122, n_pep: 72)
+  [PDB] No experimental structures found for B6KR25
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[276/9905] B7Z2R2 (region: 59-161, n_pep: 4)
+  [PDB] No experimental structures found for B7Z2R2
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[277/9905] B7ZAP0 (region: 18-219, n_pep: 7)
+  [PDB] No experimental structures found for B7ZAP0
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[278/9905] B7ZAQ6 (region: 3-448, n_pep: 38)
+  [PDB] No experimental structures found for B7ZAQ6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[279/9905] B7ZW38 (region: 19-204, n_pep: 11)
+  [PDB] No experimental structures found for B7ZW38
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[280/9905] B8ZZS2 (region: 4-470, n_pep: 19)
+  [PDB] No experimental structures found for B8ZZS2
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[281/9905] B9A064 (region: 26-145, n_pep: 6)
+  [PDB] ✗ 7T17 — chain for B9A064 only 10 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[282/9905] B9PH46 (region: 89-460, n_pep: 14)
+  [PDB] No experimental structures found for B9PH46
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[283/9905] B9PIS8 (region: 33-197, n_pep: 13)
+  [PDB] No experimental structures found for B9PIS8
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[284/9905] B9PK74 (region: 9-1201, n_pep: 57)
+  [PDB] No experimental structures found for B9PK74
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[285/9905] B9PNE7 (region: 41-599, n_pep: 34)
+  [PDB] No experimental structures found for B9PNE7
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[286/9905] B9PT01 (region: 10-166, n_pep: 6)
+  [PDB] No experimental structures found for B9PT01
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[287/9905] B9PTM6 (region: 7-85, n_pep: 6)
+  [PDB] No experimental structures found for B9PTM6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[288/9905] B9PUW8 (region: 1-189, n_pep: 14)
+  [PDB] No experimental structures found for B9PUW8
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[289/9905] B9Q1S5 (region: 65-317, n_pep: 16)
+  [PDB] No experimental structures found for B9Q1S5
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[290/9905] B9Q2S1 (region: 19-812, n_pep: 35)
+  [PDB] No experimental structures found for B9Q2S1
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[291/9905] B9QCZ2 (region: 2-1119, n_pep: 71)
+  [PDB] No experimental structures found for B9QCZ2
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[292/9905] B9QDT9 (region: 4-404, n_pep: 21)
+  [PDB] No experimental structures found for B9QDT9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[293/9905] B9QFB9 (region: 29-1385, n_pep: 80)
+  [PDB] No experimental structures found for B9QFB9
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[294/9905] B9QI15 (region: 7-415, n_pep: 24)
+  [PDB] No experimental structures found for B9QI15
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[295/9905] B9QK09 (region: 14-914, n_pep: 55)
+  [PDB] No experimental structures found for B9QK09
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[296/9905] B9QK32 (region: 23-1298, n_pep: 65)
+  [PDB] No experimental structures found for B9QK32
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[297/9905] B9QN40 (region: 33-1672, n_pep: 63)
+  [PDB] No experimental structures found for B9QN40
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[298/9905] C4AMC7 (region: 9-446, n_pep: 19)
+  [PDB] No experimental structures found for C4AMC7
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[299/9905] C4P0D6 (region: 69-179, n_pep: 10)
+  [PDB] No experimental structures found for C4P0D6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[300/9905] C9J798 (region: 60-782, n_pep: 37)
+  [PDB] No experimental structures found for C9J798
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[301/9905] C9J7D4 (region: 39-47, n_pep: 1)
+  [PDB] No experimental structures found for C9J7D4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[302/9905] C9JBF9 (region: 43-361, n_pep: 8)
+  [PDB] No experimental structures found for C9JBF9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[303/9905] C9JI98 (region: 38-166, n_pep: 8)
+  [PDB] No experimental structures found for C9JI98
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[304/9905] C9JJ37 (region: 73-235, n_pep: 9)
+  [PDB] No experimental structures found for C9JJ37
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[305/9905] C9JMY0 (region: 15-835, n_pep: 20)
+  [PDB] No experimental structures found for C9JMY0
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[306/9905] C9JN71 (region: 3-502, n_pep: 11)
+  [PDB] No experimental structures found for C9JN71
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[307/9905] C9JRZ8 (region: 23-314, n_pep: 12)
+  [PDB] No experimental structures found for C9JRZ8
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[308/9905] D6RB46 (region: 50-111, n_pep: 3)
+  [PDB] No experimental structures found for D6RB46
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[309/9905] D6RBD7 (region: 8-141, n_pep: 13)
+  [PDB] No experimental structures found for D6RBD7
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[310/9905] D6REC4 (region: 28-617, n_pep: 17)
+  [PDB] No experimental structures found for D6REC4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[311/9905] D9J307 (region: 3-330, n_pep: 12)
+  [PDB] ✗ 6UZS — no DBREF maps to D9J307 (wrong protein / MHC complex)
+  [PDB] ✗ 7XF3 — no DBREF maps to D9J307 (wrong protein / MHC complex)
+  [PDB] ✗ 6UZP — no DBREF maps to D9J307 (wrong protein / MHC complex)
+  [PDB] ✗ 6UZQ — no DBREF maps to D9J307 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[312/9905] E0CX11 (region: 8-38, n_pep: 4)
+  [PDB] No experimental structures found for E0CX11
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[313/9905] E5KLJ9 (region: 27-975, n_pep: 45)
+  [PDB] No experimental structures found for E5KLJ9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[314/9905] E5RFT4 (region: 5-245, n_pep: 11)
+  [PDB] No experimental structures found for E5RFT4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[315/9905] E5RIU9 (region: 52-200, n_pep: 8)
+  [PDB] No experimental structures found for E5RIU9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[316/9905] E7EMB1 (region: 3-445, n_pep: 20)
+  [PDB] No experimental structures found for E7EMB1
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[317/9905] E7ENF1 (region: 12-192, n_pep: 6)
+  [PDB] No experimental structures found for E7ENF1
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[318/9905] E7EW31 (region: 9-929, n_pep: 17)
+  [PDB] No experimental structures found for E7EW31
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[319/9905] E9PAM5 (region: 4-151, n_pep: 5)
+  [PDB] No experimental structures found for E9PAM5
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[320/9905] E9PAV3 (region: 24-2041, n_pep: 54)
+  [PDB] No experimental structures found for E9PAV3
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[321/9905] E9PAX0 (region: 19-216, n_pep: 13)
+  [PDB] No experimental structures found for E9PAX0
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[322/9905] E9PLG4 (region: 20-28, n_pep: 1)
+  [PDB] No experimental structures found for E9PLG4
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[323/9905] E9PNK1 (region: 29-169, n_pep: 7)
+  [PDB] No experimental structures found for E9PNK1
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[324/9905] E9PQ53 (region: 12-81, n_pep: 5)
+  [PDB] No experimental structures found for E9PQ53
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[325/9905] F5H277 (region: 57-186, n_pep: 9)
+  [PDB] No experimental structures found for F5H277
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[326/9905] F5H5D3 (region: 29-505, n_pep: 25)
+  [PDB] No experimental structures found for F5H5D3
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[327/9905] F5H8R0 (region: 2-65, n_pep: 5)
+  [PDB] No experimental structures found for F5H8R0
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[328/9905] F5H8S6 (region: 15-499, n_pep: 20)
+  [PDB] No experimental structures found for F5H8S6
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[329/9905] F5HB40 (region: 42-582, n_pep: 20)
+  [PDB] No experimental structures found for F5HB40
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[330/9905] F5HB41 (region: 19-345, n_pep: 12)
+  [PDB] No experimental structures found for F5HB41
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[331/9905] F5HB52 (region: 39-206, n_pep: 8)
+  [PDB] No experimental structures found for F5HB52
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[332/9905] F5HB53 (region: 95-848, n_pep: 37)
+  [PDB] ✗ 8VYN — no DBREF maps to F5HB53 (wrong protein / MHC complex)
+  [PDB] ✗ 8VYM — no DBREF maps to F5HB53 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[333/9905] F5HC16 (region: 45-402, n_pep: 14)
+  [PDB] No experimental structures found for F5HC16
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[334/9905] F5HC33 (region: 83-215, n_pep: 9)
+  [PDB] No experimental structures found for F5HC33
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[335/9905] F5HC79 (region: 4-706, n_pep: 33)
+  [PDB] No experimental structures found for F5HC79
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[336/9905] F5HC97 (region: 6-315, n_pep: 10)
+  [PDB] No experimental structures found for F5HC97
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[337/9905] F5HCM1 (region: 81-363, n_pep: 16)
+  [PDB] No experimental structures found for F5HCM1
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[338/9905] F5HCP3 (region: 59-158, n_pep: 4)
+  [PDB] ✗ 7T4Q — no DBREF maps to F5HCP3 (wrong protein / MHC complex)
+  [PDB] ✗ 5VOB — chain for F5HCP3 only 21 residues (peptide-in-groove)
+  [PDB] ✗ 7T4S — no DBREF maps to F5HCP3 (wrong protein / MHC complex)
+  [PDB] ✗ 7T4R — no DBREF maps to F5HCP3 (wrong protein / MHC complex)
+  [PDB] ✗ 5VOC — chain for F5HCP3 only 21 residues (peptide-in-groove)
+  [PDB] ✗ 5VOD — chain for F5HCP3 only 21 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[339/9905] F5HCU8 (region: 9-669, n_pep: 44)
+  [PDB] No experimental structures found for F5HCU8
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[340/9905] F5HDK1 (region: 7-298, n_pep: 18)
+  [PDB] No experimental structures found for F5HDK1
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[341/9905] F5HDQ6 (region: 8-1148, n_pep: 55)
+  [PDB] No experimental structures found for F5HDQ6
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[342/9905] F5HE69 (region: 34-254, n_pep: 20)
+  [PDB] No experimental structures found for F5HE69
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[343/9905] F5HEA3 (region: 2-330, n_pep: 17)
+  [PDB] No experimental structures found for F5HEA3
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[344/9905] F5HEN8 (region: 19-954, n_pep: 45)
+  [PDB] No experimental structures found for F5HEN8
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[345/9905] F5HF35 (region: 65-226, n_pep: 8)
+  [PDB] No experimental structures found for F5HF35
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[346/9905] F5HFH0 (region: 14-253, n_pep: 23)
+  [PDB] No experimental structures found for F5HFH0
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[347/9905] F5HFZ4 (region: 78-317, n_pep: 9)
+  [PDB] ✗ 5D5N — no DBREF maps to F5HFZ4 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[348/9905] F5HG51 (region: 62-863, n_pep: 33)
+  [PDB] No experimental structures found for F5HG51
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[349/9905] F5HG95 (region: 7-376, n_pep: 12)
+  [PDB] No experimental structures found for F5HG95
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[350/9905] F5HGP1 (region: 7-431, n_pep: 21)
+  [PDB] No experimental structures found for F5HGP1
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[351/9905] F5HGT1 (region: 5-1362, n_pep: 74)
+  [PDB] No experimental structures found for F5HGT1
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[352/9905] F5HGU6 (region: 12-264, n_pep: 9)
+  [PDB] No experimental structures found for F5HGU6
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[353/9905] F5HH39 (region: 8-100, n_pep: 5)
+  [PDB] No experimental structures found for F5HH39
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[354/9905] F6S8N6 (region: 28-228, n_pep: 15)
+  [PDB] No experimental structures found for F6S8N6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[355/9905] F6TDL0 (region: 74-490, n_pep: 16)
+  [PDB] No experimental structures found for F6TDL0
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[356/9905] F7V998 (region: 124-218, n_pep: 6)
+  [PDB] No experimental structures found for F7V998
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[357/9905] F8VV91 (region: 38-50, n_pep: 2)
+  [PDB] No experimental structures found for F8VV91
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[358/9905] F8WCM5 (region: 2-42, n_pep: 4)
+  [PDB] ✗ 7YQ3 — no DBREF maps to F8WCM5 (wrong protein / MHC complex)
+  [PDB] ✗ 7YQ4 — no DBREF maps to F8WCM5 (wrong protein / MHC complex)
+  [PDB] ✗ 8GUY — no DBREF maps to F8WCM5 (wrong protein / MHC complex)
+  [PDB] ✗ 7YQ5 — no DBREF maps to F8WCM5 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[359/9905] F8WDG3 (region: 4-81, n_pep: 2)
+  [PDB] No experimental structures found for F8WDG3
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[360/9905] F8WF08 (region: 37-90, n_pep: 2)
+  [PDB] No experimental structures found for F8WF08
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[361/9905] F9UTQ0 (region: 8-1358, n_pep: 105)
+  [PDB] No experimental structures found for F9UTQ0
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[362/9905] G3V441 (region: 17-35, n_pep: 2)
+  [PDB] No experimental structures found for G3V441
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[363/9905] G5E977 (region: 24-525, n_pep: 26)
+  [PDB] No experimental structures found for G5E977
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[364/9905] G9CGD6 (region: 11-849, n_pep: 27)
+  [PDB] No experimental structures found for G9CGD6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[365/9905] H0Y354 (region: 34-142, n_pep: 4)
+  [PDB] No experimental structures found for H0Y354
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[366/9905] H0Y4V9 (region: 98-246, n_pep: 8)
+  [PDB] No experimental structures found for H0Y4V9
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[367/9905] H0Y5F5 (region: 16-529, n_pep: 16)
+  [PDB] No experimental structures found for H0Y5F5
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[368/9905] H0Y8Z0 (region: 7-15, n_pep: 1)
+  [PDB] No experimental structures found for H0Y8Z0
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[369/9905] H0Y9Y9 (region: 15-36, n_pep: 4)
+  [PDB] No experimental structures found for H0Y9Y9
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[370/9905] H0YA41 (region: 2-10, n_pep: 1)
+  [PDB] No experimental structures found for H0YA41
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[371/9905] H0YAG0 (region: 67-88, n_pep: 2)
+  [PDB] No experimental structures found for H0YAG0
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[372/9905] H0YAW1 (region: 13-21, n_pep: 1)
+  [PDB] No experimental structures found for H0YAW1
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[373/9905] H0YC56 (region: 36-113, n_pep: 6)
+  [PDB] No experimental structures found for H0YC56
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[374/9905] H0YCP9 (region: 63-183, n_pep: 11)
+  [PDB] No experimental structures found for H0YCP9
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[375/9905] H0YEK1 (region: 9-100, n_pep: 6)
+  [PDB] No experimental structures found for H0YEK1
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[376/9905] H0YH69 (region: 6-337, n_pep: 14)
+  [PDB] No experimental structures found for H0YH69
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[377/9905] H0YI94 (region: 9-119, n_pep: 10)
+  [PDB] No experimental structures found for H0YI94
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[378/9905] H0YIK4 (region: 5-198, n_pep: 15)
+  [PDB] No experimental structures found for H0YIK4
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[379/9905] H0YNE4 (region: 56-64, n_pep: 1)
+  [PDB] No experimental structures found for H0YNE4
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[380/9905] H3BP35 (region: 31-249, n_pep: 8)
+  [PDB] No experimental structures found for H3BP35
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[381/9905] H3BQJ1 (region: 14-184, n_pep: 10)
+  [PDB] No experimental structures found for H3BQJ1
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[382/9905] H3BQU2 (region: 61-170, n_pep: 10)
+  [PDB] No experimental structures found for H3BQU2
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[383/9905] H3BR37 (region: 19-58, n_pep: 3)
+  [PDB] No experimental structures found for H3BR37
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[384/9905] H3BRU6 (region: 9-291, n_pep: 12)
+  [PDB] No experimental structures found for H3BRU6
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[385/9905] H3BV60 (region: 1-266, n_pep: 12)
+  [PDB] No experimental structures found for H3BV60
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[386/9905] H3BVE0 (region: 84-199, n_pep: 11)
+  [PDB] No experimental structures found for H3BVE0
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[387/9905] H7BZ55 (region: 20-1625, n_pep: 74)
+  [PDB] No experimental structures found for H7BZ55
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[388/9905] H7C0E7 (region: 78-269, n_pep: 14)
+  [PDB] No experimental structures found for H7C0E7
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[389/9905] H7C0U7 (region: 50-35943, n_pep: 1070)
+  [PDB] No experimental structures found for H7C0U7
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[390/9905] H7C0V5 (region: 14-595, n_pep: 18)
+  [PDB] No experimental structures found for H7C0V5
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[391/9905] H7C2C6 (region: 26-1195, n_pep: 50)
+  [PDB] No experimental structures found for H7C2C6
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[392/9905] H7C3M7 (region: 9-453, n_pep: 12)
+  [PDB] No experimental structures found for H7C3M7
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[393/9905] H7C4G9 (region: 44-898, n_pep: 42)
+  [PDB] No experimental structures found for H7C4G9
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[394/9905] H7C525 (region: 11-126, n_pep: 5)
+  [PDB] No experimental structures found for H7C525
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[395/9905] I6L899 (region: 9-553, n_pep: 19)
+  [PDB] No experimental structures found for I6L899
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[396/9905] K7EIQ3 (region: 19-83, n_pep: 5)
+  [PDB] No experimental structures found for K7EIQ3
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[397/9905] K7EM85 (region: 33-1143, n_pep: 44)
+  [PDB] No experimental structures found for K7EM85
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[398/9905] K7EMN7 (region: 7-156, n_pep: 9)
+  [PDB] No experimental structures found for K7EMN7
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[399/9905] K7ERW2 (region: 26-154, n_pep: 11)
+  [PDB] No experimental structures found for K7ERW2
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[400/9905] L0R6Q1 (region: 16-98, n_pep: 4)
+  [PDB] No experimental structures found for L0R6Q1
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[401/9905] M0QY60 (region: 3-100, n_pep: 5)
+  [PDB] No experimental structures found for M0QY60
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[402/9905] M0QZ01 (region: 2-159, n_pep: 7)
+  [PDB] No experimental structures found for M0QZ01
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[403/9905] M0QZD8 (region: 11-3251, n_pep: 158)
+  [PDB] No experimental structures found for M0QZD8
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[404/9905] M0R1K2 (region: 49-155, n_pep: 4)
+  [PDB] No experimental structures found for M0R1K2
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[405/9905] M0R210 (region: 30-104, n_pep: 4)
+  [PDB] No experimental structures found for M0R210
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[406/9905] O00115 (region: 30-340, n_pep: 8)
+  [PDB] No experimental structures found for O00115
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[407/9905] O00116 (region: 44-646, n_pep: 21)
+  [PDB] No experimental structures found for O00116
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[408/9905] O00124 (region: 10-263, n_pep: 12)
+  [PDB] No experimental structures found for O00124
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[409/9905] O00139 (region: 9-681, n_pep: 22)
+  [PDB] ✗ 9KD4 — no DBREF maps to O00139 (wrong protein / MHC complex)
+  [PDB] ✗ 9JWV — no DBREF maps to O00139 (wrong protein / MHC complex)
+  [PDB] ✗ 9KD5 — no DBREF maps to O00139 (wrong protein / MHC complex)
+  [PDB] ✗ 9J20 — no DBREF maps to O00139 (wrong protein / MHC complex)
+  [PDB] ✗ 2GRY — no DBREF maps to O00139 (wrong protein / MHC complex)
+  [PDB] ✗ 6BBN — no DBREF maps to O00139 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[410/9905] O00141 (region: 34-405, n_pep: 17)
+  [PDB] ✗ 2R5T — no DBREF maps to O00141 (wrong protein / MHC complex)
+  [PDB] ✗ 7PUE — no DBREF maps to O00141 (wrong protein / MHC complex)
+  [PDB] ✗ 3HDM — no DBREF maps to O00141 (wrong protein / MHC complex)
+  [PDB] ✗ 3HDN — no DBREF maps to O00141 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[411/9905] O00148 (region: 50-417, n_pep: 22)
+  [PDB] ✗ 8IJU — chain for O00148 only 29 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[412/9905] O00154 (region: 2-348, n_pep: 23)
+  [PDB] ✗ 2QQ2 — no DBREF maps to O00154 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[413/9905] O00155 (region: 39-346, n_pep: 21)
+  [PDB] No experimental structures found for O00155
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[414/9905] O00159 (region: 24-1060, n_pep: 43)
+  [PDB] ✗ 4BYF coverage: partial:1-720:67.2pct — below 80% threshold
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[415/9905] O00160 (region: 41-1071, n_pep: 39)
+  [PDB] No experimental structures found for O00160
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[416/9905] O00167 (region: 4-466, n_pep: 13)
+  [PDB] ✗ 4EGC — no DBREF maps to O00167 (wrong protein / MHC complex)
+  [PDB] ✗ 3GEB — no DBREF maps to O00167 (wrong protein / MHC complex)
+  [PDB] ✗ 3HB0 — no DBREF maps to O00167 (wrong protein / MHC complex)
+  [PDB] ✗ 3HB1 — no DBREF maps to O00167 (wrong protein / MHC complex)
+  [PDB] ✗ 5ZMA — no DBREF maps to O00167 (wrong protein / MHC complex)
+  [PDB] ✗ 7F8H — no DBREF maps to O00167 (wrong protein / MHC complex)
+  [PDB] ✗ 7F8G — no DBREF maps to O00167 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[417/9905] O00170 (region: 28-301, n_pep: 12)
+  [PDB] ✗ 4APO — no DBREF maps to O00170 (wrong protein / MHC complex)
+  [PDB] ✗ 4AIF — no DBREF maps to O00170 (wrong protein / MHC complex)
+  [PDB] ✗ 8QMO — chain for O00170 only 33 residues (peptide-in-groove)
+  [PDB] ✗ 7ZUB — chain for O00170 only 33 residues (peptide-in-groove)
+  [PDB] ✗ 2LKN — chain for O00170 only 15 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[418/9905] O00178 (region: 60-573, n_pep: 24)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[419/9905] O00180 (region: 12-270, n_pep: 21)
+  [PDB] ✗ 3UKM — chain for O00180 only 10 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[420/9905] O00182 (region: 6-333, n_pep: 14)
+  [PDB] ✗ 2ZHN — chain for O00182 only 14 residues (peptide-in-groove)
+  [PDB] ✗ 3WLU — chain for O00182 only 10 residues (peptide-in-groove)
+  [PDB] ✗ 3NV1 — no DBREF maps to O00182 (wrong protein / MHC complex)
+  [PDB] ✗ 3NV3 — no DBREF maps to O00182 (wrong protein / MHC complex)
+  [PDB] ✗ 2ZHL — chain for O00182 only 14 residues (peptide-in-groove)
+  [PDB] ✗ 2ZHK — chain for O00182 only 14 residues (peptide-in-groove)
+  [PDB] ✗ 2ZHM — chain for O00182 only 14 residues (peptide-in-groove)
+  [PDB] ✗ 2EAL — chain for O00182 only 14 residues (peptide-in-groove)
+  [PDB] ✗ 3WV6 — chain for O00182 only 14 residues (peptide-in-groove)
+  [PDB] ✗ 2EAK — chain for O00182 only 14 residues (peptide-in-groove)
+  [PDB] ✗ 3NV4 — no DBREF maps to O00182 (wrong protein / MHC complex)
+  [PDB] ✗ 3LSD — chain for O00182 only 9 residues (peptide-in-groove)
+  [PDB] ✗ 2YY1 — chain for O00182 only 8 residues (peptide-in-groove)
+  [PDB] ✗ 3NV2 — no DBREF maps to O00182 (wrong protein / MHC complex)
+  [PDB] ✗ 3LSE — chain for O00182 only 9 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[421/9905] O00186 (region: 36-586, n_pep: 31)
+  [PDB] No experimental structures found for O00186
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[422/9905] O00192 (region: 8-953, n_pep: 39)
+  [PDB] No experimental structures found for O00192
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[423/9905] O00203 (region: 59-1091, n_pep: 52)
+  [PDB] ✗ 9C5C — chain for O00203 only 26 residues (peptide-in-groove)
+  [PDB] ✗ 9C5A coverage: partial:1-650:57.3pct — below 80% threshold
+  [PDB] ✗ 9C59 coverage: partial:1-650:57.3pct — below 80% threshold
+  [PDB] ✗ 9C5B coverage: partial:1-650:57.3pct — below 80% threshold
+  [PDB] ✗ 9C58 coverage: partial:1-650:57.3pct — below 80% threshold
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[424/9905] O00206 (region: 6-802, n_pep: 40)
+  [PDB] ✗ 2Z62 — no DBREF maps to O00206 (wrong protein / MHC complex)
+  [PDB] ✗ 2Z66 — no DBREF maps to O00206 (wrong protein / MHC complex)
+  [PDB] ✗ 2Z63 — chain for O00206 only 26 residues (peptide-in-groove)
+  [PDB] ✗ 3UL7 — no DBREF maps to O00206 (wrong protein / MHC complex)
+  [PDB] ✗ 4G8A — chain for O00206 only 40 residues (peptide-in-groove)
+  [PDB] ✗ 3UL9 — no DBREF maps to O00206 (wrong protein / MHC complex)
+  [PDB] ✗ 3UL8 — no DBREF maps to O00206 (wrong protein / MHC complex)
+  [PDB] ✗ 2Z65 — no DBREF maps to O00206 (wrong protein / MHC complex)
+  [PDB] ✗ 9J03 — chain for O00206 only 37 residues (peptide-in-groove)
+  [PDB] ✗ 8WTA — chain for O00206 only 37 residues (peptide-in-groove)
+  [PDB] ✗ 3FXI — chain for O00206 only 37 residues (peptide-in-groove)
+  [PDB] ✗ 3ULA — no DBREF maps to O00206 (wrong protein / MHC complex)
+  [PDB] ✗ 5NAM — chain for O00206 only 4 residues (peptide-in-groove)
+  [PDB] ✗ 5NAO — chain for O00206 only 3 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[425/9905] O00212 (region: 174-189, n_pep: 2)
+  [PDB] ✗ 2J1L — chain for O00212 only 13 residues (peptide-in-groove)
+  [PDB] ✗ 7KDC — chain for O00212 only 12 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[426/9905] O00213 (region: 6-653, n_pep: 22)
+  [PDB] ✗ 2HO2 — no DBREF maps to O00213 (wrong protein / MHC complex)
+  [PDB] ✗ 2OEI — no DBREF maps to O00213 (wrong protein / MHC complex)
+  [PDB] ✗ 3DXE — no DBREF maps to O00213 (wrong protein / MHC complex)
+  [PDB] ✗ 3DXC — no DBREF maps to O00213 (wrong protein / MHC complex)
+  [PDB] ✗ 3D8D — no DBREF maps to O00213 (wrong protein / MHC complex)
+  [PDB] ✗ 3DXD — no DBREF maps to O00213 (wrong protein / MHC complex)
+  [PDB] ✗ 2IDH — no DBREF maps to O00213 (wrong protein / MHC complex)
+  [PDB] ✗ 5NQH — no DBREF maps to O00213 (wrong protein / MHC complex)
+  [PDB] ✗ 3D8F — no DBREF maps to O00213 (wrong protein / MHC complex)
+  [PDB] ✗ 3D8E — no DBREF maps to O00213 (wrong protein / MHC complex)
+  [PDB] ✗ 2E45 — chain for O00213 only 5 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[427/9905] O00214 (region: 4-288, n_pep: 8)
+  [PDB] ✗ 5GZC — chain for O00214 only 3 residues (peptide-in-groove)
+  [PDB] ✗ 5GZD — chain for O00214 only 3 residues (peptide-in-groove)
+  [PDB] ✗ 9FXZ — chain for O00214 only 31 residues (peptide-in-groove)
+  [PDB] ✗ 5GZE — chain for O00214 only 3 residues (peptide-in-groove)
+  [PDB] ✗ 3AP9 — chain for O00214 only 15 residues (peptide-in-groove)
+  [PDB] ✗ 6Z6Y — chain for O00214 only 12 residues (peptide-in-groove)
+  [PDB] ✗ 7ALS — chain for O00214 only 12 residues (peptide-in-groove)
+  [PDB] ✗ 4BMB — chain for O00214 only 12 residues (peptide-in-groove)
+  [PDB] ✗ 7P1M — chain for O00214 only 10 residues (peptide-in-groove)
+  [PDB] ✗ 3AP7 — chain for O00214 only 15 residues (peptide-in-groove)
+  [PDB] ✗ 3AP6 — chain for O00214 only 15 residues (peptide-in-groove)
+  [PDB] ✗ 5T7U — chain for O00214 only 15 residues (peptide-in-groove)
+  [PDB] ✗ 6W4Z — chain for O00214 only 14 residues (peptide-in-groove)
+  [PDB] ✗ 7AEN — chain for O00214 only 9 residues (peptide-in-groove)
+  [PDB] ✗ 8HL9 — no DBREF maps to O00214 (wrong protein / MHC complex)
+  [PDB] ✗ 9KH4 — chain for O00214 only 6 residues (peptide-in-groove)
+  [PDB] ✗ 5T7S — chain for O00214 only 15 residues (peptide-in-groove)
+  [PDB] ✗ 2YV8 — no DBREF maps to O00214 (wrong protein / MHC complex)
+  [PDB] ✗ 3AP5 — chain for O00214 only 15 residues (peptide-in-groove)
+  [PDB] ✗ 3APB — chain for O00214 only 15 residues (peptide-in-groove)
+  [PDB] ✗ 5T7T — chain for O00214 only 15 residues (peptide-in-groove)
+  [PDB] ✗ 3VKN — chain for O00214 only 15 residues (peptide-in-groove)
+  [PDB] ✗ 5GZG — chain for O00214 only 18 residues (peptide-in-groove)
+  [PDB] ✗ 4BME — chain for O00214 only 12 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[428/9905] O00217 (region: 8-189, n_pep: 6)
+  [PDB] ✗ 5XTB — no DBREF maps to O00217 (wrong protein / MHC complex)
+  [PDB] ✗ 9CWT — chain for O00217 only 21 residues (peptide-in-groove)
+  [PDB] ✗ 5XTD — no DBREF maps to O00217 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[429/9905] O00221 (region: 216-456, n_pep: 14)
+  [PDB] No experimental structures found for O00221
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[430/9905] O00231 (region: 14-421, n_pep: 33)
+  [PDB] ✗ 9BV1 — chain for O00231 only 42 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[431/9905] O00232 (region: 39-452, n_pep: 25)
+  [PDB] ✗ 9BV1 — chain for O00232 only 45 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[432/9905] O00237 (region: 16-500, n_pep: 22)
+  [PDB] No experimental structures found for O00237
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[433/9905] O00238 (region: 162-431, n_pep: 9)
+  [PDB] ✗ 3MDY — no DBREF maps to O00238 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[434/9905] O00241 (region: 9-384, n_pep: 10)
+  [PDB] ✗ 2JJU — chain for O00241 only 11 residues (peptide-in-groove)
+  [PDB] ✗ 2D9C — chain for O00241 only 6 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[435/9905] O00257 (region: 2-560, n_pep: 15)
+  [PDB] ✗ 3I8Z — no DBREF maps to O00257 (wrong protein / MHC complex)
+  [PDB] ✗ 5EPL — no DBREF maps to O00257 (wrong protein / MHC complex)
+  [PDB] ✗ 2K28 — chain for O00257 only 4 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[436/9905] O00264 (region: 20-142, n_pep: 7)
+  [PDB] ✗ 4X8Y — no DBREF maps to O00264 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[437/9905] O00267 (region: 114-1023, n_pep: 26)
+  [PDB] ✗ 5OHQ — no DBREF maps to O00267 (wrong protein / MHC complex)
+  [PDB] ✗ 3H7H — no DBREF maps to O00267 (wrong protein / MHC complex)
+  [PDB] ✗ 5OHO — no DBREF maps to O00267 (wrong protein / MHC complex)
+  [PDB] ✗ 5U98 — no DBREF maps to O00267 (wrong protein / MHC complex)
+  [PDB] ✓ 9HVQ (resolution: 2Å, coverage: ok) — accepted immediately
+[438/9905] O00268 (region: 7-1084, n_pep: 42)
+  [PDB] ✗ 2P6V — no DBREF maps to O00268 (wrong protein / MHC complex)
+  [PDB] ✗ 1H3O — no DBREF maps to O00268 (wrong protein / MHC complex)
+  [PDB] ✓ 7EGG (resolution: 2Å, coverage: ok) — accepted immediately
+[439/9905] O00273 (region: 51-262, n_pep: 13)
+  [PDB] ✗ 1IYR — chain for O00273 only 7 residues (peptide-in-groove)
+  [PDB] ✗ 1KOY — no DBREF maps to O00273 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[440/9905] O00291 (region: 3-1032, n_pep: 43)
+  [PDB] ✗ 3I00 — no DBREF maps to O00291 (wrong protein / MHC complex)
+  [PDB] ✗ 2NO2 — no DBREF maps to O00291 (wrong protein / MHC complex)
+  [PDB] ✗ 2QA7 — no DBREF maps to O00291 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[441/9905] O00299 (region: 31-206, n_pep: 13)
+  [PDB] ✗ 4K0N — chain for O00299 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 4JZQ — chain for O00299 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 1K0M — chain for O00299 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 4K0G — chain for O00299 only 23 residues (peptide-in-groove)
+  [PDB] ✗ 3O3T — chain for O00299 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 1K0O — chain for O00299 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 3QR6 — chain for O00299 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 1RK4 — chain for O00299 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 1K0N — chain for O00299 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 7FBQ — chain for O00299 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 3UVH — chain for O00299 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 3P8W — chain for O00299 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 3P90 — chain for O00299 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 3TGZ — chain for O00299 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 3SWL — chain for O00299 only 19 residues (peptide-in-groove)
+  [PDB] ✗ 4IQA — chain for O00299 only 19 residues (peptide-in-groove)
+  [PDB] ✗ 7F8R — chain for O00299 only 24 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[442/9905] O00303 (region: 34-357, n_pep: 21)
+  [PDB] ✗ 6YBD — chain for O00303 only 35 residues (peptide-in-groove)
+  [PDB] ✗ 8RG0 — chain for O00303 only 35 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[443/9905] O00305 (region: 65-430, n_pep: 10)
+  [PDB] ✗ 2D46 — chain for O00305 only 3 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[444/9905] O00308 (region: 19-864, n_pep: 26)
+  [PDB] ✗ 9EQH — no DBREF maps to O00308 (wrong protein / MHC complex)
+  [PDB] ✗ 8EI7 — no DBREF maps to O00308 (wrong protein / MHC complex)
+  [PDB] ✗ 5TJ8 — no DBREF maps to O00308 (wrong protein / MHC complex)
+  [PDB] ✗ 4Y07 — no DBREF maps to O00308 (wrong protein / MHC complex)
+  [PDB] ✗ 5TJ7 — no DBREF maps to O00308 (wrong protein / MHC complex)
+  [PDB] ✗ 8EI5 — no DBREF maps to O00308 (wrong protein / MHC complex)
+  [PDB] ✗ 6J1Z — no DBREF maps to O00308 (wrong protein / MHC complex)
+  [PDB] ✗ 5TJQ — no DBREF maps to O00308 (wrong protein / MHC complex)
+  [PDB] ✗ 8EI8 — no DBREF maps to O00308 (wrong protein / MHC complex)
+  [PDB] ✗ 8EI6 — no DBREF maps to O00308 (wrong protein / MHC complex)
+  [PDB] ✗ 6RSS — no DBREF maps to O00308 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[445/9905] O00311 (region: 7-556, n_pep: 14)
+  [PDB] ✗ 6YA6 — no DBREF maps to O00311 (wrong protein / MHC complex)
+  [PDB] ✗ 6YA7 — no DBREF maps to O00311 (wrong protein / MHC complex)
+  [PDB] ✗ 6YA8 — no DBREF maps to O00311 (wrong protein / MHC complex)
+  [PDB] ✗ 4F9C — no DBREF maps to O00311 (wrong protein / MHC complex)
+  [PDB] ✗ 4F9A — no DBREF maps to O00311 (wrong protein / MHC complex)
+  [PDB] ✗ 5UWR — no DBREF maps to O00311 (wrong protein / MHC complex)
+  [PDB] ✗ 5UWQ — no DBREF maps to O00311 (wrong protein / MHC complex)
+  [PDB] ✗ 4F99 — no DBREF maps to O00311 (wrong protein / MHC complex)
+  [PDB] ✗ 4F9B — no DBREF maps to O00311 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[446/9905] O00329 (region: 24-1038, n_pep: 37)
+  [PDB] ~ 6PYR coverage: partial:17-1032:99.4pct (res: 2Å) — best qualifying so far
+  [PDB] ✗ 7JIS coverage: partial:17-1029:99.1pct — not better than current best
+  [PDB] ✗ 8BCY coverage: partial:17-1028:99.0pct — not better than current best
+  [PDB] ~ 6PYU coverage: partial:17-1034:99.6pct (res: 2Å) — best qualifying so far
+  [PDB] ✗ 6OCO coverage: partial:17-1031:99.3pct — not better than current best
+  [PDB] ✗ 5DXU coverage: partial:17-1031:99.3pct — not better than current best
+  [PDB] ✗ 6G6W coverage: partial:17-1028:99.0pct — not better than current best
+  [PDB] ✗ 6OCU coverage: partial:17-1028:99.0pct — not better than current best
+  [PDB] ✗ 7LM2 coverage: partial:12-1031:99.3pct — not better than current best
+  [PDB] ✗ 5VLR coverage: partial:17-1029:99.1pct — not better than current best
+  [PDB] ✗ 5UBT coverage: partial:17-1029:99.1pct — not better than current best
+  [PDB] ✗ 5M6U coverage: partial:17-1027:98.9pct — not better than current best
+  [PDB] ✗ 5T8F coverage: partial:17-1031:99.3pct — not better than current best
+  [PDB] ✗ 7LQ1 coverage: partial:17-1034:99.6pct — not better than current best
+  [PDB] ✓ Best qualifying: 6PYU (resolution: 2Å, coverage: partial:17-1034:99.6pct)
+[447/9905] O00339 (region: 3-953, n_pep: 31)
+  [PDB] No experimental structures found for O00339
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[448/9905] O00391 (region: 34-719, n_pep: 29)
+  [PDB] ✗ 3LLK — no DBREF maps to O00391 (wrong protein / MHC complex)
+  [PDB] ✗ 3LLI — no DBREF maps to O00391 (wrong protein / MHC complex)
+  [PDB] ✗ 3Q6O — no DBREF maps to O00391 (wrong protein / MHC complex)
+  [PDB] ✗ 4IJ3 — no DBREF maps to O00391 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[449/9905] O00399 (region: 41-177, n_pep: 7)
+  [PDB] ✗ 3TV0 — chain for O00399 only 19 residues (peptide-in-groove)
+  [PDB] ✗ 9B85 — chain for O00399 only 19 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[450/9905] O00400 (region: 71-535, n_pep: 31)
+  [PDB] ✓ 9MUN (resolution: 2Å, coverage: ok) — accepted immediately
+[451/9905] O00401 (region: 33-474, n_pep: 9)
+  [PDB] ✗ 4CC2 — no DBREF maps to O00401 (wrong protein / MHC complex)
+  [PDB] ✗ 4CC7 — chain for O00401 only 1 residues (peptide-in-groove)
+  [PDB] ✗ 2FF3 — no DBREF maps to O00401 (wrong protein / MHC complex)
+  [PDB] ✗ 9DLX — no DBREF maps to O00401 (wrong protein / MHC complex)
+  [PDB] ✗ 2VCP — no DBREF maps to O00401 (wrong protein / MHC complex)
+  [PDB] ✗ 2LNH — chain for O00401 only 5 residues (peptide-in-groove)
+  [PDB] ✗ 9R3Y — no DBREF maps to O00401 (wrong protein / MHC complex)
+  [PDB] ✗ 9R4V — no DBREF maps to O00401 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[452/9905] O00408 (region: 46-888, n_pep: 47)
+  [PDB] ✗ 5U00 — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 6C7E — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 6EZF — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 6CYC — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 3ITU — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 5TZW — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 5TZH — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 5TZZ — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 6CYB — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 6C7G — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 6CYD — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 1Z1L — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 5TZA — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 6C7I — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 4JIB — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 5TZ3 — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 5U7D — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 6B97 — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 6C7D — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 6C7F — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 6C7J — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 5VP1 — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 6B96 — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 6ZQZ — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [PDB] ✗ 4D08 — no DBREF maps to O00408 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[453/9905] O00410 (region: 17-1097, n_pep: 69)
+  [PDB] ✓ 6XTE (resolution: 2Å, coverage: ok) — accepted immediately
+[454/9905] O00411 (region: 62-1211, n_pep: 56)
+  [PDB] ✗ 3SPA — chain for O00411 only 19 residues (peptide-in-groove)
+  [PDB] ✗ 9BDC — chain for O00411 only 4 residues (peptide-in-groove)
+  [PDB] ✗ 4BOC — no DBREF maps to O00411 (wrong protein / MHC complex)
+  [PDB] ✓ 9MN7 (resolution: 2Å, coverage: ok) — accepted immediately
+[455/9905] O00418 (region: 5-682, n_pep: 22)
+  [PDB] ✗ 8GM4 — no DBREF maps to O00418 (wrong protein / MHC complex)
+  [PDB] ✗ 8GM5 — no DBREF maps to O00418 (wrong protein / MHC complex)
+  [PDB] ✗ 8FNY — no DBREF maps to O00418 (wrong protein / MHC complex)
+  [PDB] ✗ 9OCW — no DBREF maps to O00418 (wrong protein / MHC complex)
+  [PDB] ✗ 7SHQ — no DBREF maps to O00418 (wrong protein / MHC complex)
+  [PDB] ✗ 8FO6 — no DBREF maps to O00418 (wrong protein / MHC complex)
+  [PDB] ✗ 5J8H — no DBREF maps to O00418 (wrong protein / MHC complex)
+  [PDB] ✗ 5KS5 — no DBREF maps to O00418 (wrong protein / MHC complex)
+  [PDB] ✗ 6NX4 — no DBREF maps to O00418 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[456/9905] O00422 (region: 24-129, n_pep: 6)
+  [PDB] ✗ 2HDE — chain for O00422 only 9 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[457/9905] O00423 (region: 10-800, n_pep: 23)
+  [PDB] ✗ 4CI8 — no DBREF maps to O00423 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[458/9905] O00425 (region: 62-560, n_pep: 19)
+  [PDB] ✗ 6FQ1 — chain for O00425 only 16 residues (peptide-in-groove)
+  [PDB] ✗ 6GX6 — chain for O00425 only 16 residues (peptide-in-groove)
+  [PDB] ✗ 6FQR — chain for O00425 only 16 residues (peptide-in-groove)
+  [PDB] ✗ 6GQE — no DBREF maps to O00425 (wrong protein / MHC complex)
+  [PDB] ✗ 2E44 — no DBREF maps to O00425 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[459/9905] O00429 (region: 3-727, n_pep: 37)
+  [PDB] ✗ 3W6P — chain for O00429 only 32 residues (peptide-in-groove)
+  [PDB] ✗ 3W6O — chain for O00429 only 32 residues (peptide-in-groove)
+  [PDB] ✗ 3W6N — chain for O00429 only 32 residues (peptide-in-groove)
+  [PDB] ✗ 4H1U — chain for O00429 only 32 residues (peptide-in-groove)
+  [PDB] ✗ 4H1V — chain for O00429 only 32 residues (peptide-in-groove)
+  [PDB] ✗ 8SKN — no DBREF maps to O00429 (wrong protein / MHC complex)
+  [PDB] ✗ 9N7Z — chain for O00429 only 32 residues (peptide-in-groove)
+  [PDB] ~ 4BEJ coverage: partial:1-705:97.0pct (res: 2Å) — best qualifying so far
+  [PDB] ✓ 8T1H (resolution: 2Å, coverage: ok) — accepted immediately
+[460/9905] O00442 (region: 28-319, n_pep: 11)
+  [PDB] No experimental structures found for O00442
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[461/9905] O00443 (region: 31-1686, n_pep: 91)
+  [PDB] ✗ 6BTY — no DBREF maps to O00443 (wrong protein / MHC complex)
+  [PDB] ✗ 2AR5 — no DBREF maps to O00443 (wrong protein / MHC complex)
+  [PDB] ✗ 6BTZ — no DBREF maps to O00443 (wrong protein / MHC complex)
+  [PDB] ✗ 2RED — no DBREF maps to O00443 (wrong protein / MHC complex)
+  [PDB] ✗ 6BU0 — no DBREF maps to O00443 (wrong protein / MHC complex)
+  [PDB] ✗ 2REA — no DBREF maps to O00443 (wrong protein / MHC complex)
+  [PDB] ✗ 2IWL — no DBREF maps to O00443 (wrong protein / MHC complex)
+  [PDB] ✗ 6BUB — no DBREF maps to O00443 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[462/9905] O00444 (region: 116-923, n_pep: 18)
+  [PDB] ✗ 3COK — chain for O00444 only 27 residues (peptide-in-groove)
+  [PDB] ✗ 4JXF — chain for O00444 only 23 residues (peptide-in-groove)
+  [PDB] ✗ 5LHZ — no DBREF maps to O00444 (wrong protein / MHC complex)
+  [PDB] ✗ 4YYP — no DBREF maps to O00444 (wrong protein / MHC complex)
+  [PDB] ✗ 4N9J — no DBREF maps to O00444 (wrong protein / MHC complex)
+  [PDB] ✗ 6N45 — no DBREF maps to O00444 (wrong protein / MHC complex)
+  [PDB] ✗ 4YUR — chain for O00444 only 26 residues (peptide-in-groove)
+  [PDB] ✗ 8XPG — no DBREF maps to O00444 (wrong protein / MHC complex)
+  [PDB] ✗ 4N7V — no DBREF maps to O00444 (wrong protein / MHC complex)
+  [PDB] ✗ 4N7Z — no DBREF maps to O00444 (wrong protein / MHC complex)
+  [PDB] ✗ 5LHY — no DBREF maps to O00444 (wrong protein / MHC complex)
+  [PDB] ✗ 6N46 — chain for O00444 only 27 residues (peptide-in-groove)
+  [PDB] ✗ 6W3I — no DBREF maps to O00444 (wrong protein / MHC complex)
+  [PDB] ✗ 6W3J — no DBREF maps to O00444 (wrong protein / MHC complex)
+  [PDB] ✗ 6W38 — no DBREF maps to O00444 (wrong protein / MHC complex)
+  [PDB] ✗ 2N19 — no DBREF maps to O00444 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[463/9905] O00458 (region: 62-414, n_pep: 19)
+  [PDB] No experimental structures found for O00458
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[464/9905] O00462 (region: 95-853, n_pep: 41)
+  [PDB] No experimental structures found for O00462
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[465/9905] O00463 (region: 23-545, n_pep: 15)
+  [PDB] ✗ 7L3L — no DBREF maps to O00463 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[466/9905] O00468 (region: 13-1964, n_pep: 45)
+  [PDB] ~ 8S9P coverage: partial:23-2059:99.5pct (res: 2Å) — best qualifying so far
+  [PDB] ✓ Best qualifying: 8S9P (resolution: 2Å, coverage: partial:23-2059:99.5pct)
+[467/9905] O00469 (region: 16-721, n_pep: 31)
+  [PDB] No experimental structures found for O00469
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[468/9905] O00471 (region: 6-694, n_pep: 33)
+  [PDB] No experimental structures found for O00471
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[469/9905] O00472 (region: 21-628, n_pep: 21)
+  [PDB] ✗ 5JW9 — no DBREF maps to O00472 (wrong protein / MHC complex)
+  [PDB] ✓ 7OKX (resolution: 2Å, coverage: ok) — accepted immediately
+[470/9905] O00478 (region: 2-583, n_pep: 25)
+  [PDB] ✗ 6J0G — no DBREF maps to O00478 (wrong protein / MHC complex)
+  [PDB] ✗ 6J0L — no DBREF maps to O00478 (wrong protein / MHC complex)
+  [PDB] ✗ 6J0K — no DBREF maps to O00478 (wrong protein / MHC complex)
+  [PDB] ✗ 4F8T — chain for O00478 only 21 residues (peptide-in-groove)
+  [PDB] ✗ 5ZZ3 — no DBREF maps to O00478 (wrong protein / MHC complex)
+  [PDB] ✗ 9II6 — no DBREF maps to O00478 (wrong protein / MHC complex)
+  [PDB] ✗ 8ZJY — chain for O00478 only 29 residues (peptide-in-groove)
+  [PDB] ✗ 8ZJZ — chain for O00478 only 22 residues (peptide-in-groove)
+  [PDB] ~ 8ZYR coverage: partial:1-493:84.5pct (res: 2Å) — best qualifying so far
+  [PDB] ✓ Best qualifying: 8ZYR (resolution: 2Å, coverage: partial:1-493:84.5pct)
+[471/9905] O00483 (region: 7-43, n_pep: 4)
+  [PDB] ✗ 9I7U — chain for O00483 only 8 residues (peptide-in-groove)
+  [PDB] ✗ 5Z62 — chain for O00483 only 6 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[472/9905] O00487 (region: 6-307, n_pep: 17)
+  [PDB] ✗ 9BV1 — chain for O00487 only 31 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[473/9905] O00499 (region: 21-550, n_pep: 24)
+  [PDB] ✗ 2FIC — chain for O00499 only 15 residues (peptide-in-groove)
+  [PDB] ✗ 1MUZ — no DBREF maps to O00499 (wrong protein / MHC complex)
+  [PDB] ✗ 1MV0 — no DBREF maps to O00499 (wrong protein / MHC complex)
+  [PDB] ✗ 1MV3 — no DBREF maps to O00499 (wrong protein / MHC complex)
+  [PDB] ✗ 2RMY — chain for O00499 only 3 residues (peptide-in-groove)
+  [PDB] ✗ 2RND — chain for O00499 only 3 residues (peptide-in-groove)
+  [PDB] ✗ 5I22 — no DBREF maps to O00499 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[474/9905] O00501 (region: 4-140, n_pep: 13)
+  [PDB] No experimental structures found for O00501
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[475/9905] O00505 (region: 72-512, n_pep: 28)
+  [PDB] No experimental structures found for O00505
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[476/9905] O00506 (region: 18-415, n_pep: 13)
+  [PDB] ✗ 7Z4V — chain for O00506 only 29 residues (peptide-in-groove)
+  [PDB] ✗ 2XIK — chain for O00506 only 29 residues (peptide-in-groove)
+  [PDB] ✗ 3W8H — no DBREF maps to O00506 (wrong protein / MHC complex)
+  [PDB] ✗ 4NZW — chain for O00506 only 29 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[477/9905] O00507 (region: 19-2527, n_pep: 133)
+  [PDB] No experimental structures found for O00507
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[478/9905] O00519 (region: 2-552, n_pep: 29)
+  [PDB] No experimental structures found for O00519
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[479/9905] O00522 (region: 6-732, n_pep: 24)
+  [PDB] ✗ 4HDO — no DBREF maps to O00522 (wrong protein / MHC complex)
+  [PDB] ✗ 4JIF — no DBREF maps to O00522 (wrong protein / MHC complex)
+  [PDB] ✗ 6OQ4 — no DBREF maps to O00522 (wrong protein / MHC complex)
+  [PDB] ✗ 6OQ3 — no DBREF maps to O00522 (wrong protein / MHC complex)
+  [PDB] ✗ 6UZK — no DBREF maps to O00522 (wrong protein / MHC complex)
+  [PDB] ✗ 4DXA — no DBREF maps to O00522 (wrong protein / MHC complex)
+  [PDB] ✗ 4HDQ — no DBREF maps to O00522 (wrong protein / MHC complex)
+  [PDB] ✗ 8SU8 — no DBREF maps to O00522 (wrong protein / MHC complex)
+  [PDB] ✗ 8T09 — no DBREF maps to O00522 (wrong protein / MHC complex)
+  [PDB] ✗ 8T7V — no DBREF maps to O00522 (wrong protein / MHC complex)
+  [PDB] ✗ 3U7D — no DBREF maps to O00522 (wrong protein / MHC complex)
+  [PDB] ✗ 4DX8 — chain for O00522 only 19 residues (peptide-in-groove)
+  [PDB] ✗ 5D68 — no DBREF maps to O00522 (wrong protein / MHC complex)
+  [PDB] ✗ 4TKN — no DBREF maps to O00522 (wrong protein / MHC complex)
+  [PDB] ✗ 9PVG — no DBREF maps to O00522 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[480/9905] O00534 (region: 9-786, n_pep: 37)
+  [PDB] No experimental structures found for O00534
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[481/9905] O00541 (region: 58-554, n_pep: 23)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[482/9905] O00555 (region: 79-2479, n_pep: 96)
+  [PDB] ✗ 3BXK — no DBREF maps to O00555 (wrong protein / MHC complex)
+  [PDB] ✗ 8X93 coverage: partial:26-1982:79.3pct — below 80% threshold
+  [PDB] ✗ 8X90 coverage: partial:26-1982:79.3pct — below 80% threshold
+  [PDB] ✗ 8X91 coverage: partial:1-1982:79.3pct — below 80% threshold
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[483/9905] O00560 (region: 2-298, n_pep: 13)
+  [PDB] ✗ 1R6J — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 1NTE — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 1OBX — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 8BLU — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 8BLV — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 1W9E — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 1OBZ — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 1W9Q — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 7FT5 — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 7FT9 — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 7FT7 — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 1V1T — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 7FTD — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 1OBY — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 7FT6 — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 7FSP — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 7FTC — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 7FSO — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 7FSX — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 1N99 — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 7FSJ — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 7FSU — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 7FST — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 6R9H — no DBREF maps to O00560 (wrong protein / MHC complex)
+  [PDB] ✗ 8HCK — chain for O00560 only 7 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[484/9905] O00562 (region: 1-1208, n_pep: 46)
+  [PDB] ✗ 9JYX — no DBREF maps to O00562 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[485/9905] O00566 (region: 34-679, n_pep: 20)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[486/9905] O00567 (region: 6-503, n_pep: 23)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[487/9905] O00571 (region: 11-567, n_pep: 15)
+  [PDB] ✗ 3JRV — no DBREF maps to O00571 (wrong protein / MHC complex)
+  [PDB] ✗ 4O2C — no DBREF maps to O00571 (wrong protein / MHC complex)
+  [PDB] ✗ 4O2F — no DBREF maps to O00571 (wrong protein / MHC complex)
+  [PDB] ✗ 2JGN — no DBREF maps to O00571 (wrong protein / MHC complex)
+  [PDB] ✗ 4O2E — no DBREF maps to O00571 (wrong protein / MHC complex)
+  [PDB] ✗ 2I4I — no DBREF maps to O00571 (wrong protein / MHC complex)
+  [PDB] ✗ 5E7I — no DBREF maps to O00571 (wrong protein / MHC complex)
+  [PDB] ✗ 5E7J — no DBREF maps to O00571 (wrong protein / MHC complex)
+  [PDB] ✗ 7YMF — no DBREF maps to O00571 (wrong protein / MHC complex)
+  [PDB] ✗ 9E2C — no DBREF maps to O00571 (wrong protein / MHC complex)
+  [PDB] ✗ 5E7M — no DBREF maps to O00571 (wrong protein / MHC complex)
+  [PDB] ✗ 4PX9 — no DBREF maps to O00571 (wrong protein / MHC complex)
+  [PDB] ✗ 8SSW — no DBREF maps to O00571 (wrong protein / MHC complex)
+  [PDB] ✗ 6O5F — no DBREF maps to O00571 (wrong protein / MHC complex)
+  [PDB] ✗ 6CZ5 — no DBREF maps to O00571 (wrong protein / MHC complex)
+  [PDB] ✗ 7LIU — no DBREF maps to O00571 (wrong protein / MHC complex)
+  [PDB] ✗ 4PXA — no DBREF maps to O00571 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[488/9905] O00622 (region: 4-379, n_pep: 8)
+  [PDB] ✗ 4D0Z — no DBREF maps to O00622 (wrong protein / MHC complex)
+  [PDB] ✗ 4D11 — no DBREF maps to O00622 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[489/9905] O00626 (region: 3-21, n_pep: 3)
+  [PDB] No experimental structures found for O00626
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[490/9905] O00629 (region: 72-448, n_pep: 26)
+  [PDB] ✗ 6BW9 — no DBREF maps to O00629 (wrong protein / MHC complex)
+  [PDB] ✗ 8HKW — no DBREF maps to O00629 (wrong protein / MHC complex)
+  [PDB] ✓ 7LFC (resolution: 2Å, coverage: ok) — accepted immediately
+[491/9905] O00635 (region: 21-423, n_pep: 16)
+  [PDB] No experimental structures found for O00635
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[492/9905] O00712 (region: 9-354, n_pep: 11)
+  [PDB] ✗ 9W7S — chain for O00712 only 4 residues (peptide-in-groove)
+  [PDB] ✗ 9W7W — chain for O00712 only 4 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[493/9905] O00716 (region: 8-459, n_pep: 20)
+  [PDB] No experimental structures found for O00716
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[494/9905] O00743 (region: 40-255, n_pep: 16)
+  [PDB] No experimental structures found for O00743
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[495/9905] O00748 (region: 5-549, n_pep: 30)
+  [PDB] No experimental structures found for O00748
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[496/9905] O00750 (region: 83-1611, n_pep: 58)
+  [PDB] No experimental structures found for O00750
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[497/9905] O00754 (region: 27-992, n_pep: 39)
+  [PDB] No experimental structures found for O00754
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[498/9905] O00762 (region: 34-139, n_pep: 6)
+  [PDB] ✗ 4YII — no DBREF maps to O00762 (wrong protein / MHC complex)
+  [PDB] ✗ 1I7K — chain for O00762 only 17 residues (peptide-in-groove)
+  [PDB] ✗ 8TAU — chain for O00762 only 17 residues (peptide-in-groove)
+  [PDB] ✗ 9N9R — no DBREF maps to O00762 (wrong protein / MHC complex)
+  [PDB] ✗ 9N9S — no DBREF maps to O00762 (wrong protein / MHC complex)
+  [PDB] ✗ 8TAR — no DBREF maps to O00762 (wrong protein / MHC complex)
+  [PDB] ✗ 5A31 — no DBREF maps to O00762 (wrong protein / MHC complex)
+  [PDB] ✗ 5KHR — chain for O00762 only 17 residues (peptide-in-groove)
+  [PDB] ✗ 5L9U — chain for O00762 only 17 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[499/9905] O00763 (region: 66-2440, n_pep: 109)
+  [PDB] ✗ 3GLK — no DBREF maps to O00763 (wrong protein / MHC complex)
+  [PDB] ✗ 3GID — no DBREF maps to O00763 (wrong protein / MHC complex)
+  [PDB] ✗ 3TDC — no DBREF maps to O00763 (wrong protein / MHC complex)
+  [PDB] ✗ 2HJW — no DBREF maps to O00763 (wrong protein / MHC complex)
+  [PDB] ✗ 3JRX — no DBREF maps to O00763 (wrong protein / MHC complex)
+  [PDB] ✗ 3JRW — no DBREF maps to O00763 (wrong protein / MHC complex)
+  [PDB] ✗ 5KKN — no DBREF maps to O00763 (wrong protein / MHC complex)
+  [PDB] ✗ 4HQ6 — no DBREF maps to O00763 (wrong protein / MHC complex)
+  [PDB] ✗ 3FF6 — no DBREF maps to O00763 (wrong protein / MHC complex)
+  [PDB] ✗ 2DN8 — no DBREF maps to O00763 (wrong protein / MHC complex)
+  [PDB] ✗ 2KCC — chain for O00763 only 6 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[500/9905] O00764 (region: 6-266, n_pep: 16)
+  [PDB] ✗ 8WR2 — chain for O00764 only 31 residues (peptide-in-groove)
+  [PDB] ✗ 2YXT — chain for O00764 only 31 residues (peptide-in-groove)
+  [PDB] ✗ 3KEU — chain for O00764 only 31 residues (peptide-in-groove)
+  [PDB] ✗ 4EOH — chain for O00764 only 31 residues (peptide-in-groove)
+  [PDB] ✗ 4EN4 — chain for O00764 only 31 residues (peptide-in-groove)
+  [PDB] ✗ 2YXU — chain for O00764 only 31 residues (peptide-in-groove)
+  [PDB] ✗ 3FHY — chain for O00764 only 31 residues (peptide-in-groove)
+  [PDB] ✗ 2AJP — chain for O00764 only 26 residues (peptide-in-groove)
+  [PDB] ✗ 3FHX — chain for O00764 only 31 residues (peptide-in-groove)
+  [PDB] ✗ 2F7K — chain for O00764 only 31 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[501/9905] O00767 (region: 27-270, n_pep: 12)
+  [PDB] ✗ 4ZYO — no DBREF maps to O00767 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[502/9905] O14493 (region: 5-152, n_pep: 19)
+  [PDB] ✗ 9CMI — chain for O14493 only 20 residues (peptide-in-groove)
+  [PDB] ✗ 8U4V — chain for O14493 only 20 residues (peptide-in-groove)
+  [PDB] ✗ 7KP4 — chain for O14493 only 20 residues (peptide-in-groove)
+  [PDB] ✗ 5B2G — chain for O14493 only 18 residues (peptide-in-groove)
+  [PDB] ✗ 9CMH — chain for O14493 only 20 residues (peptide-in-groove)
+  [PDB] ✗ 7TDN — chain for O14493 only 20 residues (peptide-in-groove)
+  [PDB] ✗ 8U5B — chain for O14493 only 20 residues (peptide-in-groove)
+  [PDB] ✗ 7TDM — chain for O14493 only 20 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[503/9905] O14497 (region: 142-2282, n_pep: 59)
+  [PDB] ✓ 6LTH (resolution: 2Å, coverage: ok) — accepted immediately
+[504/9905] O14503 (region: 67-373, n_pep: 14)
+  [PDB] No experimental structures found for O14503
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[505/9905] O14508 (region: 35-198, n_pep: 9)
+  [PDB] ✗ 7ZLM — no DBREF maps to O14508 (wrong protein / MHC complex)
+  [PDB] ✗ 2C9W — no DBREF maps to O14508 (wrong protein / MHC complex)
+  [PDB] ✗ 7ZLS — no DBREF maps to O14508 (wrong protein / MHC complex)
+  [PDB] ✗ 7ZLP — no DBREF maps to O14508 (wrong protein / MHC complex)
+  [PDB] ✗ 6I5N — no DBREF maps to O14508 (wrong protein / MHC complex)
+  [PDB] ✗ 7ZLR — no DBREF maps to O14508 (wrong protein / MHC complex)
+  [PDB] ✗ 7ZLO — no DBREF maps to O14508 (wrong protein / MHC complex)
+  [PDB] ✗ 7ZLN — no DBREF maps to O14508 (wrong protein / MHC complex)
+  [PDB] ✗ 6I4X — no DBREF maps to O14508 (wrong protein / MHC complex)
+  [PDB] ✗ 6I5J — no DBREF maps to O14508 (wrong protein / MHC complex)
+  [PDB] ✗ 5BO4 — no DBREF maps to O14508 (wrong protein / MHC complex)
+  [PDB] ✗ 4JGH — no DBREF maps to O14508 (wrong protein / MHC complex)
+  [PDB] ✗ 7M6T — no DBREF maps to O14508 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[506/9905] O14511 (region: 102-831, n_pep: 18)
+  [PDB] No experimental structures found for O14511
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[507/9905] O14512 (region: 48-569, n_pep: 16)
+  [PDB] No experimental structures found for O14512
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[508/9905] O14513 (region: 15-1906, n_pep: 43)
+  [PDB] No experimental structures found for O14513
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[509/9905] O14514 (region: 13-1584, n_pep: 42)
+  [PDB] No experimental structures found for O14514
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[510/9905] O14519 (region: 6-98, n_pep: 3)
+  [PDB] ✗ 2KW6 — no DBREF maps to O14519 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[511/9905] O14520 (region: 15-311, n_pep: 18)
+  [PDB] ✗ 6QZI — no DBREF maps to O14520 (wrong protein / MHC complex)
+  [PDB] ✗ 6QZJ — no DBREF maps to O14520 (wrong protein / MHC complex)
+  [PDB] ✗ 8Y8V — chain for O14520 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 8AMX — chain for O14520 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 8AMW — chain for O14520 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 8C9H — chain for O14520 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 6KXW — chain for O14520 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 6N1G — chain for O14520 only 34 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[512/9905] O14521 (region: 2-98, n_pep: 8)
+  [PDB] ✗ 8GS8 — chain for O14521 only 15 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[513/9905] O14522 (region: 3-1437, n_pep: 51)
+  [PDB] ✗ 2OOQ — no DBREF maps to O14522 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[514/9905] O14524 (region: 41-423, n_pep: 17)
+  [PDB] No experimental structures found for O14524
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[515/9905] O14525 (region: 2-1251, n_pep: 35)
+  [PDB] No experimental structures found for O14525
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[516/9905] O14526 (region: 65-866, n_pep: 23)
+  [PDB] ✗ 7OHI — no DBREF maps to O14526 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[517/9905] O14530 (region: 5-149, n_pep: 8)
+  [PDB] No experimental structures found for O14530
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[518/9905] O14544 (region: 24-517, n_pep: 17)
+  [PDB] ✗ 2VIF — no DBREF maps to O14544 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[519/9905] O14545 (region: 4-520, n_pep: 13)
+  [PDB] ✗ 2D9K — no DBREF maps to O14545 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[520/9905] O14548 (region: 37-93, n_pep: 3)
+  [PDB] No experimental structures found for O14548
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[521/9905] O14556 (region: 6-403, n_pep: 18)
+  [PDB] ✗ 3H9E — no DBREF maps to O14556 (wrong protein / MHC complex)
+  [PDB] ✗ 5C7O — no DBREF maps to O14556 (wrong protein / MHC complex)
+  [PDB] ✗ 5C7L — no DBREF maps to O14556 (wrong protein / MHC complex)
+  [PDB] ✗ 3PFW — no DBREF maps to O14556 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[522/9905] O14559 (region: 56-1241, n_pep: 36)
+  [PDB] No experimental structures found for O14559
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[523/9905] O14561 (region: 5-145, n_pep: 17)
+  [PDB] ✗ 6ODD — chain for O14561 only 4 residues (peptide-in-groove)
+  [PDB] ✗ 7OF0 — chain for O14561 only 15 residues (peptide-in-groove)
+  [PDB] ✗ 8QU5 — chain for O14561 only 15 residues (peptide-in-groove)
+  [PDB] ✗ 7QH7 — no DBREF maps to O14561 (wrong protein / MHC complex)
+  [PDB] ✗ 5OOM — chain for O14561 only 15 residues (peptide-in-groove)
+  [PDB] ✗ 5OOL — chain for O14561 only 15 residues (peptide-in-groove)
+  [PDB] ✗ 7QH6 — chain for O14561 only 15 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[524/9905] O14569 (region: 24-213, n_pep: 17)
+  [PDB] No experimental structures found for O14569
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[525/9905] O14578 (region: 50-1885, n_pep: 74)
+  [PDB] No experimental structures found for O14578
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[526/9905] O14579 (region: 60-263, n_pep: 11)
+  [PDB] ✗ 6U3V — chain for O14579 only 30 residues (peptide-in-groove)
+  [PDB] ✗ 6TZT — chain for O14579 only 30 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[527/9905] O14607 (region: 5-1340, n_pep: 50)
+  [PDB] ✗ 4UF0 — no DBREF maps to O14607 (wrong protein / MHC complex)
+  [PDB] ✗ 5FY1 — no DBREF maps to O14607 (wrong protein / MHC complex)
+  [PDB] ✗ 3ZLI — no DBREF maps to O14607 (wrong protein / MHC complex)
+  [PDB] ✗ 5FY7 — no DBREF maps to O14607 (wrong protein / MHC complex)
+  [PDB] ✗ 5FXV — no DBREF maps to O14607 (wrong protein / MHC complex)
+  [PDB] ✗ 5FXZ — no DBREF maps to O14607 (wrong protein / MHC complex)
+  [PDB] ✗ 5FXX — no DBREF maps to O14607 (wrong protein / MHC complex)
+  [PDB] ✗ 3ZPO — no DBREF maps to O14607 (wrong protein / MHC complex)
+  [PDB] ✗ 5A1L — no DBREF maps to O14607 (wrong protein / MHC complex)
+  [PDB] ✗ 5FYM — no DBREF maps to O14607 (wrong protein / MHC complex)
+  [PDB] ✗ 5FXW — no DBREF maps to O14607 (wrong protein / MHC complex)
+  [PDB] ✗ 5FY0 — no DBREF maps to O14607 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[528/9905] O14617 (region: 17-1150, n_pep: 59)
+  [PDB] ✗ 4AFI — chain for O14617 only 3 residues (peptide-in-groove)
+  [PDB] ✗ 9C5C — chain for O14617 only 43 residues (peptide-in-groove)
+  [PDB] ✗ 9C59 coverage: partial:1-650:55.9pct — below 80% threshold
+  [PDB] ✗ 9C5B coverage: partial:1-650:55.9pct — below 80% threshold
+  [PDB] ✗ 9C58 coverage: partial:1-650:55.9pct — below 80% threshold
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[529/9905] O14618 (region: 31-243, n_pep: 13)
+  [PDB] ✗ 6FN8 — no DBREF maps to O14618 (wrong protein / MHC complex)
+  [PDB] ✗ 6FOL — no DBREF maps to O14618 (wrong protein / MHC complex)
+  [PDB] ✗ 1DO5 — no DBREF maps to O14618 (wrong protein / MHC complex)
+  [PDB] ✗ 6FP6 — chain for O14618 only 27 residues (peptide-in-groove)
+  [PDB] ✗ 6FON — chain for O14618 only 18 residues (peptide-in-groove)
+  [PDB] ✗ 2CRL — chain for O14618 only 2 residues (peptide-in-groove)
+  [PDB] ✗ 2RSQ — chain for O14618 only 8 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[530/9905] O14641 (region: 27-714, n_pep: 20)
+  [PDB] ✗ 3CBZ — no DBREF maps to O14641 (wrong protein / MHC complex)
+  [PDB] ✗ 3CBY — no DBREF maps to O14641 (wrong protein / MHC complex)
+  [PDB] ✗ 2REY — no DBREF maps to O14641 (wrong protein / MHC complex)
+  [PDB] ✗ 6IW3 — no DBREF maps to O14641 (wrong protein / MHC complex)
+  [PDB] ✗ 3CBX — no DBREF maps to O14641 (wrong protein / MHC complex)
+  [PDB] ✗ 3CC0 — no DBREF maps to O14641 (wrong protein / MHC complex)
+  [PDB] ✗ 8WWR — no DBREF maps to O14641 (wrong protein / MHC complex)
+  [PDB] ✗ 5SUZ — no DBREF maps to O14641 (wrong protein / MHC complex)
+  [PDB] ✗ 5SUY — no DBREF maps to O14641 (wrong protein / MHC complex)
+  [PDB] ✗ 5LNP — no DBREF maps to O14641 (wrong protein / MHC complex)
+  [PDB] ✗ 4WIP — no DBREF maps to O14641 (wrong protein / MHC complex)
+  [PDB] ✗ 8YR7 — no DBREF maps to O14641 (wrong protein / MHC complex)
+  [PDB] ✗ 6JCK — no DBREF maps to O14641 (wrong protein / MHC complex)
+  [PDB] ✗ 8WMA coverage: partial:188-513:47.4pct — below 80% threshold
+  [PDB] ✗ 8WM9 coverage: partial:188-513:47.4pct — below 80% threshold
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[531/9905] O14646 (region: 73-1461, n_pep: 46)
+  [PDB] ✗ 5AFW — no DBREF maps to O14646 (wrong protein / MHC complex)
+  [PDB] ✗ 4B4C — no DBREF maps to O14646 (wrong protein / MHC complex)
+  [PDB] ✗ 4O42 — no DBREF maps to O14646 (wrong protein / MHC complex)
+  [PDB] ✗ 4NW2 — no DBREF maps to O14646 (wrong protein / MHC complex)
+  [PDB] ✗ 2B2Y — chain for O14646 only 9 residues (peptide-in-groove)
+  [PDB] ✗ 2B2W — chain for O14646 only 9 residues (peptide-in-groove)
+  [PDB] ✗ 2B2T — chain for O14646 only 9 residues (peptide-in-groove)
+  [PDB] ✗ 2B2V — chain for O14646 only 9 residues (peptide-in-groove)
+  [PDB] ✗ 2B2U — chain for O14646 only 9 residues (peptide-in-groove)
+  [PDB] ✗ 8UMG — chain for O14646 only 9 residues (peptide-in-groove)
+  [PDB] ✗ 9EAR coverage: partial:-81-943:62.7pct — below 80% threshold
+  [PDB] ✗ 9NH8 coverage: partial:-79-1075:72.2pct — below 80% threshold
+  [PDB] ✗ 2N39 — chain for O14646 only 5 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[532/9905] O14647 (region: 98-1784, n_pep: 49)
+  [PDB] No experimental structures found for O14647
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[533/9905] O14649 (region: 28-394, n_pep: 21)
+  [PDB] ✗ 6RV3 — chain for O14649 only 25 residues (peptide-in-groove)
+  [PDB] ✗ 6RV2 — chain for O14649 only 25 residues (peptide-in-groove)
+  [PDB] ✗ 6RV4 — chain for O14649 only 25 residues (peptide-in-groove)
+  [PDB] ✗ 9G9X — chain for O14649 only 25 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[534/9905] O14653 (region: 31-211, n_pep: 11)
+  [PDB] ✗ 3EG9 — no DBREF maps to O14653 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[535/9905] O14654 (region: 21-1137, n_pep: 21)
+  [PDB] No experimental structures found for O14654
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[536/9905] O14656 (region: 2-277, n_pep: 22)
+  [PDB] ✗ 5J1S — no DBREF maps to O14656 (wrong protein / MHC complex)
+  [PDB] ✗ 5J1T — no DBREF maps to O14656 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[537/9905] O14657 (region: 16-284, n_pep: 17)
+  [PDB] No experimental structures found for O14657
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[538/9905] O14662 (region: 5-322, n_pep: 18)
+  [PDB] ✗ 8QQF — no DBREF maps to O14662 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[539/9905] O14672 (region: 2-698, n_pep: 15)
+  [PDB] ✗ 6BE6 — no DBREF maps to O14672 (wrong protein / MHC complex)
+  [PDB] ✗ 6BDZ — no DBREF maps to O14672 (wrong protein / MHC complex)
+  [PDB] ✗ 8ESV — no DBREF maps to O14672 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[540/9905] O14678 (region: 20-589, n_pep: 36)
+  [PDB] ✓ 6JBJ (resolution: 2Å, coverage: ok) — accepted immediately
+[541/9905] O14681 (region: 1-311, n_pep: 23)
+  [PDB] No experimental structures found for O14681
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[542/9905] O14682 (region: 21-575, n_pep: 27)
+  [PDB] No experimental structures found for O14682
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[543/9905] O14683 (region: 14-176, n_pep: 14)
+  [PDB] No experimental structures found for O14683
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[544/9905] O14684 (region: 5-152, n_pep: 14)
+  [PDB] ✗ 4AL0 — chain for O14684 only 15 residues (peptide-in-groove)
+  [PDB] ✗ 5TL9 — chain for O14684 only 14 residues (peptide-in-groove)
+  [PDB] ✗ 5K0I — chain for O14684 only 14 residues (peptide-in-groove)
+  [PDB] ✗ 5T36 — chain for O14684 only 14 residues (peptide-in-groove)
+  [PDB] ✗ 6VL4 — chain for O14684 only 14 residues (peptide-in-groove)
+  [PDB] ✗ 4YL1 — chain for O14684 only 11 residues (peptide-in-groove)
+  [PDB] ✗ 4YL3 — chain for O14684 only 11 residues (peptide-in-groove)
+  [PDB] ✗ 4YK5 — chain for O14684 only 14 residues (peptide-in-groove)
+  [PDB] ✗ 5BQG — chain for O14684 only 14 residues (peptide-in-groove)
+  [PDB] ✗ 4YL0 — chain for O14684 only 11 residues (peptide-in-groove)
+  [PDB] ✗ 5BQH — chain for O14684 only 14 residues (peptide-in-groove)
+  [PDB] ✗ 5T37 — chain for O14684 only 14 residues (peptide-in-groove)
+  [PDB] ✗ 8PYV — chain for O14684 only 15 residues (peptide-in-groove)
+  [PDB] ✗ 5BQI — chain for O14684 only 14 residues (peptide-in-groove)
+  [PDB] ✗ 4AL1 — chain for O14684 only 15 residues (peptide-in-groove)
+  [PDB] ✗ 4BPM — chain for O14684 only 6 residues (peptide-in-groove)
+  [PDB] ✗ 4WAB — chain for O14684 only 6 residues (peptide-in-groove)
+  [PDB] ✗ 3DWW — chain for O14684 only 15 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[545/9905] O14686 (region: 43-5430, n_pep: 127)
+  [PDB] ✗ 3UVK — no DBREF maps to O14686 (wrong protein / MHC complex)
+  [PDB] ✗ 4ERQ — no DBREF maps to O14686 (wrong protein / MHC complex)
+  [PDB] ✗ 4Z4P — no DBREF maps to O14686 (wrong protein / MHC complex)
+  [PDB] ✗ 6O7G — no DBREF maps to O14686 (wrong protein / MHC complex)
+  [PDB] ✗ 8U2Y — no DBREF maps to O14686 (wrong protein / MHC complex)
+  [PDB] ✗ 9ATN — no DBREF maps to O14686 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[546/9905] O14709 (region: 79-1010, n_pep: 19)
+  [PDB] No experimental structures found for O14709
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[547/9905] O14715 (region: 68-1739, n_pep: 68)
+  [PDB] No experimental structures found for O14715
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[548/9905] O14717 (region: 5-388, n_pep: 24)
+  [PDB] ✗ 1G55 — chain for O14717 only 38 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[549/9905] O14727 (region: 29-1247, n_pep: 49)
+  [PDB] ✗ 1CY5 — chain for O14727 only 9 residues (peptide-in-groove)
+  [PDB] ✗ 2P1H — chain for O14727 only 7 residues (peptide-in-groove)
+  [PDB] ✗ 2YGS — chain for O14727 only 9 residues (peptide-in-groove)
+  [PDB] ✗ 4RHW — chain for O14727 only 9 residues (peptide-in-groove)
+  [PDB] ✗ 1Z6T coverage: partial:1-586:45.8pct — below 80% threshold
+  [PDB] ✗ 3YGS — chain for O14727 only 9 residues (peptide-in-groove)
+  [PDB] ✗ 8XQK — chain for O14727 only 9 residues (peptide-in-groove)
+  [PDB] ✗ 5WVC — chain for O14727 only 9 residues (peptide-in-groove)
+  [PDB] ✓ 3JBT (resolution: 2Å, coverage: ok) — accepted immediately
+[550/9905] O14730 (region: 47-475, n_pep: 11)
+  [PDB] ✓ 8ZDB (resolution: 2Å, coverage: ok) — accepted immediately
+[551/9905] O14733 (region: 5-357, n_pep: 17)
+  [PDB] ✗ 5Y90 — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 6YZ4 — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 6YFZ — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 7OVI — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 6YG0 — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 6YG2 — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 6YG3 — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 7OVK — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 7CBX — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 5B2L — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 6IB2 — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 6QG7 — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 6YG6 — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 6QFL — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 6YG7 — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 6YG1 — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 5Z1D — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 5Z1E — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 6QFR — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 6QG4 — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 6YG4 — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 4UX9 — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 7OVJ — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [PDB] ✗ 6YG5 — no DBREF maps to O14733 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[552/9905] O14735 (region: 5-198, n_pep: 11)
+  [PDB] No experimental structures found for O14735
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[553/9905] O14737 (region: 1-109, n_pep: 3)
+  [PDB] ✗ 1YYB — chain for O14737 only 2 residues (peptide-in-groove)
+  [PDB] ✗ 2CRU — chain for O14737 only 4 residues (peptide-in-groove)
+  [PDB] ✗ 2K6B — chain for O14737 only 10 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[554/9905] O14744 (region: 107-590, n_pep: 23)
+  [PDB] ✓ 6V0P (resolution: 2Å, coverage: ok) — accepted immediately
+[555/9905] O14745 (region: 34-328, n_pep: 13)
+  [PDB] ✗ 4N6X — no DBREF maps to O14745 (wrong protein / MHC complex)
+  [PDB] ✗ 4MPA — no DBREF maps to O14745 (wrong protein / MHC complex)
+  [PDB] ✗ 4LMM — no DBREF maps to O14745 (wrong protein / MHC complex)
+  [PDB] ✗ 4JL7 — no DBREF maps to O14745 (wrong protein / MHC complex)
+  [PDB] ✗ 9RXT — no DBREF maps to O14745 (wrong protein / MHC complex)
+  [PDB] ✗ 9RXQ — no DBREF maps to O14745 (wrong protein / MHC complex)
+  [PDB] ✗ 4Q3H — no DBREF maps to O14745 (wrong protein / MHC complex)
+  [PDB] ✗ 4PQW — no DBREF maps to O14745 (wrong protein / MHC complex)
+  [PDB] ✗ 1G9O — no DBREF maps to O14745 (wrong protein / MHC complex)
+  [PDB] ✗ 2OZF — no DBREF maps to O14745 (wrong protein / MHC complex)
+  [PDB] ✗ 1I92 — no DBREF maps to O14745 (wrong protein / MHC complex)
+  [PDB] ✗ 1GQ5 — no DBREF maps to O14745 (wrong protein / MHC complex)
+  [PDB] ✗ 6RQR — no DBREF maps to O14745 (wrong protein / MHC complex)
+  [PDB] ✗ 2D10 — no DBREF maps to O14745 (wrong protein / MHC complex)
+  [PDB] ✗ 1SGH — chain for O14745 only 3 residues (peptide-in-groove)
+  [PDB] ✗ 2JXO — no DBREF maps to O14745 (wrong protein / MHC complex)
+  [PDB] ✗ 2KJD — chain for O14745 only 5 residues (peptide-in-groove)
+  [PDB] ✗ 2KRG — no DBREF maps to O14745 (wrong protein / MHC complex)
+  [PDB] ✗ 2M0T — chain for O14745 only 2 residues (peptide-in-groove)
+  [PDB] ✗ 2M0U — chain for O14745 only 2 residues (peptide-in-groove)
+  [PDB] ✗ 2M0V — no DBREF maps to O14745 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[556/9905] O14746 (region: 30-1130, n_pep: 41)
+  [PDB] ✗ 5MEO — no DBREF maps to O14746 (wrong protein / MHC complex)
+  [PDB] ✗ 5MER — no DBREF maps to O14746 (wrong protein / MHC complex)
+  [PDB] ✗ 5MEQ — no DBREF maps to O14746 (wrong protein / MHC complex)
+  [PDB] ✗ 5UGW — no DBREF maps to O14746 (wrong protein / MHC complex)
+  [PDB] ✗ 4B18 — no DBREF maps to O14746 (wrong protein / MHC complex)
+  [PDB] ✗ 5MEP — no DBREF maps to O14746 (wrong protein / MHC complex)
+  [PDB] ✗ 4MNQ — no DBREF maps to O14746 (wrong protein / MHC complex)
+  [PDB] ✗ 2BCK — no DBREF maps to O14746 (wrong protein / MHC complex)
+  [PDB] ✗ 5MEN — no DBREF maps to O14746 (wrong protein / MHC complex)
+  [PDB] ✓ 7QXA (resolution: 2Å, coverage: ok) — accepted immediately
+[557/9905] O14753 (region: 64-267, n_pep: 5)
+  [PDB] No experimental structures found for O14753
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[558/9905] O14756 (region: 26-316, n_pep: 16)
+  [PDB] No experimental structures found for O14756
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[559/9905] O14757 (region: 18-456, n_pep: 16)
+  [PDB] ✗ 2YEX — chain for O14757 only 27 residues (peptide-in-groove)
+  [PDB] ✗ 4HYI — chain for O14757 only 28 residues (peptide-in-groove)
+  [PDB] ✗ 3PA3 — chain for O14757 only 26 residues (peptide-in-groove)
+  [PDB] ✗ 5OQ5 — chain for O14757 only 28 residues (peptide-in-groove)
+  [PDB] ✗ 3OT3 — chain for O14757 only 26 residues (peptide-in-groove)
+  [PDB] ✗ 7SUF — chain for O14757 only 28 residues (peptide-in-groove)
+  [PDB] ✗ 7SUG — chain for O14757 only 28 residues (peptide-in-groove)
+  [PDB] ✗ 8E80 — chain for O14757 only 28 residues (peptide-in-groove)
+  [PDB] ✗ 5OPB — chain for O14757 only 28 residues (peptide-in-groove)
+  [PDB] ✗ 5OPU — chain for O14757 only 28 residues (peptide-in-groove)
+  [PDB] ✗ 8SIX — chain for O14757 only 28 residues (peptide-in-groove)
+  [PDB] ✗ 3PA4 — chain for O14757 only 26 residues (peptide-in-groove)
+  [PDB] ✗ 2YDI — chain for O14757 only 28 residues (peptide-in-groove)
+  [PDB] ✗ 3TKI — chain for O14757 only 30 residues (peptide-in-groove)
+  [PDB] ✗ 6FC8 — chain for O14757 only 27 residues (peptide-in-groove)
+  [PDB] ✗ 8E81 — chain for O14757 only 28 residues (peptide-in-groove)
+  [PDB] ✗ 3OT8 — chain for O14757 only 26 residues (peptide-in-groove)
+  [PDB] ✗ 7MCK — chain for O14757 only 28 residues (peptide-in-groove)
+  [PDB] ✗ 1IA8 — chain for O14757 only 28 residues (peptide-in-groove)
+  [PDB] ✗ 1ZYS — chain for O14757 only 27 residues (peptide-in-groove)
+  [PDB] ✗ 2HY0 — chain for O14757 only 29 residues (peptide-in-groove)
+  [PDB] ✗ 2QHN — chain for O14757 only 30 residues (peptide-in-groove)
+  [PDB] ✗ 3PA5 — chain for O14757 only 26 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[560/9905] O14763 (region: 33-413, n_pep: 18)
+  [PDB] ✗ 3X3F — no DBREF maps to O14763 (wrong protein / MHC complex)
+  [PDB] ✗ 4I9X — no DBREF maps to O14763 (wrong protein / MHC complex)
+  [PDB] ✗ 1D4V — no DBREF maps to O14763 (wrong protein / MHC complex)
+  [PDB] ✗ 1DU3 — chain for O14763 only 13 residues (peptide-in-groove)
+  [PDB] ✗ 2H9G — chain for O14763 only 13 residues (peptide-in-groove)
+  [PDB] ✗ 1D0G — chain for O14763 only 13 residues (peptide-in-groove)
+  [PDB] ✗ 6T3J — no DBREF maps to O14763 (wrong protein / MHC complex)
+  [PDB] ✗ 4OD2 — no DBREF maps to O14763 (wrong protein / MHC complex)
+  [PDB] ✗ 4N90 — chain for O14763 only 9 residues (peptide-in-groove)
+  [PDB] ✗ 1ZA3 — chain for O14763 only 13 residues (peptide-in-groove)
+  [PDB] ✗ 6NHW — no DBREF maps to O14763 (wrong protein / MHC complex)
+  [PDB] ✗ 6NHY — no DBREF maps to O14763 (wrong protein / MHC complex)
+  [PDB] ✗ 8DPX — no DBREF maps to O14763 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[561/9905] O14772 (region: 15-598, n_pep: 22)
+  [PDB] No experimental structures found for O14772
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[562/9905] O14773 (region: 30-522, n_pep: 14)
+  [PDB] ✗ 3EDY — chain for O14773 only 37 residues (peptide-in-groove)
+  [PDB] ✓ 3EE6 (resolution: 2Å, coverage: ok) — accepted immediately
+[563/9905] O14775 (region: 47-393, n_pep: 12)
+  [PDB] ✗ 8SH9 — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 8SHE — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 8SHG — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 8SHN — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 8SG9 — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 8SGC — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 8SGL — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 8SHD — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 8SHQ — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 9NOQ — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 9NRH — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 8SG8 — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 8SHA — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 8SHF — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 8SHL — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 8SHO — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 8SHP — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 8SHT — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 9NPW — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 9NQ1 — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 9NRG — no DBREF maps to O14775 (wrong protein / MHC complex)
+  [PDB] ✗ 9NOO — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 9NOP — chain for O14775 only 39 residues (peptide-in-groove)
+  [PDB] ✗ 9NQ6 — no DBREF maps to O14775 (wrong protein / MHC complex)
+  [PDB] ✗ 9NRE — chain for O14775 only 39 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[564/9905] O14776 (region: 38-1059, n_pep: 40)
+  [PDB] ✗ 3Q1I — no DBREF maps to O14776 (wrong protein / MHC complex)
+  [PDB] ✗ 4FQG — chain for O14776 only 16 residues (peptide-in-groove)
+  [PDB] ✗ 3HFH — no DBREF maps to O14776 (wrong protein / MHC complex)
+  [PDB] ✓ 8Q7N (resolution: 2Å, coverage: ok) — accepted immediately
+[565/9905] O14777 (region: 72-607, n_pep: 23)
+  [PDB] ✗ 2IGP — no DBREF maps to O14777 (wrong protein / MHC complex)
+  [PDB] ✗ 8G0P — chain for O14777 only 12 residues (peptide-in-groove)
+  [PDB] ✗ 2VE7 — no DBREF maps to O14777 (wrong protein / MHC complex)
+  [PDB] ✗ 9N9G coverage: partial:1-455:71.6pct — below 80% threshold
+  [PDB] ✗ 3IZ0 — no DBREF maps to O14777 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[566/9905] O14782 (region: 34-749, n_pep: 31)
+  [PDB] ✗ 3B6V — chain for O14782 only 32 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[567/9905] O14786 (region: 11-903, n_pep: 29)
+  [PDB] ✗ 6FMC — no DBREF maps to O14786 (wrong protein / MHC complex)
+  [PDB] ✗ 6TKK — no DBREF maps to O14786 (wrong protein / MHC complex)
+  [PDB] ✗ 5JGI — no DBREF maps to O14786 (wrong protein / MHC complex)
+  [PDB] ✗ 5C7G — chain for O14786 only 15 residues (peptide-in-groove)
+  [PDB] ✗ 5IJR — no DBREF maps to O14786 (wrong protein / MHC complex)
+  [PDB] ✗ 7O1N — no DBREF maps to O14786 (wrong protein / MHC complex)
+  [PDB] ✗ 5IYY — no DBREF maps to O14786 (wrong protein / MHC complex)
+  [PDB] ✗ 5JGQ — no DBREF maps to O14786 (wrong protein / MHC complex)
+  [PDB] ✗ 4RN5 — no DBREF maps to O14786 (wrong protein / MHC complex)
+  [PDB] ✗ 2QQI — no DBREF maps to O14786 (wrong protein / MHC complex)
+  [PDB] ✗ 5JHK — no DBREF maps to O14786 (wrong protein / MHC complex)
+  [PDB] ✗ 1KEX — chain for O14786 only 15 residues (peptide-in-groove)
+  [PDB] ✗ 2QQM — no DBREF maps to O14786 (wrong protein / MHC complex)
+  [PDB] ✗ 5J1X — no DBREF maps to O14786 (wrong protein / MHC complex)
+  [PDB] ✗ 2QQN — no DBREF maps to O14786 (wrong protein / MHC complex)
+  [PDB] ✗ 5L73 — no DBREF maps to O14786 (wrong protein / MHC complex)
+  [PDB] ✗ 7JJC — no DBREF maps to O14786 (wrong protein / MHC complex)
+  [PDB] ✗ 4DEQ — chain for O14786 only 15 residues (peptide-in-groove)
+  [PDB] ✗ 6FMF — no DBREF maps to O14786 (wrong protein / MHC complex)
+  [PDB] ✗ 3I97 — chain for O14786 only 15 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[568/9905] O14787 (region: 9-871, n_pep: 59)
+  [PDB] No experimental structures found for O14787
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[569/9905] O14791 (region: 15-398, n_pep: 17)
+  [PDB] ✗ 7LFA — no DBREF maps to O14791 (wrong protein / MHC complex)
+  [PDB] ✗ 7LFB — no DBREF maps to O14791 (wrong protein / MHC complex)
+  [PDB] ✗ 7LF7 — no DBREF maps to O14791 (wrong protein / MHC complex)
+  [PDB] ✗ 7LFD — no DBREF maps to O14791 (wrong protein / MHC complex)
+  [PDB] ✗ 7L6K — no DBREF maps to O14791 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[570/9905] O14795 (region: 23-1561, n_pep: 56)
+  [PDB] No experimental structures found for O14795
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[571/9905] O14802 (region: 29-1366, n_pep: 63)
+  [PDB] ✓ 7AE1 (resolution: 2Å, coverage: ok) — accepted immediately
+[572/9905] O14817 (region: 11-233, n_pep: 13)
+  [PDB] No experimental structures found for O14817
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[573/9905] O14818 (region: 1-202, n_pep: 9)
+  [PDB] ✗ 5LE5 — chain for O14818 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 5LEY — chain for O14818 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 5LF4 — chain for O14818 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 5LF1 — chain for O14818 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 5LF7 — chain for O14818 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 8UD9 — chain for O14818 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 5LF6 — chain for O14818 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 5LF3 — chain for O14818 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 8BZL — chain for O14818 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 5LEZ — chain for O14818 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 5LEX — chain for O14818 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 7AWE — chain for O14818 only 22 residues (peptide-in-groove)
+  [PDB] ✗ 5LF0 — chain for O14818 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 7B12 — chain for O14818 only 22 residues (peptide-in-groove)
+  [PDB] ✗ 9HMN — chain for O14818 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 4R3O — chain for O14818 only 23 residues (peptide-in-groove)
+  [PDB] ✗ 6RGQ — chain for O14818 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 8QYL — chain for O14818 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 8CVR — chain for O14818 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 6KWY — chain for O14818 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 8QYJ — chain for O14818 only 24 residues (peptide-in-groove)
+  [PDB] ✗ 8QYM — chain for O14818 only 24 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[574/9905] O14829 (region: 43-652, n_pep: 20)
+  [PDB] No experimental structures found for O14829
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[575/9905] O14832 (region: 44-314, n_pep: 8)
+  [PDB] ✗ 2A1X — chain for O14832 only 3 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[576/9905] O14836 (region: 149-169, n_pep: 4)
+  [PDB] ✗ 1XU1 — no DBREF maps to O14836 (wrong protein / MHC complex)
+  [PDB] ✗ 1XUT — no DBREF maps to O14836 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[577/9905] O14841 (region: 43-1213, n_pep: 54)
+  [PDB] No experimental structures found for O14841
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[578/9905] O14863 (region: 75-417, n_pep: 28)
+  [PDB] ✗ 9JJ3 — chain for O14863 only 42 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[579/9905] O14879 (region: 8-434, n_pep: 14)
+  [PDB] ✗ 6C6K — no DBREF maps to O14879 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[580/9905] O14880 (region: 3-130, n_pep: 8)
+  [PDB] No experimental structures found for O14880
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[581/9905] O14896 (region: 2-442, n_pep: 15)
+  [PDB] No experimental structures found for O14896
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[582/9905] O14908 (region: 46-290, n_pep: 10)
+  [PDB] No experimental structures found for O14908
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[583/9905] O14917 (region: 9-1128, n_pep: 46)
+  [PDB] ✗ 6VFT — chain for O14917 only 44 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[584/9905] O14920 (region: 85-694, n_pep: 34)
+  [PDB] ✗ 3BRV — no DBREF maps to O14920 (wrong protein / MHC complex)
+  [PDB] ✗ 3BRT — no DBREF maps to O14920 (wrong protein / MHC complex)
+  [PDB] ~ 4KIK coverage: partial:1-663:94.9pct (res: 2Å) — best qualifying so far
+  [PDB] ~ 4E3C coverage: partial:16-665:95.2pct (res: 2Å) — best qualifying so far
+  [PDB] ~ 8OMV coverage: partial:6-666:95.4pct (res: 2Å) — best qualifying so far
+  [PDB] ✓ Best qualifying: 8OMV (resolution: 2Å, coverage: partial:6-666:95.4pct)
+[585/9905] O14924 (region: 35-1340, n_pep: 38)
+  [PDB] ✗ 2EBZ — chain for O14924 only 8 residues (peptide-in-groove)
+  [PDB] ✗ 2KV8 — chain for O14924 only 8 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[586/9905] O14926 (region: 8-476, n_pep: 14)
+  [PDB] No experimental structures found for O14926
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[587/9905] O14929 (region: 10-412, n_pep: 16)
+  [PDB] ✗ 6VO5 — chain for O14929 only 15 residues (peptide-in-groove)
+  [PDB] ✗ 2P0W — chain for O14929 only 15 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[588/9905] O14931 (region: 22-182, n_pep: 9)
+  [PDB] ✗ 3NOI — no DBREF maps to O14931 (wrong protein / MHC complex)
+  [PDB] ✗ 9FWW — no DBREF maps to O14931 (wrong protein / MHC complex)
+  [PDB] ✗ 3PV6 — no DBREF maps to O14931 (wrong protein / MHC complex)
+  [PDB] ✗ 6YJP — no DBREF maps to O14931 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[589/9905] O14936 (region: 6-913, n_pep: 33)
+  [PDB] ✗ 1KGD — no DBREF maps to O14936 (wrong protein / MHC complex)
+  [PDB] ✗ 9M6G — chain for O14936 only 31 residues (peptide-in-groove)
+  [PDB] ✗ 9KYS — no DBREF maps to O14936 (wrong protein / MHC complex)
+  [PDB] ✗ 9M5Y — chain for O14936 only 33 residues (peptide-in-groove)
+  [PDB] ✗ 3C0I — chain for O14936 only 33 residues (peptide-in-groove)
+  [PDB] ✗ 6NH9 — no DBREF maps to O14936 (wrong protein / MHC complex)
+  [PDB] ✗ 6NID — no DBREF maps to O14936 (wrong protein / MHC complex)
+  [PDB] ✗ 1KWA — no DBREF maps to O14936 (wrong protein / MHC complex)
+  [PDB] ✗ 7OAJ — chain for O14936 only 33 residues (peptide-in-groove)
+  [PDB] ✗ 3MFR — chain for O14936 only 33 residues (peptide-in-groove)
+  [PDB] ✗ 3MFS — chain for O14936 only 33 residues (peptide-in-groove)
+  [PDB] ✗ 7OAL — chain for O14936 only 33 residues (peptide-in-groove)
+  [PDB] ✗ 3C0G — chain for O14936 only 33 residues (peptide-in-groove)
+  [PDB] ✗ 3MFT — chain for O14936 only 33 residues (peptide-in-groove)
+  [PDB] ✗ 3TAC — chain for O14936 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 8Y68 — chain for O14936 only 33 residues (peptide-in-groove)
+  [PDB] ✗ 7OAK — chain for O14936 only 33 residues (peptide-in-groove)
+  [PDB] ✗ 3C0H — chain for O14936 only 33 residues (peptide-in-groove)
+  [PDB] ✗ 3MFU — chain for O14936 only 33 residues (peptide-in-groove)
+  [PDB] ✗ 7OAI — chain for O14936 only 33 residues (peptide-in-groove)
+  [PDB] ✗ 6KMH — chain for O14936 only 31 residues (peptide-in-groove)
+  [PDB] ✗ 1ZL8 — no DBREF maps to O14936 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[590/9905] O14939 (region: 7-887, n_pep: 38)
+  [PDB] ✗ 6OHM — no DBREF maps to O14939 (wrong protein / MHC complex)
+  [PDB] ✗ 6OHO — no DBREF maps to O14939 (wrong protein / MHC complex)
+  [PDB] ✗ 6OHP — no DBREF maps to O14939 (wrong protein / MHC complex)
+  [PDB] ✗ 6OHQ — no DBREF maps to O14939 (wrong protein / MHC complex)
+  [PDB] ✗ 7SVP — no DBREF maps to O14939 (wrong protein / MHC complex)
+  [PDB] ✗ 6OHS — no DBREF maps to O14939 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[591/9905] O14944 (region: 25-169, n_pep: 5)
+  [PDB] ✗ 5E8D — chain for O14944 only 29 residues (peptide-in-groove)
+  [PDB] ✗ 7LEN — chain for O14944 only 4 residues (peptide-in-groove)
+  [PDB] ✗ 5WB7 — chain for O14944 only 12 residues (peptide-in-groove)
+  [PDB] ✗ 7LFR — chain for O14944 only 4 residues (peptide-in-groove)
+  [PDB] ✗ 7LFS — chain for O14944 only 4 residues (peptide-in-groove)
+  [PDB] ✗ 8HGP — chain for O14944 only 7 residues (peptide-in-groove)
+  [PDB] ✗ 1K36 — chain for O14944 only 4 residues (peptide-in-groove)
+  [PDB] ✗ 1K37 — chain for O14944 only 4 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[592/9905] O14950 (region: 53-142, n_pep: 5)
+  [PDB] No experimental structures found for O14950
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[593/9905] O14957 (region: 5-48, n_pep: 4)
+  [PDB] ✗ 9HZL — chain for O14957 only 6 residues (peptide-in-groove)
+  [PDB] ✗ 9CG3 — chain for O14957 only 5 residues (peptide-in-groove)
+  [PDB] ✗ 5XTE — chain for O14957 only 4 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[594/9905] O14964 (region: 11-732, n_pep: 29)
+  [PDB] ✗ 3OBQ — no DBREF maps to O14964 (wrong protein / MHC complex)
+  [PDB] ✗ 3ZYQ — chain for O14964 only 22 residues (peptide-in-groove)
+  [PDB] ✗ 4AVX — chain for O14964 only 22 residues (peptide-in-groove)
+  [PDB] ✗ 2D3G — no DBREF maps to O14964 (wrong protein / MHC complex)
+  [PDB] ✗ 3F1I — no DBREF maps to O14964 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[595/9905] O14965 (region: 153-385, n_pep: 13)
+  [PDB] ✗ 6VPM — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 5L8L — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 5L8J — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 5ORL — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 5G1X — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 6C2T — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 5OS0 — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 5OS5 — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 5L8K — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 9BZG — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 5OS3 — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 9BZL — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 4J8M — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 6VPL — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 5ORV — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 5ORX — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 5OS4 — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 5OSF — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 1MQ4 — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 3FDN — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 4UYN — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 5OS1 — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 5OSE — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 7ZTL — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [PDB] ✗ 5ORZ — no DBREF maps to O14965 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[596/9905] O14972 (region: 4-292, n_pep: 15)
+  [PDB] ✗ 8SYN — chain for O14972 only 29 residues (peptide-in-groove)
+  [PDB] ✗ 8SYO — chain for O14972 only 29 residues (peptide-in-groove)
+  [PDB] ✗ 9AU7 — chain for O14972 only 29 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[597/9905] O14974 (region: 37-1028, n_pep: 21)
+  [PDB] ✗ 2KJY — chain for O14974 only 3 residues (peptide-in-groove)
+  [PDB] ✗ 5HUZ — chain for O14974 only 4 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[598/9905] O14975 (region: 1-620, n_pep: 31)
+  [PDB] No experimental structures found for O14975
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[599/9905] O14976 (region: 3-1279, n_pep: 36)
+  [PDB] ✗ 4O38 — chain for O14976 only 23 residues (peptide-in-groove)
+  [PDB] ✗ 4Y8D — chain for O14976 only 22 residues (peptide-in-groove)
+  [PDB] ✗ 4C58 — chain for O14976 only 22 residues (peptide-in-groove)
+  [PDB] ✗ 5Y80 — chain for O14976 only 9 residues (peptide-in-groove)
+  [PDB] ✗ 4C57 — chain for O14976 only 22 residues (peptide-in-groove)
+  [PDB] ✗ 4C59 — chain for O14976 only 22 residues (peptide-in-groove)
+  [PDB] ✗ 5Y7Z — chain for O14976 only 9 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[600/9905] O14977 (region: 4-432, n_pep: 16)
+  [PDB] ✗ 4ZGZ — chain for O14977 only 42 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[601/9905] O14979 (region: 6-262, n_pep: 8)
+  [PDB] ✗ 7ZIR — no DBREF maps to O14979 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[602/9905] O14980 (region: 15-1042, n_pep: 68)
+  [PDB] ✗ 1W9C — no DBREF maps to O14980 (wrong protein / MHC complex)
+  [PDB] ✓ 9OGD (resolution: 2Å, coverage: ok) — accepted immediately
+[603/9905] O14981 (region: 5-1848, n_pep: 108)
+  [PDB] No experimental structures found for O14981
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[604/9905] O14983 (region: 48-987, n_pep: 56)
+  [PDB] No experimental structures found for O14983
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[605/9905] O14986 (region: 33-536, n_pep: 23)
+  [PDB] No experimental structures found for O14986
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[606/9905] O15013 (region: 158-1367, n_pep: 45)
+  [PDB] No experimental structures found for O15013
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[607/9905] O15014 (region: 34-1405, n_pep: 23)
+  [PDB] ✗ 8PK5 — no DBREF maps to O15014 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[608/9905] O15015 (region: 206-1789, n_pep: 20)
+  [PDB] No experimental structures found for O15015
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[609/9905] O15016 (region: 40-1351, n_pep: 45)
+  [PDB] ✗ 6IEU — no DBREF maps to O15016 (wrong protein / MHC complex)
+  [PDB] ✗ 8JZW — no DBREF maps to O15016 (wrong protein / MHC complex)
+  [PDB] ✗ 6IET — no DBREF maps to O15016 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[610/9905] O15018 (region: 4-2830, n_pep: 70)
+  [PDB] No experimental structures found for O15018
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[611/9905] O15020 (region: 50-2361, n_pep: 97)
+  [PDB] ✗ 6ANU — no DBREF maps to O15020 (wrong protein / MHC complex)
+  [PDB] ✗ 1WJM — chain for O15020 only 4 residues (peptide-in-groove)
+  [PDB] ✗ 1WYQ — chain for O15020 only 5 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[612/9905] O15021 (region: 4-2604, n_pep: 60)
+  [PDB] ✗ 2W7R — chain for O15021 only 7 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[613/9905] O15027 (region: 91-2303, n_pep: 59)
+  [PDB] No experimental structures found for O15027
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[614/9905] O15031 (region: 2-1838, n_pep: 82)
+  [PDB] ✗ 4E71 — no DBREF maps to O15031 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[615/9905] O15033 (region: 4-768, n_pep: 29)
+  [PDB] ✗ 6JX5 — no DBREF maps to O15033 (wrong protein / MHC complex)
+  [PDB] ✗ 6LOH — no DBREF maps to O15033 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[616/9905] O15034 (region: 11-1032, n_pep: 35)
+  [PDB] ✗ 1WIE — chain for O15034 only 2 residues (peptide-in-groove)
+  [PDB] ✗ 2CSI — no DBREF maps to O15034 (wrong protein / MHC complex)
+  [PDB] ✗ 2CSP — chain for O15034 only 5 residues (peptide-in-groove)
+  [PDB] ✗ 2CSQ — chain for O15034 only 2 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[617/9905] O15040 (region: 19-1383, n_pep: 46)
+  [PDB] No experimental structures found for O15040
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[618/9905] O15042 (region: 84-858, n_pep: 22)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[619/9905] O15047 (region: 75-1688, n_pep: 25)
+  [PDB] ✗ 3S8S — no DBREF maps to O15047 (wrong protein / MHC complex)
+  [PDB] ✗ 4EWR — no DBREF maps to O15047 (wrong protein / MHC complex)
+  [PDB] ✗ 8ILY — no DBREF maps to O15047 (wrong protein / MHC complex)
+  [PDB] ✗ 3UVN — no DBREF maps to O15047 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[620/9905] O15050 (region: 8-2889, n_pep: 129)
+  [PDB] No experimental structures found for O15050
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[621/9905] O15054 (region: 4-1636, n_pep: 29)
+  [PDB] ✗ 2XXZ — no DBREF maps to O15054 (wrong protein / MHC complex)
+  [PDB] ✗ 6F6D — no DBREF maps to O15054 (wrong protein / MHC complex)
+  [PDB] ✗ 4ASK — no DBREF maps to O15054 (wrong protein / MHC complex)
+  [PDB] ✗ 2XUE — no DBREF maps to O15054 (wrong protein / MHC complex)
+  [PDB] ✗ 5FP3 — no DBREF maps to O15054 (wrong protein / MHC complex)
+  [PDB] ✗ 5OY3 — no DBREF maps to O15054 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[622/9905] O15055 (region: 66-1209, n_pep: 37)
+  [PDB] ✗ 8D7O — no DBREF maps to O15055 (wrong protein / MHC complex)
+  [PDB] ✗ 8D7N — no DBREF maps to O15055 (wrong protein / MHC complex)
+  [PDB] ✗ 8D7M — no DBREF maps to O15055 (wrong protein / MHC complex)
+  [PDB] ✗ 6OF7 — no DBREF maps to O15055 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[623/9905] O15056 (region: 2-1494, n_pep: 59)
+  [PDB] ✗ 1UFW — chain for O15056 only 1 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[624/9905] O15060 (region: 24-682, n_pep: 24)
+  [PDB] No experimental structures found for O15060
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[625/9905] O15061 (region: 5-1550, n_pep: 36)
+  [PDB] ✗ 6EWO — no DBREF maps to O15061 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[626/9905] O15062 (region: 22-606, n_pep: 20)
+  [PDB] ✗ 9B9R — chain for O15062 only 12 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[627/9905] O15063 (region: 18-1022, n_pep: 44)
+  [PDB] ✗ 8BUY — no DBREF maps to O15063 (wrong protein / MHC complex)
+  [PDB] ✗ 8BUX — no DBREF maps to O15063 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[628/9905] O15066 (region: 26-744, n_pep: 28)
+  [PDB] ✗ 3B6U — chain for O15066 only 30 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[629/9905] O15067 (region: 25-1334, n_pep: 46)
+  [PDB] ✓ 9NB3 (resolution: 2Å, coverage: ok) — accepted immediately
+[630/9905] O15068 (region: 34-1085, n_pep: 43)
+  [PDB] No experimental structures found for O15068
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[631/9905] O15069 (region: 44-1530, n_pep: 45)
+  [PDB] No experimental structures found for O15069
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[632/9905] O15078 (region: 27-2448, n_pep: 122)
+  [PDB] No experimental structures found for O15078
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[633/9905] O15079 (region: 92-457, n_pep: 18)
+  [PDB] No experimental structures found for O15079
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[634/9905] O15083 (region: 44-890, n_pep: 42)
+  [PDB] No experimental structures found for O15083
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[635/9905] O15084 (region: 5-1045, n_pep: 37)
+  [PDB] No experimental structures found for O15084
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[636/9905] O15085 (region: 4-1432, n_pep: 42)
+  [PDB] ✗ 1HTJ — no DBREF maps to O15085 (wrong protein / MHC complex)
+  [PDB] ✗ 5JHH — no DBREF maps to O15085 (wrong protein / MHC complex)
+  [PDB] ✗ 5TYT — no DBREF maps to O15085 (wrong protein / MHC complex)
+  [PDB] ✗ 1XCG — no DBREF maps to O15085 (wrong protein / MHC complex)
+  [PDB] ✗ 5JHG — no DBREF maps to O15085 (wrong protein / MHC complex)
+  [PDB] ✗ 3KZ1 — no DBREF maps to O15085 (wrong protein / MHC complex)
+  [PDB] ✗ 3T06 — no DBREF maps to O15085 (wrong protein / MHC complex)
+  [PDB] ✗ 5E6P — no DBREF maps to O15085 (wrong protein / MHC complex)
+  [PDB] ✗ 2DLS — chain for O15085 only 1 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[637/9905] O15091 (region: 21-549, n_pep: 19)
+  [PDB] ✗ 4XGL — no DBREF maps to O15091 (wrong protein / MHC complex)
+  [PDB] ✗ 4XGM — no DBREF maps to O15091 (wrong protein / MHC complex)
+  [PDB] ✗ 4ROU — no DBREF maps to O15091 (wrong protein / MHC complex)
+  [PDB] ✗ 8CBK — chain for O15091 only 8 residues (peptide-in-groove)
+  [PDB] ✗ 7ONU — chain for O15091 only 13 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[638/9905] O15111 (region: 63-727, n_pep: 38)
+  [PDB] ✗ 3BRT — no DBREF maps to O15111 (wrong protein / MHC complex)
+  [PDB] ~ 5EBZ coverage: partial:6-660:89.9pct (res: 2Å) — best qualifying so far
+  [PDB] ✗ 5TQY coverage: partial:14-660:89.9pct — not better than current best
+  [PDB] ✗ 5TQX coverage: partial:14-660:89.9pct — not better than current best
+  [PDB] ✗ 5TQW coverage: partial:14-660:89.9pct — not better than current best
+  [PDB] ✓ Best qualifying: 5EBZ (resolution: 2Å, coverage: partial:6-660:89.9pct)
+[639/9905] O15118 (region: 5-1258, n_pep: 66)
+  [PDB] ✗ 3GKJ — chain for O15118 only 3 residues (peptide-in-groove)
+  [PDB] ✗ 3GKI — chain for O15118 only 3 residues (peptide-in-groove)
+  [PDB] ✗ 3GKH — chain for O15118 only 3 residues (peptide-in-groove)
+  [PDB] ✗ 5F18 — chain for O15118 only 23 residues (peptide-in-groove)
+  [PDB] ✗ 5F1B — chain for O15118 only 23 residues (peptide-in-groove)
+  [PDB] ✗ 8EUS — no DBREF maps to O15118 (wrong protein / MHC complex)
+  [PDB] ✗ 5KWY — no DBREF maps to O15118 (wrong protein / MHC complex)
+  [PDB] ✗ 5HNS — no DBREF maps to O15118 (wrong protein / MHC complex)
+  [PDB] ~ 6W5S coverage: partial:23-1255:98.3pct (res: 2Å) — best qualifying so far
+  [PDB] ✗ 9DZ2 — no DBREF maps to O15118 (wrong protein / MHC complex)
+  [PDB] ✗ 5U74 coverage: partial:334-1255:73.5pct — below 80% threshold
+  [PDB] ✗ 5U73 coverage: partial:334-1254:73.4pct — below 80% threshold
+  [PDB] ✗ 9NPR — no DBREF maps to O15118 (wrong protein / MHC complex)
+  [PDB] ✗ 6W5R coverage: partial:23-1255:98.3pct — not better than current best
+  [PDB] ✗ 6W5T coverage: partial:23-1255:98.3pct — not better than current best
+  [PDB] ✗ 6W5U coverage: partial:23-1255:98.3pct — not better than current best
+  [PDB] ~ 6W5V coverage: partial:20-1255:98.6pct (res: 2Å) — best qualifying so far
+  [PDB] ✗ 6UOX coverage: partial:24-1255:98.2pct — not better than current best
+  [PDB] ✗ 3JD8 coverage: partial:23-1251:98.0pct — not better than current best
+  [PDB] ✗ 5JNX coverage: partial:23-1251:98.0pct — not better than current best
+  [PDB] ✓ Best qualifying: 6W5V (resolution: 2Å, coverage: partial:20-1255:98.6pct)
+[640/9905] O15119 (region: 36-706, n_pep: 21)
+  [PDB] ✗ 1H6F — no DBREF maps to O15119 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[641/9905] O15121 (region: 35-251, n_pep: 21)
+  [PDB] No experimental structures found for O15121
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[642/9905] O15126 (region: 18-307, n_pep: 14)
+  [PDB] No experimental structures found for O15126
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[643/9905] O15127 (region: 18-289, n_pep: 14)
+  [PDB] No experimental structures found for O15127
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[644/9905] O15131 (region: 54-507, n_pep: 22)
+  [PDB] ✗ 4U2X — no DBREF maps to O15131 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[645/9905] O15143 (region: 24-278, n_pep: 7)
+  [PDB] ✗ 9I2B — chain for O15143 only 37 residues (peptide-in-groove)
+  [PDB] ✗ 6UHC — chain for O15143 only 37 residues (peptide-in-groove)
+  [PDB] ✗ 6YW6 — chain for O15143 only 37 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[646/9905] O15144 (region: 2-234, n_pep: 10)
+  [PDB] ✗ 9I2B — chain for O15144 only 30 residues (peptide-in-groove)
+  [PDB] ✗ 6UHC — chain for O15144 only 30 residues (peptide-in-groove)
+  [PDB] ✗ 6YW6 — chain for O15144 only 30 residues (peptide-in-groove)
+  [PDB] ✗ 6YW7 — chain for O15144 only 30 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[647/9905] O15145 (region: 7-136, n_pep: 10)
+  [PDB] ✗ 9I2B — chain for O15145 only 17 residues (peptide-in-groove)
+  [PDB] ✗ 6UHC — chain for O15145 only 17 residues (peptide-in-groove)
+  [PDB] ✗ 6YW6 — chain for O15145 only 17 residues (peptide-in-groove)
+  [PDB] ✗ 6YW7 — chain for O15145 only 17 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[648/9905] O15156 (region: 98-498, n_pep: 14)
+  [PDB] No experimental structures found for O15156
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[649/9905] O15160 (region: 13-328, n_pep: 13)
+  [PDB] ✗ 7OB9 — chain for O15160 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 7AE1 — chain for O15160 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 9K39 — chain for O15160 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 7D58 — chain for O15160 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 9K36 — chain for O15160 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 9K2G — chain for O15160 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 9K3U — chain for O15160 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 7AE3 — chain for O15160 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 7D59 — chain for O15160 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 7OBA — chain for O15160 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 9K38 — chain for O15160 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 9FSO — chain for O15160 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 7A6H — chain for O15160 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 7OBB — chain for O15160 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 9LXN — chain for O15160 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 7DU2 — chain for O15160 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 9FSP — chain for O15160 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 7AEA — chain for O15160 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 8IUH — chain for O15160 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 7DN3 — chain for O15160 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 9K3V — chain for O15160 only 34 residues (peptide-in-groove)
+  [PDB] ✗ 9LKT — chain for O15160 only 34 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[650/9905] O15162 (region: 101-296, n_pep: 11)
+  [PDB] ✗ 1Y2A — chain for O15162 only 1 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[651/9905] O15164 (region: 69-1000, n_pep: 27)
+  [PDB] ✗ 4YBM — no DBREF maps to O15164 (wrong protein / MHC complex)
+  [PDB] ✗ 9GD5 — no DBREF maps to O15164 (wrong protein / MHC complex)
+  [PDB] ✗ 3O36 — no DBREF maps to O15164 (wrong protein / MHC complex)
+  [PDB] ✗ 4YAD — no DBREF maps to O15164 (wrong protein / MHC complex)
+  [PDB] ✗ 3O35 — no DBREF maps to O15164 (wrong protein / MHC complex)
+  [PDB] ✗ 4ZQL — no DBREF maps to O15164 (wrong protein / MHC complex)
+  [PDB] ✗ 4YBT — no DBREF maps to O15164 (wrong protein / MHC complex)
+  [PDB] ✗ 4YC9 — no DBREF maps to O15164 (wrong protein / MHC complex)
+  [PDB] ✗ 4YBS — no DBREF maps to O15164 (wrong protein / MHC complex)
+  [PDB] ✗ 3O34 — no DBREF maps to O15164 (wrong protein / MHC complex)
+  [PDB] ✗ 4YAB — no DBREF maps to O15164 (wrong protein / MHC complex)
+  [PDB] ✗ 5H1U — no DBREF maps to O15164 (wrong protein / MHC complex)
+  [PDB] ✗ 5H1T — no DBREF maps to O15164 (wrong protein / MHC complex)
+  [PDB] ✗ 3O33 — no DBREF maps to O15164 (wrong protein / MHC complex)
+  [PDB] ✗ 3O37 — no DBREF maps to O15164 (wrong protein / MHC complex)
+  [PDB] ✗ 5H1V — no DBREF maps to O15164 (wrong protein / MHC complex)
+  [PDB] ✗ 4YAT — no DBREF maps to O15164 (wrong protein / MHC complex)
+  [PDB] ✗ 4YAX — no DBREF maps to O15164 (wrong protein / MHC complex)
+  [PDB] ✗ 2YYN — chain for O15164 only 5 residues (peptide-in-groove)
+  [PDB] ✗ 7B9X — no DBREF maps to O15164 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[652/9905] O15169 (region: 75-861, n_pep: 22)
+  [PDB] ✗ 1DK8 — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [PDB] ✗ 7SXJ — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [PDB] ✗ 1EMU — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [PDB] ✗ 7SXF — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [PDB] ✗ 8RU3 — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [PDB] ✗ 7SXH — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [PDB] ✗ 4NM3 — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [PDB] ✗ 5WZZ — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [PDB] ✗ 8RU4 — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [PDB] ✗ 4NM5 — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [PDB] ✗ 4NM7 — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [PDB] ✗ 8VME — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [PDB] ✗ 1O9U — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [PDB] ✗ 7SXG — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [PDB] ✗ 8VMG — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [PDB] ✗ 4NM0 — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [PDB] ✗ 4NU1 — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [PDB] ✗ 8VMF — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [PDB] ✗ 7Y1P — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [PDB] ✗ 3ZDI — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [PDB] ✗ 4B7T — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [PDB] ✗ 6JCK — no DBREF maps to O15169 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[653/9905] O15173 (region: 47-172, n_pep: 7)
+  [PDB] No experimental structures found for O15173
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[654/9905] O15211 (region: 1-728, n_pep: 30)
+  [PDB] ✗ 8B69 — no DBREF maps to O15211 (wrong protein / MHC complex)
+  [PDB] ✗ 8AU4 — no DBREF maps to O15211 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[655/9905] O15212 (region: 42-87, n_pep: 5)
+  [PDB] ✗ 7WU7 — chain for O15212 only 12 residues (peptide-in-groove)
+  [PDB] ✗ 6NR8 — no DBREF maps to O15212 (wrong protein / MHC complex)
+  [PDB] ✗ 6NRD — no DBREF maps to O15212 (wrong protein / MHC complex)
+  [PDB] ✗ 6NRC — no DBREF maps to O15212 (wrong protein / MHC complex)
+  [PDB] ✗ 6NR9 — no DBREF maps to O15212 (wrong protein / MHC complex)
+  [PDB] ✗ 6NRB — no DBREF maps to O15212 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[656/9905] O15213 (region: 152-513, n_pep: 15)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[657/9905] O15217 (region: 15-188, n_pep: 14)
+  [PDB] ✗ 3IK7 — chain for O15217 only 22 residues (peptide-in-groove)
+  [PDB] ✗ 1GUL — chain for O15217 only 22 residues (peptide-in-groove)
+  [PDB] ✗ 1GUM — chain for O15217 only 22 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[658/9905] O15218 (region: 32-395, n_pep: 30)
+  [PDB] No experimental structures found for O15218
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[659/9905] O15226 (region: 120-685, n_pep: 17)
+  [PDB] ✗ 6SH6 — no DBREF maps to O15226 (wrong protein / MHC complex)
+  [PDB] ✗ 6SH7 — no DBREF maps to O15226 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[660/9905] O15228 (region: 44-579, n_pep: 39)
+  [PDB] No experimental structures found for O15228
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[661/9905] O15229 (region: 26-484, n_pep: 21)
+  [PDB] ✗ 5X68 — chain for O15229 only 37 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[662/9905] O15230 (region: 22-3683, n_pep: 132)
+  [PDB] ✗ 5XAU — no DBREF maps to O15230 (wrong protein / MHC complex)
+  [PDB] ✗ 7CEC — no DBREF maps to O15230 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [WARN] No structure found at all
+[663/9905] O15235 (region: 6-125, n_pep: 8)
+  [PDB] ✗ 8CSS — chain for O15235 only 13 residues (peptide-in-groove)
+  [PDB] ✗ 9OJM — no DBREF maps to O15235 (wrong protein / MHC complex)
+  [PDB] ✗ 8CSQ — chain for O15235 only 13 residues (peptide-in-groove)
+  [PDB] ✗ 8CSR — chain for O15235 only 13 residues (peptide-in-groove)
+  [PDB] ✗ 8CSP — chain for O15235 only 13 residues (peptide-in-groove)
+  [PDB] ✗ 8CST — chain for O15235 only 13 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[664/9905] O15239 (region: 16-69, n_pep: 3)
+  [PDB] ✗ 9CWT — chain for O15239 only 7 residues (peptide-in-groove)
+  [PDB] ✗ 5XTC — chain for O15239 only 7 residues (peptide-in-groove)
+  [PDB] ✗ 5XTD — chain for O15239 only 7 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[665/9905] O15240 (region: 15-610, n_pep: 13)
+  [PDB] ✗ 9KV8 — chain for O15240 only 2 residues (peptide-in-groove)
+  [PDB] ✗ 7D13 — no DBREF maps to O15240 (wrong protein / MHC complex)
+  [PDB] ✗ 7D16 — no DBREF maps to O15240 (wrong protein / MHC complex)
+  [PDB] ✗ 8H0G — no DBREF maps to O15240 (wrong protein / MHC complex)
+  [PDB] ✗ 8H0U — no DBREF maps to O15240 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[666/9905] O15244 (region: 20-550, n_pep: 31)
+  [PDB] ✗ 8ET9 — no DBREF maps to O15244 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[667/9905] O15254 (region: 36-669, n_pep: 39)
+  [PDB] No experimental structures found for O15254
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[668/9905] O15258 (region: 10-145, n_pep: 11)
+  [PDB] No experimental structures found for O15258
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[669/9905] O15259 (region: 5-731, n_pep: 33)
+  [PDB] ✗ 1S1N — no DBREF maps to O15259 (wrong protein / MHC complex)
+  [PDB] ✗ 6O1Q — chain for O15259 only 7 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[670/9905] O15260 (region: 17-262, n_pep: 15)
+  [PDB] No experimental structures found for O15260
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[671/9905] O15266 (region: 89-283, n_pep: 13)
+  [PDB] No experimental structures found for O15266
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[672/9905] O15269 (region: 9-471, n_pep: 20)
+  [PDB] ✗ 7K0K — chain for O15269 only 47 residues (peptide-in-groove)
+  [PDB] ✗ 7YIY — chain for O15269 only 5 residues (peptide-in-groove)
+  [PDB] ✗ 7K0M — chain for O15269 only 47 residues (peptide-in-groove)
+  [PDB] ✗ 7YIU — chain for O15269 only 5 residues (peptide-in-groove)
+  [PDB] ✗ 7YJ2 — chain for O15269 only 5 residues (peptide-in-groove)
+  [PDB] ✗ 7K0J — chain for O15269 only 47 residues (peptide-in-groove)
+  [PDB] ✗ 7K0N — chain for O15269 only 47 residues (peptide-in-groove)
+  [PDB] ✗ 7K0O — chain for O15269 only 47 residues (peptide-in-groove)
+  [PDB] ✗ 7K0P — chain for O15269 only 47 residues (peptide-in-groove)
+  [PDB] ✗ 7YJ1 — chain for O15269 only 5 residues (peptide-in-groove)
+  [PDB] ✗ 7CQI — chain for O15269 only 47 residues (peptide-in-groove)
+  [PDB] ✗ 7CQK — chain for O15269 only 47 residues (peptide-in-groove)
+  [PDB] ✗ 7K0I — chain for O15269 only 47 residues (peptide-in-groove)
+  [PDB] ✗ 7K0Q — chain for O15269 only 47 residues (peptide-in-groove)
+  [PDB] ✗ 6M4O — chain for O15269 only 47 residues (peptide-in-groove)
+  [PDB] ✗ 7K0L — chain for O15269 only 47 residues (peptide-in-groove)
+  [PDB] ✗ 6M4N — chain for O15269 only 47 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[673/9905] O15270 (region: 40-531, n_pep: 23)
+  [PDB] ✓ 7K0K (resolution: 2Å, coverage: ok) — accepted immediately
+[674/9905] O15287 (region: 49-616, n_pep: 36)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[675/9905] O15294 (region: 32-1028, n_pep: 39)
+  [PDB] ✗ 5NPS — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 4GYW — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 6EOU — chain for O15294 only 16 residues (peptide-in-groove)
+  [PDB] ✗ 4N39 — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 4GYY — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 5NPR — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 3TAX — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 4N3A — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 4GZ3 — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 5LWV — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 3PE4 — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 6MA3 — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 6MA4 — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 6MA5 — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 5C1D — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 5HGV — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 6MA2 — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 4N3B — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 6IBO — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 6Q4M — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 5VIF — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 5BNW — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 6E37 — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [PDB] ✗ 5LVV — no DBREF maps to O15294 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[676/9905] O15297 (region: 3-515, n_pep: 13)
+  [PDB] ✗ 8T2J — chain for O15297 only 40 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[677/9905] O15321 (region: 38-589, n_pep: 31)
+  [PDB] No experimental structures found for O15321
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[678/9905] O15327 (region: 63-873, n_pep: 38)
+  [PDB] No experimental structures found for O15327
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[679/9905] O15344 (region: 15-633, n_pep: 28)
+  [PDB] ✗ 7QRY — no DBREF maps to O15344 (wrong protein / MHC complex)
+  [PDB] ✗ 2DQ5 — no DBREF maps to O15344 (wrong protein / MHC complex)
+  [PDB] ✗ 2FFW — no DBREF maps to O15344 (wrong protein / MHC complex)
+  [PDB] ✗ 2JUN — no DBREF maps to O15344 (wrong protein / MHC complex)
+  [PDB] ✗ 5IM8 — chain for O15344 only 6 residues (peptide-in-groove)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[680/9905] O15355 (region: 31-479, n_pep: 14)
+  [PDB] No experimental structures found for O15355
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[681/9905] O15357 (region: 44-1256, n_pep: 39)
+  [PDB] ✗ 5OKP — no DBREF maps to O15357 (wrong protein / MHC complex)
+  [PDB] ✗ 5OKO — no DBREF maps to O15357 (wrong protein / MHC complex)
+  [PDB] ✗ 5OKM — no DBREF maps to O15357 (wrong protein / MHC complex)
+  [PDB] ✗ 4A9C — no DBREF maps to O15357 (wrong protein / MHC complex)
+  [PDB] ✗ 6SQU — no DBREF maps to O15357 (wrong protein / MHC complex)
+  [PDB] ✗ 6SRR — no DBREF maps to O15357 (wrong protein / MHC complex)
+  [PDB] ✗ 5OKN — no DBREF maps to O15357 (wrong protein / MHC complex)
+  [PDB] ✗ 3NR8 — no DBREF maps to O15357 (wrong protein / MHC complex)
+  [PDB] ✗ 2K4P — no DBREF maps to O15357 (wrong protein / MHC complex)
+  [PDB] ✗ 2KSO — no DBREF maps to O15357 (wrong protein / MHC complex)
+  [PDB] ✗ 2MK2 — no DBREF maps to O15357 (wrong protein / MHC complex)
+  [AF2] Falling back to AlphaFold...
+  [AF2] ✓ v6 (coverage: ok)
+[682/9905] O15360 (region: 42-1421, n_pep: 76)
+  [AF2] Falling back to AlphaFold...

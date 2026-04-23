@@ -1,19 +1,27 @@
 #!/usr/bin/env bash
-# fetch_structures_hybrid.sh
-# Priority: experimental PDB (full coverage, best resolution) → AlphaFold fallback
+# fetch_structures_hybrid_v2.sh
+# Priority: experimental PDB (best coverage, best resolution) → AlphaFold → best partial PDB → nothing
+# v2 improvements:
+#   - Searches up to 25 PDB candidates (up from 10)
+#   - On 100% coverage: accepts immediately (fast path)
+#   - On ≥THRESHOLD coverage: records candidate, continues searching for better
+#   - Selects best coverage among all qualifying candidates (ties broken by resolution)
+#   - Configurable coverage threshold (default 70%)
 #
-# Usage: bash src/fetch_structures_hybrid.sh <out_dir>
-# Example: bash src/fetch_structures_hybrid.sh data/processed/structures_hybrid
+# Usage: bash src/fetch_structures_hybrid_v2.sh <out_dir> [threshold]
+# Example: bash src/fetch_structures_hybrid_v2.sh data/processed/structures_hybrid_v2 70
 
 set -uo pipefail
 
 # ── Arguments ────────────────────────────────────────────────────────────────
-if [[ $# -ne 1 ]]; then
-    echo "Usage: bash src/fetch_structures_hybrid.sh <out_dir>"
+if [[ $# -lt 1 ]]; then
+    echo "Usage: bash src/fetch_structures_hybrid_v2.sh <out_dir> [coverage_threshold]"
+    echo "Example: bash src/fetch_structures_hybrid_v2.sh data/processed/structures_hybrid_v2 70"
     exit 1
 fi
 
 OUT_DIR="${1}"
+COVERAGE_THRESHOLD="${2:-70}"
 
 # Reuse the same fetch lists from the original pipeline
 ORIGINAL_STRUCT_DIR="data/processed/structures"
@@ -34,8 +42,7 @@ AF2_BASE="https://alphafold.ebi.ac.uk/files"
 PDB_SEARCH="https://search.rcsb.org/rcsbsearch/v2/query"
 PDB_BASE="https://files.rcsb.org/download"
 
-# Maximum number of PDB candidates to check per protein
-MAX_PDB_CANDIDATES=10
+MAX_PDB_CANDIDATES=25
 
 mkdir -p "${OUT_DIR}/selected"
 mkdir -p "${OUT_DIR}/logs"
@@ -43,6 +50,15 @@ mkdir -p "${OUT_DIR}/logs"
 LOG="${OUT_DIR}/logs/fetch_log.tsv"
 MISSING="${OUT_DIR}/logs/missing_structures.tsv"
 SUMMARY="${OUT_DIR}/logs/source_summary.tsv"
+
+echo ""
+echo "════════════════════════════════════════"
+echo "  HYBRID STRUCTURE FETCHER v2"
+echo "════════════════════════════════════════"
+echo "  Coverage threshold : ${COVERAGE_THRESHOLD}%"
+echo "  Max PDB candidates : ${MAX_PDB_CANDIDATES}"
+echo "  Output dir         : ${OUT_DIR}/selected/"
+echo "════════════════════════════════════════"
 
 # ── Resume logic ─────────────────────────────────────────────────────────────
 declare -A ALREADY_DONE
@@ -92,7 +108,6 @@ check_coverage() {
     if (( min_res <= start && max_res >= end )); then
         echo "ok"
     else
-        # Calculate overlap fraction
         local req_len=$(( end - start + 1 ))
         local cov_start=$(( start > min_res ? start : min_res ))
         local cov_end=$(( end < max_res ? end : max_res ))
@@ -124,6 +139,45 @@ get_resolution() {
     fi
 }
 
+# ── Helper: verify PDB contains a chain mapping to our UniProt ID ─────────────
+# Rejects MHC/TCR complexes where our protein only appears as a short
+# peptide fragment in the binding groove. Checks DBREF records which
+# explicitly map each chain to its source UniProt ID.
+verify_source_protein() {
+    local pdb_file="${1}"
+    local base_id="${2}"
+    local min_chain_length=50  # chains shorter than this are peptide-in-groove
+
+    # DBREF format (PDB spec):
+    #   cols 27-32: database (UNP, SWS, TR)
+    #   cols 34-41: accession (UniProt ID)
+    #   cols 15-18: seqBegin
+    #   cols 20-23: seqEnd
+    local max_len
+    max_len=$(grep "^DBREF" "${pdb_file}" | \
+        awk -v uid="${base_id}" '
+        {
+            db  = substr($0, 27, 6); gsub(/[ ]+/, "", db)
+            acc = substr($0, 34, 8); gsub(/[ ]+/, "", acc)
+            if ((db == "UNP" || db == "SWS" || db == "TR") && acc == uid) {
+                b = substr($0, 15, 4) + 0
+                e = substr($0, 20, 4) + 0
+                len = e - b + 1
+                if (len > max) max = len
+            }
+        }
+        END { print (max > 0 ? max : 0) }
+        ')
+
+    if (( max_len >= min_chain_length )); then
+        echo "ok:${max_len}"
+    elif (( max_len > 0 )); then
+        echo "short:${max_len}"
+    else
+        echo "no_dbref"
+    fi
+}
+
 # ── Helper: fetch AF2 structure, try v6 → v5 → v4 ───────────────────────────
 fetch_af2() {
     local uniprot_id="${1}"
@@ -152,7 +206,7 @@ fetch_af2() {
     return 1
 }
 
-# ── Helper: try PDB first, then AF2 fallback ─────────────────────────────────
+# ── Helper: try PDB first (best-of search), then AF2 fallback ────────────────
 fetch_one() {
     local UNIPROT="${1}"
     local START="${2}"
@@ -165,16 +219,22 @@ fetch_one() {
     local SELECTED_COVERAGE=""
     local SELECTED_RESOLUTION="NA"
 
-    # ══════════════════════════════════════════════════════════════════════
-    # STEP 1: Try experimental PDB structures (sorted by resolution)
-    # ══════════════════════════════════════════════════════════════════════
+    # Track best qualifying (≥threshold) and best partial (<threshold) candidates
+    local BEST_QUAL_FILE=""
+    local BEST_QUAL_PDB_ID=""
+    local BEST_QUAL_COVERAGE=""
+    local BEST_QUAL_RESOLUTION=""
+    local BEST_QUAL_PCT=0
 
-    # Track best partial PDB in case AF2 also fails
     local BEST_PARTIAL_FILE=""
     local BEST_PARTIAL_PDB_ID=""
     local BEST_PARTIAL_COVERAGE=""
     local BEST_PARTIAL_RESOLUTION=""
     local BEST_PARTIAL_PCT=0
+
+    # ══════════════════════════════════════════════════════════════════════
+    # STEP 1: Search PDB candidates
+    # ══════════════════════════════════════════════════════════════════════
 
     QUERY=$(printf '{
       "query": {
@@ -226,9 +286,24 @@ except:
                 continue
             fi
 
+            # Verify this PDB actually contains our source protein
+            # (rejects MHC complexes where protein is just a peptide in the groove)
+            CHAIN_CHECK=$(verify_source_protein "${TMP_PDB}" "${BASE_ID}")
+            if [[ "${CHAIN_CHECK}" == "no_dbref" ]]; then
+                echo "  [PDB] ✗ ${PDB_ID} — no DBREF maps to ${BASE_ID} (wrong protein / MHC complex)"
+                rm -f "${TMP_PDB}"
+                continue
+            elif [[ "${CHAIN_CHECK}" == short:* ]]; then
+                local short_len="${CHAIN_CHECK#short:}"
+                echo "  [PDB] ✗ ${PDB_ID} — chain for ${BASE_ID} only ${short_len} residues (peptide-in-groove)"
+                rm -f "${TMP_PDB}"
+                continue
+            fi
+
             COVERAGE=$(check_coverage "${TMP_PDB}" "${START}" "${END}")
 
             if [[ "${COVERAGE}" == "ok" ]]; then
+                # 100% coverage — accept immediately (fast path)
                 RESOLUTION=$(get_resolution "${TMP_PDB}")
                 FINAL_NAME="${OUT_DIR}/selected/${UNIPROT}.pdb"
                 mv "${TMP_PDB}" "${FINAL_NAME}"
@@ -239,30 +314,34 @@ except:
                 SELECTED_COVERAGE="ok"
                 SELECTED_RESOLUTION="${RESOLUTION}"
 
-                echo "  [PDB] ✓ ${PDB_ID} (resolution: ${RESOLUTION}Å, coverage: ok)"
+                # Clean up any previously saved candidates
+                rm -f "${BEST_QUAL_FILE}"
+                rm -f "${BEST_PARTIAL_FILE}"
+
+                echo "  [PDB] ✓ ${PDB_ID} (resolution: ${RESOLUTION}Å, coverage: ok) — accepted immediately"
                 break
 
             elif [[ "${COVERAGE}" == partial:*pct ]]; then
                 local pct_val
                 pct_val=$(echo "${COVERAGE}" | grep -oP '[0-9.]+(?=pct)')
 
-                if (( $(echo "${pct_val} >= 80.0" | bc -l) )); then
-                    RESOLUTION=$(get_resolution "${TMP_PDB}")
-                    FINAL_NAME="${OUT_DIR}/selected/${UNIPROT}.pdb"
-                    mv "${TMP_PDB}" "${FINAL_NAME}"
-
-                    SELECTED_FILE="${FINAL_NAME}"
-                    SELECTED_SOURCE="pdb"
-                    SELECTED_PDB_ID="${PDB_ID}"
-                    SELECTED_COVERAGE="${COVERAGE}"
-                    SELECTED_RESOLUTION="${RESOLUTION}"
-
-                    echo "  [PDB] ✓ ${PDB_ID} (resolution: ${RESOLUTION}Å, coverage: ${COVERAGE} — accepted ≥80%)"
-                    break
+                if (( $(echo "${pct_val} >= ${COVERAGE_THRESHOLD}" | bc -l) )); then
+                    # Qualifying candidate — keep searching for better
+                    if (( $(echo "${pct_val} > ${BEST_QUAL_PCT}" | bc -l) )); then
+                        rm -f "${BEST_QUAL_FILE}"
+                        BEST_QUAL_FILE="${TMP_PDB}"
+                        BEST_QUAL_PDB_ID="${PDB_ID}"
+                        BEST_QUAL_COVERAGE="${COVERAGE}"
+                        BEST_QUAL_RESOLUTION=$(get_resolution "${TMP_PDB}")
+                        BEST_QUAL_PCT=$(echo "${pct_val}" | bc -l)
+                        echo "  [PDB] ~ ${PDB_ID} coverage: ${COVERAGE} (res: ${BEST_QUAL_RESOLUTION}Å) — best qualifying so far"
+                    else
+                        rm -f "${TMP_PDB}"
+                        echo "  [PDB] ✗ ${PDB_ID} coverage: ${COVERAGE} — not better than current best"
+                    fi
                 else
-                    # Track best partial for last-resort fallback
+                    # Below threshold — track as partial fallback
                     if (( $(echo "${pct_val} > ${BEST_PARTIAL_PCT}" | bc -l) )); then
-                        # Save this as best partial so far
                         rm -f "${BEST_PARTIAL_FILE}"
                         BEST_PARTIAL_FILE="${TMP_PDB}"
                         BEST_PARTIAL_PDB_ID="${PDB_ID}"
@@ -272,8 +351,7 @@ except:
                     else
                         rm -f "${TMP_PDB}"
                     fi
-
-                    echo "  [PDB] ✗ ${PDB_ID} coverage: ${COVERAGE} — below 80% threshold"
+                    echo "  [PDB] ✗ ${PDB_ID} coverage: ${COVERAGE} — below ${COVERAGE_THRESHOLD}% threshold"
                 fi
             else
                 echo "  [PDB] ✗ ${PDB_ID} coverage: ${COVERAGE}"
@@ -285,7 +363,20 @@ except:
         echo "  [PDB] No experimental structures found for ${BASE_ID}"
     fi
 
-    
+    # ── Accept best qualifying candidate if no 100% hit ──
+    if [[ -z "${SELECTED_FILE}" && -n "${BEST_QUAL_FILE}" ]]; then
+        FINAL_NAME="${OUT_DIR}/selected/${UNIPROT}.pdb"
+        mv "${BEST_QUAL_FILE}" "${FINAL_NAME}"
+
+        SELECTED_FILE="${FINAL_NAME}"
+        SELECTED_SOURCE="pdb"
+        SELECTED_PDB_ID="${BEST_QUAL_PDB_ID}"
+        SELECTED_COVERAGE="${BEST_QUAL_COVERAGE}"
+        SELECTED_RESOLUTION="${BEST_QUAL_RESOLUTION}"
+
+        echo "  [PDB] ✓ Best qualifying: ${BEST_QUAL_PDB_ID} (resolution: ${BEST_QUAL_RESOLUTION}Å, coverage: ${BEST_QUAL_COVERAGE})"
+    fi
+
     # ══════════════════════════════════════════════════════════════════════
     # STEP 2: AlphaFold fallback (if no suitable PDB found)
     # ══════════════════════════════════════════════════════════════════════
@@ -339,7 +430,10 @@ except:
         echo "  [PDB] ✓ Last resort: ${BEST_PARTIAL_PDB_ID} (resolution: ${BEST_PARTIAL_RESOLUTION}Å, coverage: ${BEST_PARTIAL_COVERAGE})"
     fi
 
-    # Clean up any remaining temp partial file
+    # Clean up any remaining temp files
+    if [[ -n "${BEST_QUAL_FILE}" && -f "${BEST_QUAL_FILE}" ]]; then
+        rm -f "${BEST_QUAL_FILE}"
+    fi
     if [[ -n "${BEST_PARTIAL_FILE}" && -f "${BEST_PARTIAL_FILE}" ]]; then
         rm -f "${BEST_PARTIAL_FILE}"
     fi
@@ -369,6 +463,7 @@ except:
 
     sleep 0.3
 }
+
 # ── Process one fetch list ────────────────────────────────────────────────────
 process_list() {
     local fetch_list="${1}"
@@ -390,7 +485,6 @@ process_list() {
         START=$(strip_float "${START}")
         END=$(strip_float "${END}")
 
-        # ── Skip if already processed ────────────────────────────────────
         if [[ -n "${ALREADY_DONE[${UNIPROT}]+_}" ]]; then
             echo "[${count}/${total}] SKIP: ${UNIPROT}"
             continue
@@ -414,17 +508,20 @@ TOTAL=$((COUNT_PDB + COUNT_AF2 + COUNT_NONE))
 
 echo ""
 echo "════════════════════════════════════════"
-echo "DONE — HYBRID STRUCTURE FETCHING"
+echo "DONE — HYBRID STRUCTURE FETCHING v2"
 echo "════════════════════════════════════════"
-echo "Experimental PDB  : ${COUNT_PDB}"
+echo "Coverage threshold : ${COVERAGE_THRESHOLD}%"
+echo "Max PDB candidates : ${MAX_PDB_CANDIDATES}"
+echo "Experimental PDB   : ${COUNT_PDB}"
 echo "AlphaFold fallback : ${COUNT_AF2}"
 echo "Nothing found      : ${COUNT_NONE}"
 echo "Total processed    : ${TOTAL}"
 echo ""
 
 if [[ ${TOTAL} -gt 0 ]]; then
-    PDB_PCT=$(python3 -c "print(f'{${COUNT_PDB}/${TOTAL}*100:.1f}')")
-    AF2_PCT=$(python3 -c "print(f'{${COUNT_AF2}/${TOTAL}*100:.1f}')")
+	# NEW (clean — pass values as arguments)
+	PDB_PCT=$(python3 -c "import sys; print(f'{int(sys.argv[1])/int(sys.argv[2])*100:.1f}')" "${COUNT_PDB}" "${TOTAL}")
+	AF2_PCT=$(python3 -c "import sys; print(f'{int(sys.argv[1])/int(sys.argv[2])*100:.1f}')" "${COUNT_AF2}" "${TOTAL}")
     echo "PDB fraction       : ${PDB_PCT}%"
     echo "AF2 fraction       : ${AF2_PCT}%"
 fi
@@ -434,7 +531,6 @@ echo "Output dir : ${OUT_DIR}/selected/"
 echo "Log        : ${LOG}"
 echo "Missing    : ${MISSING}"
 
-# Write machine-readable summary
 echo -e "source\tcount\tpercent" > "${SUMMARY}"
 echo -e "pdb\t${COUNT_PDB}\t${PDB_PCT:-0}" >> "${SUMMARY}"
 echo -e "alphafold\t${COUNT_AF2}\t${AF2_PCT:-0}" >> "${SUMMARY}"

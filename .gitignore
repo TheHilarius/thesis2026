@@ -72,3 +72,5 @@ data/processed/df_all_with_folds.csv
 # Python cache
 __pycache__/
 *.pyc
+data/processed/structures_hybrid_60/
+data/processed/structures_hybrid_80/
