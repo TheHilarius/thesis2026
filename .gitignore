@@ -53,6 +53,12 @@ data/processed/*.csv
 data/processed/alphafold*.rds
 data/processed/structures_hybrid/*
 
+data/processed/structures_hybrid_v2/
+data/processed/structures_hybrid_v2_60/
+data/processed/structures_hybrid_v2_80/
+logs/fetch_hybrid_v2_60.log
+logs/fetch_hybrid_v2_80.log
+
 # Model files (large binary)
 models/*.pkl
 models/*.pt
