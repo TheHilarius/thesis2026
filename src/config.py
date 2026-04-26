@@ -77,6 +77,67 @@ EMBEDDING_SOURCES = {
         "has_row_indices": False,
         "has_start_end": False,
     },
+    # In EMBEDDING_SOURCES:
+        "esmif_hybrid_80_fb": {
+        "display_name": "ESM-IF1 hybrid 80% + AF2 fallback",
+        "raw_path": EMBEDDING_DIR / "esmif_hybrid_80_fb_embeddings.h5",
+        "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_hybrid_80_fb_prepared.h5",
+        "emb_dim": 512,
+        "region_map": {
+            "peptide": "peptide_if_struct",
+            "n_flank": "n_flank_if_struct",
+            "c_flank": "c_flank_if_struct",
+        },
+        "peptide_id_col": "peptide_ids",
+        "uniprot_id_col": "uniprot_ids",
+        "has_row_indices": False,
+        "has_start_end": False,
+    },
+    "esmif_hybrid_60_fb": {
+        "display_name": "ESM-IF1 hybrid 60% + AF2 fallback",
+        "raw_path": EMBEDDING_DIR / "esmif_hybrid_60_fb_embeddings.h5",
+        "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_hybrid_60_fb_prepared.h5",
+        "emb_dim": 512,
+        "region_map": {
+            "peptide": "peptide_if_struct",
+            "n_flank": "n_flank_if_struct",
+            "c_flank": "c_flank_if_struct",
+        },
+        "peptide_id_col": "peptide_ids",
+        "uniprot_id_col": "uniprot_ids",
+        "has_row_indices": False,
+        "has_start_end": False,
+    },
+    "esmif_hybrid_40_fb": {
+        "display_name": "ESM-IF1 hybrid 40% + AF2 fallback",
+        "raw_path": EMBEDDING_DIR / "esmif_hybrid_40_fb_embeddings.h5",
+        "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_hybrid_40_fb_prepared.h5",
+        "emb_dim": 512,
+        "region_map": {
+            "peptide": "peptide_if_struct",
+            "n_flank": "n_flank_if_struct",
+            "c_flank": "c_flank_if_struct",
+        },
+        "peptide_id_col": "peptide_ids",
+        "uniprot_id_col": "uniprot_ids",
+        "has_row_indices": False,
+        "has_start_end": False,
+    },
+    "esmif_hybrid_20_fb": {
+        "display_name": "ESM-IF1 hybrid 20% + AF2 fallback",
+        "raw_path": EMBEDDING_DIR / "esmif_hybrid_20_fb_embeddings.h5",
+        "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_hybrid_20_fb_prepared.h5",
+        "emb_dim": 512,
+        "region_map": {
+            "peptide": "peptide_if_struct",
+            "n_flank": "n_flank_if_struct",
+            "c_flank": "c_flank_if_struct",
+        },
+        "peptide_id_col": "peptide_ids",
+        "uniprot_id_col": "uniprot_ids",
+        "has_row_indices": False,
+        "has_start_end": False,
+    },
 }
 
 EMBEDDING_REGIONS = ["peptide_emb", "n_flank_emb", "c_flank_emb"]
@@ -174,6 +235,31 @@ FEATURE_COMPONENTS = {
         "embedding_key": "esmif_hybrid",
         "pca_components": PCA_COMPONENTS_PER_REGION,
     },
+    # In FEATURE_COMPONENTS:
+    "esmif_hybrid_80_fb": {
+        "display_name": "ESM-IF1 hybrid 80% + AF2 fallback",
+        "type": "embedding",
+        "embedding_key": "esmif_hybrid_80_fb",
+        "pca_components": PCA_COMPONENTS_PER_REGION,
+    },
+    "esmif_hybrid_60_fb": {
+        "display_name": "ESM-IF1 hybrid 60% + AF2 fallback",
+        "type": "embedding",
+        "embedding_key": "esmif_hybrid_60_fb",
+        "pca_components": PCA_COMPONENTS_PER_REGION,
+    },
+    "esmif_hybrid_40_fb": {
+        "display_name": "ESM-IF1 hybrid 40% + AF2 fallback",
+        "type": "embedding",
+        "embedding_key": "esmif_hybrid_40_fb",
+        "pca_components": PCA_COMPONENTS_PER_REGION,
+    },
+    "esmif_hybrid_20_fb": {
+        "display_name": "ESM-IF1 hybrid 20% + AF2 fallback",
+        "type": "embedding",
+        "embedding_key": "esmif_hybrid_20_fb",
+        "pca_components": PCA_COMPONENTS_PER_REGION,
+    },
 }
 
 # ──────────────────────────────────────────────
@@ -235,6 +321,40 @@ FEATURE_SETS = {
     "all_blosum": {
         "display_name": "Structural + BLOSUM50 + ESM-C + ESM-IF",
         "components": ["handcrafted", "blosum", "esmc", "esmif"],
+    },
+        # ── Hybrid ESM-IF standalone (A/B comparison) ──
+    "esmif_hybrid_80_fb": {
+        "display_name": "ESM-IF1 hybrid 80% fb only",
+        "components": ["esmif_hybrid_80_fb"],
+    },
+    "esmif_hybrid_60_fb": {
+        "display_name": "ESM-IF1 hybrid 60% fb only",
+        "components": ["esmif_hybrid_60_fb"],
+    },
+    "esmif_hybrid_40_fb": {
+        "display_name": "ESM-IF1 hybrid 40% fb only",
+        "components": ["esmif_hybrid_40_fb"],
+    },
+    "esmif_hybrid_20_fb": {
+        "display_name": "ESM-IF1 hybrid 20% fb only",
+        "components": ["esmif_hybrid_20_fb"],
+    },
+    # ── Hybrid combined with handcrafted + sparse ──
+    "handcrafted_sparse_esmif_h80fb": {
+        "display_name": "Structural + one-hot + ESM-IF hybrid 80% fb",
+        "components": ["handcrafted", "sparse", "esmif_hybrid_80_fb"],
+    },
+    "handcrafted_sparse_esmif_h60fb": {
+        "display_name": "Structural + one-hot + ESM-IF hybrid 60% fb",
+        "components": ["handcrafted", "sparse", "esmif_hybrid_60_fb"],
+    },
+    "handcrafted_sparse_esmif_h40fb": {
+        "display_name": "Structural + one-hot + ESM-IF hybrid 40% fb",
+        "components": ["handcrafted", "sparse", "esmif_hybrid_40_fb"],
+    },
+    "handcrafted_sparse_esmif_h20fb": {
+        "display_name": "Structural + one-hot + ESM-IF hybrid 20% fb",
+        "components": ["handcrafted", "sparse", "esmif_hybrid_20_fb"],
     },
 }
 

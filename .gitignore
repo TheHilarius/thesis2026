@@ -74,3 +74,5 @@ __pycache__/
 *.pyc
 data/processed/structures_hybrid_60/
 data/processed/structures_hybrid_80/
+data/processed/structures_hybrid_40/
+data/processed/structures_hybrid_20/

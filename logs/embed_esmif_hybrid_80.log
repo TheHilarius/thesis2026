@@ -1,0 +1,2 @@
+/home/hilarius/special_course/special_course_spring2026/env_esmif/lib/python3.10/site-packages/esm/pretrained.py:215: UserWarning: Regression weights not found, predicting contacts will not produce correct results.
+  warnings.warn(

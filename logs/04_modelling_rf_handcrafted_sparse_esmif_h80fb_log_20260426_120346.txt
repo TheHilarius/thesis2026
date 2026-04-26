@@ -1,0 +1,81 @@
+================================================================================
+  04_MODELLING -- RANDOM FOREST + STRUCTURAL + ONE-HOT + ESM-IF HYBRID 80% FB
+================================================================================
+  Timestamp:       2026-04-26 12:03:46
+  Model key:       rf
+  Model class:     sklearn.ensemble.RandomForestClassifier
+  Feature set:     handcrafted_sparse_esmif_h80fb (Structural + one-hot + ESM-IF hybrid 80% fb)
+  Components:      ['handcrafted', 'sparse', 'esmif_hybrid_80_fb']
+  Data path:       /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Log path:        /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_handcrafted_sparse_esmif_h80fb_log_20260426_120346.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   False
+
+  Model hyperparameters:
+    n_estimators              1000
+    max_depth                 None
+    min_samples_split         2
+    min_samples_leaf          1
+    max_features              sqrt
+    class_weight              None
+    n_jobs                    -1
+    random_state              42
+    verbose                   0
+================================================================================
+
+Loading split data: /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Shape: 53072 rows x 88 columns
+  [OK] Fold column validated: [0, 1, 2, 3, 4, 5]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+  Loading CSV component: One-hot AA encoding
+    Loading: df_all_sparse.csv
+    Shape: 53072 rows x 410 columns
+    [OK] Alignment verified
+    New columns: 340
+
+  Merged 340 new columns → 53072 rows x 428 columns
+
+  Loading embedding component: ESM-IF1 hybrid 80% + AF2 fallback
+    Loading prepared embeddings: /home/hilarius/special_course/special_course_spring2026/data/processed/embeddings_prepared/esmif_hybrid_80_fb_prepared.h5
+    Loaded: 53072 samples, 3 regions, dim=512
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  CSV components (2):
+    [handcrafted] Structural features
+      Source: split_data (built-in)
+    [sparse] One-hot AA encoding
+      Source: /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_sparse.csv
+      New columns added: 340
+  Total CSV features: 391
+    Structural: 51
+    AA-encoded: 340
+
+  Embedding components (1):
+    [esmif_hybrid_80_fb] ESM-IF1 hybrid 80% + AF2 fallback
+      Raw dim: 1536 (3 regions × 512)
+      After PCA: 150 (50/region × 3 regions)
+
+  Estimated total features: ~541
+    CSV:        391
+    Embeddings: 150 (after PCA)
+
+================================================================================
+PIPELINE READY: ~541 features, 5 folds, Random Forest
+================================================================================
+
+--------------------------------------------------------------------------------
+  FOLD 0/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 83391 NaN values replaced with medians
+    WARNING: X_test: 10976 NaN values replaced with medians
+    CSV features: 391 columns
+    esmif_hybrid_80_fb: zero-vector samples: train=3903/35381 (11.0%), test=772/8846 (8.7%)

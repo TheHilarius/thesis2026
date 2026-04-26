@@ -1,0 +1,33 @@
+================================================================================
+  04_MODELLING -- LOGISTIC REGRESSION + ESM-IF1 HYBRID EMBEDDINGS ONLY
+================================================================================
+  Timestamp:       2026-04-26 12:01:12
+  Model key:       lr
+  Model class:     sklearn.linear_model.LogisticRegression
+  Feature set:     esmif_hybrid (ESM-IF1 hybrid embeddings only)
+  Components:      ['esmif_hybrid']
+  Data path:       /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Log path:        /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_esmif_hybrid_log_20260426_120112.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   True
+
+  Model hyperparameters:
+    penalty                   None
+    solver                    lbfgs
+    max_iter                  5000
+    class_weight              None
+    random_state              42
+    verbose                   0
+================================================================================
+
+Loading split data: /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Shape: 53072 rows x 88 columns
+  [OK] Fold column validated: [0, 1, 2, 3, 4, 5]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+  Loading embedding component: ESM-IF1 hybrid (PDB+AF2) embeddings

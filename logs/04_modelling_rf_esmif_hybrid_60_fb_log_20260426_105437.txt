@@ -1,0 +1,356 @@
+================================================================================
+  04_MODELLING -- RANDOM FOREST + ESM-IF1 HYBRID 60% FB ONLY
+================================================================================
+  Timestamp:       2026-04-26 10:54:37
+  Model key:       rf
+  Model class:     sklearn.ensemble.RandomForestClassifier
+  Feature set:     esmif_hybrid_60_fb (ESM-IF1 hybrid 60% fb only)
+  Components:      ['esmif_hybrid_60_fb']
+  Data path:       /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Log path:        /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_esmif_hybrid_60_fb_log_20260426_105437.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   False
+
+  Model hyperparameters:
+    n_estimators              1000
+    max_depth                 None
+    min_samples_split         2
+    min_samples_leaf          1
+    max_features              sqrt
+    class_weight              None
+    n_jobs                    -1
+    random_state              42
+    verbose                   0
+================================================================================
+
+Loading split data: /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Shape: 53072 rows x 88 columns
+  [OK] Fold column validated: [0, 1, 2, 3, 4, 5]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+  Loading embedding component: ESM-IF1 hybrid 60% + AF2 fallback
+    Loading prepared embeddings: /home/hilarius/special_course/special_course_spring2026/data/processed/embeddings_prepared/esmif_hybrid_60_fb_prepared.h5
+    Loaded: 53072 samples, 3 regions, dim=512
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  Embedding components (1):
+    [esmif_hybrid_60_fb] ESM-IF1 hybrid 60% + AF2 fallback
+      Raw dim: 1536 (3 regions × 512)
+      After PCA: 150 (50/region × 3 regions)
+
+  Estimated total features: ~150
+    CSV:        0
+    Embeddings: 150 (after PCA)
+
+================================================================================
+PIPELINE READY: ~150 features, 5 folds, Random Forest
+================================================================================
+
+--------------------------------------------------------------------------------
+  FOLD 0/4
+--------------------------------------------------------------------------------
+    esmif_hybrid_60_fb: zero-vector samples: train=3903/35381 (11.0%), test=772/8846 (8.7%)
+    esmif_hybrid_60_fb: PCA 1536 → 150 (50/region × 3 regions, 75.5% variance, fitted on 31478 non-zero samples)
+    Train:  35381 samples (pos=15617, neg=19764, ratio=1.266)
+    Test:    8846 samples (pos=3954, neg=4892, ratio=1.237)
+    Features: 150
+    Training Random Forest ...
+    Training time: 47.3s
+
+    Fold 0 results (55.1s):
+      AUC-ROC: 0.6450  |  AUC-PR: 0.5798  |  Acc: 0.6033  |  F1: 0.4254  |  MCC: 0.1784
+      Sens: 0.3285  |  Spec: 0.8254  |  PPV: 0.6033  |  NPV: 0.6033
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      esmif_hybrid_60_fb_PC003                          0.011099
+    2      esmif_hybrid_60_fb_PC068                          0.008969
+    3      esmif_hybrid_60_fb_PC019                          0.008935
+    4      esmif_hybrid_60_fb_PC131                          0.008424
+    5      esmif_hybrid_60_fb_PC007                          0.008419
+    6      esmif_hybrid_60_fb_PC030                          0.008240
+    7      esmif_hybrid_60_fb_PC002                          0.007911
+    8      esmif_hybrid_60_fb_PC055                          0.007748
+    9      esmif_hybrid_60_fb_PC084                          0.007582
+    10     esmif_hybrid_60_fb_PC148                          0.007432
+    11     esmif_hybrid_60_fb_PC040                          0.007386
+    12     esmif_hybrid_60_fb_PC147                          0.007359
+    13     esmif_hybrid_60_fb_PC133                          0.007308
+    14     esmif_hybrid_60_fb_PC020                          0.007296
+    15     esmif_hybrid_60_fb_PC039                          0.007248
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/rf_esmif_hybrid_60_fb_model_fold0.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 1/4
+--------------------------------------------------------------------------------
+    esmif_hybrid_60_fb: zero-vector samples: train=3742/35381 (10.6%), test=933/8846 (10.5%)
+    esmif_hybrid_60_fb: PCA 1536 → 150 (50/region × 3 regions, 75.6% variance, fitted on 31639 non-zero samples)
+    Train:  35381 samples (pos=15634, neg=19747, ratio=1.263)
+    Test:    8846 samples (pos=3937, neg=4909, ratio=1.247)
+    Features: 150
+    Training Random Forest ...
+    Training time: 48.7s
+
+    Fold 1 results (56.2s):
+      AUC-ROC: 0.6098  |  AUC-PR: 0.5489  |  Acc: 0.5937  |  F1: 0.4148  |  MCC: 0.1539
+      Sens: 0.3236  |  Spec: 0.8103  |  PPV: 0.5778  |  NPV: 0.5990
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      esmif_hybrid_60_fb_PC003                          0.011154
+    2      esmif_hybrid_60_fb_PC150                          0.009052
+    3      esmif_hybrid_60_fb_PC131                          0.008933
+    4      esmif_hybrid_60_fb_PC067                          0.008596
+    5      esmif_hybrid_60_fb_PC002                          0.008411
+    6      esmif_hybrid_60_fb_PC137                          0.007996
+    7      esmif_hybrid_60_fb_PC030                          0.007980
+    8      esmif_hybrid_60_fb_PC019                          0.007964
+    9      esmif_hybrid_60_fb_PC040                          0.007924
+    10     esmif_hybrid_60_fb_PC020                          0.007679
+    11     esmif_hybrid_60_fb_PC081                          0.007661
+    12     esmif_hybrid_60_fb_PC054                          0.007536
+    13     esmif_hybrid_60_fb_PC034                          0.007535
+    14     esmif_hybrid_60_fb_PC055                          0.007534
+    15     esmif_hybrid_60_fb_PC007                          0.007488
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/rf_esmif_hybrid_60_fb_model_fold1.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 2/4
+--------------------------------------------------------------------------------
+    esmif_hybrid_60_fb: zero-vector samples: train=3541/35382 (10.0%), test=1134/8845 (12.8%)
+    esmif_hybrid_60_fb: PCA 1536 → 150 (50/region × 3 regions, 75.6% variance, fitted on 31841 non-zero samples)
+    Train:  35382 samples (pos=15645, neg=19737, ratio=1.262)
+    Test:    8845 samples (pos=3926, neg=4919, ratio=1.253)
+    Features: 150
+    Training Random Forest ...
+    Training time: 151.2s
+
+    Fold 2 results (213.9s):
+      AUC-ROC: 0.6416  |  AUC-PR: 0.5692  |  Acc: 0.6069  |  F1: 0.4263  |  MCC: 0.1831
+      Sens: 0.3291  |  Spec: 0.8286  |  PPV: 0.6052  |  NPV: 0.6075
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      esmif_hybrid_60_fb_PC003                          0.010922
+    2      esmif_hybrid_60_fb_PC019                          0.009126
+    3      esmif_hybrid_60_fb_PC118                          0.008498
+    4      esmif_hybrid_60_fb_PC007                          0.008313
+    5      esmif_hybrid_60_fb_PC030                          0.008293
+    6      esmif_hybrid_60_fb_PC002                          0.008125
+    7      esmif_hybrid_60_fb_PC070                          0.007998
+    8      esmif_hybrid_60_fb_PC134                          0.007733
+    9      esmif_hybrid_60_fb_PC092                          0.007711
+    10     esmif_hybrid_60_fb_PC040                          0.007710
+    11     esmif_hybrid_60_fb_PC035                          0.007529
+    12     esmif_hybrid_60_fb_PC055                          0.007529
+    13     esmif_hybrid_60_fb_PC094                          0.007367
+    14     esmif_hybrid_60_fb_PC044                          0.007353
+    15     esmif_hybrid_60_fb_PC149                          0.007307
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/rf_esmif_hybrid_60_fb_model_fold2.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 3/4
+--------------------------------------------------------------------------------
+    esmif_hybrid_60_fb: zero-vector samples: train=3755/35382 (10.6%), test=920/8845 (10.4%)
+    esmif_hybrid_60_fb: PCA 1536 → 150 (50/region × 3 regions, 75.7% variance, fitted on 31627 non-zero samples)
+    Train:  35382 samples (pos=15635, neg=19747, ratio=1.263)
+    Test:    8845 samples (pos=3936, neg=4909, ratio=1.247)
+    Features: 150
+    Training Random Forest ...
+    Training time: 146.1s
+
+    Fold 3 results (216.8s):
+      AUC-ROC: 0.6280  |  AUC-PR: 0.5728  |  Acc: 0.6034  |  F1: 0.4309  |  MCC: 0.1764
+      Sens: 0.3374  |  Spec: 0.8167  |  PPV: 0.5961  |  NPV: 0.6059
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      esmif_hybrid_60_fb_PC003                          0.011241
+    2      esmif_hybrid_60_fb_PC069                          0.008951
+    3      esmif_hybrid_60_fb_PC041                          0.008848
+    4      esmif_hybrid_60_fb_PC019                          0.008466
+    5      esmif_hybrid_60_fb_PC002                          0.008237
+    6      esmif_hybrid_60_fb_PC055                          0.008114
+    7      esmif_hybrid_60_fb_PC007                          0.008066
+    8      esmif_hybrid_60_fb_PC130                          0.008048
+    9      esmif_hybrid_60_fb_PC073                          0.007915
+    10     esmif_hybrid_60_fb_PC109                          0.007903
+    11     esmif_hybrid_60_fb_PC139                          0.007625
+    12     esmif_hybrid_60_fb_PC030                          0.007613
+    13     esmif_hybrid_60_fb_PC119                          0.007453
+    14     esmif_hybrid_60_fb_PC001                          0.007442
+    15     esmif_hybrid_60_fb_PC149                          0.007409
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/rf_esmif_hybrid_60_fb_model_fold3.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 4/4
+--------------------------------------------------------------------------------
+    esmif_hybrid_60_fb: zero-vector samples: train=3759/35382 (10.6%), test=916/8845 (10.4%)
+    esmif_hybrid_60_fb: PCA 1536 → 150 (50/region × 3 regions, 75.6% variance, fitted on 31623 non-zero samples)
+    Train:  35382 samples (pos=15753, neg=19629, ratio=1.246)
+    Test:    8845 samples (pos=3818, neg=5027, ratio=1.317)
+    Features: 150
+    Training Random Forest ...
+    Training time: 147.7s
+
+    Fold 4 results (204.8s):
+      AUC-ROC: 0.6548  |  AUC-PR: 0.5755  |  Acc: 0.6206  |  F1: 0.4373  |  MCC: 0.2011
+      Sens: 0.3415  |  Spec: 0.8325  |  PPV: 0.6076  |  NPV: 0.6247
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      esmif_hybrid_60_fb_PC003                          0.010166
+    2      esmif_hybrid_60_fb_PC030                          0.009065
+    3      esmif_hybrid_60_fb_PC131                          0.008397
+    4      esmif_hybrid_60_fb_PC019                          0.008288
+    5      esmif_hybrid_60_fb_PC040                          0.008003
+    6      esmif_hybrid_60_fb_PC137                          0.007944
+    7      esmif_hybrid_60_fb_PC007                          0.007909
+    8      esmif_hybrid_60_fb_PC068                          0.007890
+    9      esmif_hybrid_60_fb_PC002                          0.007730
+    10     esmif_hybrid_60_fb_PC149                          0.007660
+    11     esmif_hybrid_60_fb_PC055                          0.007631
+    12     esmif_hybrid_60_fb_PC116                          0.007554
+    13     esmif_hybrid_60_fb_PC063                          0.007439
+    14     esmif_hybrid_60_fb_PC004                          0.007415
+    15     esmif_hybrid_60_fb_PC001                          0.007385
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/rf_esmif_hybrid_60_fb_model_fold4.pkl
+
+================================================================================
+CROSS-VALIDATION SUMMARY (mean +/- std)
+================================================================================
+  auc_roc         0.6358 +/- 0.0156    [0.6450  0.6098  0.6416  0.6280  0.6548]
+  auc_pr          0.5692 +/- 0.0108    [0.5798  0.5489  0.5692  0.5728  0.5755]
+  accuracy        0.6056 +/- 0.0087    [0.6033  0.5937  0.6069  0.6034  0.6206]
+  f1              0.4270 +/- 0.0074    [0.4254  0.4148  0.4263  0.4309  0.4373]
+  mcc             0.1786 +/- 0.0151    [0.1784  0.1539  0.1831  0.1764  0.2011]
+  sensitivity     0.3320 +/- 0.0065    [0.3285  0.3236  0.3291  0.3374  0.3415]
+  specificity     0.8227 +/- 0.0081    [0.8254  0.8103  0.8286  0.8167  0.8325]
+  ppv             0.5980 +/- 0.0108    [0.6033  0.5778  0.6052  0.5961  0.6076]
+  npv             0.6081 +/- 0.0088    [0.6033  0.5990  0.6075  0.6059  0.6247]
+
+  Best fold: 4 (AUC-ROC = 0.6548)
+
+================================================================================
+PER-FOLD METRIC COMPARISON
+================================================================================
+  Fold    auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
+  -----------------------------------------------------------------------------------------------------------------------------
+  0       0.6450       0.5798       0.6033       0.4254       0.1784       0.3285       0.8254       0.6033       0.6033       
+  1       0.6098       0.5489       0.5937       0.4148       0.1539       0.3236       0.8103       0.5778       0.5990       
+  2       0.6416       0.5692       0.6069       0.4263       0.1831       0.3291       0.8286       0.6052       0.6075       
+  3       0.6280       0.5728       0.6034       0.4309       0.1764       0.3374       0.8167       0.5961       0.6059       
+  4       0.6548       0.5755       0.6206       0.4373       0.2011       0.3415       0.8325       0.6076       0.6247       
+  -----------------------------------------------------------------------------------------------------------------------------
+  mean    0.6358       0.5692       0.6056       0.4270       0.1786       0.3320       0.8227       0.5980       0.6081       
+  std     0.0156       0.0108       0.0087       0.0074       0.0151       0.0065       0.0081       0.0108       0.0088       
+
+================================================================================
+AVERAGED FEATURE IMPORTANCE ACROSS ALL FOLDS
+================================================================================
+  Rank   Feature                                           Mean Imp          Std
+  -----------------------------------------------------------------------------
+  1      esmif_hybrid_60_fb_PC003                          0.010917     0.000390
+  2      esmif_hybrid_60_fb_PC019                          0.008556     0.000424
+  3      esmif_hybrid_60_fb_PC030                          0.008238     0.000478
+  4      esmif_hybrid_60_fb_PC002                          0.008083     0.000240
+  5      esmif_hybrid_60_fb_PC007                          0.008039     0.000329
+  6      esmif_hybrid_60_fb_PC131                          0.007815     0.000983
+  7      esmif_hybrid_60_fb_PC055                          0.007711     0.000217
+  8      esmif_hybrid_60_fb_PC040                          0.007476     0.000599
+  9      esmif_hybrid_60_fb_PC068                          0.007242     0.001034
+  10     esmif_hybrid_60_fb_PC137                          0.007175     0.000675
+  11     esmif_hybrid_60_fb_PC004                          0.007154     0.000139
+  12     esmif_hybrid_60_fb_PC001                          0.007121     0.000255
+  13     esmif_hybrid_60_fb_PC149                          0.007054     0.000532
+  14     esmif_hybrid_60_fb_PC092                          0.007021     0.000461
+  15     esmif_hybrid_60_fb_PC084                          0.006998     0.000386
+  16     esmif_hybrid_60_fb_PC069                          0.006974     0.000994
+  17     esmif_hybrid_60_fb_PC021                          0.006971     0.000233
+  18     esmif_hybrid_60_fb_PC150                          0.006964     0.001049
+  19     esmif_hybrid_60_fb_PC020                          0.006956     0.000463
+  20     esmif_hybrid_60_fb_PC041                          0.006919     0.000965
+  21     esmif_hybrid_60_fb_PC010                          0.006913     0.000180
+  22     esmif_hybrid_60_fb_PC130                          0.006881     0.000610
+  23     esmif_hybrid_60_fb_PC067                          0.006871     0.000870
+  24     esmif_hybrid_60_fb_PC054                          0.006867     0.000351
+  25     esmif_hybrid_60_fb_PC116                          0.006867     0.000450
+  26     esmif_hybrid_60_fb_PC043                          0.006865     0.000328
+  27     esmif_hybrid_60_fb_PC118                          0.006832     0.000835
+  28     esmif_hybrid_60_fb_PC073                          0.006832     0.000604
+  29     esmif_hybrid_60_fb_PC039                          0.006831     0.000306
+  30     esmif_hybrid_60_fb_PC051                          0.006813     0.000279
+
+================================================================================
+HELD-OUT VALIDATION SET EVALUATION
+================================================================================
+  Using model from best fold (4)
+  Held-out samples: 8845 (pos=3870, neg=4975, ratio=1.286)
+
+  Held-out results (8845 samples):
+    AUC-ROC: 0.6328  |  AUC-PR: 0.5627  |  Acc: 0.6068  |  F1: 0.4272  |  MCC: 0.1758
+    Sens: 0.3351  |  Spec: 0.8181  |  PPV: 0.5890  |  NPV: 0.6127
+
+  Classification Report:
+              precision    recall  f1-score   support
+
+    Negative     0.6127    0.8181    0.7006      4975
+    Positive     0.5890    0.3351    0.4272      3870
+
+    accuracy                         0.6068      8845
+   macro avg     0.6008    0.5766    0.5639      8845
+weighted avg     0.6023    0.6068    0.5810      8845
+
+================================================================================
+CV AVERAGE vs HELD-OUT COMPARISON
+================================================================================
+  Metric             CV mean     CV std   Held-out      Delta
+  ---------------------------------------------------------
+  auc_roc             0.6358     0.0156     0.6328    -0.0030
+  auc_pr              0.5692     0.0108     0.5627    -0.0066
+  accuracy            0.6056     0.0087     0.6068    +0.0012
+  f1                  0.4270     0.0074     0.4272    +0.0003
+  mcc                 0.1786     0.0151     0.1758    -0.0028
+  sensitivity         0.3320     0.0065     0.3351    +0.0031
+  specificity         0.8227     0.0081     0.8181    -0.0046
+  ppv                 0.5980     0.0108     0.5890    -0.0090
+  npv                 0.6081     0.0088     0.6127    +0.0046
+
+Results saved: /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_esmif_hybrid_60_fb_20260426_105437.json
+Best model saved: /home/hilarius/special_course/special_course_spring2026/models/best_rf_esmif_hybrid_60_fb_model.pkl
+Fold artifacts saved: /home/hilarius/special_course/special_course_spring2026/models/best_rf_esmif_hybrid_60_fb_artifacts.pkl
+Feature names saved: /home/hilarius/special_course/special_course_spring2026/models/rf_esmif_hybrid_60_fb_feature_names.json
+
+================================================================================
+RUN SUMMARY
+================================================================================
+  Total runtime:    784.1s (13.1 min)
+  Model:            Random Forest (rf)
+  Feature set:      ESM-IF1 hybrid 60% fb only (esmif_hybrid_60_fb)
+  Components:       ['esmif_hybrid_60_fb']
+  Scaling:          no
+  Features (final): 150
+    esmif_hybrid_60_fb PCA:     150
+  CV folds:         5
+  Best fold:        4 (AUC = 0.6548)
+  Held-out AUC:     0.6328
+  Held-out MCC:     0.1758
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_esmif_hybrid_60_fb_20260426_105437.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_esmif_hybrid_60_fb_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_esmif_hybrid_60_fb_log_20260426_105437.txt
+  Completed:        2026-04-26 11:07:41
+================================================================================

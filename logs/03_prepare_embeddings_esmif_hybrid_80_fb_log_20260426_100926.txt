@@ -1,0 +1,131 @@
+================================================================================
+  03_PREPARE_EMBEDDINGS -- ESM-IF1 HYBRID 80% + AF2 FALLBACK
+================================================================================
+  Timestamp:       2026-04-26 10:09:26
+  Embedding key:   esmif_hybrid_80_fb
+  Raw HDF5:        /home/hilarius/special_course/special_course_spring2026/data/processed/embeddings/esmif_hybrid_80_fb_embeddings.h5
+  Split data:      /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Output:          /home/hilarius/special_course/special_course_spring2026/data/processed/embeddings_prepared/esmif_hybrid_80_fb_prepared.h5
+  Log:             /home/hilarius/special_course/special_course_spring2026/logs/03_prepare_embeddings_esmif_hybrid_80_fb_log_20260426_100926.txt
+
+  Source schema:
+    Embedding dim:   512
+    Region mapping:
+      peptide      → peptide_if_struct
+      n_flank      → n_flank_if_struct
+      c_flank      → c_flank_if_struct
+    Peptide ID col:  peptide_ids
+    UniProt ID col:  uniprot_ids
+    Has row_indices: False
+    Has start/end:   False
+================================================================================
+
+Loading split data: /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Shape: 53072 rows x 88 columns
+  Folds: [0, 1, 2, 3, 4, 5]
+  Positives: 23441  Negatives: 29631
+
+Loading raw embeddings: /home/hilarius/special_course/special_course_spring2026/data/processed/embeddings/esmif_hybrid_80_fb_embeddings.h5
+
+  HDF5 metadata:
+    af2_fallback              True
+    af2_fallback_recoveries   1569
+    cache_size                500
+    device                    cuda
+    emb_dim                   512
+    model                     esm_if1_gvp4_t16_142M_UR50
+    n_samples                 53072
+    primary_embeddings        45780
+
+  HDF5 datasets (raw):
+    c_flank_if_struct
+    n_flank_if_struct
+    peptide_ids
+    peptide_if_struct
+    uniprot_ids
+
+  Loaded canonical datasets:
+    c_flank_emb               shape=(53072, 512)         dtype=float32
+    n_flank_emb               shape=(53072, 512)         dtype=float32
+    peptide_emb               shape=(53072, 512)         dtype=float32
+    peptide_ids               shape=(53072,)             dtype=<U9
+    uniprot_ids               shape=(53072,)             dtype=<U10
+
+  Canonical regions available: ['peptide_emb', 'n_flank_emb', 'c_flank_emb']
+  Embedding dim: 512
+  Embedding samples: 53072
+
+================================================================================
+ALIGNMENT
+================================================================================
+
+  Trying strategy: peptide+uniprot_id
+    Aligned: 53072 (100.0% coverage)
+    Spot-check: 0 peptide mismatches, 0 uniprot mismatches out of 500
+  [OK] Strategy 'peptide+uniprot_id' passed validation
+
+  Final alignment results:
+    Method:              peptide+uniprot_id
+    Embedding samples:   53072
+    Split data rows:     53072
+    Successfully aligned: 53072
+    Embedding unmatched: 174
+    Split data unmatched: 0
+    Coverage: 100.0% of split data
+
+  Zero vector report:
+  Region                  Zeros        %
+  --------------------------------------
+  peptide_emb              5723   10.78%
+  n_flank_emb              5766   10.86%
+  c_flank_emb              5860   11.04%
+
+  NOTE: 17349 total zero vectors detected.
+  These represent samples without structural/sequence coverage.
+  They will map to the PCA mean after transformation.
+
+================================================================================
+SAVING PREPARED EMBEDDINGS
+================================================================================
+  Output: /home/hilarius/special_course/special_course_spring2026/data/processed/embeddings_prepared/esmif_hybrid_80_fb_prepared.h5
+    peptide_emb: shape=(53072, 512)
+    n_flank_emb: shape=(53072, 512)
+    c_flank_emb: shape=(53072, 512)
+  [OK] Saved successfully
+
+  Label distribution per fold:
+  Fold        Total      Pos      Neg    Pos %
+  ------------------------------------------
+  0            8846     3954     4892    44.7%
+  1            8846     3937     4909    44.5%
+  2            8845     3926     4919    44.4%
+  3            8845     3936     4909    44.5%
+  4            8845     3818     5027    43.2%
+  5            8845     3870     4975    43.8% (held-out)
+
+  Embedding norm stats per fold (peptide_emb):
+  Fold      Samples   Norm med   Norm std  Zero vecs
+  --------------------------------------------------
+  0            8846     5.4422     1.8622        772
+  1            8846     5.4394     1.9619        933
+  2            8845     5.3982     2.0878       1134
+  3            8845     5.4347     1.9506        920
+  4            8845     5.4333     1.9316        916
+  5            8845     5.4315     2.0626       1048
+
+================================================================================
+RUN SUMMARY
+================================================================================
+  Runtime:          9.8s
+  Embedding:        ESM-IF1 hybrid 80% + AF2 fallback
+  Embedding dim:    512
+  Alignment method: peptide+uniprot_id
+  Aligned samples:  53072
+  Coverage:         100.0%
+  Regions:          ['peptide_emb', 'n_flank_emb', 'c_flank_emb']
+  Zero vectors:     {'peptide_emb': 5723, 'n_flank_emb': 5766, 'c_flank_emb': 5860}
+  Output:           /home/hilarius/special_course/special_course_spring2026/data/processed/embeddings_prepared/esmif_hybrid_80_fb_prepared.h5
+  Output size:      259.9 MB
+  Log:              /home/hilarius/special_course/special_course_spring2026/logs/03_prepare_embeddings_esmif_hybrid_80_fb_log_20260426_100926.txt
+  Completed:        2026-04-26 10:09:36
+================================================================================

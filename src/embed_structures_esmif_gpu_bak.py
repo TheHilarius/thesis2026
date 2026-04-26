@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-embed_structures_w_esm_if.py — Hybrid PDB + AlphaFold compatible
+embed_structures_esmif_gpu.py — Hybrid PDB + AlphaFold compatible
 
 Fixes over the original:
   1. Auto-detects actual file format (CIF vs PDB) regardless of extension
@@ -10,10 +10,10 @@ Fixes over the original:
   4. Handles variable-length flanks (0–4 aa) and missing flanks
   5. LRU cache prevents OOM on large datasets
   6. Sorts by protein for cache locality, writes to original row order
-  7. GPU support (auto-detects CUDA)
+  7. GPU support with device-aware encoder output (Fix 7)
 
 Usage:
-    python src/embed_structures_w_esm_if.py \
+    python src/embed_structures_esmif_gpu.py \
         data/processed/df_all.csv \
         data/processed/structures_hybrid_80/selected/ \
         data/processed/embeddings/esmif_hybrid_80_embeddings.h5
@@ -38,6 +38,61 @@ try:
     HAS_BIOPYTHON = True
 except ImportError:
     HAS_BIOPYTHON = False
+
+
+# ── FIX 7: GPU-aware encoder output ──────────────────────────────────────────
+#
+# esm_util.get_encoder_output() uses CoordBatchConverter which produces CPU
+# tensors, then passes them straight to model.encoder() without .to(device).
+# When the model is on CUDA, this raises "Expected all tensors on same device"
+# which is silently swallowed by try/except blocks → every chain rejected.
+#
+# Fix: re-implement the function with explicit device transfer.
+# We import CoordBatchConverter and call model.encoder directly.
+
+try:
+    from esm.inverse_folding.util import CoordBatchConverter
+    HAS_COORD_CONVERTER = True
+except ImportError:
+    HAS_COORD_CONVERTER = False
+
+
+def get_encoder_output_gpu(model, alphabet, coords, device):
+    """
+    GPU-compatible replacement for esm_util.get_encoder_output().
+
+    The original function doesn't transfer CoordBatchConverter outputs
+    to the model's device. This version does.
+
+    Args:
+        model:    ESM-IF1 GVPTransformer model
+        alphabet: ESM alphabet
+        coords:   numpy array of shape (L, 3, 3) — N, CA, C backbone coords
+        device:   torch device ('cpu' or 'cuda')
+
+    Returns:
+        numpy array of shape (L, 512) — per-residue encoder representations
+    """
+    batch_converter = CoordBatchConverter(alphabet)
+    # CoordBatchConverter expects list of (coords, confidence, seq) tuples
+    batch = [(coords, None, None)]
+    coords_t, confidence, strs, tokens, padding_mask = batch_converter(batch)
+
+    # ── THE FIX: move all tensors to model device ──
+    coords_t = coords_t.to(device)
+    confidence = confidence.to(device)
+    padding_mask = padding_mask.to(device)
+    tokens = tokens.to(device)
+
+    encoder_out = model.encoder(coords_t, padding_mask, confidence,
+                                return_all_hiddens=False)
+
+    # encoder_out['encoder_out'] is a list with one tensor of shape (L, B, D)
+    # Transpose to (B, L, D), take first (only) batch element
+    rep = encoder_out['encoder_out'][0].transpose(0, 1)  # (B, L, D)
+    rep = rep[0]  # (L, D)
+
+    return rep.cpu().numpy()
 
 
 # ── LRU Cache ─────────────────────────────────────────────────────────────────
@@ -69,16 +124,29 @@ parser.add_argument('pdb_dir',  help="Directory containing .pdb or .cif files")
 parser.add_argument('out_h5',   help="Path to save the output HDF5 embeddings")
 parser.add_argument('--cache-size', type=int, default=500,
                     help="Max proteins to keep in memory (default: 500)")
+parser.add_argument('--force-cpu', action='store_true',
+                    help="Force CPU even if CUDA is available")
 args = parser.parse_args()
 
-# ESM-IF's get_encoder_output doesn't handle device transfer internally.
-# We keep the model on CPU and rely on LRU cache + sorted data for memory.
-# GPU acceleration would require patching ESM internals — not worth the risk.
-DEVICE = "cpu"
-USE_GPU = torch.cuda.is_available()
-if USE_GPU:
-    print(f"NOTE: GPU available ({torch.cuda.get_device_name(0)}) but ESM-IF "
-          f"encoder does not support GPU inference natively. Using CPU.")
+# ── Device selection ──────────────────────────────────────────────────────────
+if args.force_cpu:
+    DEVICE = "cpu"
+    USE_GPU = False
+    print("Forced CPU mode via --force-cpu flag.")
+elif torch.cuda.is_available() and HAS_COORD_CONVERTER:
+    DEVICE = "cuda"
+    USE_GPU = True
+    print(f"GPU mode enabled: {torch.cuda.get_device_name(0)}")
+elif torch.cuda.is_available() and not HAS_COORD_CONVERTER:
+    DEVICE = "cpu"
+    USE_GPU = False
+    print(f"WARNING: GPU available ({torch.cuda.get_device_name(0)}) but "
+          f"CoordBatchConverter import failed. Falling back to CPU.")
+else:
+    DEVICE = "cpu"
+    USE_GPU = False
+    print("No GPU available, using CPU.")
+
 Path(args.out_h5).parent.mkdir(parents=True, exist_ok=True)
 
 print(f"Device      : {DEVICE}")
@@ -92,9 +160,51 @@ print(f"Cache size  : {args.cache_size} proteins")
 print("Loading ESM-IF1 (142M parameters)...")
 model, alphabet = esm.pretrained.esm_if1_gvp4_t16_142M_UR50()
 model = model.eval().to(DEVICE)
-print("ESM-IF1 loaded successfully.")
+print(f"ESM-IF1 loaded successfully on {DEVICE}.")
 
 EMB_DIM = 512
+
+
+# ── Encoder wrapper (GPU or CPU) ─────────────────────────────────────────────
+def encode_structure(coords):
+    """
+    Get encoder output for coords. Uses GPU path if available,
+    falls back to CPU path otherwise.
+    """
+    if USE_GPU:
+        return get_encoder_output_gpu(model, alphabet, coords, DEVICE)
+    else:
+        return esm_util.get_encoder_output(model, alphabet, coords)
+
+
+# ── GPU validation on first structure ─────────────────────────────────────────
+GPU_VALIDATED = False
+
+
+def encode_structure_safe(coords):
+    """
+    Wrapper that validates GPU works on first call.
+    If GPU fails, falls back to CPU for the entire run.
+    """
+    global USE_GPU, DEVICE, GPU_VALIDATED
+
+    if GPU_VALIDATED or not USE_GPU:
+        return encode_structure(coords)
+
+    # First call with GPU — validate it works
+    try:
+        rep = get_encoder_output_gpu(model, alphabet, coords, DEVICE)
+        GPU_VALIDATED = True
+        print(f"  ✓ GPU inference validated! Output shape: {rep.shape}")
+        return rep
+    except Exception as e:
+        print(f"\n  ✗ GPU inference FAILED: {e}")
+        print(f"    Falling back to CPU for entire run.")
+        USE_GPU = False
+        model.to("cpu")
+        DEVICE = "cpu"
+        return esm_util.get_encoder_output(model, alphabet, coords)
+
 
 # ── Load CSV ──────────────────────────────────────────────────────────────────
 print("Loading CSV...")
@@ -196,8 +306,7 @@ def load_structure_best_chain(struct_path, uid, peptide_set):
     # --- Fast path: chain A ---
     try:
         coords, seq = load_coords_safe(struct_path, chain="A")
-        # coords_tensor = torch.tensor(coords, device=DEVICE) if not isinstance(coords, torch.Tensor) else coords.to(DEVICE)
-        rep = esm_util.get_encoder_output(model, alphabet, coords).cpu().numpy()
+        rep = encode_structure_safe(coords)
         hits = sum(1 for p in peptide_set if p in seq)
         if hits > 0:
             return rep, seq, "A"
@@ -214,7 +323,7 @@ def load_structure_best_chain(struct_path, uid, peptide_set):
             continue
         try:
             coords, seq = load_coords_safe(struct_path, chain=chain_id)
-            rep = esm_util.get_encoder_output(model, alphabet, coords).cpu().numpy()
+            rep = encode_structure_safe(coords)
             hits = sum(1 for p in peptide_set if p in seq)
 
             if hits > 0:
@@ -394,12 +503,6 @@ with torch.no_grad():
                 missing_structures.add(uid)
                 continue
 
-            # Check if this is a reload (protein was seen before but evicted)
-            if chain_stats["A"] + chain_stats["other_validated"] > 0:
-                # Only count as reload if we already tallied this protein's chain
-                # We can't perfectly track this, but reloads are rare with sorted data
-                pass
-
             structure_cache.put(uid, (rep, seq))
             cached = (rep, seq)
 
@@ -446,6 +549,7 @@ missing_rows = (df['uniprot_id'].isin(missing_structures)).sum()
 embedded_rows = n_rows - missing_rows - peptide_not_found
 
 print(f"\n{'='*60}")
+print(f"DEVICE: {DEVICE}" + (f" (GPU validated)" if GPU_VALIDATED else ""))
 print(f"STRUCTURE LOADING ({total_loaded} / {total_proteins} proteins):")
 print(f"  Chain A (validated):         {chain_stats['A']}")
 print(f"  Other chain (validated):     {chain_stats['other_validated']}")
