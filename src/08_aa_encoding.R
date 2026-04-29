@@ -3,9 +3,9 @@ source("src/functions.R")
 set_working_directory()
 
 POSITION_COLS <- c(
-  paste0("N", 4:1),
-  paste0("P", 1:9),
-  paste0("C", 1:4)
+  paste0("N", 10:1),    # N10, N9, ..., N2, N1   (left → right toward the cut)
+  paste0("P", 1:9),     # P1..P9
+  paste0("C", 1:10)     # C1..C10
 )
 
 AMINO_ACIDS <- c(
