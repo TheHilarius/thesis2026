@@ -19,6 +19,8 @@ data/processed/netmhcpan/
 .Rhistory
 .RData
 .Rproj.user/
+*.Rproj
+
 
 # Large data files
 data/raw/iedb_200K_EL_epitopes.csv

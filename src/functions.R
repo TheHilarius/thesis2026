@@ -491,29 +491,40 @@ extract_cleavage_positions <- function(data,
   #' positions around each cleavage site.
   #'
   #' NOMENCLATURE:
-  #'   ...N4 N3 N2 N1 | P1 P2 P3 P4 P5 P6 P7 P8 P9 | C1 C2 C3 C4...
-  #'                  ^cut                         ^cut
+  #'   ...N10..N4 N3 N2 N1 | P1 P2 P3 P4 P5 P6 P7 P8 P9 | C1 C2 C3 C4..C10...
+  #'                       ^cut                         ^cut
   #'
   #'   P1 = residue immediately BEFORE the cut (most important!)
   #'   P1' = residue immediately AFTER the cut
-  #'
-  #' For each epitope, we extract positions for BOTH cleavage events:
-  #'   1. N-terminal cleavage: where the epitope's N-terminus is created
-  #'   2. C-terminal cleavage: where the epitope's C-terminus is created
+  
+  # Helper to build N-position columns (reading right-to-left from the cut)
+  make_n_pos <- function(i) {
+    rlang::expr(
+      if_else(n_flank_len >= !!i,
+              substr(.data[[n_flank_col]], n_flank_len - !!(i - 1), n_flank_len - !!(i - 1)),
+              NA_character_)
+    )
+  }
   
   data |>
     mutate(
       # Store lengths for indexing
-      pep_len = nchar(.data[[peptide_col]]),
+      pep_len     = nchar(.data[[peptide_col]]),
       n_flank_len = nchar(.data[[n_flank_col]]),
       c_flank_len = nchar(.data[[c_flank_col]])
     ) |>
-    # N-flank positions: N4, N3, N2, N1 (reading left to right)
+    # N-flank positions: N10, N9, ..., N2, N1 (reading left to right toward the cut)
     mutate(
-      N4 = if_else(n_flank_len >= 4, substr(.data[[n_flank_col]], n_flank_len - 3, n_flank_len - 3), NA_character_),
-      N3 = if_else(n_flank_len >= 3, substr(.data[[n_flank_col]], n_flank_len - 2, n_flank_len - 2), NA_character_),
-      N2 = if_else(n_flank_len >= 2, substr(.data[[n_flank_col]], n_flank_len - 1, n_flank_len - 1), NA_character_),
-      N1 = if_else(n_flank_len >= 1, substr(.data[[n_flank_col]], n_flank_len, n_flank_len), NA_character_)
+      N10 = if_else(n_flank_len >= 10, substr(.data[[n_flank_col]], n_flank_len - 9, n_flank_len - 9), NA_character_),
+      N9  = if_else(n_flank_len >= 9,  substr(.data[[n_flank_col]], n_flank_len - 8, n_flank_len - 8), NA_character_),
+      N8  = if_else(n_flank_len >= 8,  substr(.data[[n_flank_col]], n_flank_len - 7, n_flank_len - 7), NA_character_),
+      N7  = if_else(n_flank_len >= 7,  substr(.data[[n_flank_col]], n_flank_len - 6, n_flank_len - 6), NA_character_),
+      N6  = if_else(n_flank_len >= 6,  substr(.data[[n_flank_col]], n_flank_len - 5, n_flank_len - 5), NA_character_),
+      N5  = if_else(n_flank_len >= 5,  substr(.data[[n_flank_col]], n_flank_len - 4, n_flank_len - 4), NA_character_),
+      N4  = if_else(n_flank_len >= 4,  substr(.data[[n_flank_col]], n_flank_len - 3, n_flank_len - 3), NA_character_),
+      N3  = if_else(n_flank_len >= 3,  substr(.data[[n_flank_col]], n_flank_len - 2, n_flank_len - 2), NA_character_),
+      N2  = if_else(n_flank_len >= 2,  substr(.data[[n_flank_col]], n_flank_len - 1, n_flank_len - 1), NA_character_),
+      N1  = if_else(n_flank_len >= 1,  substr(.data[[n_flank_col]], n_flank_len,     n_flank_len),     NA_character_)
     ) |>
     # Peptide positions: P1 through P9
     mutate(
@@ -527,12 +538,18 @@ extract_cleavage_positions <- function(data,
       P8 = substr(.data[[peptide_col]], 8, 8),
       P9 = substr(.data[[peptide_col]], 9, 9)
     ) |>
-    # C-flank positions: C1, C2, C3, C4
+    # C-flank positions: C1, C2, ..., C10
     mutate(
-      C1 = if_else(c_flank_len >= 1, substr(.data[[c_flank_col]], 1, 1), NA_character_),
-      C2 = if_else(c_flank_len >= 2, substr(.data[[c_flank_col]], 2, 2), NA_character_),
-      C3 = if_else(c_flank_len >= 3, substr(.data[[c_flank_col]], 3, 3), NA_character_),
-      C4 = if_else(c_flank_len >= 4, substr(.data[[c_flank_col]], 4, 4), NA_character_)
+      C1  = if_else(c_flank_len >= 1,  substr(.data[[c_flank_col]], 1,  1),  NA_character_),
+      C2  = if_else(c_flank_len >= 2,  substr(.data[[c_flank_col]], 2,  2),  NA_character_),
+      C3  = if_else(c_flank_len >= 3,  substr(.data[[c_flank_col]], 3,  3),  NA_character_),
+      C4  = if_else(c_flank_len >= 4,  substr(.data[[c_flank_col]], 4,  4),  NA_character_),
+      C5  = if_else(c_flank_len >= 5,  substr(.data[[c_flank_col]], 5,  5),  NA_character_),
+      C6  = if_else(c_flank_len >= 6,  substr(.data[[c_flank_col]], 6,  6),  NA_character_),
+      C7  = if_else(c_flank_len >= 7,  substr(.data[[c_flank_col]], 7,  7),  NA_character_),
+      C8  = if_else(c_flank_len >= 8,  substr(.data[[c_flank_col]], 8,  8),  NA_character_),
+      C9  = if_else(c_flank_len >= 9,  substr(.data[[c_flank_col]], 9,  9),  NA_character_),
+      C10 = if_else(c_flank_len >= 10, substr(.data[[c_flank_col]], 10, 10), NA_character_)
     ) |>
     # Remove temporary length columns
     select(-pep_len, -n_flank_len, -c_flank_len)

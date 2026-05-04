@@ -31,19 +31,19 @@ print(table(df_all$label))
 # -----------------------------------------------------------------------------
 # Define ALL 17 positional features (N-flank, Peptide, C-flank)
 # -----------------------------------------------------------------------------
-n_flank_features <- c("N4", "N3", "N2", "N1")
-peptide_features <- c("P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9")
-c_flank_features <- c("C1", "C2", "C3", "C4")
+n_flank_features <- paste0("N", 10:1)               # was N4:N1
+peptide_features <- paste0("P", 1:9)
+c_flank_features <- paste0("C", 1:10)               # was C1:C4
 
 all_pos_features <- c(n_flank_features, peptide_features, c_flank_features)
+# Total: 29 positions
 
 # Human-readable labels used in plots
 feature_labels <- setNames(
   c(
-    "N-term N4", "N-term N3", "N-term N2", "N-term N1",
-    "Peptide P1", "Peptide P2", "Peptide P3", "Peptide P4", "Peptide P5", 
-    "Peptide P6", "Peptide P7", "Peptide P8", "Peptide P9",
-    "C-term C1", "C-term C2", "C-term C3", "C-term C4"
+    paste0("N-term N", 10:1),     # "N-term N10" ... "N-term N1"
+    paste0("Peptide P", 1:9),     # "Peptide P1" ... "Peptide P9"
+    paste0("C-term C", 1:10)      # "C-term C1" ... "C-term C10"
   ),
   all_pos_features
 )
@@ -234,13 +234,13 @@ hdata <- enrichment_all %>%
 p_heat_all <- ggplot(hdata, aes(x = feature_label, y = residue, fill = log2_enrich_capped)) +
   geom_tile(colour = "white", linewidth = 0.4) +
   geom_text(aes(label = round(log2_enrichment, 2)), size = 2.6, colour = "grey10") +
-  geom_vline(xintercept = 4.5, linetype = "dashed", color = "black") +
-  geom_vline(xintercept = 13.5, linetype = "dashed", color = "black") +
+  geom_vline(xintercept = 10.5, linetype = "dashed", color = "black") +
+  geom_vline(xintercept = 19.5, linetype = "dashed", color = "black") +
   scale_fill_gradient2(low = "#2ecc71", mid = "white", high = "#CC2929", midpoint = 0, limits = c(-3, 3), oob = squish, name = "log2\nenrichment\n(capped ±3)") +
-  labs(title = "Log2 enrichment — All 17 Positions", subtitle = "Presented (label=1) vs Not Presented (label=0)", x = "Sequence Position", y = "Amino acid") +
+  labs(title = "Log2 enrichment — All 29 Positions", subtitle = "Presented (label=1) vs Not Presented (label=0)", x = "Sequence Position", y = "Amino acid") +
   theme_bw(base_size = 12) + theme(plot.title = element_text(face = "bold"), axis.text.x = element_text(angle = 45, hjust = 1), panel.grid = element_blank())
 
-ggsave("results/figures/categorical/log2_enrichment_heatmap_all.png", plot = p_heat_all, width = 14, height = 8, dpi = 300)
+ggsave("results/figures/categorical/log2_enrichment_heatmap_all.png", plot = p_heat_all, width = 20, height = 8, dpi = 300)
 
 # -----------------------------------------------------------------------------
 # 5b. Unified Odds-ratio dot plot (Faceted by all 17 positions)
@@ -255,8 +255,8 @@ p_or_all <- ggplot(plot_data, aes(x = log2(odds_ratio), y = residue, colour = en
   geom_vline(xintercept = 0, linetype = "dashed", colour = "grey50") +
   geom_point(size = 2.5, alpha = 0.85) +
   scale_colour_manual(values = c("TRUE" = "#2ecc71", "FALSE" = "#CC2929"), labels = c("TRUE" = "Enriched", "FALSE" = "Depleted"), name = NULL) +
-  facet_wrap(~feature_label, ncol = 5) +
-  labs(title = "Per-residue odds ratios — All 17 Positions", subtitle = "log2(OR) > 0 → enriched in presented peptides", x = "log2(Odds Ratio)", y = "Amino acid") +
+  facet_wrap(~feature_label, ncol = 6) +
+  labs(title = "Per-residue odds ratios — All 29 Positions", subtitle = "log2(OR) > 0 → enriched in presented peptides", x = "log2(Odds Ratio)", y = "Amino acid") +
   theme_bw(base_size = 11) + theme(plot.title = element_text(face = "bold"), panel.grid.minor = element_blank(), legend.position = "bottom")
 
 ggsave("results/figures/categorical/odds_ratio_dotplot_all.png", plot = p_or_all, width = 16, height = 10, dpi = 300)
@@ -291,10 +291,10 @@ p_diff_logo <- ggseqlogo(diff_ppm, method = "custom") +
     x = "Sequence Position (N-Flank → Peptide → C-Flank)",
     y = "Difference in Probability"
   ) +
-  scale_x_continuous(breaks = 1:17, labels = all_pos_features) +
+  scale_x_continuous(breaks = 1:29, labels = all_pos_features) +
   geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5) +
-  geom_vline(xintercept = 4.5, linetype = "dashed", color = "grey50") +  
-  geom_vline(xintercept = 13.5, linetype = "dashed", color = "grey50") + 
+  geom_vline(xintercept = 10.5, linetype = "dashed", color = "grey50") +  
+  geom_vline(xintercept = 19.5, linetype = "dashed", color = "grey50") + 
   theme_logo() +
   theme(
     plot.title = element_text(face = "bold", size = 16, hjust = 0.5),
@@ -303,7 +303,7 @@ p_diff_logo <- ggseqlogo(diff_ppm, method = "custom") +
     panel.grid.major.y = element_line(color = "grey90")
   )
 
-ggsave("results/figures/categorical/differential_logo_17mer.png", plot = p_diff_logo, width = 14, height = 5, dpi = 300)
-cat("Saved: results/figures/categorical/differential_logo_17mer.png\n")
+ggsave("results/figures/categorical/differential_logo_29mer.png", plot = p_diff_logo, width = 20, height = 5, dpi = 300)
+cat("Saved: results/figures/categorical/differential_logo_29mer.png\n")
 
 cat("\n--- Analysis complete ---\n")

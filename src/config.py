@@ -184,9 +184,9 @@ METADATA_COLS = [
 ]
 
 POSITION_AA_COLS = [
-    "N4", "N3", "N2", "N1",
-    "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
-    "C1", "C2", "C3", "C4",
+    "N10", "N9", "N8", "N7", "N6", "N5", "N4", "N3", "N2", "N1",
+    "P1",  "P2", "P3", "P4", "P5", "P6", "P7", "P8", "P9",
+    "C1",  "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10",
 ]
 
 AMINO_ACID_ALPHABET = list("ACDEFGHIKLMNPQRSTVWY")

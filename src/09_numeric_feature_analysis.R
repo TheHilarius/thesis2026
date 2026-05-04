@@ -79,8 +79,10 @@ binary_features <- list(
   trans_pep_c = names(df_raw)[str_detect(names(df_raw), "^q8trans_.*_pep_c$")]
 )
 
-# Identify the encoded sequence columns dynamically (N1-4, P1-9, C1-4 followed by _AminoAcid)
-sequence_features <- names(df_raw)[str_detect(names(df_raw), "^(N[1-4]|P[1-9]|C[1-4])_[A-Z]$")]
+# Identify the encoded sequence columns dynamically (N1-10, P1-9, C1-10 followed by _AminoAcid)
+sequence_features <- names(df_raw)[
+  str_detect(names(df_raw), "^(N([1-9]|10)|P[1-9]|C([1-9]|10))_[A-Z]$")
+]
 
 cat("\n=== Feature Inventory ===\n")
 cat("Continuous features:\n")
