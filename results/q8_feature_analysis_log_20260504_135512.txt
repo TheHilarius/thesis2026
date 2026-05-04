@@ -1,0 +1,159 @@
+====================================================================== 
+Q8 STRUCTURAL POINT SYSTEM — FEATURE ANALYSIS LOG
+Date: 2026-05-04 13:55:12 
+====================================================================== 
+
+INPUT
+  Dataset: 53072 peptides
+  Presented (label=1): 23441 
+  Non-presented (label=0): 29631 
+  Peptides with Q8 data: 51116 
+  Peptides missing Q8: 1956 
+
+METHOD
+  Feature type: Binary Q8 structural points
+  Approach: Run-length encoding on argmax of Q8 probabilities
+  Context: Full (nflank + peptide + cflank computed as single block)
+  Rescue threshold: 0.4 
+  Multiple testing: Benjamini-Hochberg
+  Minimum consecutive residues per state:
+    H: 4
+    G: 3
+    I: 5
+    E: 2
+    B: 1
+    T: 2
+    S: 1
+    C: 1
+
+OVERALL FEATURE PREVALENCE
+  Feature                   Prevalence
+   ---------------------------------------- 
+  q8point_C_cflank          76.8%
+  q8point_C_nflank          73.7%
+  q8point_H_peptide         63.0%
+  q8point_C_peptide         60.7%
+  q8point_H_nflank          58.5%
+  q8point_H_cflank          55.8%
+  q8trans_H_n_pep           47.7%
+  q8trans_H_pep_c           44.6%
+  q8trans_C_pep_c           25.6%
+  q8point_T_cflank          25.1%
+  q8point_E_peptide         24.3%
+  q8point_E_cflank          23.7%
+  q8trans_C_n_pep           23.4%
+  q8point_T_nflank          22.7%
+  q8point_E_nflank          21.9%
+  q8point_T_peptide         19.7%
+  q8point_S_cflank          17.9%
+  q8point_S_nflank          17.0%
+  q8point_S_peptide         13.4%
+  q8trans_E_pep_c           13.2%
+  q8trans_E_n_pep           10.8%
+  q8point_G_nflank          5.6%
+  q8point_G_peptide         5.6%
+  q8point_G_cflank          4.6%
+  q8trans_T_n_pep           2.6%
+  q8trans_T_pep_c           2.0%
+  q8trans_G_n_pep           1.9%
+  q8trans_G_pep_c           0.7%
+  q8point_B_cflank          0.6%
+  q8point_B_nflank          0.5%
+  q8trans_S_n_pep           0.4%
+  q8point_B_peptide         0.4%
+  q8trans_S_pep_c           0.1%
+  q8point_I_peptide         0.1%
+  q8point_I_nflank          0.1%
+  q8point_I_cflank          0.1%
+  q8trans_I_n_pep           0.1%
+  q8trans_I_pep_c           0.0%
+  q8trans_B_n_pep           0.0%
+  q8trans_B_pep_c           0.0%
+
+
+PER-LABEL COMPARISON (BH-adjusted)
+  Feature                        Neg      Pos     Diff      p_raw      p_adj Sig
+   ------------------------------------------------------------------------------------- 
+  q8trans_H_n_pep            0.4536   0.5054  +0.0517    2.80e-31    1.06e-29  ***
+  q8point_H_nflank           0.5625   0.6125  +0.0500    4.04e-30    7.68e-29  ***
+  q8point_C_peptide          0.6258   0.5832  -0.0426    1.21e-22    1.53e-21  ***
+  q8trans_C_n_pep            0.2469   0.2170  -0.0300    1.83e-15    1.74e-14  ***
+  q8point_H_peptide          0.6150   0.6478  +0.0329    2.04e-14    1.55e-13  ***
+  q8point_G_peptide          0.0607   0.0500  -0.0107    1.76e-07    1.12e-06  ***
+  q8point_S_peptide          0.1406   0.1268  -0.0138    5.89e-06    3.03e-05  ***
+  q8point_C_nflank           0.7453   0.7276  -0.0177    6.38e-06    3.03e-05  ***
+  q8trans_G_n_pep            0.0219   0.0165  -0.0053    1.43e-05    6.05e-05  ***
+  q8trans_C_pep_c            0.2637   0.2473  -0.0164    2.47e-05    9.39e-05  ***
+  q8point_E_nflank           0.2252   0.2115  -0.0137    1.90e-04    6.55e-04  ***
+  q8trans_E_n_pep            0.1121   0.1034  -0.0087    1.69e-03    5.35e-03  **
+  q8point_G_nflank           0.0588   0.0524  -0.0064    1.88e-03    5.49e-03  **
+  q8point_H_cflank           0.5530   0.5653  +0.0123    5.21e-03    1.42e-02  *
+  q8trans_H_pep_c            0.4407   0.4520  +0.0112    1.12e-02    2.85e-02  *
+  q8point_T_cflank           0.2471   0.2561  +0.0090    1.98e-02    4.71e-02  *
+  q8point_I_nflank           0.0013   0.0007  -0.0006    3.70e-02    8.00e-02  ns
+  q8point_E_peptide          0.2469   0.2390  -0.0079    3.79e-02    8.00e-02  ns
+  q8trans_S_pep_c            0.0017   0.0011  -0.0006    8.91e-02    1.78e-01  ns
+  q8point_S_nflank           0.1722   0.1674  -0.0049    1.46e-01    2.70e-01  ns
+  q8point_B_nflank           0.0044   0.0053  +0.0009    1.49e-01    2.70e-01  ns
+  q8point_G_cflank           0.0453   0.0477  +0.0024    1.97e-01    3.40e-01  ns
+  q8trans_T_n_pep            0.0270   0.0253  -0.0017    2.39e-01    3.94e-01  ns
+  q8point_T_nflank           0.2292   0.2253  -0.0039    2.92e-01    4.55e-01  ns
+  q8point_C_cflank           0.7660   0.7699  +0.0039    2.99e-01    4.55e-01  ns
+  q8point_B_cflank           0.0053   0.0059  +0.0006    3.75e-01    5.48e-01  ns
+  q8point_E_cflank           0.2362   0.2390  +0.0028    4.59e-01    6.46e-01  ns
+  q8trans_G_pep_c            0.0071   0.0066  -0.0005    4.86e-01    6.54e-01  ns
+  q8trans_T_pep_c            0.0196   0.0205  +0.0008    4.99e-01    6.54e-01  ns
+  q8trans_I_n_pep            0.0006   0.0005  -0.0001    7.01e-01    8.51e-01  ns
+  q8trans_E_pep_c            0.1325   0.1315  -0.0011    7.24e-01    8.51e-01  ns
+  q8trans_I_pep_c            0.0003   0.0003  -0.0001    7.31e-01    8.51e-01  ns
+  q8point_I_cflank           0.0006   0.0005  -0.0001    7.42e-01    8.51e-01  ns
+  q8point_B_peptide          0.0042   0.0041  -0.0002    7.65e-01    8.51e-01  ns
+  q8point_I_peptide          0.0011   0.0010  -0.0001    7.87e-01    8.51e-01  ns
+  q8trans_S_n_pep            0.0045   0.0044  -0.0001    8.07e-01    8.51e-01  ns
+  q8point_T_peptide          0.1973   0.1965  -0.0008    8.29e-01    8.51e-01  ns
+  q8point_S_cflank           0.1786   0.1787  +0.0002    9.62e-01    9.62e-01  ns
+  q8trans_B_n_pep            0.0000   0.0000  +0.0000          NA          NA  
+  q8trans_B_pep_c            0.0000   0.0000  +0.0000          NA          NA  
+
+
+SUMMARY BY Q8 STATE
+  H: mean |diff| = 0.0316, more in presented, 5/5 significant (BH q<0.05)
+  C: mean |diff| = 0.0221, more in non-presented, 4/5 significant (BH q<0.05)
+  E: mean |diff| = 0.0068, more in non-presented, 2/5 significant (BH q<0.05)
+  G: mean |diff| = 0.0051, more in non-presented, 3/5 significant (BH q<0.05)
+  S: mean |diff| = 0.0039, more in non-presented, 1/5 significant (BH q<0.05)
+  T: mean |diff| = 0.0032, more in presented, 1/5 significant (BH q<0.05)
+  B: mean |diff| = 0.0003, more in presented, 0/5 significant (BH q<0.05)
+  I: mean |diff| = 0.0002, more in non-presented, 0/5 significant (BH q<0.05)
+
+
+BIOLOGICAL INTERPRETATION
+  1. HELIX ENRICHMENT: α-helix is the only structure enriched in presented
+     peptides. Strongest signal: helix at N-flank→peptide boundary (+5.0%).
+  2. COIL DEPLETION: Coil depleted in presented peptides, especially in
+     peptide window (-4.5%) and N-boundary (-3.0%).
+  3. HELIX-COIL ANTI-CORRELATION: Signal is specifically helix↔coil.
+     Strand, turn, bend do not fill the gap — presented peptides come
+     from well-folded helical regions, not just 'any structure'.
+  4. N-TERMINAL ASYMMETRY: N-flank and N-boundary show larger effects
+     than C-flank. C-flank features mostly non-significant.
+  5. FEATURE HIERARCHY: peptide > nflank > N-boundary > C-boundary > cflank.
+
+
+FEATURES TO CONSIDER DROPPING (near-zero variance)
+  q8trans_G_pep_c (0.68%)
+  q8point_B_cflank (0.56%)
+  q8point_B_nflank (0.48%)
+  q8trans_S_n_pep (0.44%)
+  q8point_B_peptide (0.41%)
+  q8trans_S_pep_c (0.15%)
+  q8point_I_peptide (0.11%)
+  q8point_I_nflank (0.10%)
+  q8point_I_cflank (0.06%)
+  q8trans_I_n_pep (0.05%)
+  q8trans_I_pep_c (0.03%)
+  q8trans_B_n_pep (0.00%)
+  q8trans_B_pep_c (0.00%)
+
+ ====================================================================== 
+END OF LOG
