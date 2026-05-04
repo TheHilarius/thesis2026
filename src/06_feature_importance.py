@@ -1,26 +1,34 @@
 #!/usr/bin/env python3
 """
 06_feature_importance.py
-Extract and visualize LR coefficients and RF feature importances
-from any feature set with saved per-fold models.
+Extract and visualize feature weights/importances from any model
+with saved per-fold artifacts.
+
+Visual encoding:
+    Color   = feature type (handcrafted / AA encoding / embedding PCA)
+    Hatching = direction (only for signed models like LR)
+                /// = promotes presentation (positive coefficient)
+                \\\ = inhibits presentation (negative coefficient)
+                none = unsigned importance (RF, XGB, etc.)
 
 Usage:
     python src/06_feature_importance.py --features handcrafted_sparse
-    python src/06_feature_importance.py --features handcrafted_blosum
-    python src/06_feature_importance.py --features handcrafted_sparse_esmc --top 50
-    python src/06_feature_importance.py --features handcrafted_sparse --models lr
-    python src/06_feature_importance.py --features handcrafted_sparse --models rf
-    python src/06_feature_importance.py --features handcrafted_sparse --models lr rf
+    python src/06_feature_importance.py --features handcrafted_sparse --top 50
+    python src/06_feature_importance.py --features handcrafted_sparse_esmc --top 100
+    python src/06_feature_importance.py --features handcrafted_sparse --models lr rf xgb
 """
 
 import argparse
 import json
 import pickle
+import itertools
+import math
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 from pathlib import Path
 from matplotlib.patches import Patch
 
@@ -30,88 +38,255 @@ parser.add_argument('--features', required=True,
                     help="Feature set tag (e.g. handcrafted_sparse, handcrafted_blosum)")
 parser.add_argument('--models', nargs='+', default=['lr', 'rf'],
                     help="Which models to analyze (default: lr rf)")
-parser.add_argument('--top', type=int, default=40,
-                    help="Number of top features to show in plots (default: 40)")
+parser.add_argument('--top', type=int, default=30,
+                    help="Top features in the per-model plots (default: 30)")
+parser.add_argument('--top_compare', type=int, default=None,
+                    help="Top features in the comparison plot (default: --top value)")
+parser.add_argument('--top_big', type=int, default=70,
+                    help="Top features in the BIG comparison plot (default: 70)")
 parser.add_argument('--n_folds', type=int, default=5,
                     help="Number of CV folds (default: 5)")
+parser.add_argument('--xgb_importance', default='gain',
+                    choices=['gain', 'weight', 'cover', 'total_gain', 'total_cover'],
+                    help="XGBoost importance type (default: gain)")
+parser.add_argument('--out_root', default='results/figures/models',
+                    help="Root folder for figures (default: results/figures/models)")
 args = parser.parse_args()
 
 TAG = args.features
 TOP_N = args.top
+TOP_COMPARE = args.top_compare if args.top_compare is not None else args.top
+TOP_BIG = args.top_big
 N_FOLDS = args.n_folds
 MODELS = args.models
+XGB_IMP = args.xgb_importance
 
 # ── Config ────────────────────────────────────────────────────────────────────
 MODEL_DIR = Path("models")
-OUT_FIG = Path("results/figures/models")
-OUT_TAB = Path("results/tables")
+OUT_FIG = Path(args.out_root) / TAG
+OUT_TAB = Path("results/tables") / TAG
 OUT_FIG.mkdir(parents=True, exist_ok=True)
 OUT_TAB.mkdir(parents=True, exist_ok=True)
 
-print(f"Feature set: {TAG}")
-print(f"Models:      {MODELS}")
-print(f"Top N:       {TOP_N}")
+MODEL_LABELS = {
+    'lr':   'Logistic Regression',
+    'rf':   'Random Forest',
+    'xgb':  'XGBoost',
+    'lgbm': 'LightGBM',
+    'svc':  'Linear SVM',
+    'enet': 'ElasticNet',
+}
 
-# ── Classify features ─────────────────────────────────────────────────────────
+print(f"Feature set:    {TAG}")
+print(f"Models:         {MODELS}")
+print(f"Top per-model:  {TOP_N}")
+print(f"Top comparison: {TOP_COMPARE}")
+print(f"Top big plot:   {TOP_BIG}")
+print(f"Output dir:     {OUT_FIG}")
+
+# ── Feature classification ────────────────────────────────────────────────────
+SPARSE_POSITIONS = {'N1','N2','N3','N4','P1','P2','P3','P4','P5',
+                    'P6','P7','P8','P9','C1','C2','C3','C4'}
+
 def classify_feature(name):
-    """Classify a feature as handcrafted, sparse, blosum, or embedding."""
-    # Sparse: {position}_{AA} where position is N1-N4, P1-P9, C1-C4
-    # and AA is a single uppercase letter
     parts = name.split('_')
-    if len(parts) == 2:
-        pos, aa = parts
-        if pos in ('N1','N2','N3','N4','P1','P2','P3','P4','P5',
-                    'P6','P7','P8','P9','C1','C2','C3','C4'):
-            if len(aa) == 1 and aa.isupper():
-                return 'sparse_encoding'
-    # BLOSUM: {position}_{AA} same pattern but values are continuous
-    # Check if it matches the blosum naming convention
-    if len(parts) == 2:
-        pos, rest = parts
-        if pos in ('N1','N2','N3','N4','P1','P2','P3','P4','P5',
-                    'P6','P7','P8','P9','C1','C2','C3','C4'):
-            return 'aa_encoding'
-    # Embedding PCA components
-    if name.startswith(('esmc_', 'esmif_')):
-        return 'embedding_pca'
-    if 'PC' in name:
+    if len(parts) == 2 and parts[0] in SPARSE_POSITIONS:
+        return 'aa_encoding'
+    if name.startswith(('esmc_', 'esmif_')) or 'PC' in name:
         return 'embedding_pca'
     return 'handcrafted'
 
-# ── Color scheme ──────────────────────────────────────────────────────────────
 TYPE_COLORS = {
-    'handcrafted':    '#2ecc71',
-    'sparse_encoding': '#9b59b6',
-    'aa_encoding':    '#9b59b6',
-    'embedding_pca':  '#e67e22',
+    'handcrafted':   '#2ecc71',
+    'aa_encoding':   '#9b59b6',
+    'embedding_pca': '#e67e22',
 }
 TYPE_LABELS = {
-    'handcrafted':    'Handcrafted (structural)',
-    'sparse_encoding': 'Sparse (AA one-hot)',
-    'aa_encoding':    'AA encoding (sparse/BLOSUM)',
-    'embedding_pca':  'Embedding (PCA)',
+    'handcrafted':   'Handcrafted (structural)',
+    'aa_encoding':   'AA encoding (sparse/BLOSUM)',
+    'embedding_pca': 'Embedding (PCA)',
 }
+
+# Hatching encodes direction for signed models
+# HATCH_PROMOTE = '///'   # positive coefficient → promotes presentation
+HATCH_INHIBIT = '\\\\'  # negative coefficient → inhibits presentation
+
+# ── Tick helpers ──────────────────────────────────────────────────────────────
+def set_integer_xticks(ax, values, min_step=1):
+    if len(values) == 0:
+        return
+    vmin = float(np.min(values))
+    vmax = float(np.max(values))
+    pad = 0.05 * max(abs(vmin), abs(vmax), 1e-9)
+    lo = math.floor(min(vmin, 0) - pad)
+    hi = math.ceil(max(vmax, 0) + pad)
+    span = hi - lo
+    if span <= 12:
+        step = 1
+    elif span <= 25:
+        step = 2
+    elif span <= 60:
+        step = 5
+    else:
+        step = 10
+    step = max(step, min_step)
+    ticks = np.arange(lo, hi + step, step)
+    ax.set_xticks(ticks)
+    ax.xaxis.set_major_locator(mticker.FixedLocator(ticks))
+    ax.set_xlim(lo, hi)
+
+
+def set_fractional_xticks(ax, values, n_ticks=8):
+    if len(values) == 0:
+        return
+    vmax = float(np.max(values))
+    if vmax <= 0:
+        return
+    raw_step = vmax / n_ticks
+    exp = math.floor(math.log10(raw_step)) if raw_step > 0 else 0
+    base = 10 ** exp
+    for mult in (1, 2, 5, 10):
+        if mult * base >= raw_step:
+            step = mult * base
+            break
+    else:
+        step = 10 * base
+    hi = math.ceil(vmax / step) * step
+    ticks = np.arange(0, hi + step, step)
+    ax.set_xticks(ticks)
+    ax.xaxis.set_major_locator(mticker.FixedLocator(ticks))
+    ax.set_xlim(0, hi)
+
+# ── Model dispatcher ──────────────────────────────────────────────────────────
+def unwrap_pipeline(model):
+    if hasattr(model, 'named_steps'):
+        return list(model.named_steps.values())[-1]
+    if hasattr(model, 'steps'):
+        return model.steps[-1][1]
+    return model
+
+def extract_weights(model, model_key, n_features, xgb_importance='gain'):
+    est = unwrap_pipeline(model)
+    if model_key == 'xgb' or est.__class__.__name__ in ('XGBClassifier', 'XGBRegressor'):
+        try:
+            booster = est.get_booster()
+            score_dict = booster.get_score(importance_type=xgb_importance)
+            w = np.zeros(n_features)
+            for k, v in score_dict.items():
+                idx = int(k.lstrip('f'))
+                if idx < n_features:
+                    w[idx] = v
+            return w, False
+        except Exception as e:
+            print(f"    [WARN] XGBoost booster extraction failed: {e}; falling back")
+    if hasattr(est, 'coef_'):
+        coef = est.coef_
+        if coef.ndim == 1:
+            return coef, True
+        if coef.shape[0] == 1:
+            return coef.flatten(), True
+        print(f"    [INFO] multiclass coef_ shape {coef.shape} — aggregating |.| per feature")
+        return np.linalg.norm(coef, axis=0), False
+    if hasattr(est, 'feature_importances_'):
+        return est.feature_importances_, False
+    raise ValueError(f"Model {type(est).__name__} has no coef_ or feature_importances_")
+
+# ── Plotting helper ───────────────────────────────────────────────────────────
+def plot_panel(ax, df_top, signed, label, model_key, fontsize=8):
+    """
+    Draw a horizontal bar chart on `ax`.
+    Color   = feature type
+    Hatching = direction (signed models only)
+    For signed models: bars are drawn at |value| but ordered/labeled with sign info.
+    For unsigned models: bars are drawn at the raw importance.
+    """
+    # We always plot magnitude on x-axis so the two panels look comparable.
+    # Direction is encoded via hatching for signed models.
+    if signed:
+        df_top = df_top.sort_values('weight_abs_mean', ascending=True)
+        values = df_top['weight_abs_mean'].values
+        stds = df_top['weight_std'].values
+        signs = df_top['weight_mean'].values
+        colors = [TYPE_COLORS.get(t, '#999999') for t in df_top['feature_type']]
+        # Only inhibits gets a hatch; promotes is plain fill
+        hatches = [HATCH_INHIBIT if s < 0 else None for s in signs]
+    else:
+        df_top = df_top.sort_values('weight_abs_mean', ascending=True)
+        values = df_top['weight_mean'].values
+        stds = df_top['weight_std'].values
+        colors = [TYPE_COLORS.get(t, '#999999') for t in df_top['feature_type']]
+        hatches = [None] * len(df_top)
+
+    bars = ax.barh(range(len(df_top)), values,
+                   xerr=stds, color=colors, alpha=0.85,
+                   capsize=2, ecolor='gray', edgecolor='black', linewidth=0.4)
+
+    # Apply hatches per-bar (matplotlib doesn't accept a list to barh's hatch arg)
+    for bar, h in zip(bars, hatches):
+        if h is not None:
+            bar.set_hatch(h)
+
+    ax.set_yticks(range(len(df_top)))
+    ax.set_yticklabels(df_top['feature'], fontsize=fontsize)
+    ax.grid(axis='x', linestyle='--', alpha=0.4)
+
+    # Bold handcrafted feature labels
+    for i, (_, row) in enumerate(df_top.iterrows()):
+        if row['feature_type'] == 'handcrafted':
+            ax.get_yticklabels()[i].set_fontweight('bold')
+
+    # X-axis ticks
+    if signed:
+        # |coef| values are non-negative, but the spread is large (0–10)
+        # Use integer-like ticks
+        set_integer_xticks(ax, values)
+        xlabel = f'{label} |Coefficient| (mean ± std across folds)'
+    else:
+        set_fractional_xticks(ax, values)
+        imp_label = f' ({XGB_IMP})' if model_key == 'xgb' else ''
+        xlabel = f'{label} Importance{imp_label} (mean ± std across folds)'
+
+    ax.set_xlabel(xlabel)
+    return df_top
+
+def build_legend(used_types, has_signed):
+    """Build a unified legend: feature-type swatches + inhibits hatch."""
+    elements = []
+    for t in ('handcrafted', 'aa_encoding', 'embedding_pca'):
+        if t in used_types:
+            elements.append(Patch(facecolor=TYPE_COLORS[t], alpha=0.85,
+                                  edgecolor='black', linewidth=0.4,
+                                  label=TYPE_LABELS[t]))
+    if has_signed:
+        elements.append(Patch(facecolor='white', edgecolor='black', linewidth=0.4,
+                              hatch=HATCH_INHIBIT,
+                              label='Inhibits presentation (− coef)'))
+        # Plain = promotes (implied by absence of hatch — no legend entry needed,
+        # but we add a subtle one so it's explicit)
+        elements.append(Patch(facecolor='white', edgecolor='black', linewidth=0.4,
+                              label='Promotes presentation (+ coef)'))
+    return elements
 
 # ── Process each model ────────────────────────────────────────────────────────
 results = {}
 
 for model_key in MODELS:
+    label = MODEL_LABELS.get(model_key, model_key.upper())
     print(f"\n{'='*60}")
-    print(f"  {model_key.upper()} — {TAG}")
+    print(f"  {label} — {TAG}")
     print(f"{'='*60}")
 
-    # Load feature names
     fname_path = MODEL_DIR / f"{model_key}_{TAG}_feature_names.json"
     if not fname_path.exists():
         print(f"  SKIP: {fname_path} not found")
         continue
-
     with open(fname_path) as f:
         feature_names = json.load(f)
-    print(f"  Features: {len(feature_names)}")
+    n_features = len(feature_names)
+    print(f"  Features: {n_features}")
 
-    # Load per-fold models and extract weights
     weights_all = []
+    is_signed = None
     for fold in range(N_FOLDS):
         path = MODEL_DIR / f"{model_key}_{TAG}_model_fold{fold}.pkl"
         if not path.exists():
@@ -119,23 +294,21 @@ for model_key in MODELS:
             continue
         with open(path, 'rb') as f:
             model = pickle.load(f)
-
-        if model_key == 'lr':
-            w = model.coef_.flatten()
-        elif model_key == 'rf':
-            w = model.feature_importances_
-        else:
-            # Try both
-            if hasattr(model, 'coef_'):
-                w = model.coef_.flatten()
-            elif hasattr(model, 'feature_importances_'):
-                w = model.feature_importances_
-            else:
-                print(f"  SKIP fold {fold}: no coef_ or feature_importances_")
-                continue
-
+        try:
+            w, signed = extract_weights(model, model_key, n_features, XGB_IMP)
+        except Exception as e:
+            print(f"  SKIP fold {fold}: {e}")
+            continue
+        if len(w) != n_features:
+            print(f"  SKIP fold {fold}: weight length {len(w)} != {n_features}")
+            continue
+        if is_signed is None:
+            is_signed = signed
+        elif is_signed != signed:
+            print(f"  [WARN] fold {fold} signedness mismatch — using first fold's choice")
         weights_all.append(w)
-        print(f"  Fold {fold}: {len(w)} weights loaded")
+        print(f"  Fold {fold}: {len(w)} weights loaded "
+              f"({'signed' if signed else 'unsigned'})")
 
     if not weights_all:
         print(f"  No folds loaded for {model_key}")
@@ -145,47 +318,37 @@ for model_key in MODELS:
     w_mean = weights.mean(axis=0)
     w_std = weights.std(axis=0)
 
-    # Build DataFrame
     df = pd.DataFrame({
         'feature': feature_names,
         'weight_mean': w_mean,
         'weight_std': w_std,
         'weight_abs_mean': np.abs(w_mean),
+        'feature_type': [classify_feature(n) for n in feature_names],
     })
-    df['feature_type'] = df['feature'].apply(classify_feature)
-
+    df.attrs['is_signed'] = is_signed
+    df.attrs['model_label'] = label
+    df.attrs['model_key'] = model_key
     results[model_key] = df
 
-    # ── Save CSV ──────────────────────────────────────────────────────────
     csv_path = OUT_TAB / f"feature_importance_{model_key}_{TAG}.csv"
     df.to_csv(csv_path, index=False)
     print(f"  Saved: {csv_path}")
 
-    # ── Summary stats ─────────────────────────────────────────────────────
-    print(f"\n  {'Feature Type':<25s} {'Count':>6s} {'Total |weight|':>15s} {'Share':>8s}")
-    print(f"  {'-'*55}")
+    # ── Summary ───────────────────────────────────────────────────────────
     total_abs = df['weight_abs_mean'].sum()
+    print(f"\n  {'Feature Type':<25s} {'Count':>6s} {'Total |w|':>12s} {'Share':>8s}")
+    print(f"  {'-'*55}")
     for ftype in sorted(df['feature_type'].unique()):
         subset = df[df['feature_type'] == ftype]
-        type_sum = subset['weight_abs_mean'].sum()
-        pct = type_sum / total_abs * 100
-        print(f"  {ftype:<25s} {len(subset):>6d} {type_sum:>15.4f} {pct:>7.1f}%")
+        s = subset['weight_abs_mean'].sum()
+        print(f"  {ftype:<25s} {len(subset):>6d} {s:>12.4f} {s/total_abs*100:>7.1f}%")
 
     # ── Top features ──────────────────────────────────────────────────────
-    if model_key == 'lr':
-        sort_col = 'weight_abs_mean'
-        xlabel = 'LR Coefficient (mean ± std across folds)'
-        plot_signed = True
-    else:
-        sort_col = 'weight_abs_mean'
-        xlabel = 'RF Feature Importance (mean ± std across folds)'
-        plot_signed = False
-
     print(f"\n  Top 20 features:")
-    for _, row in df.nlargest(20, sort_col).iterrows():
-        if plot_signed:
-            direction = "+" if row['weight_mean'] > 0 else "-"
-            print(f"    {direction} {row['feature']:40s}  {row['weight_mean']:+.4f}  "
+    for _, row in df.nlargest(20, 'weight_abs_mean').iterrows():
+        if is_signed:
+            sign = "+" if row['weight_mean'] > 0 else "-"
+            print(f"    {sign} {row['feature']:40s}  {row['weight_mean']:+.4f}  "
                   f"({row['feature_type']})")
         else:
             print(f"      {row['feature']:40s}  {row['weight_mean']:.4f}  "
@@ -193,76 +356,64 @@ for model_key in MODELS:
 
     # ── Individual plot ───────────────────────────────────────────────────
     fig, ax = plt.subplots(figsize=(12, max(8, TOP_N * 0.28)))
-    df_top = df.nlargest(TOP_N, sort_col)
+    df_top = df.nlargest(TOP_N, 'weight_abs_mean').copy()
+    plot_panel(ax, df_top, is_signed, label, model_key)
 
-    if plot_signed:
-        df_top = df_top.sort_values('weight_mean')
-        colors = ['#e74c3c' if v > 0 else '#3498db' for v in df_top['weight_mean']]
-        ax.barh(range(len(df_top)), df_top['weight_mean'],
-                xerr=df_top['weight_std'], color=colors, alpha=0.8,
-                capsize=2, ecolor='gray')
-        ax.axvline(0, color='black', linewidth=0.5)
-        ax.set_xlabel(xlabel)
-        ax.set_title(f'Top {TOP_N} LR Coefficients — {TAG}\n'
-                     f'Red = promotes presentation, Blue = inhibits')
-    else:
-        df_top = df_top.sort_values('weight_mean')
-        colors = [TYPE_COLORS.get(t, '#999999') for t in df_top['feature_type']]
-        ax.barh(range(len(df_top)), df_top['weight_mean'],
-                xerr=df_top['weight_std'], color=colors, alpha=0.8,
-                capsize=2, ecolor='gray')
-        ax.set_xlabel(xlabel)
-        ax.set_title(f'Top {TOP_N} RF Feature Importances — {TAG}')
+    used_types = set(df_top['feature_type'].unique())
+    legend_elements = build_legend(used_types, has_signed=is_signed)
+    ax.legend(handles=legend_elements, loc='lower right', fontsize=9, framealpha=0.95)
 
-    ax.set_yticks(range(len(df_top)))
-    ax.set_yticklabels(df_top['feature'], fontsize=8)
-
-    # Bold handcrafted features
-    for i, (_, row) in enumerate(df_top.iterrows()):
-        if row['feature_type'] == 'handcrafted':
-            ax.get_yticklabels()[i].set_fontweight('bold')
+    direction_note = '\n(Hatching: /// = promotes, \\\\\\ = inhibits)' if is_signed else ''
+    ax.set_title(f'Top {TOP_N} {label} — {TAG}{direction_note}')
 
     plt.tight_layout()
-    fig_path = OUT_FIG / f"feature_importance_{model_key}_{TAG}.png"
+    fig_path = OUT_FIG / f"feature_importance_{model_key}_{TAG}_top{TOP_N}.png"
     fig.savefig(fig_path, dpi=150)
     print(f"  Saved: {fig_path}")
     plt.close()
 
-# ── Side-by-side comparison (if both LR and RF available) ─────────────────────
-if 'lr' in results and 'rf' in results:
-    print(f"\n{'='*60}")
-    print(f"  SIDE-BY-SIDE COMPARISON")
-    print(f"{'='*60}")
+# ── Pairwise comparison plots ─────────────────────────────────────────────────
+def make_comparison(top_n, suffix=''):
+    """Generate pairwise comparison plots showing `top_n` features."""
+    if len(results) < 2:
+        return
+    for m1, m2 in itertools.combinations(results.keys(), 2):
+        fig, axes = plt.subplots(1, 2, figsize=(20, max(8, top_n * 0.3)))
 
-    fig, axes = plt.subplots(1, 2, figsize=(20, max(8, 25 * 0.3)))
-    n_side = min(25, TOP_N)
+        used_types = set()
+        has_signed = False
 
-    for ax, (model_key, title_label) in zip(axes, [('lr', '|LR Coefficient|'),
-                                                      ('rf', 'RF Importance')]):
-        df_m = results[model_key]
-        df_top = df_m.nlargest(n_side, 'weight_abs_mean').sort_values('weight_abs_mean')
-        colors = [TYPE_COLORS.get(t, '#999999') for t in df_top['feature_type']]
-        ax.barh(range(len(df_top)), df_top['weight_abs_mean'],
-                color=colors, alpha=0.8)
-        ax.set_yticks(range(len(df_top)))
-        ax.set_yticklabels(df_top['feature'], fontsize=8)
-        ax.set_xlabel(title_label)
-        ax.set_title(f'Top {n_side} by {title_label}')
+        for ax, mk in zip(axes, [m1, m2]):
+            df_m = results[mk]
+            signed = df_m.attrs.get('is_signed', False)
+            label = df_m.attrs.get('model_label', mk.upper())
 
-    # Legend
-    used_types = set()
-    for df_m in results.values():
-        used_types.update(df_m['feature_type'].unique())
-    legend_elements = [Patch(facecolor=TYPE_COLORS.get(t, '#999999'), alpha=0.8,
-                             label=TYPE_LABELS.get(t, t))
-                       for t in sorted(used_types) if t in TYPE_COLORS]
-    fig.legend(handles=legend_elements, loc='upper center', ncol=len(legend_elements),
-               fontsize=11)
+            df_top = df_m.nlargest(top_n, 'weight_abs_mean').copy()
+            df_top_sorted = plot_panel(ax, df_top, signed, label, mk,
+                                        fontsize=7 if top_n > 50 else 8)
 
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
-    fig_path = OUT_FIG / f"feature_importance_comparison_{TAG}.png"
-    fig.savefig(fig_path, dpi=150)
-    print(f"  Saved: {fig_path}")
-    plt.close()
+            used_types.update(df_top['feature_type'].unique())
+            has_signed = has_signed or signed
+            ax.set_title(f'Top {top_n} — {label}')
 
-print(f"\nDone.")
+        legend_elements = build_legend(used_types, has_signed)
+        fig.legend(handles=legend_elements, loc='upper center',
+                   ncol=len(legend_elements), fontsize=11)
+
+        plt.tight_layout(rect=[0, 0, 1, 0.96])
+        fig_path = OUT_FIG / f"feature_importance_comparison_{m1}_vs_{m2}_{TAG}_top{top_n}{suffix}.png"
+        fig.savefig(fig_path, dpi=150)
+        print(f"  Saved: {fig_path}")
+        plt.close()
+
+print(f"\n{'='*60}")
+print(f"  COMPARISON PLOTS (top {TOP_COMPARE})")
+print(f"{'='*60}")
+make_comparison(TOP_COMPARE)
+
+print(f"\n{'='*60}")
+print(f"  BIG COMPARISON PLOT (top {TOP_BIG})")
+print(f"{'='*60}")
+make_comparison(TOP_BIG, suffix='_BIG')
+
+print(f"\nDone. All outputs in: {OUT_FIG}")
