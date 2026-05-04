@@ -5,7 +5,7 @@ set_working_directory()
 cat("=== STEP 1: Loading Raw IEDB Data ===\n")
 # Load and clean IEDB 200K EL epitopes
 df_raw <- read.csv("data/raw/iedb_200K_EL_epitopes.csv",
-                   sep = ";", stringsAsFactors = FALSE)
+                   sep = ";", stringsAsFactors = FALSE) # Oliver should use delimter = ","
 colnames(df_raw) <- clean_names(colnames(df_raw))
 
 cat("Raw assays (rows) loaded from IEDB: ", nrow(df_raw), "\n")
