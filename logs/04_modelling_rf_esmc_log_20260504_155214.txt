@@ -1,0 +1,356 @@
+================================================================================
+  04_MODELLING -- RANDOM FOREST + ESM-C EMBEDDINGS ONLY
+================================================================================
+  Timestamp:       2026-05-04 15:52:14
+  Model key:       rf
+  Model class:     sklearn.ensemble.RandomForestClassifier
+  Feature set:     esmc (ESM-C embeddings only)
+  Components:      ['esmc']
+  Data path:       /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Log path:        /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_esmc_log_20260504_155214.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   False
+
+  Model hyperparameters:
+    n_estimators              1000
+    max_depth                 None
+    min_samples_split         2
+    min_samples_leaf          1
+    max_features              sqrt
+    class_weight              balanced
+    n_jobs                    -1
+    random_state              42
+    verbose                   0
+================================================================================
+
+Loading split data: /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Shape: 53072 rows x 88 columns
+  [OK] Fold column validated: [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5)]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+  Loading embedding component: ESM-C (600M) embeddings
+    Loading prepared embeddings: /home/hilarius/special_course/special_course_spring2026/data/processed/embeddings_prepared/esmc_prepared.h5
+    Loaded: 53072 samples, 3 regions, dim=1152
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  Embedding components (1):
+    [esmc] ESM-C (600M) embeddings
+      Raw dim: 3456 (3 regions × 1152)
+      After PCA: 150 (50/region × 3 regions)
+
+  Estimated total features: ~150
+    CSV:        0
+    Embeddings: 150 (after PCA)
+
+================================================================================
+PIPELINE READY: ~150 features, 5 folds, Random Forest
+================================================================================
+
+--------------------------------------------------------------------------------
+  FOLD 0/4
+--------------------------------------------------------------------------------
+    esmc: zero-vector samples: train=0/35381 (0.0%), test=0/8846 (0.0%)
+    esmc: PCA 3456 → 150 (50/region × 3 regions, 86.7% variance, fitted on 35381 non-zero samples)
+    Train:  35381 samples (pos=15617, neg=19764, ratio=1.266)
+    Test:    8846 samples (pos=3954, neg=4892, ratio=1.237)
+    Features: 150
+    Training Random Forest ...
+    Training time: 47.5s
+
+    Fold 0 results (56.6s):
+      AUC-ROC: 0.6613  |  AUC-PR: 0.5993  |  Acc: 0.6016  |  F1: 0.3650  |  MCC: 0.1772
+      Sens: 0.2562  |  Spec: 0.8808  |  PPV: 0.6347  |  NPV: 0.5943
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      esmc_PC001                                        0.012861
+    2      esmc_PC019                                        0.011920
+    3      esmc_PC013                                        0.009206
+    4      esmc_PC006                                        0.009144
+    5      esmc_PC003                                        0.008415
+    6      esmc_PC015                                        0.008019
+    7      esmc_PC007                                        0.007850
+    8      esmc_PC039                                        0.007835
+    9      esmc_PC029                                        0.007813
+    10     esmc_PC017                                        0.007677
+    11     esmc_PC011                                        0.007677
+    12     esmc_PC023                                        0.007532
+    13     esmc_PC046                                        0.007509
+    14     esmc_PC020                                        0.007427
+    15     esmc_PC002                                        0.007282
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/rf_esmc_model_fold0.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 1/4
+--------------------------------------------------------------------------------
+    esmc: zero-vector samples: train=0/35381 (0.0%), test=0/8846 (0.0%)
+    esmc: PCA 3456 → 150 (50/region × 3 regions, 86.8% variance, fitted on 35381 non-zero samples)
+    Train:  35381 samples (pos=15634, neg=19747, ratio=1.263)
+    Test:    8846 samples (pos=3937, neg=4909, ratio=1.247)
+    Features: 150
+    Training Random Forest ...
+    Training time: 48.0s
+
+    Fold 1 results (58.1s):
+      AUC-ROC: 0.6383  |  AUC-PR: 0.5740  |  Acc: 0.5959  |  F1: 0.3504  |  MCC: 0.1591
+      Sens: 0.2449  |  Spec: 0.8774  |  PPV: 0.6156  |  NPV: 0.5916
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      esmc_PC001                                        0.012916
+    2      esmc_PC019                                        0.011175
+    3      esmc_PC013                                        0.009625
+    4      esmc_PC006                                        0.008714
+    5      esmc_PC018                                        0.008107
+    6      esmc_PC003                                        0.008107
+    7      esmc_PC016                                        0.007813
+    8      esmc_PC007                                        0.007799
+    9      esmc_PC095                                        0.007799
+    10     esmc_PC020                                        0.007652
+    11     esmc_PC039                                        0.007606
+    12     esmc_PC011                                        0.007545
+    13     esmc_PC060                                        0.007505
+    14     esmc_PC040                                        0.007478
+    15     esmc_PC063                                        0.007423
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/rf_esmc_model_fold1.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 2/4
+--------------------------------------------------------------------------------
+    esmc: zero-vector samples: train=0/35382 (0.0%), test=0/8845 (0.0%)
+    esmc: PCA 3456 → 150 (50/region × 3 regions, 86.5% variance, fitted on 35382 non-zero samples)
+    Train:  35382 samples (pos=15645, neg=19737, ratio=1.262)
+    Test:    8845 samples (pos=3926, neg=4919, ratio=1.253)
+    Features: 150
+    Training Random Forest ...
+    Training time: 46.2s
+
+    Fold 2 results (57.5s):
+      AUC-ROC: 0.6623  |  AUC-PR: 0.5935  |  Acc: 0.6032  |  F1: 0.3578  |  MCC: 0.1767
+      Sens: 0.2491  |  Spec: 0.8857  |  PPV: 0.6351  |  NPV: 0.5964
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      esmc_PC001                                        0.011620
+    2      esmc_PC018                                        0.010570
+    3      esmc_PC006                                        0.008915
+    4      esmc_PC013                                        0.008780
+    5      esmc_PC064                                        0.008399
+    6      esmc_PC003                                        0.008384
+    7      esmc_PC019                                        0.008134
+    8      esmc_PC007                                        0.008056
+    9      esmc_PC036                                        0.008006
+    10     esmc_PC038                                        0.008006
+    11     esmc_PC059                                        0.007892
+    12     esmc_PC011                                        0.007880
+    13     esmc_PC020                                        0.007715
+    14     esmc_PC094                                        0.007455
+    15     esmc_PC015                                        0.007453
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/rf_esmc_model_fold2.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 3/4
+--------------------------------------------------------------------------------
+    esmc: zero-vector samples: train=0/35382 (0.0%), test=0/8845 (0.0%)
+    esmc: PCA 3456 → 150 (50/region × 3 regions, 86.7% variance, fitted on 35382 non-zero samples)
+    Train:  35382 samples (pos=15635, neg=19747, ratio=1.263)
+    Test:    8845 samples (pos=3936, neg=4909, ratio=1.247)
+    Features: 150
+    Training Random Forest ...
+    Training time: 48.2s
+
+    Fold 3 results (58.6s):
+      AUC-ROC: 0.6527  |  AUC-PR: 0.5888  |  Acc: 0.6093  |  F1: 0.3755  |  MCC: 0.1939
+      Sens: 0.2640  |  Spec: 0.8861  |  PPV: 0.6502  |  NPV: 0.6002
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      esmc_PC019                                        0.013712
+    2      esmc_PC001                                        0.012871
+    3      esmc_PC015                                        0.008648
+    4      esmc_PC003                                        0.008635
+    5      esmc_PC039                                        0.008179
+    6      esmc_PC007                                        0.008171
+    7      esmc_PC060                                        0.007983
+    8      esmc_PC006                                        0.007960
+    9      esmc_PC016                                        0.007956
+    10     esmc_PC023                                        0.007680
+    11     esmc_PC040                                        0.007496
+    12     esmc_PC010                                        0.007494
+    13     esmc_PC013                                        0.007480
+    14     esmc_PC031                                        0.007431
+    15     esmc_PC011                                        0.007337
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/rf_esmc_model_fold3.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 4/4
+--------------------------------------------------------------------------------
+    esmc: zero-vector samples: train=0/35382 (0.0%), test=0/8845 (0.0%)
+    esmc: PCA 3456 → 150 (50/region × 3 regions, 86.7% variance, fitted on 35382 non-zero samples)
+    Train:  35382 samples (pos=15753, neg=19629, ratio=1.246)
+    Test:    8845 samples (pos=3818, neg=5027, ratio=1.317)
+    Features: 150
+    Training Random Forest ...
+    Training time: 7236.0s
+
+    Fold 4 results (7246.5s):
+      AUC-ROC: 0.6615  |  AUC-PR: 0.5912  |  Acc: 0.6237  |  F1: 0.3988  |  MCC: 0.2091
+      Sens: 0.2892  |  Spec: 0.8779  |  PPV: 0.6426  |  NPV: 0.6192
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      esmc_PC001                                        0.012725
+    2      esmc_PC019                                        0.010972
+    3      esmc_PC013                                        0.009167
+    4      esmc_PC003                                        0.008886
+    5      esmc_PC006                                        0.008330
+    6      esmc_PC098                                        0.008208
+    7      esmc_PC015                                        0.008184
+    8      esmc_PC016                                        0.008108
+    9      esmc_PC023                                        0.008018
+    10     esmc_PC020                                        0.007904
+    11     esmc_PC007                                        0.007810
+    12     esmc_PC039                                        0.007626
+    13     esmc_PC018                                        0.007569
+    14     esmc_PC027                                        0.007544
+    15     esmc_PC030                                        0.007482
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/rf_esmc_model_fold4.pkl
+
+================================================================================
+CROSS-VALIDATION SUMMARY (mean +/- std)
+================================================================================
+  auc_roc         0.6552 +/- 0.0092    [0.6613  0.6383  0.6623  0.6527  0.6615]
+  auc_pr          0.5894 +/- 0.0084    [0.5993  0.5740  0.5935  0.5888  0.5912]
+  accuracy        0.6067 +/- 0.0095    [0.6016  0.5959  0.6032  0.6093  0.6237]
+  f1              0.3695 +/- 0.0168    [0.3650  0.3504  0.3578  0.3755  0.3988]
+  mcc             0.1832 +/- 0.0170    [0.1772  0.1591  0.1767  0.1939  0.2091]
+  sensitivity     0.2607 +/- 0.0157    [0.2562  0.2449  0.2491  0.2640  0.2892]
+  specificity     0.8816 +/- 0.0037    [0.8808  0.8774  0.8857  0.8861  0.8779]
+  ppv             0.6356 +/- 0.0115    [0.6347  0.6156  0.6351  0.6502  0.6426]
+  npv             0.6004 +/- 0.0098    [0.5943  0.5916  0.5964  0.6002  0.6192]
+
+  Best fold: 2 (AUC-ROC = 0.6623)
+
+================================================================================
+PER-FOLD METRIC COMPARISON
+================================================================================
+  Fold    auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
+  -----------------------------------------------------------------------------------------------------------------------------
+  0       0.6613       0.5993       0.6016       0.3650       0.1772       0.2562       0.8808       0.6347       0.5943       
+  1       0.6383       0.5740       0.5959       0.3504       0.1591       0.2449       0.8774       0.6156       0.5916       
+  2       0.6623       0.5935       0.6032       0.3578       0.1767       0.2491       0.8857       0.6351       0.5964       
+  3       0.6527       0.5888       0.6093       0.3755       0.1939       0.2640       0.8861       0.6502       0.6002       
+  4       0.6615       0.5912       0.6237       0.3988       0.2091       0.2892       0.8779       0.6426       0.6192       
+  -----------------------------------------------------------------------------------------------------------------------------
+  mean    0.6552       0.5894       0.6067       0.3695       0.1832       0.2607       0.8816       0.6356       0.6004       
+  std     0.0092       0.0084       0.0095       0.0168       0.0170       0.0157       0.0037       0.0115       0.0098       
+
+================================================================================
+AVERAGED FEATURE IMPORTANCE ACROSS ALL FOLDS
+================================================================================
+  Rank   Feature                                           Mean Imp          Std
+  -----------------------------------------------------------------------------
+  1      esmc_PC001                                        0.012598     0.000494
+  2      esmc_PC019                                        0.011183     0.001804
+  3      esmc_PC013                                        0.008852     0.000736
+  4      esmc_PC006                                        0.008613     0.000422
+  5      esmc_PC003                                        0.008485     0.000261
+  6      esmc_PC018                                        0.008071     0.001312
+  7      esmc_PC015                                        0.007944     0.000465
+  8      esmc_PC007                                        0.007937     0.000150
+  9      esmc_PC020                                        0.007581     0.000242
+  10     esmc_PC023                                        0.007569     0.000272
+  11     esmc_PC039                                        0.007554     0.000554
+  12     esmc_PC016                                        0.007542     0.000561
+  13     esmc_PC011                                        0.007498     0.000286
+  14     esmc_PC010                                        0.007296     0.000148
+  15     esmc_PC002                                        0.007168     0.000077
+  16     esmc_PC060                                        0.007140     0.000580
+  17     esmc_PC036                                        0.007138     0.000528
+  18     esmc_PC040                                        0.007089     0.000368
+  19     esmc_PC017                                        0.007069     0.000365
+  20     esmc_PC064                                        0.007058     0.000725
+  21     esmc_PC027                                        0.007043     0.000320
+  22     esmc_PC046                                        0.007023     0.000353
+  23     esmc_PC038                                        0.006991     0.000550
+  24     esmc_PC095                                        0.006978     0.000528
+  25     esmc_PC098                                        0.006970     0.000658
+  26     esmc_PC061                                        0.006909     0.000255
+  27     esmc_PC004                                        0.006894     0.000345
+  28     esmc_PC065                                        0.006826     0.000369
+  29     esmc_PC067                                        0.006793     0.000357
+  30     esmc_PC033                                        0.006736     0.000193
+
+================================================================================
+HELD-OUT VALIDATION SET EVALUATION
+================================================================================
+  Using model from best fold (2)
+  Held-out samples: 8845 (pos=3870, neg=4975, ratio=1.286)
+
+  Held-out results (8845 samples):
+    AUC-ROC: 0.6525  |  AUC-PR: 0.5791  |  Acc: 0.6050  |  F1: 0.3352  |  MCC: 0.1721
+    Sens: 0.2276  |  Spec: 0.8985  |  PPV: 0.6356  |  NPV: 0.5993
+
+  Classification Report:
+              precision    recall  f1-score   support
+
+    Negative     0.5993    0.8985    0.7190      4975
+    Positive     0.6356    0.2276    0.3352      3870
+
+    accuracy                         0.6050      8845
+   macro avg     0.6175    0.5631    0.5271      8845
+weighted avg     0.6152    0.6050    0.5511      8845
+
+================================================================================
+CV AVERAGE vs HELD-OUT COMPARISON
+================================================================================
+  Metric             CV mean     CV std   Held-out      Delta
+  ---------------------------------------------------------
+  auc_roc             0.6552     0.0092     0.6525    -0.0028
+  auc_pr              0.5894     0.0084     0.5791    -0.0102
+  accuracy            0.6067     0.0095     0.6050    -0.0018
+  f1                  0.3695     0.0168     0.3352    -0.0343
+  mcc                 0.1832     0.0170     0.1721    -0.0111
+  sensitivity         0.2607     0.0157     0.2276    -0.0330
+  specificity         0.8816     0.0037     0.8985    +0.0169
+  ppv                 0.6356     0.0115     0.6356    +0.0000
+  npv                 0.6004     0.0098     0.5993    -0.0011
+
+Results saved: /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_esmc_20260504_155214.json
+Best model saved: /home/hilarius/special_course/special_course_spring2026/models/best_rf_esmc_model.pkl
+Fold artifacts saved: /home/hilarius/special_course/special_course_spring2026/models/best_rf_esmc_artifacts.pkl
+Feature names saved: /home/hilarius/special_course/special_course_spring2026/models/rf_esmc_feature_names.json
+
+================================================================================
+RUN SUMMARY
+================================================================================
+  Total runtime:    7495.2s (124.9 min)
+  Model:            Random Forest (rf)
+  Feature set:      ESM-C embeddings only (esmc)
+  Components:       ['esmc']
+  Scaling:          no
+  Features (final): 150
+    esmc PCA:     150
+  CV folds:         5
+  Best fold:        2 (AUC = 0.6623)
+  Held-out AUC:     0.6525
+  Held-out MCC:     0.1721
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_esmc_20260504_155214.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_esmc_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_esmc_log_20260504_155214.txt
+  Completed:        2026-05-04 17:57:09
+================================================================================

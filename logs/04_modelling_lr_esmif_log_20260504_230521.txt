@@ -1,0 +1,353 @@
+================================================================================
+  04_MODELLING -- LOGISTIC REGRESSION + ESM-IF1 EMBEDDINGS ONLY
+================================================================================
+  Timestamp:       2026-05-04 23:05:21
+  Model key:       lr
+  Model class:     sklearn.linear_model.LogisticRegression
+  Feature set:     esmif (ESM-IF1 embeddings only)
+  Components:      ['esmif']
+  Data path:       /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Log path:        /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_esmif_log_20260504_230521.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   True
+
+  Model hyperparameters:
+    penalty                   None
+    solver                    lbfgs
+    max_iter                  5000
+    class_weight              balanced
+    random_state              42
+    verbose                   0
+================================================================================
+
+Loading split data: /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Shape: 53072 rows x 88 columns
+  [OK] Fold column validated: [0, 1, 2, 3, 4, 5]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+  Loading embedding component: ESM-IF1 embeddings
+    Loading prepared embeddings: /home/hilarius/special_course/special_course_spring2026/data/processed/embeddings_prepared/esmif_prepared.h5
+    Loaded: 53072 samples, 3 regions, dim=512
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  Embedding components (1):
+    [esmif] ESM-IF1 embeddings
+      Raw dim: 1536 (3 regions × 512)
+      After PCA: 1536 (512/region × 3 regions)
+
+  Estimated total features: ~1536
+    CSV:        0
+    Embeddings: 1536 (after PCA)
+
+================================================================================
+PIPELINE READY: ~1536 features, 5 folds, Logistic Regression
+================================================================================
+
+--------------------------------------------------------------------------------
+  FOLD 0/4
+--------------------------------------------------------------------------------
+    esmif: zero-vector samples: train=4276/35381 (12.1%), test=858/8846 (9.7%)
+    esmif: PCA 1536 → 1536 (512/region × 3 regions, 100.0% variance, fitted on 31105 non-zero samples)
+    Train:  35381 samples (pos=15617, neg=19764, ratio=1.266)
+    Test:    8846 samples (pos=3954, neg=4892, ratio=1.237)
+    Features: 1536
+    Training Logistic Regression ...
+    Training time: 4.0s
+
+    Fold 0 results (40.1s):
+      AUC-ROC: 0.6180  |  AUC-PR: 0.5609  |  Acc: 0.5886  |  F1: 0.5579  |  MCC: 0.1748
+      Sens: 0.5807  |  Spec: 0.5951  |  PPV: 0.5368  |  NPV: 0.6371
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      esmif_PC1534                                     -0.440761
+    2      esmif_PC1536                                      0.386697
+    3      esmif_PC1535                                      0.356302
+    4      esmif_PC003                                       0.191061
+    5      esmif_PC019                                      -0.139969
+    6      esmif_PC1523                                     -0.122914
+    7      esmif_PC048                                      -0.102037
+    8      esmif_PC029                                      -0.099821
+    9      esmif_PC006                                       0.084932
+    10     esmif_PC079                                      -0.083540
+    11     esmif_PC074                                      -0.082502
+    12     esmif_PC044                                      -0.082160
+    13     esmif_PC001                                      -0.075186
+    14     esmif_PC053                                      -0.073525
+    15     esmif_PC082                                       0.072680
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/lr_esmif_model_fold0.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 1/4
+--------------------------------------------------------------------------------
+    esmif: zero-vector samples: train=4093/35381 (11.6%), test=1041/8846 (11.8%)
+    esmif: PCA 1536 → 1536 (512/region × 3 regions, 100.0% variance, fitted on 31288 non-zero samples)
+    Train:  35381 samples (pos=15634, neg=19747, ratio=1.263)
+    Test:    8846 samples (pos=3937, neg=4909, ratio=1.247)
+    Features: 1536
+    Training Logistic Regression ...
+    Training time: 5.4s
+
+    Fold 1 results (37.7s):
+      AUC-ROC: 0.6010  |  AUC-PR: 0.5435  |  Acc: 0.5824  |  F1: 0.5397  |  MCC: 0.1579
+      Sens: 0.5502  |  Spec: 0.6083  |  PPV: 0.5297  |  NPV: 0.6277
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      esmif_PC1536                                      0.508238
+    2      esmif_PC1534                                     -0.345981
+    3      esmif_PC1535                                      0.231792
+    4      esmif_PC003                                       0.203319
+    5      esmif_PC049                                       0.111099
+    6      esmif_PC044                                      -0.104928
+    7      esmif_PC032                                      -0.099461
+    8      esmif_PC021                                       0.088981
+    9      esmif_PC040                                      -0.087966
+    10     esmif_PC029                                      -0.084864
+    11     esmif_PC001                                      -0.083943
+    12     esmif_PC018                                      -0.082288
+    13     esmif_PC079                                       0.081473
+    14     esmif_PC082                                      -0.080241
+    15     esmif_PC116                                      -0.075387
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/lr_esmif_model_fold1.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 2/4
+--------------------------------------------------------------------------------
+    esmif: zero-vector samples: train=3874/35382 (10.9%), test=1260/8845 (14.2%)
+    esmif: PCA 1536 → 1536 (512/region × 3 regions, 100.0% variance, fitted on 31508 non-zero samples)
+    Train:  35382 samples (pos=15645, neg=19737, ratio=1.262)
+    Test:    8845 samples (pos=3926, neg=4919, ratio=1.253)
+    Features: 1536
+    Training Logistic Regression ...
+    Training time: 3.7s
+
+    Fold 2 results (50.9s):
+      AUC-ROC: 0.6271  |  AUC-PR: 0.5566  |  Acc: 0.5937  |  F1: 0.5593  |  MCC: 0.1838
+      Sens: 0.5810  |  Spec: 0.6038  |  PPV: 0.5392  |  NPV: 0.6436
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      esmif_PC1536                                      0.583601
+    2      esmif_PC1534                                     -0.319227
+    3      esmif_PC003                                       0.202886
+    4      esmif_PC032                                      -0.107721
+    5      esmif_PC044                                      -0.104175
+    6      esmif_PC018                                      -0.099169
+    7      esmif_PC029                                      -0.098538
+    8      esmif_PC019                                       0.086992
+    9      esmif_PC094                                       0.085174
+    10     esmif_PC049                                       0.083162
+    11     esmif_PC053                                       0.083026
+    12     esmif_PC021                                       0.081701
+    13     esmif_PC006                                       0.081579
+    14     esmif_PC048                                      -0.074412
+    15     esmif_PC080                                       0.073778
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/lr_esmif_model_fold2.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 3/4
+--------------------------------------------------------------------------------
+    esmif: zero-vector samples: train=4094/35382 (11.6%), test=1040/8845 (11.8%)
+    esmif: PCA 1536 → 1536 (512/region × 3 regions, 100.0% variance, fitted on 31288 non-zero samples)
+    Train:  35382 samples (pos=15635, neg=19747, ratio=1.263)
+    Test:    8845 samples (pos=3936, neg=4909, ratio=1.247)
+    Features: 1536
+    Training Logistic Regression ...
+    Training time: 2.4s
+
+    Fold 3 results (56.8s):
+      AUC-ROC: 0.6137  |  AUC-PR: 0.5511  |  Acc: 0.5863  |  F1: 0.5464  |  MCC: 0.1668
+      Sens: 0.5600  |  Spec: 0.6075  |  PPV: 0.5335  |  NPV: 0.6326
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      esmif_PC1535                                      0.271743
+    2      esmif_PC1534                                     -0.235343
+    3      esmif_PC003                                       0.194658
+    4      esmif_PC1536                                      0.157957
+    5      esmif_PC048                                       0.104432
+    6      esmif_PC1527                                     -0.101128
+    7      esmif_PC001                                      -0.100870
+    8      esmif_PC021                                       0.095392
+    9      esmif_PC018                                      -0.089558
+    10     esmif_PC040                                       0.086976
+    11     esmif_PC032                                      -0.086598
+    12     esmif_PC049                                       0.082550
+    13     esmif_PC029                                       0.076379
+    14     esmif_PC079                                       0.076163
+    15     esmif_PC094                                      -0.075483
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/lr_esmif_model_fold3.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 4/4
+--------------------------------------------------------------------------------
+    esmif: zero-vector samples: train=4199/35382 (11.9%), test=935/8845 (10.6%)
+    esmif: PCA 1536 → 1536 (512/region × 3 regions, 100.0% variance, fitted on 31183 non-zero samples)
+    Train:  35382 samples (pos=15753, neg=19629, ratio=1.246)
+    Test:    8845 samples (pos=3818, neg=5027, ratio=1.317)
+    Features: 1536
+    Training Logistic Regression ...
+    Training time: 3.7s
+
+    Fold 4 results (60.9s):
+      AUC-ROC: 0.6390  |  AUC-PR: 0.5649  |  Acc: 0.6058  |  F1: 0.5584  |  MCC: 0.2034
+      Sens: 0.5775  |  Spec: 0.6272  |  PPV: 0.5406  |  NPV: 0.6616
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      esmif_PC1536                                      0.603158
+    2      esmif_PC1534                                     -0.460057
+    3      esmif_PC003                                       0.173731
+    4      esmif_PC048                                      -0.114366
+    5      esmif_PC029                                       0.106949
+    6      esmif_PC1535                                      0.106081
+    7      esmif_PC032                                      -0.096782
+    8      esmif_PC040                                       0.096572
+    9      esmif_PC001                                      -0.093826
+    10     esmif_PC021                                       0.089134
+    11     esmif_PC006                                       0.081826
+    12     esmif_PC018                                      -0.078220
+    13     esmif_PC073                                      -0.076504
+    14     esmif_PC038                                      -0.072654
+    15     esmif_PC004                                       0.072430
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/lr_esmif_model_fold4.pkl
+
+================================================================================
+CROSS-VALIDATION SUMMARY (mean +/- std)
+================================================================================
+  auc_roc         0.6198 +/- 0.0128    [0.6180  0.6010  0.6271  0.6137  0.6390]
+  auc_pr          0.5554 +/- 0.0075    [0.5609  0.5435  0.5566  0.5511  0.5649]
+  accuracy        0.5914 +/- 0.0081    [0.5886  0.5824  0.5937  0.5863  0.6058]
+  f1              0.5524 +/- 0.0079    [0.5579  0.5397  0.5593  0.5464  0.5584]
+  mcc             0.1773 +/- 0.0156    [0.1748  0.1579  0.1838  0.1668  0.2034]
+  sensitivity     0.5699 +/- 0.0125    [0.5807  0.5502  0.5810  0.5600  0.5775]
+  specificity     0.6084 +/- 0.0105    [0.5951  0.6083  0.6038  0.6075  0.6272]
+  ppv             0.5360 +/- 0.0039    [0.5368  0.5297  0.5392  0.5335  0.5406]
+  npv             0.6405 +/- 0.0118    [0.6371  0.6277  0.6436  0.6326  0.6616]
+
+  Best fold: 4 (AUC-ROC = 0.6390)
+
+================================================================================
+PER-FOLD METRIC COMPARISON
+================================================================================
+  Fold    auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
+  -----------------------------------------------------------------------------------------------------------------------------
+  0       0.6180       0.5609       0.5886       0.5579       0.1748       0.5807       0.5951       0.5368       0.6371       
+  1       0.6010       0.5435       0.5824       0.5397       0.1579       0.5502       0.6083       0.5297       0.6277       
+  2       0.6271       0.5566       0.5937       0.5593       0.1838       0.5810       0.6038       0.5392       0.6436       
+  3       0.6137       0.5511       0.5863       0.5464       0.1668       0.5600       0.6075       0.5335       0.6326       
+  4       0.6390       0.5649       0.6058       0.5584       0.2034       0.5775       0.6272       0.5406       0.6616       
+  -----------------------------------------------------------------------------------------------------------------------------
+  mean    0.6198       0.5554       0.5914       0.5524       0.1773       0.5699       0.6084       0.5360       0.6405       
+  std     0.0128       0.0075       0.0081       0.0079       0.0156       0.0125       0.0105       0.0039       0.0118       
+
+================================================================================
+AVERAGED COEFFICIENTS ACROSS ALL FOLDS
+================================================================================
+  Rank   Feature                                          Mean Coef          Std
+  -----------------------------------------------------------------------------
+  1      esmif_PC1536                                      0.447930     0.163690
+  2      esmif_PC1534                                     -0.360274     0.082379
+  3      esmif_PC003                                       0.193131     0.010788
+  4      esmif_PC1535                                      0.191915     0.127797
+  5      esmif_PC032                                      -0.091765     0.013550
+  6      esmif_PC018                                      -0.084039     0.009667
+  7      esmif_PC001                                      -0.083529     0.013153
+  8      esmif_PC006                                       0.079591     0.004098
+  9      esmif_PC021                                       0.077223     0.023560
+  10     esmif_PC049                                       0.070984     0.032540
+  11     esmif_PC004                                       0.063804     0.007323
+  12     esmif_PC027                                      -0.060321     0.010718
+  13     esmif_PC005                                       0.055485     0.009530
+  14     esmif_PC014                                       0.054237     0.004943
+  15     esmif_PC1523                                     -0.050884     0.042007
+  16     esmif_PC016                                       0.050668     0.001545
+  17     esmif_PC055                                       0.050119     0.006012
+  18     esmif_PC026                                       0.044966     0.007210
+  19     esmif_PC007                                       0.043688     0.006871
+  20     esmif_PC037                                       0.039756     0.021680
+  21     esmif_PC070                                      -0.038631     0.011050
+  22     esmif_PC023                                      -0.038628     0.013985
+  23     esmif_PC044                                      -0.034651     0.077277
+  24     esmif_PC073                                      -0.034160     0.040303
+  25     esmif_PC009                                       0.033578     0.004716
+  26     esmif_PC084                                       0.033302     0.019551
+  27     esmif_PC126                                      -0.033248     0.014378
+  28     esmif_PC076                                       0.033191     0.013934
+  29     esmif_PC012                                      -0.031278     0.009767
+  30     esmif_PC140                                      -0.030992     0.017729
+
+================================================================================
+HELD-OUT VALIDATION SET EVALUATION
+================================================================================
+  Using model from best fold (4)
+  Held-out samples: 8845 (pos=3870, neg=4975, ratio=1.286)
+
+  Held-out results (8845 samples):
+    AUC-ROC: 0.6200  |  AUC-PR: 0.5498  |  Acc: 0.5940  |  F1: 0.5427  |  MCC: 0.1779
+    Sens: 0.5506  |  Spec: 0.6277  |  PPV: 0.5350  |  NPV: 0.6423
+
+  Classification Report:
+              precision    recall  f1-score   support
+
+    Negative     0.6423    0.6277    0.6349      4975
+    Positive     0.5350    0.5506    0.5427      3870
+
+    accuracy                         0.5940      8845
+   macro avg     0.5887    0.5892    0.5888      8845
+weighted avg     0.5954    0.5940    0.5946      8845
+
+================================================================================
+CV AVERAGE vs HELD-OUT COMPARISON
+================================================================================
+  Metric             CV mean     CV std   Held-out      Delta
+  ---------------------------------------------------------
+  auc_roc             0.6198     0.0128     0.6200    +0.0002
+  auc_pr              0.5554     0.0075     0.5498    -0.0056
+  accuracy            0.5914     0.0081     0.5940    +0.0026
+  f1                  0.5524     0.0079     0.5427    -0.0096
+  mcc                 0.1773     0.0156     0.1779    +0.0005
+  sensitivity         0.5699     0.0125     0.5506    -0.0192
+  specificity         0.6084     0.0105     0.6277    +0.0194
+  ppv                 0.5360     0.0039     0.5350    -0.0010
+  npv                 0.6405     0.0118     0.6423    +0.0018
+
+Results saved: /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_esmif_20260504_230521.json
+Best model saved: /home/hilarius/special_course/special_course_spring2026/models/best_lr_esmif_model.pkl
+Fold artifacts saved: /home/hilarius/special_course/special_course_spring2026/models/best_lr_esmif_artifacts.pkl
+Feature names saved: /home/hilarius/special_course/special_course_spring2026/models/lr_esmif_feature_names.json
+
+================================================================================
+RUN SUMMARY
+================================================================================
+  Total runtime:    249.7s (4.2 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      ESM-IF1 embeddings only (esmif)
+  Components:       ['esmif']
+  Scaling:          yes
+  Features (final): 1536
+    esmif PCA:     1536
+  CV folds:         5
+  Best fold:        4 (AUC = 0.6390)
+  Held-out AUC:     0.6200
+  Held-out MCC:     0.1779
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_esmif_20260504_230521.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_esmif_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_esmif_log_20260504_230521.txt
+  Completed:        2026-05-04 23:09:30
+================================================================================

@@ -1,0 +1,405 @@
+================================================================================
+  04_MODELLING -- LOGISTIC REGRESSION + STRUCTURAL + BLOSUM50 + ESM-C + ESM-IF
+================================================================================
+  Timestamp:       2026-05-05 01:19:10
+  Model key:       lr
+  Model class:     sklearn.linear_model.LogisticRegression
+  Feature set:     all_blosum (Structural + BLOSUM50 + ESM-C + ESM-IF)
+  Components:      ['handcrafted', 'blosum', 'esmc', 'esmif']
+  Data path:       /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Log path:        /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_all_blosum_log_20260505_011910.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   True
+
+  Model hyperparameters:
+    penalty                   None
+    solver                    lbfgs
+    max_iter                  5000
+    class_weight              balanced
+    random_state              42
+    verbose                   0
+================================================================================
+
+Loading split data: /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Shape: 53072 rows x 88 columns
+  [OK] Fold column validated: [0, 1, 2, 3, 4, 5]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+  Loading CSV component: BLOSUM50 AA encoding
+    Loading: df_all_blosum50.csv
+    Shape: 53072 rows x 650 columns
+    [OK] Alignment verified
+    New columns: 580
+
+  Merged 580 new columns → 53072 rows x 668 columns
+
+  Loading embedding component: ESM-C (600M) embeddings
+    Loading prepared embeddings: /home/hilarius/special_course/special_course_spring2026/data/processed/embeddings_prepared/esmc_prepared.h5
+    Loaded: 53072 samples, 3 regions, dim=1152
+
+  Loading embedding component: ESM-IF1 embeddings
+    Loading prepared embeddings: /home/hilarius/special_course/special_course_spring2026/data/processed/embeddings_prepared/esmif_prepared.h5
+    Loaded: 53072 samples, 3 regions, dim=512
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  CSV components (2):
+    [handcrafted] Structural features
+      Source: split_data (built-in)
+    [blosum] BLOSUM50 AA encoding
+      Source: /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_blosum50.csv
+      New columns added: 580
+  Total CSV features: 631
+    Structural: 51
+    AA-encoded: 580
+
+  Embedding components (2):
+    [esmc] ESM-C (600M) embeddings
+      Raw dim: 3456 (3 regions × 1152)
+      After PCA: 3456 (1152/region × 3 regions)
+    [esmif] ESM-IF1 embeddings
+      Raw dim: 1536 (3 regions × 512)
+      After PCA: 3456 (1152/region × 3 regions)
+
+  Estimated total features: ~7543
+    CSV:        631
+    Embeddings: 6912 (after PCA)
+
+================================================================================
+PIPELINE READY: ~7543 features, 5 folds, Logistic Regression
+================================================================================
+
+--------------------------------------------------------------------------------
+  FOLD 0/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 83391 NaN values replaced with medians
+    WARNING: X_test: 10976 NaN values replaced with medians
+    CSV features: 631 columns
+    esmc: zero-vector samples: train=0/35381 (0.0%), test=0/8846 (0.0%)
+    esmc: PCA 3456 → 3456 (1152/region × 3 regions, 100.0% variance, fitted on 35381 non-zero samples)
+    esmif: zero-vector samples: train=4276/35381 (12.1%), test=858/8846 (9.7%)
+    esmif: PCA 1536 → 1536 (1152/region × 3 regions, 100.0% variance, fitted on 31105 non-zero samples)
+    Train:  35381 samples (pos=15617, neg=19764, ratio=1.266)
+    Test:    8846 samples (pos=3954, neg=4892, ratio=1.237)
+    Features: 5623
+    Training Logistic Regression ...
+    Training time: 58.6s
+
+    Fold 0 results (231.4s):
+      AUC-ROC: 0.7056  |  AUC-PR: 0.6392  |  Acc: 0.6559  |  F1: 0.6265  |  MCC: 0.3085
+      Sens: 0.6457  |  Spec: 0.6641  |  PPV: 0.6084  |  NPV: 0.6987
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      C1_V                                              1.509644
+    2      P3_V                                             -1.457929
+    3      rel_distance_from_n_terminus                     -1.268788
+    4      N9_I                                              1.238954
+    5      rel_distance_from_c_terminus                     -1.228623
+    6      P8_V                                              1.200024
+    7      C5_I                                              1.038805
+    8      P8_I                                             -1.038047
+    9      P9_M                                             -1.036690
+    10     P3_I                                              0.975537
+    11     C4_I                                             -0.932355
+    12     C1_L                                              0.920046
+    13     C1_I                                             -0.909493
+    14     P9_N                                             -0.904636
+    15     N2_V                                              0.878620
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/lr_all_blosum_model_fold0.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 1/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 69530 NaN values replaced with medians
+    WARNING: X_test: 24837 NaN values replaced with medians
+    CSV features: 631 columns
+    esmc: zero-vector samples: train=0/35381 (0.0%), test=0/8846 (0.0%)
+    esmc: PCA 3456 → 3456 (1152/region × 3 regions, 100.0% variance, fitted on 35381 non-zero samples)
+    esmif: zero-vector samples: train=4093/35381 (11.6%), test=1041/8846 (11.8%)
+    esmif: PCA 1536 → 1536 (1152/region × 3 regions, 100.0% variance, fitted on 31288 non-zero samples)
+    Train:  35381 samples (pos=15634, neg=19747, ratio=1.263)
+    Test:    8846 samples (pos=3937, neg=4909, ratio=1.247)
+    Features: 5623
+    Training Logistic Regression ...
+    Training time: 48.7s
+
+    Fold 1 results (209.3s):
+      AUC-ROC: 0.6919  |  AUC-PR: 0.6333  |  Acc: 0.6424  |  F1: 0.6091  |  MCC: 0.2804
+      Sens: 0.6259  |  Spec: 0.6557  |  PPV: 0.5932  |  NPV: 0.6861
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      C1_V                                              1.587175
+    2      P3_V                                             -1.396143
+    3      P8_V                                              1.224561
+    4      C1_I                                             -1.220048
+    5      P8_I                                             -1.035672
+    6      P9_M                                             -1.035640
+    7      N9_I                                              1.015701
+    8      rel_distance_from_n_terminus                     -0.990197
+    9      rel_distance_from_c_terminus                     -0.984426
+    10     P3_I                                              0.919293
+    11     C5_I                                              0.818517
+    12     N2_I                                             -0.801050
+    13     N9_V                                             -0.776447
+    14     P8_L                                              0.758728
+    15     P6_D                                             -0.754132
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/lr_all_blosum_model_fold1.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 2/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 69922 NaN values replaced with medians
+    WARNING: X_test: 24445 NaN values replaced with medians
+    CSV features: 631 columns
+    esmc: zero-vector samples: train=0/35382 (0.0%), test=0/8845 (0.0%)
+    esmc: PCA 3456 → 3456 (1152/region × 3 regions, 100.0% variance, fitted on 35382 non-zero samples)
+    esmif: zero-vector samples: train=3874/35382 (10.9%), test=1260/8845 (14.2%)
+    esmif: PCA 1536 → 1536 (1152/region × 3 regions, 100.0% variance, fitted on 31508 non-zero samples)
+    Train:  35382 samples (pos=15645, neg=19737, ratio=1.262)
+    Test:    8845 samples (pos=3926, neg=4919, ratio=1.253)
+    Features: 5623
+    Training Logistic Regression ...
+    Training time: 44.5s
+
+    Fold 2 results (202.3s):
+      AUC-ROC: 0.6985  |  AUC-PR: 0.6336  |  Acc: 0.6441  |  F1: 0.6070  |  MCC: 0.2822
+      Sens: 0.6192  |  Spec: 0.6640  |  PPV: 0.5952  |  NPV: 0.6860
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      C1_V                                              1.426730
+    2      N9_I                                              1.081889
+    3      C1_I                                             -0.960880
+    4      C2_V                                             -0.941376
+    5      P3_V                                             -0.898241
+    6      P6_D                                             -0.840552
+    7      P9_M                                             -0.840334
+    8      N2_V                                              0.830625
+    9      N9_V                                             -0.807066
+    10     P6_V                                             -0.798925
+    11     P6_F                                             -0.798147
+    12     P9_Q                                              0.767800
+    13     rel_distance_from_c_terminus                     -0.754081
+    14     rel_distance_from_n_terminus                     -0.749683
+    15     P8_V                                              0.740581
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/lr_all_blosum_model_fold2.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 3/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 74842 NaN values replaced with medians
+    WARNING: X_test: 19525 NaN values replaced with medians
+    CSV features: 631 columns
+    esmc: zero-vector samples: train=0/35382 (0.0%), test=0/8845 (0.0%)
+    esmc: PCA 3456 → 3456 (1152/region × 3 regions, 100.0% variance, fitted on 35382 non-zero samples)
+    esmif: zero-vector samples: train=4094/35382 (11.6%), test=1040/8845 (11.8%)
+    esmif: PCA 1536 → 1536 (1152/region × 3 regions, 100.0% variance, fitted on 31288 non-zero samples)
+    Train:  35382 samples (pos=15635, neg=19747, ratio=1.263)
+    Test:    8845 samples (pos=3936, neg=4909, ratio=1.247)
+    Features: 5623
+    Training Logistic Regression ...
+    Training time: 50.8s
+
+    Fold 3 results (219.5s):
+      AUC-ROC: 0.7045  |  AUC-PR: 0.6483  |  Acc: 0.6493  |  F1: 0.6162  |  MCC: 0.2941
+      Sens: 0.6326  |  Spec: 0.6627  |  PPV: 0.6006  |  NPV: 0.6923
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      C1_V                                              1.768095
+    2      P8_V                                              1.443839
+    3      N2_V                                              1.326685
+    4      N2_I                                             -1.311893
+    5      P3_V                                             -1.299436
+    6      P9_M                                             -1.278826
+    7      C1_I                                             -1.174243
+    8      P8_I                                             -1.172808
+    9      rel_distance_from_c_terminus                     -1.056384
+    10     rel_distance_from_n_terminus                     -1.036408
+    11     P3_I                                              0.935470
+    12     C1_L                                              0.919734
+    13     P9_H                                              0.918181
+    14     C1_D                                              0.864966
+    15     P2_R                                             -0.860820
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/lr_all_blosum_model_fold3.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 4/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 79783 NaN values replaced with medians
+    WARNING: X_test: 14584 NaN values replaced with medians
+    CSV features: 631 columns
+    esmc: zero-vector samples: train=0/35382 (0.0%), test=0/8845 (0.0%)
+    esmc: PCA 3456 → 3456 (1152/region × 3 regions, 100.0% variance, fitted on 35382 non-zero samples)
+    esmif: zero-vector samples: train=4199/35382 (11.9%), test=935/8845 (10.6%)
+    esmif: PCA 1536 → 1536 (1152/region × 3 regions, 100.0% variance, fitted on 31183 non-zero samples)
+    Train:  35382 samples (pos=15753, neg=19629, ratio=1.246)
+    Test:    8845 samples (pos=3818, neg=5027, ratio=1.317)
+    Features: 5623
+    Training Logistic Regression ...
+    Training time: 53.5s
+
+    Fold 4 results (228.8s):
+      AUC-ROC: 0.7090  |  AUC-PR: 0.6376  |  Acc: 0.6544  |  F1: 0.6158  |  MCC: 0.3035
+      Sens: 0.6417  |  Spec: 0.6640  |  PPV: 0.5919  |  NPV: 0.7093
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      C1_V                                              1.570946
+    2      P3_V                                             -1.216561
+    3      P8_V                                              1.107550
+    4      C1_I                                             -1.086440
+    5      rel_distance_from_n_terminus                     -1.048739
+    6      rel_distance_from_c_terminus                     -1.013247
+    7      C5_I                                              0.980487
+    8      C2_V                                             -0.974334
+    9      N2_V                                              0.950581
+    10     P2_R                                             -0.948956
+    11     P8_I                                             -0.928748
+    12     C5_V                                             -0.922220
+    13     P9_M                                             -0.883144
+    14     N8_I                                              0.858637
+    15     N2_I                                             -0.824768
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/lr_all_blosum_model_fold4.pkl
+
+================================================================================
+CROSS-VALIDATION SUMMARY (mean +/- std)
+================================================================================
+  auc_roc         0.7019 +/- 0.0060    [0.7056  0.6919  0.6985  0.7045  0.7090]
+  auc_pr          0.6384 +/- 0.0054    [0.6392  0.6333  0.6336  0.6483  0.6376]
+  accuracy        0.6492 +/- 0.0054    [0.6559  0.6424  0.6441  0.6493  0.6544]
+  f1              0.6149 +/- 0.0068    [0.6265  0.6091  0.6070  0.6162  0.6158]
+  mcc             0.2937 +/- 0.0112    [0.3085  0.2804  0.2822  0.2941  0.3035]
+  sensitivity     0.6330 +/- 0.0098    [0.6457  0.6259  0.6192  0.6326  0.6417]
+  specificity     0.6621 +/- 0.0032    [0.6641  0.6557  0.6640  0.6627  0.6640]
+  ppv             0.5979 +/- 0.0061    [0.6084  0.5932  0.5952  0.6006  0.5919]
+  npv             0.6945 +/- 0.0088    [0.6987  0.6861  0.6860  0.6923  0.7093]
+
+  Best fold: 4 (AUC-ROC = 0.7090)
+
+================================================================================
+PER-FOLD METRIC COMPARISON
+================================================================================
+  Fold    auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
+  -----------------------------------------------------------------------------------------------------------------------------
+  0       0.7056       0.6392       0.6559       0.6265       0.3085       0.6457       0.6641       0.6084       0.6987       
+  1       0.6919       0.6333       0.6424       0.6091       0.2804       0.6259       0.6557       0.5932       0.6861       
+  2       0.6985       0.6336       0.6441       0.6070       0.2822       0.6192       0.6640       0.5952       0.6860       
+  3       0.7045       0.6483       0.6493       0.6162       0.2941       0.6326       0.6627       0.6006       0.6923       
+  4       0.7090       0.6376       0.6544       0.6158       0.3035       0.6417       0.6640       0.5919       0.7093       
+  -----------------------------------------------------------------------------------------------------------------------------
+  mean    0.7019       0.6384       0.6492       0.6149       0.2937       0.6330       0.6621       0.5979       0.6945       
+  std     0.0060       0.0054       0.0054       0.0068       0.0112       0.0098       0.0032       0.0061       0.0088       
+
+================================================================================
+AVERAGED COEFFICIENTS ACROSS ALL FOLDS
+================================================================================
+  Rank   Feature                                          Mean Coef          Std
+  -----------------------------------------------------------------------------
+  1      C1_V                                              1.572518     0.112849
+  2      P3_V                                             -1.253662     0.195868
+  3      P8_V                                              1.143311     0.229611
+  4      C1_I                                             -1.070221     0.119432
+  5      rel_distance_from_n_terminus                     -1.018763     0.165495
+  6      P9_M                                             -1.014927     0.153880
+  7      rel_distance_from_c_terminus                     -1.007352     0.152363
+  8      P8_I                                             -0.962580     0.179986
+  9      N9_I                                              0.926532     0.238658
+  10     N2_V                                              0.924721     0.226253
+  11     N2_I                                             -0.855386     0.237474
+  12     P3_I                                              0.851731     0.132696
+  13     C2_V                                             -0.808999     0.133439
+  14     C1_L                                              0.800151     0.101604
+  15     C5_I                                              0.788258     0.220407
+  16     C1_D                                              0.779589     0.056731
+  17     P8_L                                              0.730440     0.081320
+  18     C1_F                                              0.724741     0.054613
+  19     P2_R                                             -0.714146     0.229259
+  20     C1_R                                              0.707913     0.090182
+  21     P6_D                                             -0.696729     0.094634
+  22     C5_V                                             -0.692213     0.146166
+  23     P9_N                                             -0.684744     0.111931
+  24     C1_G                                              0.683046     0.068133
+  25     N9_V                                             -0.666933     0.148200
+  26     P6_F                                             -0.633347     0.125315
+  27     N8_V                                             -0.631436     0.075862
+  28     P9_D                                             -0.630936     0.140300
+  29     P9_Q                                              0.595655     0.163693
+  30     C1_P                                              0.577208     0.056335
+
+================================================================================
+HELD-OUT VALIDATION SET EVALUATION
+================================================================================
+  Using model from best fold (4)
+  Held-out samples: 8845 (pos=3870, neg=4975, ratio=1.286)
+
+  Held-out results (8845 samples):
+    AUC-ROC: 0.7055  |  AUC-PR: 0.6425  |  Acc: 0.6496  |  F1: 0.6141  |  MCC: 0.2947
+    Sens: 0.6372  |  Spec: 0.6593  |  PPV: 0.5926  |  NPV: 0.7003
+
+  Classification Report:
+              precision    recall  f1-score   support
+
+    Negative     0.7003    0.6593    0.6792      4975
+    Positive     0.5926    0.6372    0.6141      3870
+
+    accuracy                         0.6496      8845
+   macro avg     0.6465    0.6483    0.6466      8845
+weighted avg     0.6532    0.6496    0.6507      8845
+
+================================================================================
+CV AVERAGE vs HELD-OUT COMPARISON
+================================================================================
+  Metric             CV mean     CV std   Held-out      Delta
+  ---------------------------------------------------------
+  auc_roc             0.7019     0.0060     0.7055    +0.0036
+  auc_pr              0.6384     0.0054     0.6425    +0.0040
+  accuracy            0.6492     0.0054     0.6496    +0.0004
+  f1                  0.6149     0.0068     0.6141    -0.0008
+  mcc                 0.2937     0.0112     0.2947    +0.0010
+  sensitivity         0.6330     0.0098     0.6372    +0.0042
+  specificity         0.6621     0.0032     0.6593    -0.0028
+  ppv                 0.5979     0.0061     0.5926    -0.0052
+  npv                 0.6945     0.0088     0.7003    +0.0058
+
+Results saved: /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_all_blosum_20260505_011910.json
+Best model saved: /home/hilarius/special_course/special_course_spring2026/models/best_lr_all_blosum_model.pkl
+Fold artifacts saved: /home/hilarius/special_course/special_course_spring2026/models/best_lr_all_blosum_artifacts.pkl
+Feature names saved: /home/hilarius/special_course/special_course_spring2026/models/lr_all_blosum_feature_names.json
+
+================================================================================
+RUN SUMMARY
+================================================================================
+  Total runtime:    1102.7s (18.4 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      Structural + BLOSUM50 + ESM-C + ESM-IF (all_blosum)
+  Components:       ['handcrafted', 'blosum', 'esmc', 'esmif']
+  Scaling:          yes
+  Features (final): 5623
+    CSV features:   631
+    esmc PCA:     3456
+    esmif PCA:     3456
+  CV folds:         5
+  Best fold:        4 (AUC = 0.7090)
+  Held-out AUC:     0.7055
+  Held-out MCC:     0.2947
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_all_blosum_20260505_011910.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_all_blosum_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_all_blosum_log_20260505_011910.txt
+  Completed:        2026-05-05 01:37:32
+================================================================================
