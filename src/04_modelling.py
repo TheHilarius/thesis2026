@@ -471,13 +471,14 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id):
         X_emb_train_valid = X_emb_train[train_nonzero_mask]
 
         total_components = pca_components * n_regions
+        print(f"The total number of PCA components requested for this embedding component is {pca_components} per region × {n_regions} regions = {total_components} total. However, the number of non-zero training samples is only {X_emb_train_valid.shape[0]}, which limits the maximum number of PCA components that can be fitted. Therefore, we will use {total_components} PCA components for this component.")
+
         total_components = min(
             total_components,
             X_emb_train_valid.shape[1],
             X_emb_train_valid.shape[0],
         )
-
-        print(f"The total number of PCA components requested for this embedding component is {pca_components} per region × {n_regions} regions = {total_components} total. However, the number of non-zero training samples is only {X_emb_train_valid.shape[0]}, which limits the maximum number of PCA components that can be fitted. Therefore, we will use {total_components} PCA components for this component.")
+        
         pca = PCA(n_components=total_components, random_state=RANDOM_STATE)
         pca.fit(X_emb_train_valid)
 
