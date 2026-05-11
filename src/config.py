@@ -368,32 +368,32 @@ MODEL_REGISTRY = {
         "display_name": "Random Forest",
         "model_class": "sklearn.ensemble.RandomForestClassifier",
         "params": {
-            "n_estimators": 1000,
-            "max_depth": None,
-            "min_samples_split": 2,
-            "min_samples_leaf": 1,
-            "max_features": "sqrt",
-            "class_weight": "balanced",
-            "n_jobs": -1,
-            "random_state": RANDOM_STATE,
-            "verbose": 0,
+            "n_estimators": 1000, #The number of trees in the forrest.
+            "max_depth": None, #The maximum depth of the tree.
+            "min_samples_split": 2, #The minimum number of samples required to split an internal node.
+            "min_samples_leaf": 1, #The minimum number of samples required to be at a leaf node.
+            "max_features": "sqrt", #The number of features to consider when looking for the best split.
+            "class_weight": "balanced", #We have class imbalance, so use balanced weights to give more importance to the minority class.
+            "n_jobs": -1, #Use all available CPU cores for parallel processing.
+            "random_state": RANDOM_STATE, #Set random state for reproducibility, in our case we set it to 42.
+            "verbose": 0, #
         },
-        "needs_scaling": False,
-        "coef_attr": "feature_importances_",
+        "needs_scaling": False, #Random forests are tree-based models and do not require feature scaling.
+        "coef_attr": "feature_importances_", #The attribute of the fitted model that contains feature importance scores.
     },
     "lr": {
         "display_name": "Logistic Regression",
         "model_class": "sklearn.linear_model.LogisticRegression",
         "params": {
             "penalty": None,
-            "solver": "lbfgs",
-            "max_iter": 5000,
-            "class_weight": "balanced",
+            "solver": "lbfgs", #optimization algorithm (Limited-memory BFGS)
+            "max_iter": 5000, #Maximum number of iterations taken for the solvers to converge. We set it to 5000 to ensure convergence given the potentially large feature space.
+            "class_weight": "balanced", #We have class imbalance, so use balanced weights to give more importance to the minority class.
             "random_state": RANDOM_STATE,
             "verbose": 0,
         },
         "needs_scaling": True,
-        "coef_attr": "coef_",
+        "coef_attr": "coef_", #The attribute of the fitted model that contains the coefficients for each feature. For logistic regression, this is typically "coef_".
     },
 }
 
