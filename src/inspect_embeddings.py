@@ -570,3 +570,38 @@ print(f"{'=' * 65}")
 print(f"\nFiles:")
 for p in sorted(out_dir.glob("*")):
     print(f"  {p.name}")
+
+
+import pandas as pd
+import numpy as np
+
+df_cov = pd.DataFrame({
+    "uniprot": uid_seqs,
+    "zero": np.linalg.norm(pep_emb, axis=1) == 0
+})
+
+protein_cov = df_cov.groupby("uniprot")["zero"].mean()
+
+print(protein_cov.describe())
+print("\nProteins with 100% missing structure:", (protein_cov == 1).sum())
+print("Proteins with any structure:", (protein_cov < 1).sum())
+
+
+row_missing = (
+    (np.linalg.norm(pep_emb, axis=1) == 0) |
+    (np.linalg.norm(nf_emb, axis=1) == 0) |
+    (np.linalg.norm(cf_emb, axis=1) == 0)
+)
+
+print("Row-level missing %:", row_missing.mean())
+print("Rows missing:", row_missing.sum())
+
+df_tmp = pd.DataFrame({
+    "uniprot": uid_seqs,
+    "missing": row_missing
+})
+
+protein_missing_rate = df_tmp.groupby("uniprot")["missing"].mean()
+
+print(protein_missing_rate.describe())
+print("Proteins fully missing:", (protein_missing_rate == 1).sum())

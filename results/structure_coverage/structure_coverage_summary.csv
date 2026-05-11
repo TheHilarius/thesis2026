@@ -1,0 +1,2 @@
+total_proteins,proteins_with_structure,proteins_missing_structure,peptides_total,row_missing_structure_rate,peptide_zero_rate,nflank_zero_rate,cflank_zero_rate
+9616,11707,464,53072,0.0,0.11851823937292734,0.11917772083207717,0.12109963822731384

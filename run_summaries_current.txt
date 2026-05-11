@@ -1,0 +1,809 @@
+FILE: logs/04_modelling_lr_all_blosum_log_20260506_195603.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    297.0s (5.0 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      Structural + BLOSUM50 + ESM-C + ESM-IF (all_blosum)
+  Components:       ['handcrafted', 'blosum', 'esmc', 'esmif']
+  Scaling:          yes
+  Features (final): 931
+    CSV features:   631
+    esmc PCA:     150
+    esmif PCA:     150
+  CV folds:         5
+  Best fold:        0 (AUC = 0.7587)
+  Held-out AUC:     0.7509
+  Held-out MCC:     0.3715
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_all_blosum_20260506_195603.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_all_blosum_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_all_blosum_log_20260506_195603.txt
+  Completed:        2026-05-06 20:01:00
+================================================================================
+
+FILE: logs/04_modelling_lr_all_blosum_log_20260506_213642.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    815.0s (13.6 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      Structural + BLOSUM50 + ESM-C + ESM-IF (all_blosum)
+  Components:       ['handcrafted', 'blosum', 'esmc', 'esmif']
+  Scaling:          yes
+  Features (final): 5623
+    CSV features:   631
+    esmc PCA:     3456
+    esmif PCA:     3456
+  CV folds:         5
+  Best fold:        4 (AUC = 0.7090)
+  Held-out AUC:     0.7055
+  Held-out MCC:     0.2947
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_all_blosum_20260506_213642.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_all_blosum_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_all_blosum_log_20260506_213642.txt
+  Completed:        2026-05-06 21:50:17
+================================================================================
+
+FILE: logs/04_modelling_lr_all_sparse_log_20260506_195237.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    204.8s (3.4 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      Structural + one-hot + ESM-C + ESM-IF (all_sparse)
+  Components:       ['handcrafted', 'sparse', 'esmc', 'esmif']
+  Scaling:          yes
+  Features (final): 931
+    CSV features:   631
+    esmc PCA:     150
+    esmif PCA:     150
+  CV folds:         5
+  Best fold:        0 (AUC = 0.7586)
+  Held-out AUC:     0.7511
+  Held-out MCC:     0.3738
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_all_sparse_20260506_195237.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_all_sparse_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_all_sparse_log_20260506_195237.txt
+  Completed:        2026-05-06 19:56:02
+================================================================================
+
+FILE: logs/04_modelling_lr_all_sparse_log_20260506_212443.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    717.3s (12.0 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      Structural + one-hot + ESM-C + ESM-IF (all_sparse)
+  Components:       ['handcrafted', 'sparse', 'esmc', 'esmif']
+  Scaling:          yes
+  Features (final): 5623
+    CSV features:   631
+    esmc PCA:     3456
+    esmif PCA:     3456
+  CV folds:         5
+  Best fold:        4 (AUC = 0.7092)
+  Held-out AUC:     0.7055
+  Held-out MCC:     0.2935
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_all_sparse_20260506_212443.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_all_sparse_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_all_sparse_log_20260506_212443.txt
+  Completed:        2026-05-06 21:36:41
+================================================================================
+
+FILE: logs/04_modelling_lr_esmc_log_20260506_154933.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    47.9s (0.8 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      ESM-C embeddings only (esmc)
+  Components:       ['esmc']
+  Scaling:          yes
+  Features (final): 150
+    esmc PCA:     150
+  CV folds:         5
+  Best fold:        4 (AUC = 0.6775)
+  Held-out AUC:     0.6668
+  Held-out MCC:     0.2391
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_esmc_20260506_154933.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_esmc_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_esmc_log_20260506_154933.txt
+  Completed:        2026-05-06 15:50:21
+================================================================================
+
+FILE: logs/04_modelling_lr_esmc_log_20260506_174810.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    306.0s (5.1 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      ESM-C embeddings only (esmc)
+  Components:       ['esmc']
+  Scaling:          yes
+  Features (final): 3456
+    esmc PCA:     3456
+  CV folds:         5
+  Best fold:        3 (AUC = 0.6760)
+  Held-out AUC:     0.6631
+  Held-out MCC:     0.2362
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_esmc_20260506_174810.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_esmc_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_esmc_log_20260506_174810.txt
+  Completed:        2026-05-06 17:53:16
+================================================================================
+
+FILE: logs/04_modelling_lr_esmif_log_20260506_182616.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    45.4s (0.8 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      ESM-IF1 embeddings only (esmif)
+  Components:       ['esmif']
+  Scaling:          yes
+  Features (final): 150
+    esmif PCA:     150
+  CV folds:         5
+  Best fold:        4 (AUC = 0.6487)
+  Held-out AUC:     0.6305
+  Held-out MCC:     0.1862
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_esmif_20260506_182616.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_esmif_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_esmif_log_20260506_182616.txt
+  Completed:        2026-05-06 18:27:01
+================================================================================
+
+FILE: logs/04_modelling_lr_esmif_log_20260506_192137.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    84.4s (1.4 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      ESM-IF1 embeddings only (esmif)
+  Components:       ['esmif']
+  Scaling:          yes
+  Features (final): 1536
+    esmif PCA:     1536
+  CV folds:         5
+  Best fold:        4 (AUC = 0.6390)
+  Held-out AUC:     0.6200
+  Held-out MCC:     0.1779
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_esmif_20260506_192137.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_esmif_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_esmif_log_20260506_192137.txt
+  Completed:        2026-05-06 19:23:02
+================================================================================
+
+FILE: logs/04_modelling_lr_handcrafted_blosum_esmc_log_20260506_155159.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    127.7s (2.1 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      Structural + BLOSUM50 + ESM-C (handcrafted_blosum_esmc)
+  Components:       ['handcrafted', 'blosum', 'esmc']
+  Scaling:          yes
+  Features (final): 781
+    CSV features:   631
+    esmc PCA:     150
+  CV folds:         5
+  Best fold:        0 (AUC = 0.7609)
+  Held-out AUC:     0.7528
+  Held-out MCC:     0.3756
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_handcrafted_blosum_esmc_20260506_155159.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_blosum_esmc_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_handcrafted_blosum_esmc_log_20260506_155159.txt
+  Completed:        2026-05-06 15:54:06
+================================================================================
+
+FILE: logs/04_modelling_lr_handcrafted_blosum_esmc_log_20260506_180210.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    531.2s (8.9 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      Structural + BLOSUM50 + ESM-C (handcrafted_blosum_esmc)
+  Components:       ['handcrafted', 'blosum', 'esmc']
+  Scaling:          yes
+  Features (final): 4087
+    CSV features:   631
+    esmc PCA:     3456
+  CV folds:         5
+  Best fold:        0 (AUC = 0.7265)
+  Held-out AUC:     0.7211
+  Held-out MCC:     0.3273
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_handcrafted_blosum_esmc_20260506_180210.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_blosum_esmc_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_handcrafted_blosum_esmc_log_20260506_180210.txt
+  Completed:        2026-05-06 18:11:01
+================================================================================
+
+FILE: logs/04_modelling_lr_handcrafted_blosum_esmif_log_20260506_182847.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    126.9s (2.1 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      Structural + BLOSUM50 + ESM-IF (handcrafted_blosum_esmif)
+  Components:       ['handcrafted', 'blosum', 'esmif']
+  Scaling:          yes
+  Features (final): 781
+    CSV features:   631
+    esmif PCA:     150
+  CV folds:         5
+  Best fold:        4 (AUC = 0.7450)
+  Held-out AUC:     0.7354
+  Held-out MCC:     0.3467
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_handcrafted_blosum_esmif_20260506_182847.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_blosum_esmif_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_handcrafted_blosum_esmif_log_20260506_182847.txt
+  Completed:        2026-05-06 18:30:54
+================================================================================
+
+FILE: logs/04_modelling_lr_handcrafted_blosum_esmif_log_20260506_192932.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    440.3s (7.3 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      Structural + BLOSUM50 + ESM-IF (handcrafted_blosum_esmif)
+  Components:       ['handcrafted', 'blosum', 'esmif']
+  Scaling:          yes
+  Features (final): 2167
+    CSV features:   631
+    esmif PCA:     1536
+  CV folds:         5
+  Best fold:        4 (AUC = 0.7275)
+  Held-out AUC:     0.7229
+  Held-out MCC:     0.3276
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_handcrafted_blosum_esmif_20260506_192932.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_blosum_esmif_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_handcrafted_blosum_esmif_log_20260506_192932.txt
+  Completed:        2026-05-06 19:36:52
+================================================================================
+
+FILE: logs/04_modelling_lr_handcrafted_blosum_log_20260506_153045.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    48.7s (0.8 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      Structural + BLOSUM50 AA (handcrafted_blosum)
+  Components:       ['handcrafted', 'blosum']
+  Scaling:          yes
+  Features (final): 631
+    CSV features:   631
+  CV folds:         5
+  Best fold:        4 (AUC = 0.7337)
+  Held-out AUC:     0.7301
+  Held-out MCC:     0.3368
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_handcrafted_blosum_20260506_153045.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_blosum_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_handcrafted_blosum_log_20260506_153045.txt
+  Completed:        2026-05-06 15:31:34
+================================================================================
+
+FILE: logs/04_modelling_lr_handcrafted_sparse_esmc_log_20260506_155022.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    95.3s (1.6 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      Structural + one-hot + ESM-C (handcrafted_sparse_esmc)
+  Components:       ['handcrafted', 'sparse', 'esmc']
+  Scaling:          yes
+  Features (final): 781
+    CSV features:   631
+    esmc PCA:     150
+  CV folds:         5
+  Best fold:        0 (AUC = 0.7611)
+  Held-out AUC:     0.7525
+  Held-out MCC:     0.3741
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_handcrafted_sparse_esmc_20260506_155022.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_sparse_esmc_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_handcrafted_sparse_esmc_log_20260506_155022.txt
+  Completed:        2026-05-06 15:51:58
+================================================================================
+
+FILE: logs/04_modelling_lr_handcrafted_sparse_esmc_log_20260506_175318.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    530.7s (8.8 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      Structural + one-hot + ESM-C (handcrafted_sparse_esmc)
+  Components:       ['handcrafted', 'sparse', 'esmc']
+  Scaling:          yes
+  Features (final): 4087
+    CSV features:   631
+    esmc PCA:     3456
+  CV folds:         5
+  Best fold:        0 (AUC = 0.7265)
+  Held-out AUC:     0.7210
+  Held-out MCC:     0.3263
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_handcrafted_sparse_esmc_20260506_175318.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_sparse_esmc_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_handcrafted_sparse_esmc_log_20260506_175318.txt
+  Completed:        2026-05-06 18:02:08
+================================================================================
+
+FILE: logs/04_modelling_lr_handcrafted_sparse_esmif_log_20260506_182702.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    103.4s (1.7 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      Structural + one-hot + ESM-IF (handcrafted_sparse_esmif)
+  Components:       ['handcrafted', 'sparse', 'esmif']
+  Scaling:          yes
+  Features (final): 781
+    CSV features:   631
+    esmif PCA:     150
+  CV folds:         5
+  Best fold:        4 (AUC = 0.7449)
+  Held-out AUC:     0.7354
+  Held-out MCC:     0.3465
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_handcrafted_sparse_esmif_20260506_182702.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_sparse_esmif_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_handcrafted_sparse_esmif_log_20260506_182702.txt
+  Completed:        2026-05-06 18:28:46
+================================================================================
+
+FILE: logs/04_modelling_lr_handcrafted_sparse_esmif_log_20260506_192303.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    387.7s (6.5 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      Structural + one-hot + ESM-IF (handcrafted_sparse_esmif)
+  Components:       ['handcrafted', 'sparse', 'esmif']
+  Scaling:          yes
+  Features (final): 2167
+    CSV features:   631
+    esmif PCA:     1536
+  CV folds:         5
+  Best fold:        4 (AUC = 0.7275)
+  Held-out AUC:     0.7230
+  Held-out MCC:     0.3265
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_handcrafted_sparse_esmif_20260506_192303.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_sparse_esmif_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_handcrafted_sparse_esmif_log_20260506_192303.txt
+  Completed:        2026-05-06 19:29:31
+================================================================================
+
+FILE: logs/04_modelling_lr_handcrafted_sparse_log_20260506_151424.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    30.4s (0.5 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      Structural + one-hot AA (handcrafted_sparse)
+  Components:       ['handcrafted', 'sparse']
+  Scaling:          yes
+  Features (final): 631
+    CSV features:   631
+  CV folds:         5
+  Best fold:        4 (AUC = 0.7343)
+  Held-out AUC:     0.7304
+  Held-out MCC:     0.3382
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_handcrafted_sparse_20260506_151424.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_sparse_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_handcrafted_sparse_log_20260506_151424.txt
+  Completed:        2026-05-06 15:14:54
+================================================================================
+
+FILE: logs/04_modelling_lr_handcrafted_sparse_log_20260506_153010.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    33.5s (0.6 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      Structural + one-hot AA (handcrafted_sparse)
+  Components:       ['handcrafted', 'sparse']
+  Scaling:          yes
+  Features (final): 631
+    CSV features:   631
+  CV folds:         5
+  Best fold:        4 (AUC = 0.7343)
+  Held-out AUC:     0.7304
+  Held-out MCC:     0.3382
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_handcrafted_sparse_20260506_153010.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_sparse_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_handcrafted_sparse_log_20260506_153010.txt
+  Completed:        2026-05-06 15:30:44
+================================================================================
+
+FILE: logs/04_modelling_rf_all_blosum_log_20260506_194442.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    473.6s (7.9 min)
+  Model:            Random Forest (rf)
+  Feature set:      Structural + BLOSUM50 + ESM-C + ESM-IF (all_blosum)
+  Components:       ['handcrafted', 'blosum', 'esmc', 'esmif']
+  Scaling:          no
+  Features (final): 931
+    CSV features:   631
+    esmc PCA:     150
+    esmif PCA:     150
+  CV folds:         5
+  Best fold:        4 (AUC = 0.7300)
+  Held-out AUC:     0.7037
+  Held-out MCC:     0.2761
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_all_blosum_20260506_194442.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_all_blosum_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_all_blosum_log_20260506_194442.txt
+  Completed:        2026-05-06 19:52:35
+================================================================================
+
+FILE: logs/04_modelling_rf_all_blosum_log_20260506_204432.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    2409.8s (40.2 min)
+  Model:            Random Forest (rf)
+  Feature set:      Structural + BLOSUM50 + ESM-C + ESM-IF (all_blosum)
+  Components:       ['handcrafted', 'blosum', 'esmc', 'esmif']
+  Scaling:          no
+  Features (final): 5623
+    CSV features:   631
+    esmc PCA:     3456
+    esmif PCA:     3456
+  CV folds:         5
+  Best fold:        4 (AUC = 0.6883)
+  Held-out AUC:     0.6662
+  Held-out MCC:     0.1828
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_all_blosum_20260506_204432.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_all_blosum_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_all_blosum_log_20260506_204432.txt
+  Completed:        2026-05-06 21:24:42
+================================================================================
+
+FILE: logs/04_modelling_rf_all_sparse_log_20260506_193654.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    466.0s (7.8 min)
+  Model:            Random Forest (rf)
+  Feature set:      Structural + one-hot + ESM-C + ESM-IF (all_sparse)
+  Components:       ['handcrafted', 'sparse', 'esmc', 'esmif']
+  Scaling:          no
+  Features (final): 931
+    CSV features:   631
+    esmc PCA:     150
+    esmif PCA:     150
+  CV folds:         5
+  Best fold:        4 (AUC = 0.7049)
+  Held-out AUC:     0.6764
+  Held-out MCC:     0.2251
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_all_sparse_20260506_193654.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_all_sparse_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_all_sparse_log_20260506_193654.txt
+  Completed:        2026-05-06 19:44:40
+================================================================================
+
+FILE: logs/04_modelling_rf_all_sparse_log_20260506_200102.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    2608.1s (43.5 min)
+  Model:            Random Forest (rf)
+  Feature set:      Structural + one-hot + ESM-C + ESM-IF (all_sparse)
+  Components:       ['handcrafted', 'sparse', 'esmc', 'esmif']
+  Scaling:          no
+  Features (final): 5623
+    CSV features:   631
+    esmc PCA:     3456
+    esmif PCA:     3456
+  CV folds:         5
+  Best fold:        4 (AUC = 0.6640)
+  Held-out AUC:     0.6344
+  Held-out MCC:     0.1163
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_all_sparse_20260506_200102.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_all_sparse_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_all_sparse_log_20260506_200102.txt
+  Completed:        2026-05-06 20:44:30
+================================================================================
+
+FILE: logs/04_modelling_rf_esmc_log_20260506_153205.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    382.1s (6.4 min)
+  Model:            Random Forest (rf)
+  Feature set:      ESM-C embeddings only (esmc)
+  Components:       ['esmc']
+  Scaling:          no
+  Features (final): 150
+    esmc PCA:     150
+  CV folds:         5
+  Best fold:        2 (AUC = 0.6623)
+  Held-out AUC:     0.6525
+  Held-out MCC:     0.1721
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_esmc_20260506_153205.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_esmc_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_esmc_log_20260506_153205.txt
+  Completed:        2026-05-06 15:38:27
+================================================================================
+
+FILE: logs/04_modelling_rf_esmc_log_20260506_155447.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    1635.6s (27.3 min)
+  Model:            Random Forest (rf)
+  Feature set:      ESM-C embeddings only (esmc)
+  Components:       ['esmc']
+  Scaling:          no
+  Features (final): 3456
+    esmc PCA:     3456
+  CV folds:         5
+  Best fold:        2 (AUC = 0.6080)
+  Held-out AUC:     0.5997
+  Held-out MCC:     0.0497
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_esmc_20260506_155447.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_esmc_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_esmc_log_20260506_155447.txt
+  Completed:        2026-05-06 16:22:03
+================================================================================
+
+FILE: logs/04_modelling_rf_esmif_log_20260506_181141.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    286.1s (4.8 min)
+  Model:            Random Forest (rf)
+  Feature set:      ESM-IF1 embeddings only (esmif)
+  Components:       ['esmif']
+  Scaling:          no
+  Features (final): 150
+    esmif PCA:     150
+  CV folds:         5
+  Best fold:        4 (AUC = 0.6492)
+  Held-out AUC:     0.6283
+  Held-out MCC:     0.1595
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_esmif_20260506_181141.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_esmif_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_esmif_log_20260506_181141.txt
+  Completed:        2026-05-06 18:16:27
+================================================================================
+
+FILE: logs/04_modelling_rf_esmif_log_20260506_183056.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    1050.4s (17.5 min)
+  Model:            Random Forest (rf)
+  Feature set:      ESM-IF1 embeddings only (esmif)
+  Components:       ['esmif']
+  Scaling:          no
+  Features (final): 1536
+    esmif PCA:     1536
+  CV folds:         5
+  Best fold:        4 (AUC = 0.6192)
+  Held-out AUC:     0.6028
+  Held-out MCC:     0.0750
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_esmif_20260506_183056.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_esmif_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_esmif_log_20260506_183056.txt
+  Completed:        2026-05-06 18:48:26
+================================================================================
+
+FILE: logs/04_modelling_rf_handcrafted_blosum_esmc_log_20260506_154412.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    319.1s (5.3 min)
+  Model:            Random Forest (rf)
+  Feature set:      Structural + BLOSUM50 + ESM-C (handcrafted_blosum_esmc)
+  Components:       ['handcrafted', 'blosum', 'esmc']
+  Scaling:          no
+  Features (final): 781
+    CSV features:   631
+    esmc PCA:     150
+  CV folds:         5
+  Best fold:        3 (AUC = 0.7324)
+  Held-out AUC:     0.7259
+  Held-out MCC:     0.2800
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_handcrafted_blosum_esmc_20260506_154412.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_blosum_esmc_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_handcrafted_blosum_esmc_log_20260506_154412.txt
+  Completed:        2026-05-06 15:49:32
+================================================================================
+
+FILE: logs/04_modelling_rf_handcrafted_blosum_esmc_log_20260506_164902.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    3545.9s (59.1 min)
+  Model:            Random Forest (rf)
+  Feature set:      Structural + BLOSUM50 + ESM-C (handcrafted_blosum_esmc)
+  Components:       ['handcrafted', 'blosum', 'esmc']
+  Scaling:          no
+  Features (final): 4087
+    CSV features:   631
+    esmc PCA:     3456
+  CV folds:         5
+  Best fold:        3 (AUC = 0.6823)
+  Held-out AUC:     0.6736
+  Held-out MCC:     0.1488
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_handcrafted_blosum_esmc_20260506_164902.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_blosum_esmc_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_handcrafted_blosum_esmc_log_20260506_164902.txt
+  Completed:        2026-05-06 17:48:08
+================================================================================
+
+FILE: logs/04_modelling_rf_handcrafted_blosum_esmif_log_20260506_182119.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    294.8s (4.9 min)
+  Model:            Random Forest (rf)
+  Feature set:      Structural + BLOSUM50 + ESM-IF (handcrafted_blosum_esmif)
+  Components:       ['handcrafted', 'blosum', 'esmif']
+  Scaling:          no
+  Features (final): 781
+    CSV features:   631
+    esmif PCA:     150
+  CV folds:         5
+  Best fold:        4 (AUC = 0.7273)
+  Held-out AUC:     0.7010
+  Held-out MCC:     0.2866
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_handcrafted_blosum_esmif_20260506_182119.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_blosum_esmif_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_handcrafted_blosum_esmif_log_20260506_182119.txt
+  Completed:        2026-05-06 18:26:14
+================================================================================
+
+FILE: logs/04_modelling_rf_handcrafted_blosum_esmif_log_20260506_190654.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    881.8s (14.7 min)
+  Model:            Random Forest (rf)
+  Feature set:      Structural + BLOSUM50 + ESM-IF (handcrafted_blosum_esmif)
+  Components:       ['handcrafted', 'blosum', 'esmif']
+  Scaling:          no
+  Features (final): 2167
+    CSV features:   631
+    esmif PCA:     1536
+  CV folds:         5
+  Best fold:        4 (AUC = 0.7064)
+  Held-out AUC:     0.6786
+  Held-out MCC:     0.2098
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_handcrafted_blosum_esmif_20260506_190654.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_blosum_esmif_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_handcrafted_blosum_esmif_log_20260506_190654.txt
+  Completed:        2026-05-06 19:21:36
+================================================================================
+
+FILE: logs/04_modelling_rf_handcrafted_blosum_log_20260506_152722.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    165.8s (2.8 min)
+  Model:            Random Forest (rf)
+  Feature set:      Structural + BLOSUM50 AA (handcrafted_blosum)
+  Components:       ['handcrafted', 'blosum']
+  Scaling:          no
+  Features (final): 631
+    CSV features:   631
+  CV folds:         5
+  Best fold:        3 (AUC = 0.7296)
+  Held-out AUC:     0.7204
+  Held-out MCC:     0.2858
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_handcrafted_blosum_20260506_152722.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_blosum_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_handcrafted_blosum_log_20260506_152722.txt
+  Completed:        2026-05-06 15:30:07
+================================================================================
+
+FILE: logs/04_modelling_rf_handcrafted_sparse_esmc_log_20260506_153829.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    341.8s (5.7 min)
+  Model:            Random Forest (rf)
+  Feature set:      Structural + one-hot + ESM-C (handcrafted_sparse_esmc)
+  Components:       ['handcrafted', 'sparse', 'esmc']
+  Scaling:          no
+  Features (final): 781
+    CSV features:   631
+    esmc PCA:     150
+  CV folds:         5
+  Best fold:        4 (AUC = 0.7059)
+  Held-out AUC:     0.6935
+  Held-out MCC:     0.2348
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_handcrafted_sparse_esmc_20260506_153829.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_sparse_esmc_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_handcrafted_sparse_esmc_log_20260506_153829.txt
+  Completed:        2026-05-06 15:44:11
+================================================================================
+
+FILE: logs/04_modelling_rf_handcrafted_sparse_esmc_log_20260506_162204.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    1616.9s (26.9 min)
+  Model:            Random Forest (rf)
+  Feature set:      Structural + one-hot + ESM-C (handcrafted_sparse_esmc)
+  Components:       ['handcrafted', 'sparse', 'esmc']
+  Scaling:          no
+  Features (final): 4087
+    CSV features:   631
+    esmc PCA:     3456
+  CV folds:         5
+  Best fold:        0 (AUC = 0.6475)
+  Held-out AUC:     0.6367
+  Held-out MCC:     0.0709
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_handcrafted_sparse_esmc_20260506_162204.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_sparse_esmc_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_handcrafted_sparse_esmc_log_20260506_162204.txt
+  Completed:        2026-05-06 16:49:01
+================================================================================
+
+FILE: logs/04_modelling_rf_handcrafted_sparse_esmif_log_20260506_181628.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    289.5s (4.8 min)
+  Model:            Random Forest (rf)
+  Feature set:      Structural + one-hot + ESM-IF (handcrafted_sparse_esmif)
+  Components:       ['handcrafted', 'sparse', 'esmif']
+  Scaling:          no
+  Features (final): 781
+    CSV features:   631
+    esmif PCA:     150
+  CV folds:         5
+  Best fold:        4 (AUC = 0.6969)
+  Held-out AUC:     0.6712
+  Held-out MCC:     0.2307
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_handcrafted_sparse_esmif_20260506_181628.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_sparse_esmif_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_handcrafted_sparse_esmif_log_20260506_181628.txt
+  Completed:        2026-05-06 18:21:18
+================================================================================
+
+FILE: logs/04_modelling_rf_handcrafted_sparse_esmif_log_20260506_184828.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    1104.7s (18.4 min)
+  Model:            Random Forest (rf)
+  Feature set:      Structural + one-hot + ESM-IF (handcrafted_sparse_esmif)
+  Components:       ['handcrafted', 'sparse', 'esmif']
+  Scaling:          no
+  Features (final): 2167
+    CSV features:   631
+    esmif PCA:     1536
+  CV folds:         5
+  Best fold:        4 (AUC = 0.6767)
+  Held-out AUC:     0.6455
+  Held-out MCC:     0.1416
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_handcrafted_sparse_esmif_20260506_184828.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_sparse_esmif_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_handcrafted_sparse_esmif_log_20260506_184828.txt
+  Completed:        2026-05-06 19:06:53
+================================================================================
+
+FILE: logs/04_modelling_rf_handcrafted_sparse_log_20260506_152356.txt
+RUN SUMMARY
+================================================================================
+  Total runtime:    203.9s (3.4 min)
+  Model:            Random Forest (rf)
+  Feature set:      Structural + one-hot AA (handcrafted_sparse)
+  Components:       ['handcrafted', 'sparse']
+  Scaling:          no
+  Features (final): 631
+    CSV features:   631
+  CV folds:         5
+  Best fold:        4 (AUC = 0.7286)
+  Held-out AUC:     0.7084
+  Held-out MCC:     0.2828
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_handcrafted_sparse_20260506_152356.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_sparse_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_handcrafted_sparse_log_20260506_152356.txt
+  Completed:        2026-05-06 15:27:20
+================================================================================
+

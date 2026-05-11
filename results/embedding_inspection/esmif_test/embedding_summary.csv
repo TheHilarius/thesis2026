@@ -1,0 +1,4 @@
+model,region,n_samples,emb_dim,n_zero_vecs,norm_median,norm_std,value_mean,value_std
+ESM-IF,peptide,53072,512,6290,5.452,2.052,0.004027,0.242411
+ESM-IF,n_flank,53072,512,6325,5.344,2.032,0.004269,0.238358
+ESM-IF,c_flank,53072,512,6427,5.343,2.047,0.004152,0.238402
