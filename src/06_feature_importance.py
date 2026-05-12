@@ -85,8 +85,8 @@ print(f"Top big plot:   {TOP_BIG}")
 print(f"Output dir:     {OUT_FIG}")
 
 # ── Feature classification ────────────────────────────────────────────────────
-SPARSE_POSITIONS = {'N1','N2','N3','N4','P1','P2','P3','P4','P5',
-                    'P6','P7','P8','P9','C1','C2','C3','C4'}
+SPARSE_POSITIONS = {'N1','N2','N3','N4','N5','N6','N7','N8','N9','N10','P1','P2','P3','P4','P5',
+                    'P6','P7','P8','P9','C1','C2','C3','C4','C5','C6','C7','C8','C9','C10'}
 
 def classify_feature(name):
     parts = name.split('_')

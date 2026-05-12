@@ -181,6 +181,7 @@ METADATA_COLS = [
     "nflank_end",
     "cflank_start",
     "cflank_end",
+    "rel_distance_from_n_terminus"
 ]
 
 POSITION_AA_COLS = [
