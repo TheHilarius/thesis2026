@@ -31,6 +31,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 from pathlib import Path
 from matplotlib.patches import Patch
+from config import POSITION_AA_COLS
 
 # ── Args ──────────────────────────────────────────────────────────────────────
 parser = argparse.ArgumentParser(description="Feature importance extraction & visualization")
@@ -85,16 +86,26 @@ print(f"Top big plot:   {TOP_BIG}")
 print(f"Output dir:     {OUT_FIG}")
 
 # ── Feature classification ────────────────────────────────────────────────────
-SPARSE_POSITIONS = {'N1','N2','N3','N4','P1','P2','P3','P4','P5',
-                    'P6','P7','P8','P9','C1','C2','C3','C4'}
+POSITION_PREFIXES = {c.rstrip("0123456789") for c in POSITION_AA_COLS}
+
 
 def classify_feature(name):
     parts = name.split('_')
-    if len(parts) == 2 and parts[0] in SPARSE_POSITIONS:
-        return 'aa_encoding'
+
+    # AA positional encoding (sparse or BLOSUM)
+    if len(parts) == 2:
+        pos, aa = parts
+        prefix = pos.rstrip("0123456789")
+        if prefix in POSITION_PREFIXES:
+            return 'aa_encoding'
+
+    # Embedding PCA features
     if name.startswith(('esmc_', 'esmif_')) or 'PC' in name:
         return 'embedding_pca'
+
+    # Default: handcrafted structural features
     return 'handcrafted'
+
 
 TYPE_COLORS = {
     'handcrafted':   '#2ecc71',
