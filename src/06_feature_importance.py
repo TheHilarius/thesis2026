@@ -86,24 +86,15 @@ print(f"Top big plot:   {TOP_BIG}")
 print(f"Output dir:     {OUT_FIG}")
 
 # ── Feature classification ────────────────────────────────────────────────────
-POSITION_PREFIXES = {c.rstrip("0123456789") for c in POSITION_AA_COLS}
+SPARSE_POSITIONS = set(POSITION_AA_COLS)
 
 
 def classify_feature(name):
     parts = name.split('_')
-
-    # AA positional encoding (sparse or BLOSUM)
-    if len(parts) == 2:
-        pos, aa = parts
-        prefix = pos.rstrip("0123456789")
-        if prefix in POSITION_PREFIXES:
-            return 'aa_encoding'
-
-    # Embedding PCA features
+    if len(parts) == 2 and parts[0] in SPARSE_POSITIONS:
+        return 'aa_encoding'
     if name.startswith(('esmc_', 'esmif_')) or 'PC' in name:
         return 'embedding_pca'
-
-    # Default: handcrafted structural features
     return 'handcrafted'
 
 
