@@ -168,6 +168,30 @@ def set_fractional_xticks(ax, values, n_ticks=8):
     ax.xaxis.set_major_locator(mticker.FixedLocator(ticks))
     ax.set_xlim(0, hi)
 
+def set_asymmetric_xticks(ax, values, outlier_ratio=3.0, pad=0.05):
+    """
+    If the largest value is much bigger than the rest,
+    compress the x-axis to reveal structure among non-dominant features.
+
+    outlier_ratio : how many times larger the top value must be compared
+                    to the second-largest to trigger compression.
+    """
+    if len(values) < 3:
+        return
+
+    values = np.asarray(values)
+    vmax = float(np.max(values))
+    sorted_vals = np.sort(values)
+    v2 = sorted_vals[-2]  # second-largest value
+
+    if v2 > 0 and vmax / v2 >= outlier_ratio:
+        hi = v2 * (1 + pad)
+    else:
+        hi = vmax * (1 + pad)
+
+    ax.set_xlim(0, hi)
+
+
 # ── Model dispatcher ──────────────────────────────────────────────────────────
 def unwrap_pipeline(model):
     if hasattr(model, 'named_steps'):
@@ -254,6 +278,7 @@ def plot_panel(ax, df_top, signed, label, model_key, fontsize=8):
         xlabel = f'{label} |Coefficient| (mean ± std across folds)'
     else:
         set_fractional_xticks(ax, values)
+        set_asymmetric_xticks(ax, values)
         imp_label = f' ({XGB_IMP})' if model_key == 'xgb' else ''
         xlabel = f'{label} Importance{imp_label} (mean ± std across folds)'
 

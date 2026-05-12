@@ -1,0 +1,390 @@
+================================================================================
+  04_MODELLING -- RANDOM FOREST + STRUCTURAL + BLOSUM50 + ESM-IF
+================================================================================
+  Timestamp:       2026-05-06 18:21:19
+  Model key:       rf
+  Model class:     sklearn.ensemble.RandomForestClassifier
+  Feature set:     handcrafted_blosum_esmif (Structural + BLOSUM50 + ESM-IF)
+  Components:      ['handcrafted', 'blosum', 'esmif']
+  Data path:       /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Log path:        /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_handcrafted_blosum_esmif_log_20260506_182119.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   False
+
+  Model hyperparameters:
+    n_estimators              1000
+    max_depth                 None
+    min_samples_split         2
+    min_samples_leaf          1
+    max_features              sqrt
+    class_weight              balanced
+    n_jobs                    -1
+    random_state              42
+    verbose                   0
+================================================================================
+
+Loading split data: /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Shape: 53072 rows x 88 columns
+  [OK] Fold column validated: [0, 1, 2, 3, 4, 5]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+  Loading CSV component: BLOSUM50 AA encoding
+    Loading: df_all_blosum50.csv
+    Shape: 53072 rows x 650 columns
+    [OK] Alignment verified
+    New columns: 580
+
+  Merged 580 new columns → 53072 rows x 668 columns
+
+  Loading embedding component: ESM-IF1 embeddings
+    Loading prepared embeddings: /home/hilarius/special_course/special_course_spring2026/data/processed/embeddings_prepared/esmif_prepared.h5
+    Loaded: 53072 samples, 3 regions, dim=512
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  CSV components (2):
+    [handcrafted] Structural features
+      Source: split_data (built-in)
+    [blosum] BLOSUM50 AA encoding
+      Source: /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_blosum50.csv
+      New columns added: 580
+  Total CSV features: 631
+    Structural: 51
+    AA-encoded: 580
+
+  Embedding components (1):
+    [esmif] ESM-IF1 embeddings
+      Raw dim: 1536 (3 regions × 512)
+      After PCA: 150 (50/region × 3 regions)
+
+  Estimated total features: ~781
+    CSV:        631
+    Embeddings: 150 (after PCA)
+
+================================================================================
+PIPELINE READY: ~781 features, 5 folds, Random Forest
+================================================================================
+
+--------------------------------------------------------------------------------
+  FOLD 0/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 83391 NaN values replaced with medians
+    WARNING: X_test: 10976 NaN values replaced with medians
+    CSV features: 631 columns
+    esmif: zero-vector samples: train=4276/35381 (12.1%), test=858/8846 (9.7%)
+    esmif: PCA 1536 → 150 (50/region × 3 regions, 75.6% variance, fitted on 31105 non-zero samples)
+    Train:  35381 samples (pos=15617, neg=19764, ratio=1.266)
+    Test:    8846 samples (pos=3954, neg=4892, ratio=1.237)
+    Features: 781
+    Training Random Forest ...
+    Training time: 44.3s
+
+    Fold 0 results (54.2s):
+      AUC-ROC: 0.7092  |  AUC-PR: 0.6549  |  Acc: 0.6485  |  F1: 0.5146  |  MCC: 0.2807
+      Sens: 0.4168  |  Spec: 0.8359  |  PPV: 0.6724  |  NPV: 0.6394
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      esmif_PC003                                       0.004997
+    2      mean_plddt_peptide                                0.003802
+    3      esmif_PC002                                       0.003531
+    4      esmif_PC068                                       0.003491
+    5      mean_plddt_nflank                                 0.003451
+    6      esmif_PC141                                       0.003390
+    7      esmif_PC004                                       0.003328
+    8      mean_plddt_cflank                                 0.003263
+    9      esmif_PC018                                       0.003182
+    10     esmif_PC032                                       0.003170
+    11     esmif_PC047                                       0.003164
+    12     esmif_PC122                                       0.003164
+    13     mean_rsa_cflank                                   0.003145
+    14     mean_rsa_peptide                                  0.003086
+    15     esmif_PC127                                       0.003055
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_blosum_esmif_model_fold0.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 1/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 69530 NaN values replaced with medians
+    WARNING: X_test: 24837 NaN values replaced with medians
+    CSV features: 631 columns
+    esmif: zero-vector samples: train=4093/35381 (11.6%), test=1041/8846 (11.8%)
+    esmif: PCA 1536 → 150 (50/region × 3 regions, 75.6% variance, fitted on 31288 non-zero samples)
+    Train:  35381 samples (pos=15634, neg=19747, ratio=1.263)
+    Test:    8846 samples (pos=3937, neg=4909, ratio=1.247)
+    Features: 781
+    Training Random Forest ...
+    Training time: 43.6s
+
+    Fold 1 results (55.3s):
+      AUC-ROC: 0.6740  |  AUC-PR: 0.6275  |  Acc: 0.6407  |  F1: 0.4897  |  MCC: 0.2624
+      Sens: 0.3874  |  Spec: 0.8440  |  PPV: 0.6656  |  NPV: 0.6320
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      esmif_PC003                                       0.005279
+    2      mean_plddt_peptide                                0.003969
+    3      esmif_PC002                                       0.003883
+    4      mean_plddt_nflank                                 0.003797
+    5      esmif_PC126                                       0.003771
+    6      esmif_PC067                                       0.003708
+    7      esmif_PC123                                       0.003598
+    8      esmif_PC032                                       0.003597
+    9      esmif_PC135                                       0.003537
+    10     esmif_PC094                                       0.003458
+    11     esmif_PC069                                       0.003432
+    12     esmif_PC054                                       0.003389
+    13     mean_plddt_cflank                                 0.003376
+    14     esmif_PC004                                       0.003374
+    15     esmif_PC138                                       0.003283
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_blosum_esmif_model_fold1.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 2/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 69922 NaN values replaced with medians
+    WARNING: X_test: 24445 NaN values replaced with medians
+    CSV features: 631 columns
+    esmif: zero-vector samples: train=3874/35382 (10.9%), test=1260/8845 (14.2%)
+    esmif: PCA 1536 → 150 (50/region × 3 regions, 75.7% variance, fitted on 31508 non-zero samples)
+    Train:  35382 samples (pos=15645, neg=19737, ratio=1.262)
+    Test:    8845 samples (pos=3926, neg=4919, ratio=1.253)
+    Features: 781
+    Training Random Forest ...
+    Training time: 43.4s
+
+    Fold 2 results (55.2s):
+      AUC-ROC: 0.7032  |  AUC-PR: 0.6527  |  Acc: 0.6499  |  F1: 0.5071  |  MCC: 0.2814
+      Sens: 0.4058  |  Spec: 0.8447  |  PPV: 0.6759  |  NPV: 0.6404
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      esmif_PC003                                       0.005363
+    2      esmif_PC126                                       0.003965
+    3      mean_plddt_peptide                                0.003649
+    4      mean_plddt_nflank                                 0.003647
+    5      esmif_PC069                                       0.003504
+    6      esmif_PC002                                       0.003429
+    7      esmif_PC094                                       0.003365
+    8      esmif_PC032                                       0.003365
+    9      mean_rsa_cflank                                   0.003286
+    10     mean_plddt_cflank                                 0.003180
+    11     esmif_PC004                                       0.003175
+    12     esmif_PC054                                       0.003166
+    13     esmif_PC134                                       0.003098
+    14     esmif_PC018                                       0.003070
+    15     mean_disorder_cflank                              0.002991
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_blosum_esmif_model_fold2.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 3/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 74842 NaN values replaced with medians
+    WARNING: X_test: 19525 NaN values replaced with medians
+    CSV features: 631 columns
+    esmif: zero-vector samples: train=4094/35382 (11.6%), test=1040/8845 (11.8%)
+    esmif: PCA 1536 → 150 (50/region × 3 regions, 75.7% variance, fitted on 31288 non-zero samples)
+    Train:  35382 samples (pos=15635, neg=19747, ratio=1.263)
+    Test:    8845 samples (pos=3936, neg=4909, ratio=1.247)
+    Features: 781
+    Training Random Forest ...
+    Training time: 43.3s
+
+    Fold 3 results (55.0s):
+      AUC-ROC: 0.7135  |  AUC-PR: 0.6691  |  Acc: 0.6579  |  F1: 0.5015  |  MCC: 0.3043
+      Sens: 0.3867  |  Spec: 0.8753  |  PPV: 0.7132  |  NPV: 0.6403
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      esmif_PC003                                       0.005345
+    2      mean_plddt_peptide                                0.004028
+    3      mean_plddt_nflank                                 0.003819
+    4      esmif_PC002                                       0.003696
+    5      esmif_PC126                                       0.003618
+    6      esmif_PC018                                       0.003535
+    7      esmif_PC004                                       0.003417
+    8      mean_plddt_cflank                                 0.003399
+    9      esmif_PC069                                       0.003350
+    10     esmif_PC032                                       0.003348
+    11     esmif_PC056                                       0.003311
+    12     esmif_PC068                                       0.003292
+    13     mean_rsa_cflank                                   0.003285
+    14     esmif_PC054                                       0.003166
+    15     esmif_PC106                                       0.003118
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_blosum_esmif_model_fold3.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 4/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 79783 NaN values replaced with medians
+    WARNING: X_test: 14584 NaN values replaced with medians
+    CSV features: 631 columns
+    esmif: zero-vector samples: train=4199/35382 (11.9%), test=935/8845 (10.6%)
+    esmif: PCA 1536 → 150 (50/region × 3 regions, 75.7% variance, fitted on 31183 non-zero samples)
+    Train:  35382 samples (pos=15753, neg=19629, ratio=1.246)
+    Test:    8845 samples (pos=3818, neg=5027, ratio=1.317)
+    Features: 781
+    Training Random Forest ...
+    Training time: 44.1s
+
+    Fold 4 results (55.5s):
+      AUC-ROC: 0.7273  |  AUC-PR: 0.6579  |  Acc: 0.6687  |  F1: 0.5303  |  MCC: 0.3120
+      Sens: 0.4332  |  Spec: 0.8476  |  PPV: 0.6835  |  NPV: 0.6632
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      esmif_PC003                                       0.004420
+    2      mean_plddt_peptide                                0.003702
+    3      mean_plddt_nflank                                 0.003630
+    4      esmif_PC004                                       0.003476
+    5      esmif_PC002                                       0.003475
+    6      esmif_PC122                                       0.003332
+    7      mean_rsa_cflank                                   0.003236
+    8      esmif_PC018                                       0.003202
+    9      esmif_PC068                                       0.003183
+    10     mean_plddt_cflank                                 0.003177
+    11     esmif_PC033                                       0.003168
+    12     esmif_PC116                                       0.003160
+    13     esmif_PC128                                       0.003151
+    14     esmif_PC032                                       0.003147
+    15     mean_rsa_peptide                                  0.003124
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_blosum_esmif_model_fold4.pkl
+
+================================================================================
+CROSS-VALIDATION SUMMARY (mean +/- std)
+================================================================================
+  auc_roc         0.7054 +/- 0.0176    [0.7092  0.6740  0.7032  0.7135  0.7273]
+  auc_pr          0.6524 +/- 0.0137    [0.6549  0.6275  0.6527  0.6691  0.6579]
+  accuracy        0.6532 +/- 0.0095    [0.6485  0.6407  0.6499  0.6579  0.6687]
+  f1              0.5086 +/- 0.0135    [0.5146  0.4897  0.5071  0.5015  0.5303]
+  mcc             0.2882 +/- 0.0179    [0.2807  0.2624  0.2814  0.3043  0.3120]
+  sensitivity     0.4060 +/- 0.0178    [0.4168  0.3874  0.4058  0.3867  0.4332]
+  specificity     0.8495 +/- 0.0135    [0.8359  0.8440  0.8447  0.8753  0.8476]
+  ppv             0.6821 +/- 0.0166    [0.6724  0.6656  0.6759  0.7132  0.6835]
+  npv             0.6431 +/- 0.0105    [0.6394  0.6320  0.6404  0.6403  0.6632]
+
+  Best fold: 4 (AUC-ROC = 0.7273)
+
+================================================================================
+PER-FOLD METRIC COMPARISON
+================================================================================
+  Fold    auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
+  -----------------------------------------------------------------------------------------------------------------------------
+  0       0.7092       0.6549       0.6485       0.5146       0.2807       0.4168       0.8359       0.6724       0.6394       
+  1       0.6740       0.6275       0.6407       0.4897       0.2624       0.3874       0.8440       0.6656       0.6320       
+  2       0.7032       0.6527       0.6499       0.5071       0.2814       0.4058       0.8447       0.6759       0.6404       
+  3       0.7135       0.6691       0.6579       0.5015       0.3043       0.3867       0.8753       0.7132       0.6403       
+  4       0.7273       0.6579       0.6687       0.5303       0.3120       0.4332       0.8476       0.6835       0.6632       
+  -----------------------------------------------------------------------------------------------------------------------------
+  mean    0.7054       0.6524       0.6532       0.5086       0.2882       0.4060       0.8495       0.6821       0.6431       
+  std     0.0176       0.0137       0.0095       0.0135       0.0179       0.0178       0.0135       0.0166       0.0105       
+
+================================================================================
+AVERAGED FEATURE IMPORTANCE ACROSS ALL FOLDS
+================================================================================
+  Rank   Feature                                           Mean Imp          Std
+  -----------------------------------------------------------------------------
+  1      esmif_PC003                                       0.005081     0.000356
+  2      mean_plddt_peptide                                0.003830     0.000147
+  3      mean_plddt_nflank                                 0.003669     0.000133
+  4      esmif_PC002                                       0.003603     0.000167
+  5      esmif_PC126                                       0.003410     0.000473
+  6      esmif_PC004                                       0.003354     0.000102
+  7      esmif_PC032                                       0.003326     0.000162
+  8      mean_plddt_cflank                                 0.003279     0.000094
+  9      mean_rsa_cflank                                   0.003245     0.000053
+  10     esmif_PC018                                       0.003191     0.000192
+  11     esmif_PC069                                       0.003091     0.000418
+  12     mean_rsa_peptide                                  0.003080     0.000068
+  13     mean_disorder_cflank                              0.003063     0.000110
+  14     esmif_PC054                                       0.003048     0.000258
+  15     esmif_PC068                                       0.003038     0.000377
+  16     esmif_PC094                                       0.003002     0.000353
+  17     mean_disorder_nflank                              0.002996     0.000095
+  18     rel_distance_from_c_terminus                      0.002995     0.000051
+  19     rel_distance_from_n_terminus                      0.002990     0.000067
+  20     mean_rsa_nflank                                   0.002976     0.000037
+  21     esmif_PC010                                       0.002974     0.000155
+  22     mean_disorder_peptide                             0.002973     0.000056
+  23     esmif_PC122                                       0.002944     0.000286
+  24     esmif_PC044                                       0.002935     0.000157
+  25     esmif_PC033                                       0.002909     0.000186
+  26     esmif_PC053                                       0.002905     0.000112
+  27     esmif_PC123                                       0.002895     0.000370
+  28     esmif_PC056                                       0.002889     0.000255
+  29     esmif_PC134                                       0.002884     0.000214
+  30     esmif_PC048                                       0.002883     0.000142
+
+================================================================================
+HELD-OUT VALIDATION SET EVALUATION
+================================================================================
+  Using model from best fold (4)
+  Held-out samples: 8845 (pos=3870, neg=4975, ratio=1.286)
+
+  Held-out results (8845 samples):
+    AUC-ROC: 0.7010  |  AUC-PR: 0.6422  |  Acc: 0.6551  |  F1: 0.5156  |  MCC: 0.2866
+    Sens: 0.4196  |  Spec: 0.8382  |  PPV: 0.6686  |  NPV: 0.6499
+
+  Classification Report:
+              precision    recall  f1-score   support
+
+    Negative     0.6499    0.8382    0.7322      4975
+    Positive     0.6686    0.4196    0.5156      3870
+
+    accuracy                         0.6551      8845
+   macro avg     0.6593    0.6289    0.6239      8845
+weighted avg     0.6581    0.6551    0.6374      8845
+
+================================================================================
+CV AVERAGE vs HELD-OUT COMPARISON
+================================================================================
+  Metric             CV mean     CV std   Held-out      Delta
+  ---------------------------------------------------------
+  auc_roc             0.7054     0.0176     0.7010    -0.0044
+  auc_pr              0.6524     0.0137     0.6422    -0.0102
+  accuracy            0.6532     0.0095     0.6551    +0.0019
+  f1                  0.5086     0.0135     0.5156    +0.0070
+  mcc                 0.2882     0.0179     0.2866    -0.0016
+  sensitivity         0.4060     0.0178     0.4196    +0.0137
+  specificity         0.8495     0.0135     0.8382    -0.0113
+  ppv                 0.6821     0.0166     0.6686    -0.0135
+  npv                 0.6431     0.0105     0.6499    +0.0069
+
+Results saved: /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_handcrafted_blosum_esmif_20260506_182119.json
+Best model saved: /home/hilarius/special_course/special_course_spring2026/models/best_rf_handcrafted_blosum_esmif_model.pkl
+Fold artifacts saved: /home/hilarius/special_course/special_course_spring2026/models/best_rf_handcrafted_blosum_esmif_artifacts.pkl
+Feature names saved: /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_blosum_esmif_feature_names.json
+
+================================================================================
+RUN SUMMARY
+================================================================================
+  Total runtime:    294.8s (4.9 min)
+  Model:            Random Forest (rf)
+  Feature set:      Structural + BLOSUM50 + ESM-IF (handcrafted_blosum_esmif)
+  Components:       ['handcrafted', 'blosum', 'esmif']
+  Scaling:          no
+  Features (final): 781
+    CSV features:   631
+    esmif PCA:     150
+  CV folds:         5
+  Best fold:        4 (AUC = 0.7273)
+  Held-out AUC:     0.7010
+  Held-out MCC:     0.2866
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_handcrafted_blosum_esmif_20260506_182119.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_blosum_esmif_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_handcrafted_blosum_esmif_log_20260506_182119.txt
+  Completed:        2026-05-06 18:26:14
+================================================================================

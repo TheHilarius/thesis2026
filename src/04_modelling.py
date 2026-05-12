@@ -984,6 +984,10 @@ if __name__ == "__main__":
                        for m, s in summary.items()},
         "fold_metrics": all_fold_metrics,
         "held_out_metrics": ho_metrics,
+        "held_out_predictions": {
+            "y_true": y_ho.tolist(),
+            "y_prob": ho_probs.tolist(),
+        },
         "best_fold_id": best_fold_id,
         "best_fold_auc": best_fold_auc,
         "fold_predictions": all_fold_predictions,

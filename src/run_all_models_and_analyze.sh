@@ -85,6 +85,14 @@ run_cmd () {
     return $rc
 }
 
+run_feature_importance () {
+    mode_label="$1"
+    feat="$2"
+
+    run_cmd "Feature importance [$mode_label] $feat" \
+        bash -c "cd .. && python src/06_feature_importance.py --features '$feat' --models lr rf --top 30 --top_compare 30 --top_big 70 --out_root 'results/figures/models/feature_importance_${mode_label}'"
+}
+
 ############################################################
 # Block 1: env_esmc — no-embedding + ESM-C runs
 ############################################################
@@ -97,6 +105,10 @@ for model in "${MODELS[@]}"; do
     done
 done
 
+for feat in "${NO_EMB_FEATURES[@]}"; do
+    run_feature_importance "no_embedding" "$feat"
+done
+
 for model in "${MODELS[@]}"; do
     for feat in "${ESMC_FEATURES[@]}"; do
         run_cmd "[$model] $feat (PCA)" \
@@ -104,11 +116,19 @@ for model in "${MODELS[@]}"; do
     done
 done
 
+for feat in "${ESMC_FEATURES[@]}"; do
+    run_feature_importance "esmc_pca" "$feat"
+done
+
 for model in "${MODELS[@]}"; do
     for feat in "${ESMC_FEATURES[@]}"; do
         run_cmd "[$model] $feat (no-PCA, full ${ESMC_DIM} dims/region)" \
             python "$SCRIPT" --model "$model" --features "$feat" --pca "$ESMC_DIM"
     done
+done
+
+for feat in "${ESMC_FEATURES[@]}"; do
+    run_feature_importance "esmc_full" "$feat"
 done
 
 ############################################################
@@ -123,11 +143,19 @@ for model in "${MODELS[@]}"; do
     done
 done
 
+for feat in "${ESMIF_FEATURES[@]}"; do
+    run_feature_importance "esmif_pca" "$feat"
+done
+
 for model in "${MODELS[@]}"; do
     for feat in "${ESMIF_FEATURES[@]}"; do
         run_cmd "[$model] $feat (no-PCA, full ${ESMIF_DIM} dims/region)" \
             python "$SCRIPT" --model "$model" --features "$feat" --pca "$ESMIF_DIM"
     done
+done
+
+for feat in "${ESMIF_FEATURES[@]}"; do
+    run_feature_importance "esmif_full" "$feat"
 done
 
 for model in "${MODELS[@]}"; do
@@ -137,11 +165,19 @@ for model in "${MODELS[@]}"; do
     done
 done
 
+for feat in "${BOTH_FEATURES[@]}"; do
+    run_feature_importance "all_pca" "$feat"
+done
+
 for model in "${MODELS[@]}"; do
     for feat in "${BOTH_FEATURES[@]}"; do
         run_cmd "[$model] $feat (no-PCA, full dims)" \
             python "$SCRIPT" --model "$model" --features "$feat" --pca "$ESMC_DIM"
     done
+done
+
+for feat in "${BOTH_FEATURES[@]}"; do
+    run_feature_importance "all_full" "$feat"
 done
 
 echo ""

@@ -1,0 +1,19 @@
+{
+  "protein_level": {
+    "total_proteins_in_df": 9616,
+    "proteins_with_any_embedding": 9616,
+    "proteins_missing_structure": 464,
+    "coverage_rate": 1.0
+  },
+  "peptide_level": {
+    "peptides_total": 53072,
+    "peptide_missing_rate": 0.11851823937292734,
+    "nflank_missing_rate": 0.11917772083207717,
+    "cflank_missing_rate": 0.12109963822731384
+  },
+  "protein_peptide_level": {
+    "proteins_all_peptides_missing_structure": 387,
+    "proteins_any_structure": 9229,
+    "proteins_mean_peptide_missing_rate": 0.040411575750655224
+  }
+}

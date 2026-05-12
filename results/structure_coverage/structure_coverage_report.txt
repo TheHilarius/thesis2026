@@ -1,0 +1,10 @@
+STRUCTURE COVERAGE REPORT
+
+total_proteins: 9616
+proteins_with_structure: 11707
+proteins_missing_structure: 464
+peptides_total: 53072
+row_missing_structure_rate: 0.0
+peptide_zero_rate: 0.11851823937292734
+nflank_zero_rate: 0.11917772083207717
+cflank_zero_rate: 0.12109963822731384

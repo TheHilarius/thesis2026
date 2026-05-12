@@ -1,0 +1,370 @@
+================================================================================
+  04_MODELLING -- RANDOM FOREST + STRUCTURAL + BLOSUM50 AA
+================================================================================
+  Timestamp:       2026-05-06 15:27:22
+  Model key:       rf
+  Model class:     sklearn.ensemble.RandomForestClassifier
+  Feature set:     handcrafted_blosum (Structural + BLOSUM50 AA)
+  Components:      ['handcrafted', 'blosum']
+  Data path:       /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Log path:        /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_handcrafted_blosum_log_20260506_152722.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   False
+
+  Model hyperparameters:
+    n_estimators              1000
+    max_depth                 None
+    min_samples_split         2
+    min_samples_leaf          1
+    max_features              sqrt
+    class_weight              balanced
+    n_jobs                    -1
+    random_state              42
+    verbose                   0
+================================================================================
+
+Loading split data: /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Shape: 53072 rows x 88 columns
+  [OK] Fold column validated: [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5)]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+  Loading CSV component: BLOSUM50 AA encoding
+    Loading: df_all_blosum50.csv
+    Shape: 53072 rows x 650 columns
+    [OK] Alignment verified
+    New columns: 580
+
+  Merged 580 new columns → 53072 rows x 668 columns
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  CSV components (2):
+    [handcrafted] Structural features
+      Source: split_data (built-in)
+    [blosum] BLOSUM50 AA encoding
+      Source: /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_blosum50.csv
+      New columns added: 580
+  Total CSV features: 631
+    Structural: 51
+    AA-encoded: 580
+
+  Estimated total features: ~631
+    CSV:        631
+    Embeddings: 0 (after PCA)
+
+================================================================================
+PIPELINE READY: ~631 features, 5 folds, Random Forest
+================================================================================
+
+--------------------------------------------------------------------------------
+  FOLD 0/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 83391 NaN values replaced with medians
+    WARNING: X_test: 10976 NaN values replaced with medians
+    CSV features: 631 columns
+    Train:  35381 samples (pos=15617, neg=19764, ratio=1.266)
+    Test:    8846 samples (pos=3954, neg=4892, ratio=1.237)
+    Features: 631
+    Training Random Forest ...
+    Training time: 26.1s
+
+    Fold 0 results (27.6s):
+      AUC-ROC: 0.7133  |  AUC-PR: 0.6570  |  Acc: 0.6501  |  F1: 0.4980  |  MCC: 0.2871
+      Sens: 0.3882  |  Spec: 0.8618  |  PPV: 0.6943  |  NPV: 0.6354
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      mean_plddt_peptide                                0.008997
+    2      mean_plddt_nflank                                 0.008202
+    3      mean_plddt_cflank                                 0.008001
+    4      mean_rsa_peptide                                  0.005649
+    5      mean_rsa_cflank                                   0.005638
+    6      rel_distance_from_c_terminus                      0.005469
+    7      mean_disorder_nflank                              0.005348
+    8      rel_distance_from_n_terminus                      0.005347
+    9      mean_disorder_cflank                              0.005314
+    10     mean_disorder_peptide                             0.005305
+    11     mean_rsa_nflank                                   0.005270
+    12     P5_R                                              0.003291
+    13     P5_K                                              0.002956
+    14     N1_P                                              0.002954
+    15     C1_N                                              0.002765
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_blosum_model_fold0.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 1/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 69530 NaN values replaced with medians
+    WARNING: X_test: 24837 NaN values replaced with medians
+    CSV features: 631 columns
+    Train:  35381 samples (pos=15634, neg=19747, ratio=1.263)
+    Test:    8846 samples (pos=3937, neg=4909, ratio=1.247)
+    Features: 631
+    Training Random Forest ...
+    Training time: 27.6s
+
+    Fold 1 results (29.6s):
+      AUC-ROC: 0.7048  |  AUC-PR: 0.6442  |  Acc: 0.6447  |  F1: 0.4752  |  MCC: 0.2747
+      Sens: 0.3614  |  Spec: 0.8719  |  PPV: 0.6935  |  NPV: 0.6300
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      mean_plddt_peptide                                0.009944
+    2      mean_plddt_nflank                                 0.009104
+    3      mean_plddt_cflank                                 0.008865
+    4      mean_rsa_cflank                                   0.005857
+    5      mean_rsa_peptide                                  0.005670
+    6      mean_disorder_cflank                              0.005564
+    7      mean_disorder_peptide                             0.005532
+    8      mean_disorder_nflank                              0.005506
+    9      rel_distance_from_c_terminus                      0.005491
+    10     rel_distance_from_n_terminus                      0.005410
+    11     mean_rsa_nflank                                   0.005357
+    12     P5_R                                              0.003209
+    13     P5_K                                              0.002907
+    14     N1_P                                              0.002848
+    15     C1_R                                              0.002779
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_blosum_model_fold1.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 2/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 69922 NaN values replaced with medians
+    WARNING: X_test: 24445 NaN values replaced with medians
+    CSV features: 631 columns
+    Train:  35382 samples (pos=15645, neg=19737, ratio=1.262)
+    Test:    8845 samples (pos=3926, neg=4919, ratio=1.253)
+    Features: 631
+    Training Random Forest ...
+    Training time: 27.0s
+
+    Fold 2 results (29.1s):
+      AUC-ROC: 0.7053  |  AUC-PR: 0.6510  |  Acc: 0.6473  |  F1: 0.4836  |  MCC: 0.2783
+      Sens: 0.3721  |  Spec: 0.8668  |  PPV: 0.6905  |  NPV: 0.6337
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      mean_plddt_peptide                                0.008434
+    2      mean_plddt_nflank                                 0.007890
+    3      mean_plddt_cflank                                 0.007433
+    4      mean_rsa_cflank                                   0.005791
+    5      mean_rsa_peptide                                  0.005431
+    6      mean_disorder_cflank                              0.005343
+    7      mean_rsa_nflank                                   0.005332
+    8      rel_distance_from_n_terminus                      0.005318
+    9      mean_disorder_nflank                              0.005280
+    10     rel_distance_from_c_terminus                      0.005266
+    11     mean_disorder_peptide                             0.005227
+    12     P5_R                                              0.003220
+    13     N1_P                                              0.003025
+    14     P5_K                                              0.002785
+    15     C1_N                                              0.002757
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_blosum_model_fold2.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 3/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 74842 NaN values replaced with medians
+    WARNING: X_test: 19525 NaN values replaced with medians
+    CSV features: 631 columns
+    Train:  35382 samples (pos=15635, neg=19747, ratio=1.263)
+    Test:    8845 samples (pos=3936, neg=4909, ratio=1.247)
+    Features: 631
+    Training Random Forest ...
+    Training time: 27.0s
+
+    Fold 3 results (28.8s):
+      AUC-ROC: 0.7296  |  AUC-PR: 0.6792  |  Acc: 0.6511  |  F1: 0.4728  |  MCC: 0.2929
+      Sens: 0.3516  |  Spec: 0.8912  |  PPV: 0.7216  |  NPV: 0.6316
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      mean_plddt_peptide                                0.009479
+    2      mean_plddt_nflank                                 0.008841
+    3      mean_plddt_cflank                                 0.008393
+    4      mean_rsa_cflank                                   0.005649
+    5      mean_rsa_peptide                                  0.005641
+    6      mean_disorder_cflank                              0.005512
+    7      rel_distance_from_c_terminus                      0.005452
+    8      mean_disorder_peptide                             0.005448
+    9      rel_distance_from_n_terminus                      0.005434
+    10     mean_disorder_nflank                              0.005390
+    11     mean_rsa_nflank                                   0.005370
+    12     P5_R                                              0.003115
+    13     P5_K                                              0.002750
+    14     N1_P                                              0.002647
+    15     C1_N                                              0.002600
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_blosum_model_fold3.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 4/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 79783 NaN values replaced with medians
+    WARNING: X_test: 14584 NaN values replaced with medians
+    CSV features: 631 columns
+    Train:  35382 samples (pos=15753, neg=19629, ratio=1.246)
+    Test:    8845 samples (pos=3818, neg=5027, ratio=1.317)
+    Features: 631
+    Training Random Forest ...
+    Training time: 27.1s
+
+    Fold 4 results (29.0s):
+      AUC-ROC: 0.7278  |  AUC-PR: 0.6601  |  Acc: 0.6655  |  F1: 0.5071  |  MCC: 0.3063
+      Sens: 0.3986  |  Spec: 0.8681  |  PPV: 0.6966  |  NPV: 0.6553
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      mean_plddt_peptide                                0.008648
+    2      mean_plddt_nflank                                 0.008323
+    3      mean_plddt_cflank                                 0.007489
+    4      mean_rsa_cflank                                   0.005749
+    5      mean_rsa_peptide                                  0.005596
+    6      rel_distance_from_n_terminus                      0.005567
+    7      rel_distance_from_c_terminus                      0.005554
+    8      mean_disorder_cflank                              0.005426
+    9      mean_disorder_nflank                              0.005387
+    10     mean_disorder_peptide                             0.005380
+    11     mean_rsa_nflank                                   0.005346
+    12     P5_R                                              0.003291
+    13     P5_K                                              0.002928
+    14     N1_P                                              0.002817
+    15     C1_N                                              0.002774
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_blosum_model_fold4.pkl
+
+================================================================================
+CROSS-VALIDATION SUMMARY (mean +/- std)
+================================================================================
+  auc_roc         0.7162 +/- 0.0107    [0.7133  0.7048  0.7053  0.7296  0.7278]
+  auc_pr          0.6583 +/- 0.0118    [0.6570  0.6442  0.6510  0.6792  0.6601]
+  accuracy        0.6517 +/- 0.0072    [0.6501  0.6447  0.6473  0.6511  0.6655]
+  f1              0.4873 +/- 0.0132    [0.4980  0.4752  0.4836  0.4728  0.5071]
+  mcc             0.2879 +/- 0.0112    [0.2871  0.2747  0.2783  0.2929  0.3063]
+  sensitivity     0.3744 +/- 0.0171    [0.3882  0.3614  0.3721  0.3516  0.3986]
+  specificity     0.8720 +/- 0.0101    [0.8618  0.8719  0.8668  0.8912  0.8681]
+  ppv             0.6993 +/- 0.0113    [0.6943  0.6935  0.6905  0.7216  0.6966]
+  npv             0.6372 +/- 0.0092    [0.6354  0.6300  0.6337  0.6316  0.6553]
+
+  Best fold: 3 (AUC-ROC = 0.7296)
+
+================================================================================
+PER-FOLD METRIC COMPARISON
+================================================================================
+  Fold    auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
+  -----------------------------------------------------------------------------------------------------------------------------
+  0       0.7133       0.6570       0.6501       0.4980       0.2871       0.3882       0.8618       0.6943       0.6354       
+  1       0.7048       0.6442       0.6447       0.4752       0.2747       0.3614       0.8719       0.6935       0.6300       
+  2       0.7053       0.6510       0.6473       0.4836       0.2783       0.3721       0.8668       0.6905       0.6337       
+  3       0.7296       0.6792       0.6511       0.4728       0.2929       0.3516       0.8912       0.7216       0.6316       
+  4       0.7278       0.6601       0.6655       0.5071       0.3063       0.3986       0.8681       0.6966       0.6553       
+  -----------------------------------------------------------------------------------------------------------------------------
+  mean    0.7162       0.6583       0.6517       0.4873       0.2879       0.3744       0.8720       0.6993       0.6372       
+  std     0.0107       0.0118       0.0072       0.0132       0.0112       0.0171       0.0101       0.0113       0.0092       
+
+================================================================================
+AVERAGED FEATURE IMPORTANCE ACROSS ALL FOLDS
+================================================================================
+  Rank   Feature                                           Mean Imp          Std
+  -----------------------------------------------------------------------------
+  1      mean_plddt_peptide                                0.009101     0.000550
+  2      mean_plddt_nflank                                 0.008472     0.000440
+  3      mean_plddt_cflank                                 0.008036     0.000544
+  4      mean_rsa_cflank                                   0.005737     0.000084
+  5      mean_rsa_peptide                                  0.005597     0.000087
+  6      rel_distance_from_c_terminus                      0.005446     0.000096
+  7      mean_disorder_cflank                              0.005432     0.000096
+  8      rel_distance_from_n_terminus                      0.005415     0.000087
+  9      mean_disorder_nflank                              0.005382     0.000074
+  10     mean_disorder_peptide                             0.005378     0.000107
+  11     mean_rsa_nflank                                   0.005335     0.000035
+  12     P5_R                                              0.003225     0.000065
+  13     P5_K                                              0.002865     0.000082
+  14     N1_P                                              0.002858     0.000129
+  15     C1_N                                              0.002727     0.000065
+  16     C1_R                                              0.002669     0.000088
+  17     P7_H                                              0.002447     0.000078
+  18     P3_M                                              0.002446     0.000054
+  19     P8_R                                              0.002435     0.000068
+  20     P8_K                                              0.002427     0.000071
+  21     P7_M                                              0.002351     0.000068
+  22     C1_K                                              0.002333     0.000054
+  23     N2_R                                              0.002320     0.000082
+  24     P5_H                                              0.002309     0.000065
+  25     C1_D                                              0.002290     0.000103
+  26     P6_H                                              0.002279     0.000026
+  27     C1_S                                              0.002276     0.000096
+  28     N2_P                                              0.002267     0.000130
+  29     P6_M                                              0.002246     0.000033
+  30     P5_P                                              0.002238     0.000069
+
+================================================================================
+HELD-OUT VALIDATION SET EVALUATION
+================================================================================
+  Using model from best fold (3)
+  Held-out samples: 8845 (pos=3870, neg=4975, ratio=1.286)
+
+  Held-out results (8845 samples):
+    AUC-ROC: 0.7204  |  AUC-PR: 0.6531  |  Acc: 0.6526  |  F1: 0.4734  |  MCC: 0.2858
+    Sens: 0.3568  |  Spec: 0.8826  |  PPV: 0.7028  |  NPV: 0.6382
+
+  Classification Report:
+              precision    recall  f1-score   support
+
+    Negative     0.6382    0.8826    0.7408      4975
+    Positive     0.7028    0.3568    0.4734      3870
+
+    accuracy                         0.6526      8845
+   macro avg     0.6705    0.6197    0.6071      8845
+weighted avg     0.6665    0.6526    0.6238      8845
+
+================================================================================
+CV AVERAGE vs HELD-OUT COMPARISON
+================================================================================
+  Metric             CV mean     CV std   Held-out      Delta
+  ---------------------------------------------------------
+  auc_roc             0.7162     0.0107     0.7204    +0.0043
+  auc_pr              0.6583     0.0118     0.6531    -0.0051
+  accuracy            0.6517     0.0072     0.6526    +0.0008
+  f1                  0.4873     0.0132     0.4734    -0.0140
+  mcc                 0.2879     0.0112     0.2858    -0.0021
+  sensitivity         0.3744     0.0171     0.3568    -0.0176
+  specificity         0.8720     0.0101     0.8826    +0.0106
+  ppv                 0.6993     0.0113     0.7028    +0.0035
+  npv                 0.6372     0.0092     0.6382    +0.0010
+
+Results saved: /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_handcrafted_blosum_20260506_152722.json
+Best model saved: /home/hilarius/special_course/special_course_spring2026/models/best_rf_handcrafted_blosum_model.pkl
+Fold artifacts saved: /home/hilarius/special_course/special_course_spring2026/models/best_rf_handcrafted_blosum_artifacts.pkl
+Feature names saved: /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_blosum_feature_names.json
+
+================================================================================
+RUN SUMMARY
+================================================================================
+  Total runtime:    165.8s (2.8 min)
+  Model:            Random Forest (rf)
+  Feature set:      Structural + BLOSUM50 AA (handcrafted_blosum)
+  Components:       ['handcrafted', 'blosum']
+  Scaling:          no
+  Features (final): 631
+    CSV features:   631
+  CV folds:         5
+  Best fold:        3 (AUC = 0.7296)
+  Held-out AUC:     0.7204
+  Held-out MCC:     0.2858
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_rf_handcrafted_blosum_20260506_152722.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/rf_handcrafted_blosum_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_rf_handcrafted_blosum_log_20260506_152722.txt
+  Completed:        2026-05-06 15:30:07
+================================================================================
