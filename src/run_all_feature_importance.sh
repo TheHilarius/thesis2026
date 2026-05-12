@@ -5,6 +5,11 @@ cd "$(dirname "$0")/.." || exit 1
 source env_esmc/bin/activate
 
 FEATURE_SETS=( # uncomment to only run selected
+  # New ones without aa encodings
+  handcrafted
+  handcrafted_esmc
+  handcrafted_esmif
+  #
   handcrafted_sparse
   handcrafted_blosum
   handcrafted_sparse_esmc
@@ -28,6 +33,6 @@ for feat in "${FEATURE_SETS[@]}"; do
     --top 30 \
     --top_compare 30 \
     --top_big 70 \
-    --out_root "results/figures/models/feature_importance" 
+    --out_root "results/figures/models/feature_importance"
 done
 # out_root when dist correction: 	"results/figures/models/feature_importance_dist_correction"
