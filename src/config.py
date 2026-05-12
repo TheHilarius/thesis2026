@@ -357,6 +357,16 @@ FEATURE_SETS = {
         "display_name": "Structural + one-hot + ESM-IF hybrid 20% fb",
         "components": ["handcrafted", "sparse", "esmif_hybrid_20_fb"],
     },
+    # Without encodings, but use esmc for sequence info (no blosum/sparse)
+	"handcrafted_esmc": {
+        "display_name": "Structural + esmc",
+        "components": ["handcrafted", "esmc"],
+    },
+    # ONLY STRUCTURAL INFO
+	"handcrafted_esmif": {
+        "display_name": "Structural + esmif",
+        "components": ["handcrafted", "esmif"],
+    },
 }
 
 DEFAULT_FEATURE_SET = "handcrafted"

@@ -1,0 +1,366 @@
+================================================================================
+  04_MODELLING -- LOGISTIC REGRESSION + STRUCTURAL FEATURES ONLY
+================================================================================
+  Timestamp:       2026-05-12 11:23:52
+  Model key:       lr
+  Model class:     sklearn.linear_model.LogisticRegression
+  Feature set:     handcrafted (Structural features only)
+  Components:      ['handcrafted']
+  Data path:       /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Log path:        /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_handcrafted_log_20260512_112352.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   True
+
+  Model hyperparameters:
+    penalty                   None
+    solver                    lbfgs
+    max_iter                  5000
+    class_weight              balanced
+    random_state              42
+    verbose                   0
+================================================================================
+
+Loading split data: /home/hilarius/special_course/special_course_spring2026/data/processed/df_all_with_folds.csv
+  Shape: 53072 rows x 100 columns
+  [OK] Fold column validated: [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5)]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  CSV components (1):
+    [handcrafted] Structural features
+      Source: split_data (built-in)
+  Total CSV features: 50
+    Structural: 50
+    AA-encoded: 0
+
+  Estimated total features: ~50
+    CSV:        50
+    Embeddings: 0 (after PCA)
+
+================================================================================
+PIPELINE READY: ~50 features, 5 folds, Logistic Regression
+================================================================================
+
+--------------------------------------------------------------------------------
+  FOLD 0/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 73836 NaN values replaced with medians
+    WARNING: X_test: 18141 NaN values replaced with medians
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35381 samples (pos=15643, neg=19738, ratio=1.262)
+    Test:    8846 samples (pos=3897, neg=4949, ratio=1.270)
+    Features: 50
+    Training Logistic Regression ...
+    Training time: 0.4s
+
+    Fold 0 results (0.5s):
+      AUC-ROC: 0.5504  |  AUC-PR: 0.4819  |  Acc: 0.5450  |  F1: 0.5207  |  MCC: 0.0927
+      Sens: 0.5609  |  Spec: 0.5324  |  PPV: 0.4858  |  NPV: 0.6063
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      mean_disorder_peptide                             0.148806
+    2      mean_rsa_cflank                                   0.126619
+    3      mean_plddt_nflank                                 0.106189
+    4      mean_plddt_cflank                                 0.088692
+    5      q8point_E_peptide                                 0.075394
+    6      q8trans_H_n_pep                                   0.072348
+    7      q8point_E_cflank                                  0.060176
+    8      q8point_I_nflank                                 -0.056752
+    9      q8point_H_nflank                                  0.050125
+    10     q8point_C_peptide                                -0.047497
+    11     q8trans_E_n_pep                                  -0.037489
+    12     q8trans_I_n_pep                                   0.036579
+    13     mean_rsa_nflank                                   0.036264
+    14     q8trans_E_pep_c                                  -0.035680
+    15     q8point_H_peptide                                 0.032187
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_model_fold0.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 1/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 73443 NaN values replaced with medians
+    WARNING: X_test: 18534 NaN values replaced with medians
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35381 samples (pos=15617, neg=19764, ratio=1.266)
+    Test:    8846 samples (pos=3923, neg=4923, ratio=1.255)
+    Features: 50
+    Training Logistic Regression ...
+    Training time: 0.6s
+
+    Fold 1 results (0.8s):
+      AUC-ROC: 0.5519  |  AUC-PR: 0.4833  |  Acc: 0.5385  |  F1: 0.5131  |  MCC: 0.0786
+      Sens: 0.5483  |  Spec: 0.5308  |  PPV: 0.4822  |  NPV: 0.5959
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      mean_disorder_peptide                             0.137818
+    2      mean_rsa_cflank                                   0.123720
+    3      q8point_I_nflank                                 -0.119409
+    4      q8trans_I_n_pep                                   0.099092
+    5      mean_plddt_nflank                                 0.097483
+    6      q8point_E_peptide                                 0.080252
+    7      mean_plddt_cflank                                 0.069395
+    8      q8point_E_cflank                                  0.059647
+    9      q8trans_H_n_pep                                   0.058804
+    10     q8point_H_nflank                                  0.057803
+    11     q8point_C_peptide                                -0.044049
+    12     mean_disorder_nflank                              0.043911
+    13     mean_rsa_peptide                                  0.040834
+    14     q8trans_E_n_pep                                  -0.034902
+    15     q8trans_E_pep_c                                  -0.028776
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_model_fold1.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 2/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 72354 NaN values replaced with medians
+    WARNING: X_test: 19623 NaN values replaced with medians
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35382 samples (pos=15622, neg=19760, ratio=1.265)
+    Test:    8845 samples (pos=3918, neg=4927, ratio=1.258)
+    Features: 50
+    Training Logistic Regression ...
+    Training time: 0.7s
+
+    Fold 2 results (0.8s):
+      AUC-ROC: 0.5561  |  AUC-PR: 0.4867  |  Acc: 0.5417  |  F1: 0.5200  |  MCC: 0.0866
+      Sens: 0.5605  |  Spec: 0.5267  |  PPV: 0.4850  |  NPV: 0.6011
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      mean_disorder_peptide                             0.163686
+    2      mean_rsa_cflank                                   0.117456
+    3      mean_plddt_nflank                                 0.097482
+    4      mean_plddt_cflank                                 0.075446
+    5      q8trans_H_n_pep                                   0.073627
+    6      q8point_E_peptide                                 0.071883
+    7      q8point_E_cflank                                  0.054204
+    8      q8point_H_nflank                                  0.050981
+    9      q8point_I_nflank                                 -0.050290
+    10     q8point_C_peptide                                -0.037503
+    11     q8point_I_peptide                                 0.037400
+    12     mean_rsa_nflank                                   0.036904
+    13     q8point_H_cflank                                  0.034588
+    14     mean_disorder_cflank                             -0.032746
+    15     q8trans_C_n_pep                                  -0.032717
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_model_fold2.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 3/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 73282 NaN values replaced with medians
+    WARNING: X_test: 18695 NaN values replaced with medians
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35382 samples (pos=15643, neg=19739, ratio=1.262)
+    Test:    8845 samples (pos=3897, neg=4948, ratio=1.270)
+    Features: 50
+    Training Logistic Regression ...
+    Training time: 0.6s
+
+    Fold 3 results (0.8s):
+      AUC-ROC: 0.5551  |  AUC-PR: 0.4873  |  Acc: 0.5386  |  F1: 0.5128  |  MCC: 0.0793
+      Sens: 0.5512  |  Spec: 0.5287  |  PPV: 0.4795  |  NPV: 0.5993
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      mean_disorder_peptide                             0.140094
+    2      mean_rsa_cflank                                   0.108749
+    3      mean_plddt_nflank                                 0.080512
+    4      q8point_E_peptide                                 0.079678
+    5      q8point_H_nflank                                  0.075813
+    6      mean_plddt_peptide                                0.062128
+    7      mean_plddt_cflank                                 0.058765
+    8      q8point_C_peptide                                -0.054552
+    9      q8trans_H_n_pep                                   0.051776
+    10     q8point_E_cflank                                  0.045637
+    11     q8point_I_nflank                                 -0.042789
+    12     q8trans_E_n_pep                                  -0.039339
+    13     mean_rsa_peptide                                  0.027373
+    14     q8trans_E_pep_c                                  -0.025502
+    15     q8trans_C_n_pep                                  -0.024464
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_model_fold3.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 4/4
+--------------------------------------------------------------------------------
+    WARNING: X_train: 74993 NaN values replaced with medians
+    WARNING: X_test: 16984 NaN values replaced with medians
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35382 samples (pos=15635, neg=19747, ratio=1.263)
+    Test:    8845 samples (pos=3905, neg=4940, ratio=1.265)
+    Features: 50
+    Training Logistic Regression ...
+    Training time: 0.3s
+
+    Fold 4 results (0.5s):
+      AUC-ROC: 0.5561  |  AUC-PR: 0.4942  |  Acc: 0.5449  |  F1: 0.5180  |  MCC: 0.0911
+      Sens: 0.5539  |  Spec: 0.5379  |  PPV: 0.4865  |  NPV: 0.6040
+
+    Top 15 feature coefficients:
+    Rank   Feature                                        Coefficient
+    -----------------------------------------------------------------
+    1      mean_rsa_cflank                                   0.134727
+    2      mean_plddt_nflank                                 0.112813
+    3      mean_disorder_peptide                             0.109677
+    4      q8point_E_cflank                                  0.077014
+    5      mean_plddt_cflank                                 0.062079
+    6      q8trans_H_n_pep                                   0.056534
+    7      q8point_I_nflank                                 -0.046489
+    8      q8trans_C_n_pep                                  -0.042879
+    9      q8point_C_peptide                                -0.042474
+    10     q8point_H_cflank                                  0.039497
+    11     mean_disorder_nflank                              0.035685
+    12     q8trans_G_n_pep                                  -0.032266
+    13     q8trans_I_n_pep                                   0.031122
+    14     q8point_H_peptide                                 0.028968
+    15     q8point_G_cflank                                  0.028455
+    Saved model: /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_model_fold4.pkl
+
+================================================================================
+CROSS-VALIDATION SUMMARY (mean +/- std)
+================================================================================
+  auc_roc         0.5539 +/- 0.0023    [0.5504  0.5519  0.5561  0.5551  0.5561]
+  auc_pr          0.4867 +/- 0.0043    [0.4819  0.4833  0.4867  0.4873  0.4942]
+  accuracy        0.5418 +/- 0.0029    [0.5450  0.5385  0.5417  0.5386  0.5449]
+  f1              0.5169 +/- 0.0033    [0.5207  0.5131  0.5200  0.5128  0.5180]
+  mcc             0.0857 +/- 0.0058    [0.0927  0.0786  0.0866  0.0793  0.0911]
+  sensitivity     0.5550 +/- 0.0050    [0.5609  0.5483  0.5605  0.5512  0.5539]
+  specificity     0.5313 +/- 0.0038    [0.5324  0.5308  0.5267  0.5287  0.5379]
+  ppv             0.4838 +/- 0.0026    [0.4858  0.4822  0.4850  0.4795  0.4865]
+  npv             0.6013 +/- 0.0036    [0.6063  0.5959  0.6011  0.5993  0.6040]
+
+  Best fold: 4 (AUC-ROC = 0.5561)
+
+================================================================================
+PER-FOLD METRIC COMPARISON
+================================================================================
+  Fold    auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
+  -----------------------------------------------------------------------------------------------------------------------------
+  0       0.5504       0.4819       0.5450       0.5207       0.0927       0.5609       0.5324       0.4858       0.6063       
+  1       0.5519       0.4833       0.5385       0.5131       0.0786       0.5483       0.5308       0.4822       0.5959       
+  2       0.5561       0.4867       0.5417       0.5200       0.0866       0.5605       0.5267       0.4850       0.6011       
+  3       0.5551       0.4873       0.5386       0.5128       0.0793       0.5512       0.5287       0.4795       0.5993       
+  4       0.5561       0.4942       0.5449       0.5180       0.0911       0.5539       0.5379       0.4865       0.6040       
+  -----------------------------------------------------------------------------------------------------------------------------
+  mean    0.5539       0.4867       0.5418       0.5169       0.0857       0.5550       0.5313       0.4838       0.6013       
+  std     0.0023       0.0043       0.0029       0.0033       0.0058       0.0050       0.0038       0.0026       0.0036       
+
+================================================================================
+AVERAGED COEFFICIENTS ACROSS ALL FOLDS
+================================================================================
+  Rank   Feature                                          Mean Coef          Std
+  -----------------------------------------------------------------------------
+  1      mean_disorder_peptide                             0.140016     0.017679
+  2      mean_rsa_cflank                                   0.122254     0.008743
+  3      mean_plddt_nflank                                 0.098896     0.010852
+  4      mean_plddt_cflank                                 0.070875     0.010626
+  5      q8point_E_peptide                                 0.066368     0.021089
+  6      q8point_I_nflank                                 -0.063146     0.028508
+  7      q8trans_H_n_pep                                   0.062618     0.008775
+  8      q8point_E_cflank                                  0.059335     0.010269
+  9      q8point_H_nflank                                  0.049944     0.019766
+  10     q8point_C_peptide                                -0.045215     0.005670
+  11     q8trans_I_n_pep                                   0.038328     0.032298
+  12     q8trans_E_n_pep                                  -0.030351     0.010352
+  13     mean_disorder_nflank                              0.028138     0.010534
+  14     q8trans_C_n_pep                                  -0.027797     0.009377
+  15     mean_plddt_peptide                                0.026139     0.020102
+  16     q8point_H_cflank                                  0.024314     0.011797
+  17     mean_rsa_nflank                                   0.023033     0.011373
+  18     q8trans_E_pep_c                                  -0.022746     0.010587
+  19     mean_rsa_peptide                                  0.022587     0.012923
+  20     mean_disorder_cflank                             -0.022118     0.007602
+  21     q8point_H_peptide                                 0.021542     0.014798
+  22     q8point_G_cflank                                  0.021178     0.006074
+  23     q8point_G_peptide                                -0.019644     0.003090
+  24     q8trans_G_n_pep                                  -0.019342     0.010008
+  25     q8point_I_peptide                                 0.017657     0.011138
+  26     q8point_B_cflank                                  0.016245     0.002520
+  27     q8point_S_peptide                                -0.016088     0.002637
+  28     q8point_T_peptide                                 0.013718     0.004403
+  29     q8point_C_nflank                                  0.012138     0.007142
+  30     q8point_T_cflank                                  0.011013     0.005549
+
+================================================================================
+HELD-OUT VALIDATION SET EVALUATION
+================================================================================
+  Using model from best fold (4)
+  Held-out samples: 8845 (pos=3901, neg=4944, ratio=1.267)
+
+  Held-out results (8845 samples):
+    AUC-ROC: 0.5432  |  AUC-PR: 0.4743  |  Acc: 0.5343  |  F1: 0.5057  |  MCC: 0.0694
+    Sens: 0.5401  |  Spec: 0.5297  |  PPV: 0.4754  |  NPV: 0.5935
+
+  Classification Report:
+              precision    recall  f1-score   support
+
+    Negative     0.5935    0.5297    0.5598      4944
+    Positive     0.4754    0.5401    0.5057      3901
+
+    accuracy                         0.5343      8845
+   macro avg     0.5344    0.5349    0.5327      8845
+weighted avg     0.5414    0.5343    0.5359      8845
+
+================================================================================
+CV AVERAGE vs HELD-OUT COMPARISON
+================================================================================
+  Metric             CV mean     CV std   Held-out      Delta
+  ---------------------------------------------------------
+  auc_roc             0.5539     0.0023     0.5432    -0.0107
+  auc_pr              0.4867     0.0043     0.4743    -0.0124
+  accuracy            0.5418     0.0029     0.5343    -0.0074
+  f1                  0.5169     0.0033     0.5057    -0.0112
+  mcc                 0.0857     0.0058     0.0694    -0.0163
+  sensitivity         0.5550     0.0050     0.5401    -0.0148
+  specificity         0.5313     0.0038     0.5297    -0.0016
+  ppv                 0.4838     0.0026     0.4754    -0.0084
+  npv                 0.6013     0.0036     0.5935    -0.0079
+
+Results saved: /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_handcrafted_20260512_112352.json
+Best model saved: /home/hilarius/special_course/special_course_spring2026/models/best_lr_handcrafted_model.pkl
+Fold artifacts saved: /home/hilarius/special_course/special_course_spring2026/models/best_lr_handcrafted_artifacts.pkl
+Feature names saved: /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_feature_names.json
+
+================================================================================
+RUN SUMMARY
+================================================================================
+  Total runtime:    4.4s (0.1 min)
+  Model:            Logistic Regression (lr)
+  Feature set:      Structural features only (handcrafted)
+  Components:       ['handcrafted']
+  Scaling:          yes
+  Features (final): 50
+    CSV features:   50
+  CV folds:         5
+  Best fold:        4 (AUC = 0.5561)
+  Held-out AUC:     0.5432
+  Held-out MCC:     0.0694
+  Models dir:       /home/hilarius/special_course/special_course_spring2026/models/
+  Results file:     /home/hilarius/special_course/special_course_spring2026/models/cv_results_lr_handcrafted_20260512_112352.json
+  Feature names:    /home/hilarius/special_course/special_course_spring2026/models/lr_handcrafted_feature_names.json
+  Log file:         /home/hilarius/special_course/special_course_spring2026/logs/04_modelling_lr_handcrafted_log_20260512_112352.txt
+  Completed:        2026-05-12 11:23:56
+================================================================================
