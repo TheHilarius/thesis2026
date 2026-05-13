@@ -96,21 +96,21 @@ def cluster_by_hamming(peptides, max_dist=1):
     so duplicate peptide sequences from different proteins are
     trivially in the same cluster.
     """
-    uf = UnionFind()
+    uf = UnionFind() # Initialize the union-find structure to manage clusters of peptides
     peptide_set = set(peptides)
 
-    for pep in peptides:
-        uf.find(pep)
-        for pos in range(len(pep)):
-            for aa in AMINO_ACIDS:
-                if aa != pep[pos]:
-                    neighbour = pep[:pos] + aa + pep[pos + 1:]
-                    if neighbour in peptide_set:
-                        uf.union(pep, neighbour)
+    for pep in peptides: 
+        uf.find(pep) #Ensure every peptide is initialized in the union-find structure
+        for pos in range(len(pep)): 
+            for aa in AMINO_ACIDS: #For each position in peptide, try substituting each amino acid
+                if aa != pep[pos]: # Only consider substitutions that change the sequence (Hamming distance = 1)
+                    neighbour = pep[:pos] + aa + pep[pos + 1:] #Create the neighboring sequence with one amino acid changed
+                    if neighbour in peptide_set: #If the neighboring sequence exists in the dataset, they are homologous and should be in the same cluster
+                        uf.union(pep, neighbour) 
 
-    clusters = defaultdict(set)
-    for pep in peptides:
-        clusters[uf.find(pep)].add(pep)
+    clusters = defaultdict(set) # initialize a dictionary to hold clusters, where each key is a cluster representative (root) and the value is a set of peptides in that cluster
+    for pep in peptides: # For each peptide
+        clusters[uf.find(pep)].add(pep) # Add the peptide to the cluster corresponding to its root representative
 
     return dict(clusters)
 
@@ -128,22 +128,27 @@ def greedy_balanced_partition(clusters, n_buckets, peptide_sample_counts):
     accounts for the true number of data rows, not just unique peptides.
     """
     cluster_info = []
-    for root, peps in clusters.items():
-        total = sum(peptide_sample_counts.get(p, 0) for p in peps)
-        cluster_info.append((root, peps, total))
+    for root, peps in clusters.items(): # For each cluster
+        total = sum(peptide_sample_counts.get(p, 0) for p in peps) # Calculate the total number of samples (rows) that correspond to the peptides in this cluster, including duplicates from different proteins
+        cluster_info.append((root, peps, total)) # Append a tuple of (cluster representative, set of peptides in the cluster, total sample count for the cluster) to the cluster_info list
 
-    cluster_info.sort(key=lambda x: x[2], reverse=True)
+    cluster_info.sort(key=lambda x: x[2], reverse=True) # Sort the clusters in descending order based on their total sample count, so that larger clusters are assigned to buckets first
+    # x[2] is the second column, which contains the total sample count for each cluster. Reverse = True, so largest clusters are first. 
+    bucket_totals = np.zeros(n_buckets, dtype=int) 
+    peptide_to_bucket = {} 
 
-    bucket_totals = np.zeros(n_buckets, dtype=int)
-    peptide_to_bucket = {}
-
+    print_count = 0
     for root, peps, size in cluster_info:
-        target = int(np.argmin(bucket_totals))
-        for p in peps:
-            peptide_to_bucket[p] = target
-        bucket_totals[target] += size
+        if print_count < 5:
+            print(f"Assigning cluster with root '{root}' and {len(peps)} peptides "
+                  f"({size} total samples) to a bucket...")
+        print_count += 1
+        target = int(np.argmin(bucket_totals)) # Bucket with smallest current size 
+        for p in peps: #
+            peptide_to_bucket[p] = target # Assign all peptides in the cluster to the target bucket
+        bucket_totals[target] += size # Bucket size with duplicates 
 
-    return peptide_to_bucket, bucket_totals.tolist()
+    return peptide_to_bucket, bucket_totals.tolist() # 
 
 
 # ──────────────────────────────────────────────
