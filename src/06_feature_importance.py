@@ -271,7 +271,7 @@ def plot_panel(ax, df_top, signed, label, model_key, fontsize=8):
         set_fractional_xticks(ax, values)
         set_asymmetric_xticks(ax, values)
         imp_label = f' ({XGB_IMP})' if model_key == 'xgb' else ''
-        xlabel = f'{label} Importance{imp_label} (mean ± std across folds)'
+        xlabel = f'{label} Gini Importance{imp_label} (mean ± std across folds)'
 
     ax.set_xlabel(xlabel)
     return df_top
