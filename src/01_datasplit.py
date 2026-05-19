@@ -100,13 +100,13 @@ def cluster_by_hamming(peptides, max_dist=1):
     peptide_set = set(peptides)
 
     for pep in peptides: 
-        uf.find(pep) #Ensure every peptide is initialized in the union-find structure
+        uf.find(pep) #Ensure every peptide is initialized in the union-find structure  
         for pos in range(len(pep)): 
             for aa in AMINO_ACIDS: #For each position in peptide, try substituting each amino acid
                 if aa != pep[pos]: # Only consider substitutions that change the sequence (Hamming distance = 1)
                     neighbour = pep[:pos] + aa + pep[pos + 1:] #Create the neighboring sequence with one amino acid changed
                     if neighbour in peptide_set: #If the neighboring sequence exists in the dataset, they are homologous and should be in the same cluster
-                        uf.union(pep, neighbour) 
+                        uf.union(pep, neighbour) # Only joins distance-1 pairs
 
     clusters = defaultdict(set) # initialize a dictionary to hold clusters, where each key is a cluster representative (root) and the value is a set of peptides in that cluster
     for pep in peptides: # For each peptide
