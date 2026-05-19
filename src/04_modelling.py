@@ -336,19 +336,38 @@ def impute_nan(X_train, X_test, feature_cols, fold_id):
     X_train = np.where(np.isinf(X_train), np.nan, X_train)
     X_test = np.where(np.isinf(X_test), np.nan, X_test)
 
-    for name, arr in [("X_train", X_train), ("X_test", X_test)]:
-        n_nan = np.isnan(arr).sum()
-        if n_nan > 0:
-            print(f"    WARNING: {name}: {n_nan} NaN values replaced with medians")
-
     col_medians = np.nanmedian(X_train, axis=0)
     col_medians = np.where(np.isnan(col_medians), 0.0, col_medians)
 
+    # Per-column imputation report
+    train_nan_counts = np.isnan(X_train).sum(axis=0)
+    test_nan_counts  = np.isnan(X_test).sum(axis=0)
+
+    cols_with_nan = np.where((train_nan_counts > 0) | (test_nan_counts > 0))[0]
+
+    if len(cols_with_nan) > 0:
+        print(f"\n    NaN imputation report — "
+              f"{len(cols_with_nan)} column(s) affected:")
+        print(f"    {'Column':<45} {'Train NaN':>10} {'Test NaN':>10} {'Median':>10}")
+        print(f"    {'-' * 77}")
+        for col_idx in cols_with_nan:
+            col_name = feature_cols[col_idx] if col_idx < len(feature_cols) else f"col_{col_idx}"
+            print(f"    {col_name:<45} {train_nan_counts[col_idx]:>10} "
+                  f"{test_nan_counts[col_idx]:>10} {col_medians[col_idx]:>10.4f}")
+        train_total = train_nan_counts.sum()
+        test_total = test_nan_counts.sum()
+        train_pct = train_total / X_train.size * 100 if X_train.size > 0 else 0.0
+        test_pct = test_total / X_test.size * 100 if X_test.size > 0 else 0.0
+        print(f"    Total NaN — train: {train_total} ({train_pct:.2f}%), "
+              f"test: {test_total} ({test_pct:.2f}%)")
+    else:
+        print(f"    no NaN values found in CSV features")
+
     for col_idx in range(X_train.shape[1]):
         train_nan = np.isnan(X_train[:, col_idx])
-        test_nan = np.isnan(X_test[:, col_idx])
+        test_nan  = np.isnan(X_test[:, col_idx])
         X_train[train_nan, col_idx] = col_medians[col_idx]
-        X_test[test_nan, col_idx] = col_medians[col_idx]
+        X_test[test_nan, col_idx]   = col_medians[col_idx]
 
     return X_train, X_test, col_medians
 
