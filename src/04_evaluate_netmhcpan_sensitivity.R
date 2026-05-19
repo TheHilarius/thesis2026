@@ -120,19 +120,23 @@ df_iedb_pos <- df_iedb_pos |>
 cat("IEDB positives with rank (TP):", sum(!is.na(df_iedb_pos$rank)), "\n")
 cat("IEDB positives without rank (FN):", sum(is.na(df_iedb_pos$rank)), "\n")
 
-df_overlap        <- df_netmhcpan_binders |> 
+
+df_netmhcpan_binders_unique <- df_netmhcpan_binders |>
+  distinct(peptide, uniprot_id, .keep_all = TRUE)
+
+df_overlap <- df_netmhcpan_binders_unique |>
   semi_join(df_iedb_pos, by = c("peptide", "uniprot_id"))
 
-df_netmhcpan_only <- df_netmhcpan_binders |> 
-  anti_join(df_iedb_pos, by = c("peptide", "uniprot_id")) |>
-  distinct(peptide, uniprot_id, start, end, .keep_all = TRUE)
+df_netmhcpan_only <- df_netmhcpan_binders_unique |>
+  anti_join(df_iedb_pos, by = c("peptide", "uniprot_id"))
+
 
 df_iedb_only      <- df_iedb_pos |> 
-  anti_join(df_netmhcpan_binders, by = c("peptide", "uniprot_id"))
+  anti_join(df_netmhcpan_binders_unique, by = c("peptide", "uniprot_id"))
 
 cat("\n=== Comparison Summary (9-mers only) ===\n")
 cat("Experimentally confirmed (IEDB):          ", nrow(df_iedb_pos), "\n")
-cat("Predicted binders (NetMHCpan):            ", nrow(df_netmhcpan_binders), "\n")
+cat("Predicted binders (NetMHCpan):            ", nrow(df_netmhcpan_binders_unique), "\n")
 cat("Overlap (both):                           ", nrow(df_overlap), "\n")
 cat("NetMHCpan only (predicted, not confirmed):", nrow(df_netmhcpan_only), "\n")
 cat("IEDB only (confirmed, not predicted):     ", nrow(df_iedb_only), "\n")
@@ -156,7 +160,7 @@ valid_proteins <- df_protein_lookup$uniprot_id
 total_peptides <- get_netmhcpan_total(peptide_length = 9, valid_ids = valid_proteins)
 cat("Total 9-mer peptides from valid proteins:", scales::comma(total_peptides), "\n")
 
-TN <- total_peptides - nrow(df_netmhcpan_binders) - FN
+TN <- total_peptides - nrow(df_netmhcpan_binders_unique) - FN
 
 sensitivity  <- TP / (TP + FN)
 specificity  <- TN / (TN + FP)
@@ -492,6 +496,36 @@ ks_after      <- ks.test(df_positives$rank, df_negatives$rank)
 wilcox_before <- wilcox.test(df_positives$rank, df_netmhcpan_only$rank)
 wilcox_after  <- wilcox.test(df_positives$rank, df_negatives$rank)
 
+
+# ── Post-matching density plot (chosen config: 25 bins) ──────────────────────
+df_rank_post <- bind_rows(
+  df_positives |> transmute(rank, label = "Positive (TP)"),
+  df_negatives |> transmute(rank, label = "Negative (matched)")
+)
+
+p2b <- ggplot(df_rank_post, aes(x = rank, fill = label)) +
+  geom_density(alpha = 0.5, colour = "black", linewidth = 0.3) +
+  scale_fill_manual(values = c("Positive (TP)"      = "#2ecc71",
+                               "Negative (matched)" = "#3498db")) +
+  geom_vline(xintercept = 0.5, linetype = "dashed", colour = "grey40", linewidth = 0.5) +
+  annotate("text", x = 0.5, y = Inf, label = "SB threshold (0.5%)",
+           vjust = 2, hjust = -0.05, size = 3, colour = "grey40") +
+  annotate("text", x = 1.5, y = Inf,
+           label = paste0("KS D = ", round(ks_after$statistic, 4)),
+           vjust = 1.5, size = 5, fontface = "bold", colour = "#3498db") +
+  labs(
+    title    = "Affinity Bias Check: NetMHCpan EL Rank Distribution (After Matching)",
+    subtitle = paste0("9-mers  |  HLA-A*02:01  |  25 bins  |  KS D = ",
+                      round(ks_after$statistic, 4),
+                      " (distributions well matched)"),
+    x = "NetMHCpan EL Rank (%)", y = "Density", fill = NULL
+  ) +
+  theme_bw(base_size = 13) +
+  theme(legend.position = "top", panel.grid.minor = element_blank(),
+        plot.title.position = "plot")
+
+ggsave("results/affinity_bias_density_after.png", p2b, width = 7, height = 5, dpi = 150)
+
 cat("Computing Cliff's Delta (before matching)...\n")
 cliff_before <- cliff_delta_sampled(df_positives$rank, df_netmhcpan_only$rank)
 cat("Computing Cliff's Delta (after matching)...\n")
@@ -697,11 +731,11 @@ n_9mer_verified <- nrow(df_diag_after_sec)
 
 # IEDB-level split — use the CLEAN data before left_join corrupted df_iedb_pos
 n_iedb_recovered <- df_diag_after_sec |>
-  semi_join(df_netmhcpan_binders, by = c("peptide", "uniprot_id")) |>
+  semi_join(df_netmhcpan_binders_unique, by = c("peptide", "uniprot_id")) |>
   nrow()
 
 n_iedb_missed <- df_diag_after_sec |>
-  anti_join(df_netmhcpan_binders, by = c("peptide", "uniprot_id")) |>
+  anti_join(df_netmhcpan_binders_unique, by = c("peptide", "uniprot_id")) |>
   nrow()
 
 stopifnot(n_iedb_recovered + n_iedb_missed == n_9mer_verified)
@@ -748,7 +782,7 @@ df_sankey_counts <- tibble(
     n_9mer_verified,
     n_iedb_recovered, n_iedb_missed,
     sum(df_combined$label == 1), nrow(df_iedb_only),
-    nrow(df_netmhcpan_binders), nrow(df_netmhcpan_only),
+    nrow(df_netmhcpan_binders_unique), nrow(df_netmhcpan_only),
     sum(df_combined$label == 0), nrow(df_netmhcpan_only) - sum(df_combined$label == 0)
   )
 )

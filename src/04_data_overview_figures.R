@@ -2,6 +2,8 @@ library(networkD3)
 library(tidyverse)
 source("src/functions.R")
 set_working_directory()
+library(eulerr)
+
 
 # ============================================================================
 # 0. LOAD COUNTS
