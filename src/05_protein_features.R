@@ -13,7 +13,16 @@ my_packages <- c(
 df_epitopes <- read_csv("data/processed/df_combined_pos_and_neg.csv")
 
 df_fasta <- read_fasta_df("data/raw/fasta/combined_9mer.fasta") |>
-  mutate(uniprot_id = str_extract(header, "(?<=\\|)[A-Z0-9]+(?=\\|)"))
+  mutate(
+    accession  = str_extract(header, "(?<=\\|)[^|]+(?=\\|)"),
+    uniprot_id = str_remove(accession, "-[0-9]+$"),
+    is_isoform = str_detect(accession, "-[0-9]+$")
+  ) |>
+  filter(!is.na(uniprot_id)) |>
+  mutate(seq_length = nchar(sequence)) |>
+  arrange(is_isoform, desc(seq_length)) |>
+  slice_head(n = 1, by = uniprot_id) |>
+  select(-accession, -is_isoform, -seq_length)
 
 # ============================================================================
 # STEP 1: MERGE EPITOPE DATA WITH PROTEIN SEQUENCES

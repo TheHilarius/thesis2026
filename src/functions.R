@@ -7,11 +7,9 @@ set_working_directory <- function() {
   if (current_user == "olive") {
     setwd("C:/Users/olive/Documents/R/special_course_spring2026")
   } else if (current_user == "mj607") {
-    setwd("//wsl$/Ubuntu/home/hilarius/special_course_spring2026")
+    setwd("//wsl$/Ubuntu/home/hilarius/projects/thesis2026")
   } else if (current_user == "hilarius") {
-    setwd("/home/hilarius/special_course/special_course_spring2026")
-  } else if (current_user == "Hilarius") {
-    setwd("C:/Users/Hilarius/OneDrive - Danmarks Tekniske Universitet/Skrivebord/special_course_spring2026/special_course_spring2026")
+    setwd("/home/hilarius/projects/thesis2026")
   } else {
     stop("Unknown user. Please set working directory manually.")
   }

@@ -24,8 +24,31 @@ if (n_before > n_after) {
 
 # Validate against FASTA database ────────────────────────────────────────
 cat("Loading FASTA database to remove obsolete isoforms...\n")
-df_fasta <- read_fasta_df("data/raw/fasta/combined_9mer.fasta") |>
-  mutate(uniprot_id = str_extract(header, "(?<=\\|)[A-Z0-9]+(?=\\|)"))
+df_fasta_raw <- read_fasta_df("data/raw/fasta/combined_9mer.fasta") |>
+  mutate(
+    accession  = str_extract(header, "(?<=\\|)[^|]+(?=\\|)"),
+    uniprot_id = str_remove(accession, "-[0-9]+$"),
+    is_isoform = str_detect(accession, "-[0-9]+$")
+  ) |>
+  filter(!is.na(uniprot_id))
+
+# One sequence per UniProt ID. Prefer the canonical (non-isoform) entry;
+# otherwise keep the longest. Isoform accessions (e.g. P12345-2) now map to
+# their base accession instead of NA, so they deduplicate correctly.
+df_fasta <- df_fasta_raw |>
+  mutate(seq_length = nchar(sequence)) |>
+  arrange(is_isoform, desc(seq_length)) |>
+  slice_head(n = 1, by = uniprot_id)
+
+cat("FASTA entries loaded:      ", nrow(df_fasta_raw), "\n")
+cat("Isoform entries (`-N`):    ", sum(df_fasta_raw$is_isoform), "\n")
+cat("Unique proteins kept:      ", nrow(df_fasta), "\n")
+cat("Entries collapsed:         ", nrow(df_fasta_raw) - nrow(df_fasta), "\n\n")
+
+# Proteins NetSurfP 3.1 cannot run on (length limits)
+nsp3_unrunnable_ids <- df_fasta |>
+  filter(seq_length < 130 | seq_length > 5000) |>
+  pull(uniprot_id)
 
 df_iedb_pos <- df_iedb_pos |>
   semi_join(df_fasta, by = "uniprot_id")
@@ -49,6 +72,22 @@ cat("Removed", n_iedb_sec, "IEDB positives from", length(sec_proteins),
     "selenocysteine-containing proteins\n")
 cat("IEDB positives after Sec filter:", nrow(df_iedb_pos), "\n")
 
+# Remove proteins too short/long for NetSurfP 3.1 ─────────────────────────
+df_iedb_pos_pre_length <- df_iedb_pos
+
+df_pos_removed_len <- df_iedb_pos |>
+  filter(uniprot_id %in% nsp3_unrunnable_ids) |>
+  left_join(df_fasta |> select(uniprot_id, seq_length), by = "uniprot_id") |>
+  distinct(peptide, uniprot_id, .keep_all = TRUE)
+
+df_iedb_pos <- df_iedb_pos |>
+  filter(!uniprot_id %in% nsp3_unrunnable_ids)
+
+cat("\nNetSurfP 3.1 length filter (<130 or >5000 aa):\n")
+cat("  Proteins unrunnable:", length(nsp3_unrunnable_ids), "\n")
+cat("  Positives removed:  ", nrow(df_pos_removed_len), "\n")
+cat("  Positives remaining:", nrow(df_iedb_pos), "\n\n")
+
 write_csv(df_iedb_pos, "data/processed/pos_EL_9mers_epitopes_hla0201.csv")
 cat("IEDB positives:", nrow(df_iedb_pos), "\n")
 
@@ -68,7 +107,7 @@ cat("Total 9-mer binders loaded:", nrow(df_netmhcpan_raw), "\n")
 
 
 # Parse, clean, and filter to valid proteins 
-df_netmhcpan_binders <- df_netmhcpan_raw |>
+df_netmhcpan_binders_parsed <- df_netmhcpan_raw |>
   mutate(HLA = "HLA-A02:01") |>
   mutate(binder = case_when(
     Rank < 0.5 ~ "SB",
@@ -87,7 +126,26 @@ df_netmhcpan_binders <- df_netmhcpan_raw |>
   relocate(pep_length, .after = peptide) |>
   relocate(end,        .after = start)   |>
   relocate(id,         .after = binder)  |>
-  select(-c(id, core, icore, score, ave)) |>
+  select(-c(id, core, icore, score, ave))
+
+# Record predicted binders removed by the NetSurfP length filter.
+# Restricted to positive proteins (those that would enter the negative pool)
+# and deduplicated by (peptide, uniprot_id) to match the downsampling pool.
+df_binders_removed_len <- df_netmhcpan_binders_parsed |>
+  filter(uniprot_id %in% nsp3_unrunnable_ids,
+         uniprot_id %in% df_iedb_pos_pre_length$uniprot_id) |>
+  distinct(peptide, uniprot_id, .keep_all = TRUE)
+
+df_neg_removed_len <- df_binders_removed_len |>
+  anti_join(df_iedb_pos_pre_length, by = c("peptide", "uniprot_id")) |>
+  left_join(df_fasta |> select(uniprot_id, seq_length), by = "uniprot_id")
+
+cat("NetSurfP length filter — unique binders removed (positive proteins):", nrow(df_binders_removed_len), "\n")
+cat("  of which negatives (not IEDB positives):", nrow(df_neg_removed_len), "\n")
+cat("  (overlap = removed positives recovered as TP:",
+    nrow(df_binders_removed_len) - nrow(df_neg_removed_len), ")\n")
+
+df_netmhcpan_binders <- df_netmhcpan_binders_parsed |>
   semi_join(df_protein_lookup, by = "uniprot_id") |>
   left_join(df_protein_lookup, by = "uniprot_id")
 
@@ -120,6 +178,43 @@ df_iedb_pos <- df_iedb_pos |>
 cat("IEDB positives with rank (TP):", sum(!is.na(df_iedb_pos$rank)), "\n")
 cat("IEDB positives without rank (FN):", sum(is.na(df_iedb_pos$rank)), "\n")
 
+# Classify length-removed positives by whether NetMHCpan would have recovered them
+df_pos_removed_len <- df_pos_removed_len |>
+  left_join(
+    df_netmhcpan_binders_parsed |>
+      select(peptide, uniprot_id, rank) |>
+      slice_min(rank, n = 1, with_ties = FALSE, by = c(peptide, uniprot_id)),
+    by = c("peptide", "uniprot_id")
+  ) |>
+  mutate(pool = if_else(!is.na(rank), "TP", "FN"))
+
+cat("\nLength-removed positives by NetMHCpan recovery:\n")
+df_pos_removed_len |>
+  count(pool) |>
+  print()
+
+# NetSurfP length-filter diagnostics ──────────────────────────────────────
+df_nsp3_unrunnable_proteins <- df_fasta |>
+  filter(uniprot_id %in% nsp3_unrunnable_ids) |>
+  select(uniprot_id, seq_length) |>
+  left_join(df_pos_removed_len |> count(uniprot_id, name = "n_pos_removed"),
+            by = "uniprot_id") |>
+  left_join(df_neg_removed_len  |> count(uniprot_id, name = "n_neg_removed"),
+            by = "uniprot_id") |>
+  mutate(across(starts_with("n_"), ~ replace_na(.x, 0L))) |>
+  arrange(seq_length)
+
+write_csv(df_nsp3_unrunnable_proteins, "data/processed/nsp3_unrunnable_proteins.csv")
+write_csv(df_pos_removed_len,          "data/processed/nsp3_removed_positives.csv")
+write_csv(df_neg_removed_len,          "data/processed/nsp3_removed_negatives.csv")
+
+cat("\nSaved NetSurfP length-filter diagnostics:\n")
+cat("  nsp3_unrunnable_proteins.csv —", nrow(df_nsp3_unrunnable_proteins), "proteins\n")
+cat("  nsp3_removed_positives.csv   —", nrow(df_pos_removed_len), "positives\n")
+cat("  nsp3_removed_negatives.csv   —", nrow(df_neg_removed_len), "negatives\n")
+
+
+# MAGNUS GOT TO HERE
 
 df_netmhcpan_binders_unique <- df_netmhcpan_binders |>
   distinct(peptide, uniprot_id, .keep_all = TRUE)
@@ -727,14 +822,18 @@ df_diag_after_sec <- df_diag_after_fasta |>
   filter(!uniprot_id %in% sec_proteins)
 n_diag_sec <- nrow(df_diag_after_fasta) - nrow(df_diag_after_sec)
 
-n_9mer_verified <- nrow(df_diag_after_sec)
+df_diag_after_len <- df_diag_after_sec |>
+  filter(!uniprot_id %in% nsp3_unrunnable_ids)
+n_diag_len <- nrow(df_diag_after_sec) - nrow(df_diag_after_len)
+
+n_9mer_verified <- nrow(df_diag_after_len)
 
 # IEDB-level split — use the CLEAN data before left_join corrupted df_iedb_pos
-n_iedb_recovered <- df_diag_after_sec |>
+n_iedb_recovered <- df_diag_after_len |>
   semi_join(df_netmhcpan_binders_unique, by = c("peptide", "uniprot_id")) |>
   nrow()
 
-n_iedb_missed <- df_diag_after_sec |>
+n_iedb_missed <- df_diag_after_len |>
   anti_join(df_netmhcpan_binders_unique, by = c("peptide", "uniprot_id")) |>
   nrow()
 
@@ -751,6 +850,7 @@ cat("  - O60361:             ", n_is_o60361, "\n")
 cat("  - Dedup:              ", n_diag_dedup, "\n")
 cat("  - Missing FASTA:      ", n_diag_missing_fasta, "\n")
 cat("  - Selenocysteine:     ", n_diag_sec, "\n")
+cat("  - NetSurfP length:    ", n_diag_len, "\n")
 cat("  Final verified:       ", n_9mer_verified, "\n")
 cat("  Recovered by NetMHCpan:", n_iedb_recovered, "\n")
 cat("  Missed by NetMHCpan:  ", n_iedb_missed, "\n")
@@ -768,7 +868,7 @@ df_sankey_counts <- tibble(
   stage = c(
     "raw_assays", "duplicates", "unique_pairs", "ptm", "no_ptm",
     "non_9mer", "9mer_all",
-    "na_uniprot", "o60361", "dedup", "missing_fasta", "selenocysteine",
+    "na_uniprot", "o60361", "dedup", "missing_fasta", "selenocysteine", "nsp3_length",
     "9mer_verified",
     "iedb_recovered", "iedb_missed",
     "tp_in_combined", "fn_in_iedb_only",
@@ -778,7 +878,7 @@ df_sankey_counts <- tibble(
   count = c(
     200381, 123531, 76850, 15138, 61712,
     n_diag_non9mer, n_diag_9mer,
-    n_is_na, n_is_o60361, n_diag_dedup, n_diag_missing_fasta, n_diag_sec,
+    n_is_na, n_is_o60361, n_diag_dedup, n_diag_missing_fasta, n_diag_sec, n_diag_len,
     n_9mer_verified,
     n_iedb_recovered, n_iedb_missed,
     sum(df_combined$label == 1), nrow(df_iedb_only),
