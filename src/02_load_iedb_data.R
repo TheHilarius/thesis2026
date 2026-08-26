@@ -77,5 +77,14 @@ write_csv(df_clean,   "data/processed/pos_EL_all_epitopes_hla0201.csv")
 write_csv(df_healthy, "data/processed/pos_EL_healthy_epitopes_hla0201.csv")
 write_csv(df_cancer,  "data/processed/pos_EL_cancer_epitopes_hla0201.csv")
 
+# Write stage counts for Sankey diagram
+iedb_stage_counts <- tibble(
+  stage = c("raw_assays", "duplicates", "unique_pairs", "ptm", "no_ptm"),
+  count = c(nrow(df_raw), nrow(df_formatted) - nrow(df_dedup), nrow(df_dedup),
+            nrow(df_dedup) - nrow(df_clean), nrow(df_clean))
+)
+write_csv(iedb_stage_counts, "data/processed/iedb_stage_counts.csv")
+cat("Stage counts saved to data/processed/iedb_stage_counts.csv\n")
+
 cat("✅ Saved cleaned files to data/processed/\n")
 cat("Next step: run src/export_fasta_files_from_iedb.py on data/processed/pos_EL_all_epitopes_hla0201.csv\n")

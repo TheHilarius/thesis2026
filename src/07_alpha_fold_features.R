@@ -227,3 +227,70 @@ saveRDS(alphafold_features,
 
 cat("\nSaved:\n  data/processed/df_all.csv (all features, scalar only)\n  data/processed/alphafold_plddt_features_with_vectors.rds (full vectors)\n")
 
+# ============================================================================
+# MISSINGNESS REPORT: Final dataset quality summary
+# ============================================================================
+
+cat("\n\n")
+cat(strrep("=", 70), "\n")
+cat("  MISSINGNESS REPORT: Final dataset quality summary\n")
+cat(strrep("=", 70), "\n\n")
+
+# AlphaFold missingness
+af_missing <- df_all |>
+  summarise(
+    total = n(),
+    missing_plddt = sum(is.na(mean_plddt_peptide)),
+    missing_pct = round(missing_plddt / total * 100, 1)
+  )
+
+cat("AlphaFold pLDDT:\n")
+cat("  Total entries:", af_missing$total, "\n")
+cat("  Missing:", af_missing$missing_plddt, "(", af_missing$missing_pct, "%)\n\n")
+
+# NetSurfP missingness (check for mean_rsa_peptide which is from step 06)
+if ("mean_rsa_peptide" %in% names(df_all)) {
+  nsp_missing <- df_all |>
+    summarise(
+      total = n(),
+      missing_rsa = sum(is.na(mean_rsa_peptide)),
+      missing_pct = round(missing_rsa / total * 100, 1)
+    )
+  
+  cat("NetSurfP RSA:\n")
+  cat("  Total entries:", nsp_missing$total, "\n")
+  cat("  Missing:", nsp_missing$missing_rsa, "(", nsp_missing$missing_pct, "%)\n\n")
+} else {
+  cat("NetSurfP features not found in df_all (step 06 not yet run?)\n\n")
+}
+
+# Combined summary
+cat(strrep("-", 50), "\n")
+cat("Summary:\n")
+cat("  AlphaFold pLDDT missing:", af_missing$missing_plddt, "\n")
+if ("mean_rsa_peptide" %in% names(df_all)) {
+  cat("  NetSurfP RSA missing:   ", nsp_missing$missing_rsa, "\n")
+}
+
+# Save report
+df_missingness <- tibble(
+  feature_group = c("AlphaFold pLDDT peptide", "AlphaFold pLDDT nflank", "AlphaFold pLDDT cflank",
+                     if ("mean_rsa_peptide" %in% names(df_all)) c("NetSurfP RSA peptide", "NetSurfP RSA nflank", "NetSurfP RSA cflank")),
+  missing_n = c(
+    sum(is.na(df_all$mean_plddt_peptide)),
+    sum(is.na(df_all$mean_plddt_nflank)),
+    sum(is.na(df_all$mean_plddt_cflank)),
+    if ("mean_rsa_peptide" %in% names(df_all)) c(
+      sum(is.na(df_all$mean_rsa_peptide)),
+      sum(is.na(df_all$mean_rsa_nflank)),
+      sum(is.na(df_all$mean_rsa_cflank))
+    )
+  ),
+  total = nrow(df_all),
+  missing_pct = round(missing_n / total * 100, 1)
+)
+
+write_csv(df_missingness, "data/processed/missingness_report.csv")
+cat("\nSaved: data/processed/missingness_report.csv\n")
+print(df_missingness, n = Inf)
+

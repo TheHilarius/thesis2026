@@ -88,3 +88,10 @@ models_full_2026-05-27.tar.zst
 .RData
 data/processed/backup/
 .RData
+
+# AlphaFold local outputs (large)
+data/processed/alphafold_output/
+data/processed/alphafold_output_before_short_ids/
+data/processed/af_version_comparison/
+data/processed/af_*_output.log
+*.bak

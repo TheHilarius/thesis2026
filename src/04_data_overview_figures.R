@@ -18,6 +18,7 @@ stopifnot(ct["ptm"] + ct["no_ptm"] == ct["unique_pairs"])
 stopifnot(ct["non_9mer"] + ct["9mer_all"] == ct["no_ptm"])
 stopifnot(ct["na_uniprot"] + ct["o60361"] + ct["dedup"] +
             ct["missing_fasta"] + ct["selenocysteine"] +
+            ct["nsp3_length"] + ct["alphafold"] +
             ct["9mer_verified"] == ct["9mer_all"])
 stopifnot(ct["iedb_recovered"] + ct["iedb_missed"] == ct["9mer_verified"])
 
@@ -156,9 +157,9 @@ sankey_neg <- sankeyNetwork(
 # ==============================================================================
 
 venn_data <- c(
-  "NetMHCpan" = n_unconfirmed,
-  "IEDB" = n_fn,
-  "NetMHCpan&IEDB" = n_overlap
+  "NetMHCpan" = ct["netmhcpan_only"],
+  "IEDB" = ct["iedb_missed"],
+  "NetMHCpan&IEDB" = ct["iedb_recovered"]
 )
 
 fit <- euler(venn_data)
