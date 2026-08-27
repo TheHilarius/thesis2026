@@ -2,6 +2,7 @@
 title: "Epitope Logo Plot Comparison"
 format: html
 editor: visual
+output-file: ../results/logo_comparison.html
 ---
 
 ## Setup
