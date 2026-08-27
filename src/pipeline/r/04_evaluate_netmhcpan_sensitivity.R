@@ -685,6 +685,46 @@ p3 <- ggplot(df_rank_pre, aes(x = rank, colour = label)) +
         plot.title.position = "plot")
 
 
+# ── Pre-filter: remove negatives from proteins with peptides beyond AF model range ──
+# Step 07 will remove these proteins anyway (out_of_range check).
+# Removing their negatives now means downsampling picks different random
+# negatives instead. Same final count, no bias introduced.
+
+cat("\n--- Pre-filtering negatives with out-of-range peptides ---\n")
+
+# Build pLDDT lookup for all proteins in df_netmhcpan_only
+af_lookup_pre <- list()
+af_proteins_needed_pre <- unique(df_netmhcpan_only$uniprot_id)
+for (d in af_dirs) {
+  af_lookup_pre <- c(af_lookup_pre, build_plddt_lookup(
+    proteins_needed = af_proteins_needed_pre, dir = d
+  ))
+}
+
+# Get max_modelled per protein
+af_modelled_pre <- map_dfr(names(af_lookup_pre), function(uid) {
+  lkp <- af_lookup_pre[[uid]]
+  tibble(uniprot_id = uid, max_modelled = max(lkp$residue_num))
+})
+
+# Identify proteins where ANY negative peptide falls beyond max_modelled
+oor_neg_proteins <- df_netmhcpan_only |>
+  left_join(af_modelled_pre, by = "uniprot_id") |>
+  filter(end > max_modelled) |>
+  distinct(uniprot_id)
+
+# Remove these negatives
+n_before_pre <- nrow(df_netmhcpan_only)
+df_netmhcpan_only <- df_netmhcpan_only |>
+  filter(!(uniprot_id %in% oor_neg_proteins$uniprot_id))
+cat("Pre-filtered", n_before_pre - nrow(df_netmhcpan_only),
+    "negatives from", nrow(oor_neg_proteins), "out-of-range proteins\n")
+cat("df_netmhcpan_only:", nrow(df_netmhcpan_only), "\n")
+
+# Save pre-filtered proteins for reference
+write_csv(oor_neg_proteins, "data/processed/pre_filtered_out_of_range_proteins.csv")
+
+
 # Rank-matched negative sampling 
 RANDOM_SEED = 42
 CHOSEN_N_BINS = 25 # Use later when building df_negatives
