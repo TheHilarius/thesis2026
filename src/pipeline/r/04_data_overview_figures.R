@@ -64,30 +64,33 @@ nodes_pos <- data.frame(name = c(
   paste0("No UniProt ID: ",          scales::comma(ct["na_uniprot"])),        # 7
   paste0("No FASTA: ",               scales::comma(ct["missing_fasta"])),     # 8
   paste0("Selenocysteine: ",         scales::comma(ct["selenocysteine"])),    # 9
-  paste0("Verified 9-mers: ",        scales::comma(ct["9mer_verified"])),     # 10
-  paste0("Not Predicted (FN): ",     scales::comma(ct["iedb_missed"])),       # 11
-  paste0("Predicted (TP): ",         scales::comma(ct["iedb_recovered"]))     # 12
+  paste0("NSP3 Length: ",            scales::comma(ct["nsp3_length"])),       # 10
+  paste0("Missing AlphaFold: ",      scales::comma(ct["alphafold"])),         # 11
+  paste0("Verified 9-mers: ",        scales::comma(ct["9mer_verified"])),     # 12
+  paste0("Not Predicted (FN): ",     scales::comma(ct["iedb_missed"])),       # 13
+  paste0("Predicted (TP): ",         scales::comma(ct["iedb_recovered"]))     # 14
 ))
 
 links_pos <- data.frame(
-  source = c(0, 0, 2, 2, 4, 4, 6, 6, 6, 6, 10, 10),
-  target = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
+  source = c(0, 0, 2, 2, 4, 4, 6, 6, 6, 6, 6, 6, 12, 12),
+  target = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
   value  = c(ct["duplicates"], ct["unique_pairs"],
              ct["ptm"], ct["no_ptm"],
              ct["non_9mer"], ct["9mer_all"],
              ct["na_uniprot"], ct["missing_fasta"], ct["selenocysteine"],
+             ct["nsp3_length"], ct["alphafold"],
              ct["9mer_verified"],
              ct["iedb_missed"], ct["iedb_recovered"])
 )
 
 nodes_pos$group <- c("raw",     "discard", "keep",    "discard", "keep",
                      "discard", "keep",
-                     "discard", "discard", "discard", "keep",
+                     "discard", "discard", "discard", "discard", "discard", "keep",
                      "discard", "keep")
 links_pos$group <- c("discard", "keep",
                      "discard", "keep",
                      "discard", "keep",
-                     "discard", "discard", "discard", "keep",
+                     "discard", "discard", "discard", "discard", "discard", "keep",
                      "discard", "keep")
 
 color_pos <- 'd3.scaleOrdinal()
@@ -157,9 +160,9 @@ sankey_neg <- sankeyNetwork(
 # ==============================================================================
 
 venn_data <- c(
-  "NetMHCpan" = ct["netmhcpan_only"],
-  "IEDB" = ct["iedb_missed"],
-  "NetMHCpan&IEDB" = ct["iedb_recovered"]
+  "NetMHCpan" = unname(ct["netmhcpan_only"]),
+  "IEDB" = unname(ct["iedb_missed"]),
+  "NetMHCpan&IEDB" = unname(ct["iedb_recovered"])
 )
 
 fit <- euler(venn_data)
@@ -173,7 +176,7 @@ venn_plot <- plot(
     cex = 1.1,
     side = "bottom"
   ),
-  fills = list(fill = c("#e74c3c", "#2ecc71"), alpha = 0.7),
+  fills = list(fill = c("#e74c3c", "#2ecc71", "#f39c12"), alpha = 0.7),
   edges = list(col = "black", lwd = 2),
   main = "9-mer Peptides: Predicted vs. Biologically Presented"
 )
