@@ -101,4 +101,4 @@ reference_manager/nbib/
 reference_manager/*.json
 
 reference_manager/
-graphify_out/
+graphify-out/
