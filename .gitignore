@@ -95,3 +95,7 @@ data/processed/alphafold_output_before_short_ids/
 data/processed/af_version_comparison/
 data/processed/af_*_output.log
 *.bak
+
+reference_manager/.venv/
+reference_manager/nbib/
+reference_manager/*.json
