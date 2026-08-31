@@ -1,0 +1,430 @@
+================================================================================
+  04_MODELLING -- RANDOM FOREST + STRUCTURAL + ONE-HOT AA
+================================================================================
+  Timestamp:       2026-08-28 10:23:23
+  Model key:       rf
+  Model class:     sklearn.ensemble.RandomForestClassifier
+  Feature set:     handcrafted_sparse (Structural + one-hot AA)
+  Components:      ['handcrafted', 'sparse']
+  Data path:       /home/hilarius/projects/thesis2026/data/processed/df_all_with_folds.csv
+  Log path:        /home/hilarius/projects/thesis2026/logs/04_modelling_rf_handcrafted_sparse_log_20260828_102323.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   False
+
+  Model hyperparameters:
+    n_estimators              1000
+    max_depth                 None
+    min_samples_split         2
+    min_samples_leaf          1
+    max_features              sqrt
+    class_weight              balanced
+    n_jobs                    -1
+    random_state              42
+    verbose                   0
+================================================================================
+
+Loading split data: /home/hilarius/projects/thesis2026/data/processed/df_all_with_folds.csv
+  Shape: 46122 rows x 100 columns
+  [OK] Fold column validated: [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5)]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+  Loading CSV component: One-hot AA encoding
+    Loading: df_all_sparse.csv
+    Shape: 46122 rows x 650 columns
+    [OK] Alignment verified
+    New columns: 580
+
+  Merged 580 new columns → 46122 rows x 680 columns
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  CSV components (2):
+    [handcrafted] Structural features
+      Source: split_data (built-in)
+    [sparse] One-hot AA encoding
+      Source: /home/hilarius/projects/thesis2026/data/processed/df_all_sparse.csv
+      New columns added: 580
+  Total CSV features: 630
+    Structural: 50
+    AA-encoded: 580
+
+  Estimated total features: ~630
+    CSV:        630
+    Embeddings: 0 (after PCA)
+
+================================================================================
+PIPELINE READY: ~630 features, 5 folds, Random Forest
+================================================================================
+
+--------------------------------------------------------------------------------
+  FOLD 0/4
+--------------------------------------------------------------------------------
+
+    NaN imputation report — 7 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       20          9     0.3487
+    mean_disorder_nflank                                  20          9     0.0101
+    mean_rsa_cflank                                       86         20     0.3602
+    mean_disorder_cflank                                  86         20     0.0113
+    mean_plddt_peptide                                     3          0    90.6378
+    mean_plddt_nflank                                     23          9    89.2060
+    mean_plddt_cflank                                     89         20    88.9680
+    Total NaN — train: 327 (0.00%), test: 87 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 630
+    Train:  30748 samples (pos=14332, neg=16416, ratio=1.145)
+    Test:    7687 samples (pos=3568, neg=4119, ratio=1.154)
+    Features: 630
+    Training Random Forest ...
+    Training time: 23.9s
+
+    Fold 0 results (25.0s):
+      AUC-ROC: 0.7005  |  AUC-PR: 0.6514  |  Acc: 0.6494  |  F1: 0.5890  |  MCC: 0.2909
+      Sens: 0.5412  |  Spec: 0.7431  |  PPV: 0.6460  |  NPV: 0.6516
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      mean_plddt_cflank                                 0.020741
+    2      mean_plddt_peptide                                0.020558
+    3      mean_plddt_nflank                                 0.020504
+    4      mean_rsa_cflank                                   0.020490
+    5      rel_distance_from_c_terminus                      0.020091
+    6      mean_rsa_peptide                                  0.019565
+    7      mean_disorder_cflank                              0.019528
+    8      mean_rsa_nflank                                   0.019273
+    9      mean_disorder_nflank                              0.019268
+    10     mean_disorder_peptide                             0.019248
+    11     P5_P                                              0.004718
+    12     N1_P                                              0.004296
+    13     N2_P                                              0.003805
+    14     P9_V                                              0.003325
+    15     P9_L                                              0.003117
+    Saved model: /home/hilarius/projects/thesis2026/models/rf_handcrafted_sparse_model_fold0.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 1/4
+--------------------------------------------------------------------------------
+
+    NaN imputation report — 7 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       26          3     0.3486
+    mean_disorder_nflank                                  26          3     0.0101
+    mean_rsa_cflank                                       82         24     0.3600
+    mean_disorder_cflank                                  82         24     0.0112
+    mean_plddt_peptide                                     3          0    90.6056
+    mean_plddt_nflank                                     29          3    89.2070
+    mean_plddt_cflank                                     85         24    88.9640
+    Total NaN — train: 333 (0.00%), test: 81 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 630
+    Train:  30748 samples (pos=14313, neg=16435, ratio=1.148)
+    Test:    7687 samples (pos=3587, neg=4100, ratio=1.143)
+    Features: 630
+    Training Random Forest ...
+    Training time: 23.6s
+
+    Fold 1 results (24.8s):
+      AUC-ROC: 0.7040  |  AUC-PR: 0.6614  |  Acc: 0.6485  |  F1: 0.5748  |  MCC: 0.2906
+      Sens: 0.5091  |  Spec: 0.7705  |  PPV: 0.6599  |  NPV: 0.6421
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      mean_plddt_cflank                                 0.020621
+    2      mean_rsa_cflank                                   0.020581
+    3      mean_plddt_nflank                                 0.020517
+    4      mean_plddt_peptide                                0.020498
+    5      rel_distance_from_c_terminus                      0.020160
+    6      mean_rsa_peptide                                  0.019767
+    7      mean_disorder_cflank                              0.019447
+    8      mean_rsa_nflank                                   0.019377
+    9      mean_disorder_peptide                             0.019247
+    10     mean_disorder_nflank                              0.019202
+    11     N1_P                                              0.004279
+    12     P5_P                                              0.004155
+    13     N2_P                                              0.004068
+    14     P5_K                                              0.003400
+    15     P9_V                                              0.003359
+    Saved model: /home/hilarius/projects/thesis2026/models/rf_handcrafted_sparse_model_fold1.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 2/4
+--------------------------------------------------------------------------------
+
+    NaN imputation report — 7 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       22          7     0.3480
+    mean_disorder_nflank                                  22          7     0.0100
+    mean_rsa_cflank                                       87         19     0.3597
+    mean_disorder_cflank                                  87         19     0.0112
+    mean_plddt_peptide                                     1          2    90.6378
+    mean_plddt_nflank                                     23          9    89.2880
+    mean_plddt_cflank                                     88         21    88.9680
+    Total NaN — train: 330 (0.00%), test: 84 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 630
+    Train:  30748 samples (pos=14325, neg=16423, ratio=1.146)
+    Test:    7687 samples (pos=3575, neg=4112, ratio=1.150)
+    Features: 630
+    Training Random Forest ...
+    Training time: 26.9s
+
+    Fold 2 results (28.4s):
+      AUC-ROC: 0.7045  |  AUC-PR: 0.6617  |  Acc: 0.6511  |  F1: 0.5945  |  MCC: 0.2948
+      Sens: 0.5499  |  Spec: 0.7391  |  PPV: 0.6469  |  NPV: 0.6538
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      mean_plddt_nflank                                 0.021096
+    2      mean_plddt_cflank                                 0.020791
+    3      mean_plddt_peptide                                0.020702
+    4      mean_rsa_cflank                                   0.020359
+    5      rel_distance_from_c_terminus                      0.020318
+    6      mean_rsa_peptide                                  0.019917
+    7      mean_rsa_nflank                                   0.019844
+    8      mean_disorder_cflank                              0.019711
+    9      mean_disorder_peptide                             0.019672
+    10     mean_disorder_nflank                              0.019568
+    11     N1_P                                              0.004248
+    12     P5_P                                              0.004013
+    13     N2_P                                              0.003969
+    14     P9_V                                              0.003342
+    15     P5_K                                              0.003186
+    Saved model: /home/hilarius/projects/thesis2026/models/rf_handcrafted_sparse_model_fold2.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 3/4
+--------------------------------------------------------------------------------
+
+    NaN imputation report — 7 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       25          4     0.3480
+    mean_disorder_nflank                                  25          4     0.0100
+    mean_rsa_cflank                                       89         17     0.3600
+    mean_disorder_cflank                                  89         17     0.0113
+    mean_plddt_peptide                                     2          1    90.6322
+    mean_plddt_nflank                                     27          5    89.2120
+    mean_plddt_cflank                                     91         18    88.8870
+    Total NaN — train: 348 (0.00%), test: 66 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 630
+    Train:  30748 samples (pos=14311, neg=16437, ratio=1.149)
+    Test:    7687 samples (pos=3589, neg=4098, ratio=1.142)
+    Features: 630
+    Training Random Forest ...
+    Training time: 24.8s
+
+    Fold 3 results (26.1s):
+      AUC-ROC: 0.7082  |  AUC-PR: 0.6658  |  Acc: 0.6450  |  F1: 0.5589  |  MCC: 0.2845
+      Sens: 0.4817  |  Spec: 0.7879  |  PPV: 0.6655  |  NPV: 0.6345
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      mean_plddt_nflank                                 0.021021
+    2      mean_plddt_cflank                                 0.020928
+    3      mean_plddt_peptide                                0.020728
+    4      mean_rsa_cflank                                   0.020543
+    5      rel_distance_from_c_terminus                      0.020418
+    6      mean_rsa_peptide                                  0.019936
+    7      mean_disorder_cflank                              0.019780
+    8      mean_rsa_nflank                                   0.019689
+    9      mean_disorder_nflank                              0.019474
+    10     mean_disorder_peptide                             0.019424
+    11     P5_P                                              0.004508
+    12     N1_P                                              0.004359
+    13     N2_P                                              0.003958
+    14     P9_V                                              0.003295
+    15     C1_I                                              0.003220
+    Saved model: /home/hilarius/projects/thesis2026/models/rf_handcrafted_sparse_model_fold3.pkl
+
+--------------------------------------------------------------------------------
+  FOLD 4/4
+--------------------------------------------------------------------------------
+
+    NaN imputation report — 7 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       23          6     0.3490
+    mean_disorder_nflank                                  23          6     0.0099
+    mean_rsa_cflank                                       80         26     0.3604
+    mean_disorder_cflank                                  80         26     0.0113
+    mean_plddt_peptide                                     3          0    90.6256
+    mean_plddt_nflank                                     26          6    89.2010
+    mean_plddt_cflank                                     83         26    88.9610
+    Total NaN — train: 318 (0.00%), test: 96 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 630
+    Train:  30748 samples (pos=14319, neg=16429, ratio=1.147)
+    Test:    7687 samples (pos=3581, neg=4106, ratio=1.147)
+    Features: 630
+    Training Random Forest ...
+    Training time: 24.4s
+
+    Fold 4 results (26.3s):
+      AUC-ROC: 0.7059  |  AUC-PR: 0.6663  |  Acc: 0.6486  |  F1: 0.5704  |  MCC: 0.2907
+      Sens: 0.5007  |  Spec: 0.7776  |  PPV: 0.6626  |  NPV: 0.6410
+
+    Top 15 feature importances:
+    Rank   Feature                                         Importance
+    -----------------------------------------------------------------
+    1      mean_plddt_cflank                                 0.020739
+    2      mean_plddt_nflank                                 0.020414
+    3      mean_plddt_peptide                                0.020278
+    4      mean_rsa_cflank                                   0.020269
+    5      rel_distance_from_c_terminus                      0.019841
+    6      mean_rsa_peptide                                  0.019433
+    7      mean_rsa_nflank                                   0.019413
+    8      mean_disorder_cflank                              0.019376
+    9      mean_disorder_nflank                              0.018999
+    10     mean_disorder_peptide                             0.018933
+    11     N1_P                                              0.004236
+    12     N2_P                                              0.004183
+    13     P5_P                                              0.004100
+    14     P9_V                                              0.003305
+    15     P9_L                                              0.003112
+    Saved model: /home/hilarius/projects/thesis2026/models/rf_handcrafted_sparse_model_fold4.pkl
+
+================================================================================
+CROSS-VALIDATION SUMMARY (mean +/- std)
+================================================================================
+  auc_roc         0.7046 +/- 0.0025    [0.7005  0.7040  0.7045  0.7082  0.7059]
+  auc_pr          0.6613 +/- 0.0054    [0.6514  0.6614  0.6617  0.6658  0.6663]
+  accuracy        0.6485 +/- 0.0020    [0.6494  0.6485  0.6511  0.6450  0.6486]
+  f1              0.5775 +/- 0.0128    [0.5890  0.5748  0.5945  0.5589  0.5704]
+  mcc             0.2903 +/- 0.0033    [0.2909  0.2906  0.2948  0.2845  0.2907]
+  sensitivity     0.5165 +/- 0.0255    [0.5412  0.5091  0.5499  0.4817  0.5007]
+  specificity     0.7637 +/- 0.0193    [0.7431  0.7705  0.7391  0.7879  0.7776]
+  ppv             0.6562 +/- 0.0081    [0.6460  0.6599  0.6469  0.6655  0.6626]
+  npv             0.6446 +/- 0.0071    [0.6516  0.6421  0.6538  0.6345  0.6410]
+
+  Best fold: 3 (AUC-ROC = 0.7082)
+
+================================================================================
+PER-FOLD METRIC COMPARISON
+================================================================================
+  Fold    auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
+  -----------------------------------------------------------------------------------------------------------------------------
+  0       0.7005       0.6514       0.6494       0.5890       0.2909       0.5412       0.7431       0.6460       0.6516       
+  1       0.7040       0.6614       0.6485       0.5748       0.2906       0.5091       0.7705       0.6599       0.6421       
+  2       0.7045       0.6617       0.6511       0.5945       0.2948       0.5499       0.7391       0.6469       0.6538       
+  3       0.7082       0.6658       0.6450       0.5589       0.2845       0.4817       0.7879       0.6655       0.6345       
+  4       0.7059       0.6663       0.6486       0.5704       0.2907       0.5007       0.7776       0.6626       0.6410       
+  -----------------------------------------------------------------------------------------------------------------------------
+  mean    0.7046       0.6613       0.6485       0.5775       0.2903       0.5165       0.7637       0.6562       0.6446       
+  std     0.0025       0.0054       0.0020       0.0128       0.0033       0.0255       0.0193       0.0081       0.0071       
+
+================================================================================
+AVERAGED FEATURE IMPORTANCE ACROSS ALL FOLDS
+================================================================================
+  Rank   Feature                                           Mean Imp          Std
+  -----------------------------------------------------------------------------
+  1      mean_plddt_cflank                                 0.020764     0.000099
+  2      mean_plddt_nflank                                 0.020710     0.000287
+  3      mean_plddt_peptide                                0.020553     0.000162
+  4      mean_rsa_cflank                                   0.020448     0.000117
+  5      rel_distance_from_c_terminus                      0.020166     0.000199
+  6      mean_rsa_peptide                                  0.019724     0.000197
+  7      mean_disorder_cflank                              0.019569     0.000154
+  8      mean_rsa_nflank                                   0.019519     0.000213
+  9      mean_disorder_peptide                             0.019305     0.000242
+  10     mean_disorder_nflank                              0.019302     0.000202
+  11     P5_P                                              0.004299     0.000269
+  12     N1_P                                              0.004284     0.000044
+  13     N2_P                                              0.003997     0.000126
+  14     P9_V                                              0.003325     0.000023
+  15     P9_L                                              0.003107     0.000021
+  16     P5_K                                              0.003093     0.000199
+  17     C1_I                                              0.003083     0.000143
+  18     P2_L                                              0.002925     0.000028
+  19     P7_H                                              0.002854     0.000119
+  20     P4_P                                              0.002695     0.000099
+  21     C1_A                                              0.002615     0.000240
+  22     P4_E                                              0.002586     0.000023
+  23     P6_L                                              0.002535     0.000029
+  24     P6_V                                              0.002519     0.000074
+  25     P8_K                                              0.002490     0.000113
+  26     P3_L                                              0.002486     0.000051
+  27     q8point_C_peptide                                 0.002480     0.000041
+  28     q8point_C_cflank                                  0.002452     0.000068
+  29     q8point_T_cflank                                  0.002427     0.000012
+  30     N3_P                                              0.002419     0.000141
+
+================================================================================
+HELD-OUT VALIDATION SET EVALUATION
+================================================================================
+  Using model from best fold (3)
+  Held-out samples: 7687 (pos=3573, neg=4114, ratio=1.151)
+
+  Held-out results (7687 samples):
+    AUC-ROC: 0.7077  |  AUC-PR: 0.6642  |  Acc: 0.6501  |  F1: 0.5699  |  MCC: 0.2933
+    Sens: 0.4987  |  Spec: 0.7815  |  PPV: 0.6647  |  NPV: 0.6422
+
+  Classification Report:
+              precision    recall  f1-score   support
+
+    Negative     0.6422    0.7815    0.7050      4114
+    Positive     0.6647    0.4987    0.5699      3573
+
+    accuracy                         0.6501      7687
+   macro avg     0.6535    0.6401    0.6375      7687
+weighted avg     0.6527    0.6501    0.6422      7687
+
+================================================================================
+CV AVERAGE vs HELD-OUT COMPARISON
+================================================================================
+  Metric             CV mean     CV std   Held-out      Delta
+  ---------------------------------------------------------
+  auc_roc             0.7046     0.0025     0.7077    +0.0031
+  auc_pr              0.6613     0.0054     0.6642    +0.0029
+  accuracy            0.6485     0.0020     0.6501    +0.0015
+  f1                  0.5775     0.0128     0.5699    -0.0076
+  mcc                 0.2903     0.0033     0.2933    +0.0030
+  sensitivity         0.5165     0.0255     0.4987    -0.0178
+  specificity         0.7637     0.0193     0.7815    +0.0178
+  ppv                 0.6562     0.0081     0.6647    +0.0085
+  npv                 0.6446     0.0071     0.6422    -0.0024
+
+Results saved: /home/hilarius/projects/thesis2026/models/cv_results_rf_handcrafted_sparse_20260828_102323.json
+Best model saved: /home/hilarius/projects/thesis2026/models/best_rf_handcrafted_sparse_model.pkl
+Fold artifacts saved: /home/hilarius/projects/thesis2026/models/best_rf_handcrafted_sparse_artifacts.pkl
+Feature names saved: /home/hilarius/projects/thesis2026/models/rf_handcrafted_sparse_feature_names.json
+
+================================================================================
+RUN SUMMARY
+================================================================================
+  Total runtime:    154.8s (2.6 min)
+  Model:            Random Forest (rf)
+  Feature set:      Structural + one-hot AA (handcrafted_sparse)
+  Components:       ['handcrafted', 'sparse']
+  Scaling:          no
+  Features (final): 630
+    CSV features:   630
+  CV folds:         5
+  Best fold:        3 (AUC = 0.7082)
+  Held-out AUC:     0.7077
+  Held-out MCC:     0.2933
+  Models dir:       /home/hilarius/projects/thesis2026/models/
+  Results file:     /home/hilarius/projects/thesis2026/models/cv_results_rf_handcrafted_sparse_20260828_102323.json
+  Feature names:    /home/hilarius/projects/thesis2026/models/rf_handcrafted_sparse_feature_names.json
+  Log file:         /home/hilarius/projects/thesis2026/logs/04_modelling_rf_handcrafted_sparse_log_20260828_102323.txt
+  Completed:        2026-08-28 10:25:58
+================================================================================

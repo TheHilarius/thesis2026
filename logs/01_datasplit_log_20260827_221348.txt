@@ -1,0 +1,422 @@
+================================================================================
+  01_DATASPLIT -- HOMOLOGY-BASED DATA SPLIT
+================================================================================
+  Timestamp:        2026-08-27 22:13:48
+  Data path:        /home/hilarius/projects/thesis2026/data/processed/df_all.csv
+  Output path:      /home/hilarius/projects/thesis2026/data/processed/df_all_with_folds.csv
+  Log path:         /home/hilarius/projects/thesis2026/logs/01_datasplit_log_20260827_221348.txt
+  CV folds (k):     5
+  Held-out bucket:  5
+  Total buckets:    6
+  Random state:     42
+  Hamming cutoff:   <= 1
+================================================================================
+
+Loading data from: /home/hilarius/projects/thesis2026/data/processed/df_all.csv
+
+Shape: 46122 rows x 99 columns
+
+Columns (99):
+  [  0] start                                    dtype: int64
+  [  1] end                                      dtype: int64
+  [  2] peptide                                  dtype: object
+  [  3] pep_length                               dtype: int64
+  [  4] rank                                     dtype: float64
+  [  5] uniprot_id                               dtype: object
+  [  6] source_molecule                          dtype: object
+  [  7] molecule_parent                          dtype: object
+  [  8] label                                    dtype: int64
+  [  9] sequence                                 dtype: object
+  [ 10] protein_length                           dtype: int64
+  [ 11] position_shift                           dtype: float64
+  [ 12] n_flank                                  dtype: object
+  [ 13] c_flank                                  dtype: object
+  [ 14] full_context                             dtype: object
+  [ 15] rel_distance_from_n_terminus             dtype: float64
+  [ 16] rel_distance_from_c_terminus             dtype: float64
+  [ 17] N10                                      dtype: object
+  [ 18] N9                                       dtype: object
+  [ 19] N8                                       dtype: object
+  [ 20] N7                                       dtype: object
+  [ 21] N6                                       dtype: object
+  [ 22] N5                                       dtype: object
+  [ 23] N4                                       dtype: object
+  [ 24] N3                                       dtype: object
+  [ 25] N2                                       dtype: object
+  [ 26] N1                                       dtype: object
+  [ 27] P1                                       dtype: object
+  [ 28] P2                                       dtype: object
+  [ 29] P3                                       dtype: object
+  [ 30] P4                                       dtype: object
+  [ 31] P5                                       dtype: object
+  [ 32] P6                                       dtype: object
+  [ 33] P7                                       dtype: object
+  [ 34] P8                                       dtype: object
+  [ 35] P9                                       dtype: object
+  [ 36] C1                                       dtype: object
+  [ 37] C2                                       dtype: object
+  [ 38] C3                                       dtype: object
+  [ 39] C4                                       dtype: object
+  [ 40] C5                                       dtype: object
+  [ 41] C6                                       dtype: object
+  [ 42] C7                                       dtype: object
+  [ 43] C8                                       dtype: object
+  [ 44] C9                                       dtype: object
+  [ 45] C10                                      dtype: object
+  [ 46] nflank_start                             dtype: float64
+  [ 47] nflank_end                               dtype: int64
+  [ 48] cflank_start                             dtype: int64
+  [ 49] cflank_end                               dtype: float64
+  [ 50] mean_rsa_peptide                         dtype: float64
+  [ 51] mean_disorder_peptide                    dtype: float64
+  [ 52] mean_rsa_nflank                          dtype: float64
+  [ 53] mean_disorder_nflank                     dtype: float64
+  [ 54] mean_rsa_cflank                          dtype: float64
+  [ 55] mean_disorder_cflank                     dtype: float64
+  [ 56] q8point_H_peptide                        dtype: int64
+  [ 57] q8point_G_peptide                        dtype: int64
+  [ 58] q8point_I_peptide                        dtype: int64
+  [ 59] q8point_E_peptide                        dtype: int64
+  [ 60] q8point_B_peptide                        dtype: int64
+  [ 61] q8point_T_peptide                        dtype: int64
+  [ 62] q8point_S_peptide                        dtype: int64
+  [ 63] q8point_C_peptide                        dtype: int64
+  [ 64] q8point_H_nflank                         dtype: int64
+  [ 65] q8point_G_nflank                         dtype: int64
+  [ 66] q8point_I_nflank                         dtype: int64
+  [ 67] q8point_E_nflank                         dtype: int64
+  [ 68] q8point_B_nflank                         dtype: int64
+  [ 69] q8point_T_nflank                         dtype: int64
+  [ 70] q8point_S_nflank                         dtype: int64
+  [ 71] q8point_C_nflank                         dtype: int64
+  [ 72] q8point_H_cflank                         dtype: int64
+  [ 73] q8point_G_cflank                         dtype: int64
+  [ 74] q8point_I_cflank                         dtype: int64
+  [ 75] q8point_E_cflank                         dtype: int64
+  [ 76] q8point_B_cflank                         dtype: int64
+  [ 77] q8point_T_cflank                         dtype: int64
+  [ 78] q8point_S_cflank                         dtype: int64
+  [ 79] q8point_C_cflank                         dtype: int64
+  [ 80] q8trans_H_n_pep                          dtype: int64
+  [ 81] q8trans_G_n_pep                          dtype: int64
+  [ 82] q8trans_I_n_pep                          dtype: int64
+  [ 83] q8trans_E_n_pep                          dtype: int64
+  [ 84] q8trans_B_n_pep                          dtype: int64
+  [ 85] q8trans_T_n_pep                          dtype: int64
+  [ 86] q8trans_S_n_pep                          dtype: int64
+  [ 87] q8trans_C_n_pep                          dtype: int64
+  [ 88] q8trans_H_pep_c                          dtype: int64
+  [ 89] q8trans_G_pep_c                          dtype: int64
+  [ 90] q8trans_I_pep_c                          dtype: int64
+  [ 91] q8trans_E_pep_c                          dtype: int64
+  [ 92] q8trans_B_pep_c                          dtype: int64
+  [ 93] q8trans_T_pep_c                          dtype: int64
+  [ 94] q8trans_S_pep_c                          dtype: int64
+  [ 95] q8trans_C_pep_c                          dtype: int64
+  [ 96] mean_plddt_peptide                       dtype: float64
+  [ 97] mean_plddt_nflank                        dtype: float64
+  [ 98] mean_plddt_cflank                        dtype: float64
+
+Required columns present: ['peptide', 'label']
+
+Label distribution:
+  0 (negative):    24649  (53.4%)
+  1 (positive):    21473  (46.6%)
+
+Peptide length distribution:
+  9-mer:    46122  (100.0%)
+
+Unique source proteins (uniprot_id): 9034
+
+================================================================================
+DUPLICATE PEPTIDE ANALYSIS
+================================================================================
+  Total rows:        46122
+  Unique peptides:   44638
+  Duplicate rows:    1484 (3.2% of all rows)
+
+  Context-aware breakdown (using uniprot_id, n_flank, c_flank, start):
+  Unique (peptide, context, position) tuples: 46122
+  Context variants:      1484  (same sequence, different protein/flanks)
+  Positional variants:      0  (same sequence + protein + flanks, different start position)
+  True duplicates:          0  (identical on all fields — likely data artefacts)
+
+  Peptides appearing in multiple distinct contexts: 1193
+
+  Top 10 peptides by number of distinct contexts:
+  Peptide          Contexts   Rows  Proteins      Label dist
+  -----------------------------------------------------------------
+  YLVTKVVAV              17     17        17   pos=4, neg=13
+  YLTAEILEL               8      8         8   pos=5, neg=3
+  GVLPNIQAV               7      7         7   pos=4, neg=3
+  RLASYLDKV               7      7         7   pos=4, neg=3
+  YLAAVLEYL               7      7         7   pos=3, neg=4
+  FLQTYSHEV               6      6         6   pos=2, neg=4
+  KLFDAPLSI               6      6         6   pos=6, neg=0
+  TLLESIRQA               6      6         6   pos=4, neg=2
+  YLLEKSRVV               6      6         6   pos=4, neg=2
+  ALAPSTMKI               5      5         5   pos=3, neg=2
+
+  Peptides appearing more than once: 1193
+  Total rows from multi-occurrence peptides: 2677
+
+  Occurrence count distribution:
+  Times seen        Peptides   Total rows
+  ----------------------------------------
+  1                    43445        43445
+  2                     1003         2006
+  3                      136          408
+  4                       32          128
+  5                       13           65
+  6                        4           24
+  7                        3           21
+  8                        1            8
+  17                       1           17
+
+  Peptide-protein relationships:
+  Peptides in exactly 1 protein:   43445
+  Peptides in multiple proteins:    1193
+
+  Top 10 peptides by number of source proteins:
+  Peptide           Proteins   Total rows      Label dist
+  -------------------------------------------------------
+  YLVTKVVAV               17           17   pos=4, neg=13
+  YLTAEILEL                8            8   pos=5, neg=3
+  GVLPNIQAV                7            7   pos=4, neg=3
+  RLASYLDKV                7            7   pos=4, neg=3
+  YLAAVLEYL                7            7   pos=3, neg=4
+  FLQTYSHEV                6            6   pos=2, neg=4
+  KLFDAPLSI                6            6   pos=6, neg=0
+  TLLESIRQA                6            6   pos=4, neg=2
+  YLLEKSRVV                6            6   pos=4, neg=2
+  ALAPSTMKI                5            5   pos=3, neg=2
+
+  Label consistency for duplicate peptides:
+  Peptides with consistent label:  44326
+  Peptides with mixed labels:      312
+
+  NOTE: 312 peptides have both positive and negative labels.
+  This is expected when the same peptide is processed in one protein
+  context but not another (different flanking regions / source proteins).
+
+  Mixed-label breakdown (grouping by uniprot_id, n_flank, c_flank, start):
+    Explained by context/position: 312
+    Unexplained (same full identity, conflicting labels): 0
+
+  Examples:
+    AIAKTIREV: pos=1, neg=1, proteins=['Q13394', 'Q9Y586']
+    AIIEYMPLL: pos=1, neg=1, proteins=['P30154', 'P30153']
+    AIMSFINAV: pos=1, neg=1, proteins=['Q86T65', 'Q9Y4D1']
+    AIYHGIPMV: pos=1, neg=2, proteins=['O75310', 'P54855', 'O75795']
+    ALAAQLPVL: pos=1, neg=1, proteins=['Q6P2I3', 'Q96GK7']
+
+================================================================================
+PHASE 1: HOMOLOGY CLUSTERING
+================================================================================
+Total rows:          46122
+Unique peptides:     44638
+Duplicate rows:      1484 (same peptide, different protein context)
+Clustering by Hamming distance <= 1 ...
+Clusters formed:     43307
+Largest cluster:     15 peptides
+Clustering time:     1.72s
+
+================================================================================
+PHASE 2: BUCKET ASSIGNMENT
+================================================================================
+Sample counts include all rows (duplicates from different proteins counted)
+Assigning cluster with root 'YLLEKSRLV' and 9 peptides (23 total samples) to a bucket...
+Assigning cluster with root 'ILNPLIYTL' and 15 peptides (18 total samples) to a bucket...
+Assigning cluster with root 'YLVTKVVAV' and 1 peptides (17 total samples) to a bucket...
+Assigning cluster with root 'RLASYLDRV' and 6 peptides (14 total samples) to a bucket...
+Assigning cluster with root 'LLPPPPPGA' and 10 peptides (13 total samples) to a bucket...
+Assignment time:     0.13s
+Bucket totals:       [7687, 7687, 7687, 7687, 7687, 7687]
+
+================================================================================
+LEAKAGE VERIFICATION
+================================================================================
+No homology leakage detected across folds.
+Verification time: 3.58s
+
+No peptide split across folds (all duplicates in same fold).
+
+================================================================================
+DUPLICATE PEPTIDES PER FOLD
+================================================================================
+  Fold       Role                     Total  Unique  Duplicates   Dup %
+  ------------------------------------------------------------------
+  0          CV fold 0                 7687    7430         257    3.3%
+  1          CV fold 1                 7687    7437         250    3.3%
+  2          CV fold 2                 7687    7434         253    3.3%
+  3          CV fold 3                 7687    7441         246    3.2%
+  4          CV fold 4                 7687    7455         232    3.0%
+  5          Held-out                  7687    7441         246    3.2%
+
+================================================================================
+BUCKET OVERVIEW
+================================================================================
+Bucket     Role                     Total     Pos     Neg    Pos%   Neg:Pos   Uniq Pep
+--------------------------------------------------------------------------------
+0          CV fold 0                 7687    3568    4119   46.4%     1.154       7430
+1          CV fold 1                 7687    3587    4100   46.7%     1.143       7437
+2          CV fold 2                 7687    3575    4112   46.5%     1.150       7434
+3          CV fold 3                 7687    3589    4098   46.7%     1.142       7441
+4          CV fold 4                 7687    3581    4106   46.6%     1.147       7455
+5          Held-out validation       7687    3573    4114   46.5%     1.151       7441
+--------------------------------------------------------------------------------
+TOTAL                               46122   21473   24649   46.6%     1.148
+
+================================================================================
+CROSS-BUCKET COMPARISON
+================================================================================
+  Neg:Pos ratio   -- min: 1.142  max: 1.154  std: 0.0045
+  Bucket sizes    -- min: 7687  max: 7687  std: 0.0
+  Positive %      -- min: 46.4%  max: 46.7%  std: 0.10%
+
+  CV folds only (excl. held-out):
+    Size range:     7687 -- 7687  (ideal = 7687)
+    Ratio range:    1.142 -- 1.154
+
+  Held-out set:
+    Samples:        7687  (16.7% of all data)
+    Neg:Pos ratio:  1.151
+
+================================================================================
+CLUSTER DISTRIBUTION PER BUCKET
+================================================================================
+
+-- Bucket 0 (CV fold 0) --
+  Total clusters:      7217
+  Total unique peps:   7430
+  Cluster size stats:  mean=1.0  median=1.0  max=9
+  Singletons:            7034  (97.5% of clusters, 94.7% of peptides)
+  Small (2-5):            182  (2.5% of clusters)
+  Medium (6-20):            1  (0.0% of clusters)
+  Large (>20):              0  (0.0% of clusters)
+
+  Top 5 largest clusters:
+    #1 size=   9  (pos=20, neg=3)  peptides: FLLEKSRVV, YLIEKSRVV, YLLEKNRVV, YLLEKSRAI, YLLEKSRAV, YLLEKSRLV ... +3 more
+    #2 size=   5  (pos=3, neg=5)  peptides: ALGDVIAAL, ALGNVIAAL, ALGNVILAL, ALGNVINAL, ALGNVISAL
+    #3 size=   5  (pos=0, neg=10)  peptides: ILDDATSAL, ILDEATLAL, ILDEATSAL, LLDEATSAL, VLDEATSAL
+    #4 size=   4  (pos=5, neg=1)  peptides: FAYDGKDYI, FAYDGKDYL, YAYDGKDYI, YAYDGKDYL
+    #5 size=   3  (pos=5, neg=0)  peptides: KILAAILHL, KLLAAILHL, RILAAILHL
+
+-- Bucket 1 (CV fold 1) --
+  Total clusters:      7218
+  Total unique peps:   7437
+  Cluster size stats:  mean=1.0  median=1.0  max=15
+  Singletons:            7045  (97.6% of clusters, 94.7% of peptides)
+  Small (2-5):            170  (2.4% of clusters)
+  Medium (6-20):            3  (0.0% of clusters)
+  Large (>20):              0  (0.0% of clusters)
+
+  Top 5 largest clusters:
+    #1 size=  15  (pos=5, neg=13)  peptides: ALNPLIYTL, ILNPIIYTL, ILNPLIYSL, ILNPLIYTL, LLNPFIYTL, LLNPIIYTL ... +9 more
+    #2 size=   7  (pos=4, neg=4)  peptides: ILDEADRML, VLDEADEML, VLDEADRLL, VLDEADRMF, VLDEADRML, VLDEADTLL ... +1 more
+    #3 size=   6  (pos=6, neg=1)  peptides: QILDGIHYL, QILDGVHYL, QILDGVNYL, QILEGVHFL, QILEGVHYL, QILEGVYYL
+    #4 size=   5  (pos=9, neg=1)  peptides: TLWYRAPEI, TLWYRAPEL, TLWYRAPEV, TLWYRPPEL, TLWYRSPEV
+    #5 size=   5  (pos=1, neg=4)  peptides: FLAILPEEL, FLAILPEEV, FLAILPKEL, FLTILPEEL, FLTTLPEEL
+
+-- Bucket 2 (CV fold 2) --
+  Total clusters:      7218
+  Total unique peps:   7434
+  Cluster size stats:  mean=1.0  median=1.0  max=5
+  Singletons:            7031  (97.4% of clusters, 94.6% of peptides)
+  Small (2-5):            187  (2.6% of clusters)
+  Medium (6-20):            0  (0.0% of clusters)
+  Large (>20):              0  (0.0% of clusters)
+
+  Top 5 largest clusters:
+    #1 size=   5  (pos=3, neg=2)  peptides: YLIQLVQVL, YLLQLVQAL, YLLQLVQAV, YLLQLVQVL, YLPQLVQAL
+    #2 size=   4  (pos=3, neg=1)  peptides: FLDGDELTL, FLDGDRLTL, FLDGNELTL, FLDGNEMTL
+    #3 size=   4  (pos=1, neg=4)  peptides: GLKEELAYL, GLNEELAYL, SLKEELAYL, SLTEELAYL
+    #4 size=   4  (pos=2, neg=5)  peptides: FLGPPPPPL, FLPPPPPPL, FLSPPPPPL, MLPPPPPPL
+    #5 size=   3  (pos=5, neg=5)  peptides: YLAAVLEYL, YMAAVIEYL, YMAAVLEYL
+
+-- Bucket 3 (CV fold 3) --
+  Total clusters:      7218
+  Total unique peps:   7441
+  Cluster size stats:  mean=1.0  median=1.0  max=9
+  Singletons:            7038  (97.5% of clusters, 94.6% of peptides)
+  Small (2-5):            177  (2.5% of clusters)
+  Medium (6-20):            3  (0.0% of clusters)
+  Large (>20):              0  (0.0% of clusters)
+
+  Top 5 largest clusters:
+    #1 size=   9  (pos=9, neg=2)  peptides: ALLRTVHSV, ALLRTVVSV, SLLRTVHSV, TLLRSVHSV, TLLRTIHSV, TLLRTIRSV ... +3 more
+    #2 size=   6  (pos=7, neg=1)  peptides: FLDEPTNHL, ILDEPTNHL, ILDEPTNNL, LLDEPTNHL, LLDEPTNML, MLDEPTNHL
+    #3 size=   6  (pos=9, neg=5)  peptides: RLANYLDKV, RLANYLEKV, RLASYLDKV, RLASYLDNV, RLASYLDRV, RLASYLEKV
+    #4 size=   5  (pos=3, neg=5)  peptides: FLLDDPLSA, YILDDPLSA, YLFDDPLSA, YLLDDPLAA, YLLDDPLSA
+    #5 size=   5  (pos=4, neg=2)  peptides: ALDAAVTLL, ALLAAVTLL, ALLAAVTRL, ALLALVTLL, ALLSAVTRL
+
+-- Bucket 4 (CV fold 4) --
+  Total clusters:      7218
+  Total unique peps:   7455
+  Cluster size stats:  mean=1.0  median=1.0  max=10
+  Singletons:            7028  (97.4% of clusters, 94.3% of peptides)
+  Small (2-5):            187  (2.6% of clusters)
+  Medium (6-20):            3  (0.0% of clusters)
+  Large (>20):              0  (0.0% of clusters)
+
+  Top 5 largest clusters:
+    #1 size=  10  (pos=10, neg=3)  peptides: ALAPPPPAA, ALLPPPPPA, ALPPPPPAA, ALPPPPPPA, LLPPPPCPA, LLPPPPPGA ... +4 more
+    #2 size=   8  (pos=0, neg=10)  peptides: FLDEPTTGL, FLDEPTTGM, LLDEPSTGI, LLDEPSTGM, LLDEPTAGL, LLDEPTAGM ... +2 more
+    #3 size=   7  (pos=5, neg=3)  peptides: HLIKEIILV, HLIKEILLV, HLIREIILV, HLLHEIILV, HLLKEIILV, ILLKEIILV ... +1 more
+    #4 size=   5  (pos=3, neg=2)  peptides: VLDDLLYAV, VLNDLLYAV, VLNGLLYAV, VLNNLLYAV, VLNRLLYAV
+    #5 size=   5  (pos=6, neg=1)  peptides: YLDLSHNKL, YLDLSHNNL, YLDLSHNQL, YLDLSSNKI, YLDLSSNKL
+
+-- Bucket 5 (Held-out validation) --
+  Total clusters:      7218
+  Total unique peps:   7441
+  Cluster size stats:  mean=1.0  median=1.0  max=11
+  Singletons:            7036  (97.5% of clusters, 94.6% of peptides)
+  Small (2-5):            180  (2.5% of clusters)
+  Medium (6-20):            2  (0.0% of clusters)
+  Large (>20):              0  (0.0% of clusters)
+
+  Top 5 largest clusters:
+    #1 size=  11  (pos=3, neg=10)  peptides: ALLPLLLLL, GLLPLLLLL, KLLPLLLLL, LLLPLLLLL, LLLPLPLLL, LLLPPLLLL ... +5 more
+    #2 size=   6  (pos=5, neg=2)  peptides: KMAELVHFL, KMVELVHFL, KVAELVEFL, KVAELVHFL, KVAELVHIL, KVAKLVHFL
+    #3 size=   5  (pos=11, neg=0)  peptides: VMAPRALLL, VMAPRTLIL, VMAPRTLLL, VMAPRTLVL, VMAPRTVLL
+    #4 size=   5  (pos=3, neg=6)  peptides: KLADFGVAA, KLADFGVSA, KLVDFGVSA, RLADFGISA, RLADFGVSA
+    #5 size=   4  (pos=3, neg=1)  peptides: KLLGKLPEL, KLQGKLPEL, RLLGKLPEL, RLLIKLPEL
+
+================================================================================
+GLOBAL CLUSTER SIZE HISTOGRAM
+================================================================================
+  Size range        Clusters        %   Peptides        %
+  -------------------------------------------------------
+  Singletons           42212    97.5%      42212    94.6%
+  Pairs                  964     2.2%       1928     4.3%
+  3-5                    119     0.3%        398     0.9%
+  6-10                    10     0.0%         74     0.2%
+  11-20                    2     0.0%         26     0.1%
+
+================================================================================
+CV FOLD TRAIN/TEST SIZES
+================================================================================
+  Fold 0:  train= 30748 (pos=14332, neg=16416, ratio=1.145)  test=  7687 (pos=3568, neg=4119, ratio=1.154)
+  Fold 1:  train= 30748 (pos=14313, neg=16435, ratio=1.148)  test=  7687 (pos=3587, neg=4100, ratio=1.143)
+  Fold 2:  train= 30748 (pos=14325, neg=16423, ratio=1.146)  test=  7687 (pos=3575, neg=4112, ratio=1.150)
+  Fold 3:  train= 30748 (pos=14311, neg=16437, ratio=1.149)  test=  7687 (pos=3589, neg=4098, ratio=1.142)
+  Fold 4:  train= 30748 (pos=14319, neg=16429, ratio=1.147)  test=  7687 (pos=3581, neg=4106, ratio=1.147)
+  Held-out: samples=  7687 (pos=3573, neg=4114, ratio=1.151)
+
+Saved to: /home/hilarius/projects/thesis2026/data/processed/df_all_with_folds.csv
+
+================================================================================
+RUN SUMMARY
+================================================================================
+  Total runtime:    27.71s
+  Input rows:       46122
+  Unique peptides:  44638
+  Duplicate rows:   1484
+  Clusters:         43307
+  Buckets:          6 (5 CV + 1 held-out)
+  Homology leakage: NONE
+  Peptide splits:   NONE
+  Output:           /home/hilarius/projects/thesis2026/data/processed/df_all_with_folds.csv
+  Log:              /home/hilarius/projects/thesis2026/logs/01_datasplit_log_20260827_221348.txt
+  Completed:        2026-08-27 22:14:16
+================================================================================
