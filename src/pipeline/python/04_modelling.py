@@ -399,7 +399,8 @@ def concatenate_regions(emb_data, indices):
 # 7. UNIFIED FOLD PREPARATION (composable)
 # ──────────────────────────────────────────────
 
-def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id):
+def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
+                 validation_bucket=None):
     """
     Prepare train/test data for one CV fold by assembling all components.
 
@@ -416,7 +417,10 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id):
     needs_scaling = model_cfg["needs_scaling"]
 
     # ── Row split ──
-    cv_mask = df[FOLD_COL] != HELD_OUT_INDEX
+    # validation_bucket: which bucket to exclude from CV entirely
+    # (used in nested CV outer loop). None = use HELD_OUT_INDEX (legacy).
+    excl_bucket = validation_bucket if validation_bucket is not None else HELD_OUT_INDEX
+    cv_mask = df[FOLD_COL] != excl_bucket
     cv_df = df[cv_mask].copy()
     cv_indices = np.where(cv_mask.values)[0]
 
@@ -459,20 +463,32 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id):
     for comp_key, emb_data in emb_data_dict.items():
         pca_components = emb_data["pca_components"]
         n_regions = len(emb_data["regions"])
+        pca_per_region = emb_data.get("pca_per_region", None)
 
-        X_emb_train = concatenate_regions(emb_data, train_indices)
-        X_emb_test = concatenate_regions(emb_data, test_indices)
+        # Clean inf values in all regions first
+        for region_name, region_data in emb_data["regions"].items():
+            for idx_list in [train_indices, test_indices]:
+                arr = region_data[idx_list]
+                arr[np.isinf(arr)] = 0.0
+                arr[np.isnan(arr)] = 0.0
 
-        # Clean inf values
-        for arr in [X_emb_train, X_emb_test]:
-            arr[np.isinf(arr)] = 0.0
-            arr[np.isnan(arr)] = 0.0
+        # ── Zero-vector handling (per-region) ──
+        # Identify samples where ALL regions have zero vectors
+        all_region_norms = []
+        for region_name in sorted(emb_data["regions"].keys()):
+            region_norms = np.linalg.norm(
+                emb_data["regions"][region_name][train_indices], axis=1
+            )
+            all_region_norms.append(region_norms)
+        train_norms = np.min(all_region_norms, axis=0)  # zero if ANY region is zero
 
-        # ── Zero-vector handling ──
-        # Identify samples where ALL embedding dims are zero
-        # (unresolved structures produce all-zero rows)
-        train_norms = np.linalg.norm(X_emb_train, axis=1)
-        test_norms = np.linalg.norm(X_emb_test, axis=1)
+        all_region_norms_test = []
+        for region_name in sorted(emb_data["regions"].keys()):
+            region_norms = np.linalg.norm(
+                emb_data["regions"][region_name][test_indices], axis=1
+            )
+            all_region_norms_test.append(region_norms)
+        test_norms = np.min(all_region_norms_test, axis=0)
 
         train_nonzero_mask = train_norms > 0.0
         test_nonzero_mask = test_norms > 0.0
@@ -486,36 +502,101 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id):
               f"train={n_train_zero}/{len(train_norms)} ({pct_train_zero:.1f}%), "
               f"test={n_test_zero}/{len(test_norms)} ({pct_test_zero:.1f}%)")
 
-        # Fit PCA only on non-zero training samples
-        X_emb_train_valid = X_emb_train[train_nonzero_mask]
+        # ── PCA: per-region or concatenated ──
+        if pca_per_region is not None:
+            # Per-region PCA: fit separate PCA for peptide, nflank, cflank
+            pca_dict = {}
+            region_parts_train = []
+            region_parts_test = []
+            total_components = 0
+            total_variance = 0.0
 
-        total_components = pca_components * n_regions
-        print(f"The total number of PCA components requested for this embedding component is {pca_components} per region × {n_regions} regions = {total_components} total. However, the number of non-zero training samples is only {X_emb_train_valid.shape[0]}, which limits the maximum number of PCA components that can be fitted. Therefore, we will use {total_components} PCA components for this component.")
+            for region_name in sorted(emb_data["regions"].keys()):
+                pca_n = pca_per_region[region_name]
+                X_region_train = emb_data["regions"][region_name][train_indices].copy()
+                X_region_test = emb_data["regions"][region_name][test_indices].copy()
 
-        total_components = min(
-            total_components,
-            X_emb_train_valid.shape[1],
-            X_emb_train_valid.shape[0],
-        )
-        
-        pca = PCA(n_components=total_components, random_state=RANDOM_STATE)
-        pca.fit(X_emb_train_valid)
+                # Non-zero mask for this region
+                region_norms_train = np.linalg.norm(X_region_train, axis=1)
+                region_nonzero = region_norms_train > 0.0
+                X_region_train_valid = X_region_train[region_nonzero]
 
-        # Transform ALL samples (non-zero get real projections,
-        # zero vectors project to origin in PC space)
-        X_emb_train = pca.transform(X_emb_train)
-        X_emb_test = pca.transform(X_emb_test)
+                pca_n_actual = min(
+                    pca_n,
+                    X_region_train_valid.shape[1],
+                    X_region_train_valid.shape[0],
+                )
 
-        explained = pca.explained_variance_ratio_.sum() * 100
-        print(f"    {comp_key}: PCA {emb_data['emb_dim'] * n_regions} → {total_components} "
-              f"({pca_components}/region × {n_regions} regions, "
-              f"{explained:.1f}% variance, fitted on {train_nonzero_mask.sum()} non-zero samples)")
+                pca = PCA(n_components=pca_n_actual, random_state=RANDOM_STATE)
+                pca.fit(X_region_train_valid)
 
-        fold_artifacts["pca_dict"][comp_key] = pca
+                X_region_train = pca.transform(X_region_train)
+                X_region_test = pca.transform(X_region_test)
+
+                explained = pca.explained_variance_ratio_.sum() * 100
+                total_variance += explained * (X_region_train.shape[1] /
+                                               (emb_data["emb_dim"] * n_regions))
+                total_components += pca_n_actual
+
+                region_parts_train.append(X_region_train)
+                region_parts_test.append(X_region_test)
+                pca_dict[region_name] = pca
+
+                region_label = region_name.replace("_emb", "")
+                print(f"    {comp_key}/{region_label}: PCA "
+                      f"{X_region_train.shape[1]} → {pca_n_actual} "
+                      f"({explained:.1f}% variance)")
+
+            fold_artifacts["pca_dict"][comp_key] = pca_dict
+
+            X_emb_train = np.concatenate(region_parts_train, axis=1)
+            X_emb_test = np.concatenate(region_parts_test, axis=1)
+
+            # Build feature names
+            for region_name in sorted(emb_data["regions"].keys()):
+                pca_n = pca_per_region[region_name]
+                region_label = region_name.replace("_emb", "")
+                feature_names.extend(
+                    [f"{comp_key}_{region_label}_PC{i + 1:03d}"
+                     for i in range(pca_n_actual)]
+                )
+
+            print(f"    {comp_key}: PCA total {total_components} components "
+                  f"(per-region)")
+
+        else:
+            # Concatenated PCA (original behavior)
+            X_emb_train = concatenate_regions(emb_data, train_indices)
+            X_emb_test = concatenate_regions(emb_data, test_indices)
+
+            X_emb_train_valid = X_emb_train[train_nonzero_mask]
+
+            total_components = pca_components * n_regions
+            total_components = min(
+                total_components,
+                X_emb_train_valid.shape[1],
+                X_emb_train_valid.shape[0],
+            )
+
+            pca = PCA(n_components=total_components, random_state=RANDOM_STATE)
+            pca.fit(X_emb_train_valid)
+
+            X_emb_train = pca.transform(X_emb_train)
+            X_emb_test = pca.transform(X_emb_test)
+
+            explained = pca.explained_variance_ratio_.sum() * 100
+            print(f"    {comp_key}: PCA {emb_data['emb_dim'] * n_regions} → "
+                  f"{total_components} ({pca_components}/region × {n_regions} "
+                  f"regions, {explained:.1f}% variance, fitted on "
+                  f"{train_nonzero_mask.sum()} non-zero samples)")
+
+            fold_artifacts["pca_dict"][comp_key] = pca
+            feature_names.extend(
+                [f"{comp_key}_PC{i + 1:03d}" for i in range(total_components)]
+            )
 
         parts_train.append(X_emb_train)
         parts_test.append(X_emb_test)
-        feature_names.extend([f"{comp_key}_PC{i + 1:03d}" for i in range(total_components)])
 
     # ── Concatenate all parts ──
     X_train = np.concatenate(parts_train, axis=1)
@@ -563,12 +644,8 @@ def prepare_held_out(df, csv_feature_cols, emb_data_dict, model_cfg, fold_artifa
 
     # ── Embedding features ──
     for comp_key, emb_data in emb_data_dict.items():
-        X_emb = concatenate_regions(emb_data, ho_indices)
-        X_emb[np.isinf(X_emb)] = 0.0
-        X_emb[np.isnan(X_emb)] = 0.0
-
-        pca = fold_artifacts["pca_dict"][comp_key]
-        X_emb = pca.transform(X_emb)
+        pca_obj = fold_artifacts["pca_dict"][comp_key]
+        X_emb = _transform_embeddings(emb_data, ho_indices, pca_obj)
         parts.append(X_emb)
 
     X_ho = np.concatenate(parts, axis=1)
@@ -577,6 +654,92 @@ def prepare_held_out(df, csv_feature_cols, emb_data_dict, model_cfg, fold_artifa
         X_ho = fold_artifacts["scaler"].transform(X_ho)
 
     return X_ho, y_ho
+
+
+def prepare_validation(df, csv_feature_cols, emb_data_dict, model_cfg,
+                       fold_artifacts, validation_bucket):
+    """
+    Prepare validation set using artifacts from a specific inner fold.
+
+    Like prepare_held_out but parameterized by validation_bucket
+    instead of hardcoding HELD_OUT_INDEX.
+    """
+    val_mask = df[FOLD_COL] == validation_bucket
+    val_indices = np.where(val_mask.values)[0]
+
+    y_val = df.iloc[val_indices][LABEL_COL].values.astype(np.int32)
+
+    parts = []
+
+    # ── CSV features ──
+    if csv_feature_cols:
+        X_csv = df.iloc[val_indices][csv_feature_cols].values.astype(np.float64)
+        X_csv = impute_nan_single(X_csv, fold_artifacts["col_medians"])
+        parts.append(X_csv)
+
+    # ── Embedding features ──
+    for comp_key, emb_data in emb_data_dict.items():
+        pca_obj = fold_artifacts["pca_dict"][comp_key]
+        X_emb = _transform_embeddings(emb_data, val_indices, pca_obj)
+        parts.append(X_emb)
+
+    X_val = np.concatenate(parts, axis=1)
+
+    if fold_artifacts["scaler"] is not None:
+        X_val = fold_artifacts["scaler"].transform(X_val)
+
+    return X_val, y_val, val_indices
+
+
+def _transform_embeddings(emb_data, indices, pca_obj):
+    """
+    Transform embedding data through PCA.
+
+    Handles both:
+      - Single PCA object (concatenated regions)
+      - Dict of PCA objects per region (per-region PCA)
+    """
+    if isinstance(pca_obj, dict):
+        # Per-region PCA: transform each region separately
+        region_parts = []
+        for region_name in sorted(emb_data["regions"].keys()):
+            X_region = emb_data["regions"][region_name][indices].copy()
+            X_region[np.isinf(X_region)] = 0.0
+            X_region[np.isnan(X_region)] = 0.0
+            pca = pca_obj[region_name]
+            X_region = pca.transform(X_region)
+            region_parts.append(X_region)
+        return np.concatenate(region_parts, axis=1)
+    else:
+        # Concatenated PCA (original behavior)
+        X_emb = concatenate_regions(emb_data, indices)
+        X_emb[np.isinf(X_emb)] = 0.0
+        X_emb[np.isnan(X_emb)] = 0.0
+        return pca_obj.transform(X_emb)
+
+
+def predict_with_averaging(df, csv_feature_cols, emb_data_dict, model_cfg,
+                           inner_models, inner_artifacts, validation_bucket):
+    """
+    Predict on validation set by averaging all inner models' probabilities.
+
+    Each inner model has its own PCA/scaler/median artifacts.
+    We transform the validation data through each model's pipeline,
+    predict, then average the probability vectors.
+    """
+    all_probs = []
+    for model, artifacts in zip(inner_models, inner_artifacts):
+        X_val, y_val, _ = prepare_validation(
+            df, csv_feature_cols, emb_data_dict, model_cfg,
+            artifacts, validation_bucket
+        )
+        if hasattr(model, "predict_proba"):
+            probs = model.predict_proba(X_val)[:, 1]
+        else:
+            probs = model.decision_function(X_val)
+        all_probs.append(probs)
+    avg_probs = np.mean(all_probs, axis=0)
+    return y_val, avg_probs
 
 
 # ──────────────────────────────────────────────
@@ -684,6 +847,23 @@ def parse_args():
         help="Override PCA components per region for ALL embedding components "
              "(default: use config.py value)",
     )
+    parser.add_argument(
+        "--pca-peptide", type=int, default=None,
+        help="PCA components for peptide region only (overrides --pca)",
+    )
+    parser.add_argument(
+        "--pca-nflank", type=int, default=None,
+        help="PCA components for n-flank region only (overrides --pca)",
+    )
+    parser.add_argument(
+        "--pca-cflank", type=int, default=None,
+        help="PCA components for c-flank region only (overrides --pca)",
+    )
+    parser.add_argument(
+        "--nested", action="store_true",
+        help="Use true nested CV: 6 outer iterations (rotate validation bucket) "
+             "x 5 inner folds = 30 models. Averages inner models' predictions.",
+    )
     return parser.parse_args()
 
 # ──────────────────────────────────────────────
@@ -703,7 +883,15 @@ if __name__ == "__main__":
 
     # ── PCA override ──
     pca_override = args.pca
-    if pca_override is not None:
+    pca_per_region = {
+        "peptide": args.pca_peptide,
+        "n_flank": args.pca_nflank,
+        "c_flank": args.pca_cflank,
+    }
+    has_per_region = any(v is not None for v in pca_per_region.values())
+    if pca_override is not None and has_per_region:
+        print(f"  [CLI OVERRIDE] Per-region PCA overrides global --pca value")
+    elif pca_override is not None:
         print(f"  [CLI OVERRIDE] PCA components per region: {pca_override}")
 
     display_name = model_cfg["display_name"]
@@ -775,7 +963,31 @@ if __name__ == "__main__":
         for info in component_info["emb_components"]:
             info["pca_components"] = pca_override
             info["pca_total"] = pca_override * info["n_regions"]
-            
+
+    # Apply per-region PCA overrides (higher priority than global --pca)
+    if has_per_region:
+        for comp_key, emb_data in emb_data_dict.items():
+            # Store per-region PCA as dict
+            region_pca = {}
+            for region_name in sorted(emb_data["regions"].keys()):
+                # Map region key to CLI arg name
+                # "peptide_emb" -> "peptide", "n_flank_emb" -> "n_flank", etc.
+                region_base = region_name.replace("_emb", "")
+                cli_val = pca_per_region.get(region_base)
+                if cli_val is not None:
+                    region_pca[region_name] = cli_val
+                else:
+                    # Fall back to existing pca_components value
+                    region_pca[region_name] = emb_data["pca_components"]
+            emb_data["pca_per_region"] = region_pca
+            # Update pca_components to reflect the primary region (peptide)
+            # for backward compat in logging
+            emb_data["pca_total"] = sum(region_pca.values())
+
+        for info in component_info["emb_components"]:
+            info["pca_per_region"] = region_pca
+            info["pca_total"] = sum(region_pca.values())
+
     del df_split  # free the original copy
 
     # -- Summary --
@@ -825,244 +1037,499 @@ if __name__ == "__main__":
     print(f"{'=' * 80}")
 
     # ── Cross-Validation Loop ──
-    all_fold_metrics = []
-    all_fold_predictions = {}
-    all_fold_weights = []
-    best_fold_auc = -1
-    best_fold_id = -1
-    best_fold_model = None
-    best_fold_artifacts = None
     feature_names = None
+    n_features_final = None
 
-    for fold_id in range(N_CV_FOLDS):
-        print(f"\n{'-' * 80}")
-        print(f"  FOLD {fold_id}/{N_CV_FOLDS - 1}")
-        print(f"{'-' * 80}")
+    if args.nested:
+        # ══════════════════════════════════════════════════════════════════
+        # NESTED CV: 6 outer iterations × 5 inner folds = 30 models
+        # Each outer iteration: 1 bucket = validation, 5 remaining = inner CV
+        # Inner models' predictions averaged on validation set.
+        # ══════════════════════════════════════════════════════════════════
+        print(f"\n{'=' * 80}")
+        print("NESTED CROSS-VALIDATION")
+        print(f"  Outer iterations: {N_CV_FOLDS + 1} (rotate validation bucket)")
+        print(f"  Inner folds:      {N_CV_FOLDS} (per outer iteration)")
+        print(f"  Total models:     {(N_CV_FOLDS + 1) * N_CV_FOLDS}")
+        print(f"{'=' * 80}")
 
-        t_fold_start = time.time()
+        outer_val_metrics = []
+        outer_val_predictions = {}
+        all_outer_inner_weights = []
 
-        X_train, y_train, X_test, y_test, fold_info, fold_artifacts = prepare_fold(
-            df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
-        )
+        t_nested_start = time.time()
 
-        if feature_names is None:
-            feature_names = fold_info["feature_names"]
+        for outer_fold in range(N_CV_FOLDS + 1):
+            print(f"\n{'═' * 80}")
+            print(f"  OUTER FOLD {outer_fold}/{N_CV_FOLDS} "
+                  f"(validation bucket = {outer_fold})")
+            print(f"{'═' * 80}")
 
-        train_ratio = fold_info["n_train_neg"] / fold_info["n_train_pos"] if fold_info["n_train_pos"] > 0 else float("inf")
-        test_ratio = fold_info["n_test_neg"] / fold_info["n_test_pos"] if fold_info["n_test_pos"] > 0 else float("inf")
+            inner_models = []
+            inner_artifacts = []
+            inner_fold_metrics = []
+            inner_fold_predictions = {}
+            inner_fold_weights = []
 
-        print(f"    Train: {fold_info['n_train']:>6} samples "
-              f"(pos={fold_info['n_train_pos']}, neg={fold_info['n_train_neg']}, "
-              f"ratio={train_ratio:.3f})")
-        print(f"    Test:  {fold_info['n_test']:>6} samples "
-              f"(pos={fold_info['n_test_pos']}, neg={fold_info['n_test_neg']}, "
-              f"ratio={test_ratio:.3f})")
-        print(f"    Features: {fold_info['n_features']}")
+            inner_folds = [f for f in range(N_CV_FOLDS + 1) if f != outer_fold]
 
-        model, test_metrics, y_prob = train_one_fold(
-            model_cfg, X_train, y_train, X_test, y_test, fold_id,
-        )
+            for inner_idx, inner_fold in enumerate(inner_folds):
+                print(f"\n  ── Inner fold {inner_idx + 1}/{N_CV_FOLDS} "
+                      f"(test bucket = {inner_fold}) ──")
 
-        t_fold_end = time.time()
+                t_fold_start = time.time()
 
-        print(f"\n    Fold {fold_id} results ({t_fold_end - t_fold_start:.1f}s):")
-        print_metrics(test_metrics, prefix="    ")
+                X_train, y_train, X_test, y_test, fold_info, fold_artifacts = \
+                    prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg,
+                                 inner_fold, validation_bucket=outer_fold)
 
-        weights = extract_feature_weights(model, model_cfg)
-        print_feature_weights(weights, feature_names, model_cfg, top_n=15)
-        if weights is not None:
-            all_fold_weights.append(weights)
+                if feature_names is None:
+                    feature_names = fold_info["feature_names"]
 
-        all_fold_predictions[fold_id] = {
-            "y_true": y_test.tolist(),
-            "y_prob": y_prob.tolist(),
+                train_ratio = (fold_info["n_train_neg"] / fold_info["n_train_pos"]
+                               if fold_info["n_train_pos"] > 0 else float("inf"))
+                test_ratio = (fold_info["n_test_neg"] / fold_info["n_test_pos"]
+                              if fold_info["n_test_pos"] > 0 else float("inf"))
+
+                print(f"    Train: {fold_info['n_train']:>6} samples "
+                      f"(pos={fold_info['n_train_pos']}, "
+                      f"neg={fold_info['n_train_neg']}, ratio={train_ratio:.3f})")
+                print(f"    Test:  {fold_info['n_test']:>6} samples "
+                      f"(pos={fold_info['n_test_pos']}, "
+                      f"neg={fold_info['n_test_neg']}, ratio={test_ratio:.3f})")
+                print(f"    Features: {fold_info['n_features']}")
+
+                model, test_metrics, y_prob = train_one_fold(
+                    model_cfg, X_train, y_train, X_test, y_test, inner_fold,
+                )
+
+                t_fold_end = time.time()
+                print(f"    Inner fold {inner_fold} AUC: "
+                      f"{test_metrics['auc_roc']:.4f} ({t_fold_end - t_fold_start:.1f}s)")
+
+                weights = extract_feature_weights(model, model_cfg)
+                if weights is not None:
+                    inner_fold_weights.append(weights)
+                    all_outer_inner_weights.append(weights)
+
+                inner_models.append(model)
+                inner_artifacts.append(fold_artifacts)
+                inner_fold_metrics.append(test_metrics)
+                inner_fold_predictions[inner_fold] = {
+                    "y_true": y_test.tolist(),
+                    "y_prob": y_prob.tolist(),
+                }
+
+                # Save inner model
+                inner_model_path = (MODEL_DIR /
+                                    f"{run_tag}_outer{outer_fold}_inner{inner_idx}.pkl")
+                with open(inner_model_path, "wb") as f:
+                    pickle.dump(model, f)
+
+            # ── Average predictions on validation set ──
+            print(f"\n  Averaging {len(inner_models)} inner models on "
+                  f"validation bucket {outer_fold}...")
+
+            y_val, avg_probs = predict_with_averaging(
+                df, csv_feature_cols, emb_data_dict, model_cfg,
+                inner_models, inner_artifacts, validation_bucket=outer_fold,
+            )
+
+            val_metrics = compute_metrics(y_val, avg_probs)
+            outer_val_metrics.append(val_metrics)
+            outer_val_predictions[outer_fold] = {
+                "y_true": y_val.tolist(),
+                "y_prob": avg_probs.tolist(),
+            }
+
+            n_val_pos = int(y_val.sum())
+            n_val_neg = int(len(y_val) - n_val_pos)
+            print(f"  Outer fold {outer_fold} validation "
+                  f"(n={len(y_val)}, pos={n_val_pos}, neg={n_val_neg}):")
+            print_metrics(val_metrics, prefix="  ")
+
+        t_nested_end = time.time()
+
+        # ── Nested CV Summary ──
+        summary = aggregate_cv_results(outer_val_metrics)
+        print(f"\n{'=' * 80}")
+        print("NESTED CV RESULTS (mean ± std across 6 outer iterations)")
+        print(f"{'=' * 80}")
+        print_cv_summary(summary)
+
+        # ── Per-outer-fold comparison table ──
+        print(f"\n{'=' * 80}")
+        print("PER-OUTER-FOLD VALIDATION METRICS")
+        print("=" * 80)
+        metric_names = list(outer_val_metrics[0].keys())
+        header = f"  {'Outer':<8}" + "".join(f"{m:<13}" for m in metric_names)
+        print(header)
+        print(f"  {'-' * (8 + 13 * len(metric_names))}")
+        for outer_id, metrics in enumerate(outer_val_metrics):
+            row = (f"  {outer_id:<8}" +
+                   "".join(f"{metrics[m]:<13.4f}" for m in metric_names))
+            print(row)
+        print(f"  {'-' * (8 + 13 * len(metric_names))}")
+        mean_row = (f"  {'mean':<8}" +
+                    "".join(f"{summary[m]['mean']:<13.4f}" for m in metric_names))
+        std_row = (f"  {'std':<8}" +
+                   "".join(f"{summary[m]['std']:<13.4f}" for m in metric_names))
+        print(mean_row)
+        print(std_row)
+
+        # ── Averaged feature weights across ALL inner models ──
+        if all_outer_inner_weights:
+            print(f"\n{'=' * 80}")
+            is_coef = model_cfg["coef_attr"] == "coef_"
+            weight_label = "COEFFICIENTS" if is_coef else "FEATURE IMPORTANCE"
+            print(f"AVERAGED {weight_label} ACROSS ALL "
+                  f"{len(all_outer_inner_weights)} INNER MODELS")
+            print("=" * 80)
+
+            avg_weights = np.mean(all_outer_inner_weights, axis=0)
+            std_weights = np.std(all_outer_inner_weights, axis=0)
+            abs_avg = np.abs(avg_weights)
+            sorted_indices = np.argsort(abs_avg)[::-1]
+
+            col_label = "Mean Coef" if is_coef else "Mean Imp"
+            print(f"  {'Rank':<6} {'Feature':<45} {col_label:>12} {'Std':>12}")
+            print(f"  {'-' * 77}")
+            for rank in range(min(30, len(feature_names))):
+                idx = sorted_indices[rank]
+                print(f"  {rank + 1:<6} {feature_names[idx]:<45} "
+                      f"{avg_weights[idx]:>12.6f} {std_weights[idx]:>12.6f}")
+
+        # ── Save Results ──
+        n_features_final = feature_names is not None and len(feature_names)
+
+        results = {
+            "timestamp": timestamp,
+            "mode": "nested_cv",
+            "model_key": model_key,
+            "model_type": display_name,
+            "model_class": model_cfg["model_class"],
+            "features_key": features_key,
+            "features_display": feat_display,
+            "components": feat_cfg["components"],
+            "config": {
+                "n_outer_folds": N_CV_FOLDS + 1,
+                "n_inner_folds": N_CV_FOLDS,
+                "total_models": (N_CV_FOLDS + 1) * N_CV_FOLDS,
+                "random_state": RANDOM_STATE,
+                "needs_scaling": model_cfg["needs_scaling"],
+                "hyperparameters": {k: str(v)
+                                    for k, v in model_cfg["params"].items()},
+                "n_features": n_features_final,
+                "feature_names": feature_names,
+                "component_info": component_info,
+            },
+            "cv_summary": {m: {"mean": s["mean"], "std": s["std"]}
+                           for m, s in summary.items()},
+            "outer_val_metrics": outer_val_metrics,
+            "outer_val_predictions": outer_val_predictions,
         }
 
-        all_fold_metrics.append(test_metrics)
+        if all_outer_inner_weights:
+            results["avg_feature_weights"] = {
+                feature_names[i]: float(avg_weights[i])
+                for i in sorted_indices[:min(50, len(feature_names))]
+            }
 
-        if test_metrics["auc_roc"] > best_fold_auc:
-            best_fold_auc = test_metrics["auc_roc"]
-            best_fold_id = fold_id
-            best_fold_model = model
-            best_fold_artifacts = fold_artifacts
+        results_path = MODEL_DIR / f"cv_results_{run_tag}_{timestamp}.json"
+        with open(results_path, "w") as f:
+            json.dump(results, f, indent=2, default=str)
+        print(f"\nResults saved: {results_path}")
 
-        fold_model_path = MODEL_DIR / f"{run_tag}_model_fold{fold_id}.pkl"
-        with open(fold_model_path, "wb") as f:
-            pickle.dump(model, f)
-        print(f"    Saved model: {fold_model_path}")
+        feat_names_path = MODEL_DIR / f"{run_tag}_feature_names.json"
+        with open(feat_names_path, "w") as f:
+            json.dump(feature_names, f, indent=2)
+        print(f"Feature names saved: {feat_names_path}")
 
-    # ── CV Summary ──
-    summary = aggregate_cv_results(all_fold_metrics)
-    print_cv_summary(summary)
-    print(f"\n  Best fold: {best_fold_id} (AUC-ROC = {best_fold_auc:.4f})")
-
-    # ── Per-fold comparison table ──
-    print(f"\n{'=' * 80}")
-    print("PER-FOLD METRIC COMPARISON")
-    print("=" * 80)
-    metric_names = list(all_fold_metrics[0].keys())
-    header = f"  {'Fold':<8}" + "".join(f"{m:<13}" for m in metric_names)
-    print(header)
-    print(f"  {'-' * (8 + 13 * len(metric_names))}")
-    for fold_id, metrics in enumerate(all_fold_metrics):
-        row = f"  {fold_id:<8}" + "".join(f"{metrics[m]:<13.4f}" for m in metric_names)
-        print(row)
-    print(f"  {'-' * (8 + 13 * len(metric_names))}")
-    mean_row = f"  {'mean':<8}" + "".join(f"{summary[m]['mean']:<13.4f}" for m in metric_names)
-    std_row = f"  {'std':<8}" + "".join(f"{summary[m]['std']:<13.4f}" for m in metric_names)
-    print(mean_row)
-    print(std_row)
-
-    # ── Averaged feature weights ──
-    if all_fold_weights:
+        # ── Footer ──
+        t_end = time.time()
+        total_minutes = (t_end - t_start) / 60
+        nested_minutes = (t_nested_end - t_nested_start) / 60
         print(f"\n{'=' * 80}")
-        is_coef = model_cfg["coef_attr"] == "coef_"
-        weight_label = "COEFFICIENTS" if is_coef else "FEATURE IMPORTANCE"
-        print(f"AVERAGED {weight_label} ACROSS ALL FOLDS")
+        print("RUN SUMMARY (NESTED CV)")
+        print("=" * 80)
+        print(f"  Total runtime:      {t_end - t_start:.1f}s ({total_minutes:.1f} min)")
+        print(f"  Nested CV time:     {t_nested_end - t_nested_start:.1f}s "
+              f"({nested_minutes:.1f} min)")
+        print(f"  Model:              {display_name} ({model_key})")
+        print(f"  Feature set:        {feat_display} ({features_key})")
+        print(f"  Components:         {feat_cfg['components']}")
+        print(f"  Scaling:            {'yes' if model_cfg['needs_scaling'] else 'no'}")
+        print(f"  Features (final):   {n_features_final}")
+        if csv_feature_cols:
+            print(f"    CSV features:     {len(csv_feature_cols)}")
+        for info in component_info["emb_components"]:
+            print(f"    {info['key']} PCA:       {info['pca_total']}")
+        print(f"  Outer iterations:   {N_CV_FOLDS + 1}")
+        print(f"  Inner folds:        {N_CV_FOLDS}")
+        print(f"  Total models:       {(N_CV_FOLDS + 1) * N_CV_FOLDS}")
+        print(f"  Val AUC-ROC:        {summary['auc_roc']['mean']:.4f} ± "
+              f"{summary['auc_roc']['std']:.4f}")
+        print(f"  Val MCC:            {summary['mcc']['mean']:.4f} ± "
+              f"{summary['mcc']['std']:.4f}")
+        print(f"  Models dir:         {MODEL_DIR}/")
+        print(f"  Results file:       {results_path}")
+        print(f"  Feature names:      {feat_names_path}")
+        print(f"  Log file:           {LOG_PATH}")
+        print(f"  Completed:          "
+              f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print("=" * 80)
 
-        avg_weights = np.mean(all_fold_weights, axis=0)
-        std_weights = np.std(all_fold_weights, axis=0)
-        abs_avg = np.abs(avg_weights)
-        sorted_indices = np.argsort(abs_avg)[::-1]
-
-        col_label = "Mean Coef" if is_coef else "Mean Imp"
-        print(f"  {'Rank':<6} {'Feature':<45} {col_label:>12} {'Std':>12}")
-        print(f"  {'-' * 77}")
-        for rank in range(min(30, len(feature_names))):
-            idx = sorted_indices[rank]
-            print(f"  {rank + 1:<6} {feature_names[idx]:<45} "
-                  f"{avg_weights[idx]:>12.6f} {std_weights[idx]:>12.6f}")
-
-    # ── Held-Out Evaluation ──
-    print(f"\n{'=' * 80}")
-    print("HELD-OUT VALIDATION SET EVALUATION")
-    print(f"{'=' * 80}")
-    print(f"  Using model from best fold ({best_fold_id})")
-
-    X_ho, y_ho = prepare_held_out(
-        df, csv_feature_cols, emb_data_dict, model_cfg, best_fold_artifacts,
-    )
-
-    n_ho_pos = int(y_ho.sum())
-    n_ho_neg = int(len(y_ho) - y_ho.sum())
-    ho_ratio = n_ho_neg / n_ho_pos if n_ho_pos > 0 else float("inf")
-    print(f"  Held-out samples: {len(y_ho)} "
-          f"(pos={n_ho_pos}, neg={n_ho_neg}, ratio={ho_ratio:.3f})")
-
-    if hasattr(best_fold_model, "predict_proba"):
-        ho_probs = best_fold_model.predict_proba(X_ho)[:, 1]
     else:
-        ho_probs = best_fold_model.decision_function(X_ho)
+        # ══════════════════════════════════════════════════════════════════
+        # FLAT CV (legacy): 5-fold CV + held-out validation
+        # ══════════════════════════════════════════════════════════════════
+        all_fold_metrics = []
+        all_fold_predictions = {}
+        all_fold_weights = []
+        best_fold_auc = -1
+        best_fold_id = -1
+        best_fold_model = None
+        best_fold_artifacts = None
 
-    ho_metrics = compute_metrics(y_ho, ho_probs)
+        for fold_id in range(N_CV_FOLDS):
+            print(f"\n{'-' * 80}")
+            print(f"  FOLD {fold_id}/{N_CV_FOLDS - 1}")
+            print(f"{'-' * 80}")
 
-    print(f"\n  Held-out results ({len(y_ho)} samples):")
-    print_metrics(ho_metrics, prefix="  ")
+            t_fold_start = time.time()
 
-    ho_preds = (ho_probs >= 0.5).astype(int)
-    print(f"\n  Classification Report:")
-    print(classification_report(y_ho, ho_preds,
-                                target_names=["Negative", "Positive"], digits=4))
+            X_train, y_train, X_test, y_test, fold_info, fold_artifacts = \
+                prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg,
+                             fold_id)
 
-    # ── CV vs Held-out comparison ──
-    print(f"{'=' * 80}")
-    print("CV AVERAGE vs HELD-OUT COMPARISON")
-    print("=" * 80)
-    print(f"  {'Metric':<15} {'CV mean':>10} {'CV std':>10} {'Held-out':>10} {'Delta':>10}")
-    print(f"  {'-' * 57}")
-    for m in metric_names:
-        cv_mean = summary[m]["mean"]
-        cv_std = summary[m]["std"]
-        ho_val = ho_metrics[m]
-        delta = ho_val - cv_mean
-        print(f"  {m:<15} {cv_mean:>10.4f} {cv_std:>10.4f} {ho_val:>10.4f} {delta:>+10.4f}")
+            if feature_names is None:
+                feature_names = fold_info["feature_names"]
 
-    # ── Save All Results ──
-    n_features_final = fold_info["n_features"]
+            train_ratio = (fold_info["n_train_neg"] / fold_info["n_train_pos"]
+                           if fold_info["n_train_pos"] > 0 else float("inf"))
+            test_ratio = (fold_info["n_test_neg"] / fold_info["n_test_pos"]
+                          if fold_info["n_test_pos"] > 0 else float("inf"))
 
-    results = {
-        "timestamp": timestamp,
-        "model_key": model_key,
-        "model_type": display_name,
-        "model_class": model_cfg["model_class"],
-        "features_key": features_key,
-        "features_display": feat_display,
-        "components": feat_cfg["components"],
-        "config": {
-            "n_cv_folds": N_CV_FOLDS,
-            "held_out_index": HELD_OUT_INDEX,
-            "random_state": RANDOM_STATE,
-            "needs_scaling": model_cfg["needs_scaling"],
-            "hyperparameters": {k: str(v) for k, v in model_cfg["params"].items()},
-            "n_features": n_features_final,
-            "feature_names": feature_names,
-            "component_info": component_info,
-        },
-        "cv_summary": {m: {"mean": s["mean"], "std": s["std"]}
-                       for m, s in summary.items()},
-        "fold_metrics": all_fold_metrics,
-        "held_out_metrics": ho_metrics,
-        "held_out_predictions": {
-            "y_true": y_ho.tolist(),
-            "y_prob": ho_probs.tolist(),
-        },
-        "best_fold_id": best_fold_id,
-        "best_fold_auc": best_fold_auc,
-        "fold_predictions": all_fold_predictions,
-    }
+            print(f"    Train: {fold_info['n_train']:>6} samples "
+                  f"(pos={fold_info['n_train_pos']}, "
+                  f"neg={fold_info['n_train_neg']}, ratio={train_ratio:.3f})")
+            print(f"    Test:  {fold_info['n_test']:>6} samples "
+                  f"(pos={fold_info['n_test_pos']}, "
+                  f"neg={fold_info['n_test_neg']}, ratio={test_ratio:.3f})")
+            print(f"    Features: {fold_info['n_features']}")
 
-    if all_fold_weights:
-        results["avg_feature_weights"] = {
-            feature_names[i]: float(avg_weights[i])
-            for i in sorted_indices[:min(50, len(feature_names))]
+            model, test_metrics, y_prob = train_one_fold(
+                model_cfg, X_train, y_train, X_test, y_test, fold_id,
+            )
+
+            t_fold_end = time.time()
+
+            print(f"\n    Fold {fold_id} results ({t_fold_end - t_fold_start:.1f}s):")
+            print_metrics(test_metrics, prefix="    ")
+
+            weights = extract_feature_weights(model, model_cfg)
+            print_feature_weights(weights, feature_names, model_cfg, top_n=15)
+            if weights is not None:
+                all_fold_weights.append(weights)
+
+            all_fold_predictions[fold_id] = {
+                "y_true": y_test.tolist(),
+                "y_prob": y_prob.tolist(),
+            }
+
+            all_fold_metrics.append(test_metrics)
+
+            if test_metrics["auc_roc"] > best_fold_auc:
+                best_fold_auc = test_metrics["auc_roc"]
+                best_fold_id = fold_id
+                best_fold_model = model
+                best_fold_artifacts = fold_artifacts
+
+            fold_model_path = MODEL_DIR / f"{run_tag}_model_fold{fold_id}.pkl"
+            with open(fold_model_path, "wb") as f:
+                pickle.dump(model, f)
+            print(f"    Saved model: {fold_model_path}")
+
+        # ── CV Summary ──
+        summary = aggregate_cv_results(all_fold_metrics)
+        print_cv_summary(summary)
+        print(f"\n  Best fold: {best_fold_id} (AUC-ROC = {best_fold_auc:.4f})")
+
+        # ── Per-fold comparison table ──
+        print(f"\n{'=' * 80}")
+        print("PER-FOLD METRIC COMPARISON")
+        print("=" * 80)
+        metric_names = list(all_fold_metrics[0].keys())
+        header = f"  {'Fold':<8}" + "".join(f"{m:<13}" for m in metric_names)
+        print(header)
+        print(f"  {'-' * (8 + 13 * len(metric_names))}")
+        for fold_id, metrics in enumerate(all_fold_metrics):
+            row = (f"  {fold_id:<8}" +
+                   "".join(f"{metrics[m]:<13.4f}" for m in metric_names))
+            print(row)
+        print(f"  {'-' * (8 + 13 * len(metric_names))}")
+        mean_row = (f"  {'mean':<8}" +
+                    "".join(f"{summary[m]['mean']:<13.4f}" for m in metric_names))
+        std_row = (f"  {'std':<8}" +
+                   "".join(f"{summary[m]['std']:<13.4f}" for m in metric_names))
+        print(mean_row)
+        print(std_row)
+
+        # ── Averaged feature weights ──
+        if all_fold_weights:
+            print(f"\n{'=' * 80}")
+            is_coef = model_cfg["coef_attr"] == "coef_"
+            weight_label = "COEFFICIENTS" if is_coef else "FEATURE IMPORTANCE"
+            print(f"AVERAGED {weight_label} ACROSS ALL FOLDS")
+            print("=" * 80)
+
+            avg_weights = np.mean(all_fold_weights, axis=0)
+            std_weights = np.std(all_fold_weights, axis=0)
+            abs_avg = np.abs(avg_weights)
+            sorted_indices = np.argsort(abs_avg)[::-1]
+
+            col_label = "Mean Coef" if is_coef else "Mean Imp"
+            print(f"  {'Rank':<6} {'Feature':<45} {col_label:>12} {'Std':>12}")
+            print(f"  {'-' * 77}")
+            for rank in range(min(30, len(feature_names))):
+                idx = sorted_indices[rank]
+                print(f"  {rank + 1:<6} {feature_names[idx]:<45} "
+                      f"{avg_weights[idx]:>12.6f} {std_weights[idx]:>12.6f}")
+
+        # ── Held-Out Evaluation ──
+        print(f"\n{'=' * 80}")
+        print("HELD-OUT VALIDATION SET EVALUATION")
+        print(f"{'=' * 80}")
+        print(f"  Using model from best fold ({best_fold_id})")
+
+        X_ho, y_ho = prepare_held_out(
+            df, csv_feature_cols, emb_data_dict, model_cfg, best_fold_artifacts,
+        )
+
+        n_ho_pos = int(y_ho.sum())
+        n_ho_neg = int(len(y_ho) - y_ho.sum())
+        ho_ratio = n_ho_neg / n_ho_pos if n_ho_pos > 0 else float("inf")
+        print(f"  Held-out samples: {len(y_ho)} "
+              f"(pos={n_ho_pos}, neg={n_ho_neg}, ratio={ho_ratio:.3f})")
+
+        if hasattr(best_fold_model, "predict_proba"):
+            ho_probs = best_fold_model.predict_proba(X_ho)[:, 1]
+        else:
+            ho_probs = best_fold_model.decision_function(X_ho)
+
+        ho_metrics = compute_metrics(y_ho, ho_probs)
+
+        print(f"\n  Held-out results ({len(y_ho)} samples):")
+        print_metrics(ho_metrics, prefix="  ")
+
+        ho_preds = (ho_probs >= 0.5).astype(int)
+        print(f"\n  Classification Report:")
+        print(classification_report(y_ho, ho_preds,
+                                    target_names=["Negative", "Positive"],
+                                    digits=4))
+
+        # ── CV vs Held-out comparison ──
+        print(f"{'=' * 80}")
+        print("CV AVERAGE vs HELD-OUT COMPARISON")
+        print("=" * 80)
+        print(f"  {'Metric':<15} {'CV mean':>10} {'CV std':>10} "
+              f"{'Held-out':>10} {'Delta':>10}")
+        print(f"  {'-' * 57}")
+        for m in metric_names:
+            cv_mean = summary[m]["mean"]
+            cv_std = summary[m]["std"]
+            ho_val = ho_metrics[m]
+            delta = ho_val - cv_mean
+            print(f"  {m:<15} {cv_mean:>10.4f} {cv_std:>10.4f} "
+                  f"{ho_val:>10.4f} {delta:>+10.4f}")
+
+        # ── Save All Results ──
+        n_features_final = fold_info["n_features"]
+
+        results = {
+            "timestamp": timestamp,
+            "mode": "flat_cv",
+            "model_key": model_key,
+            "model_type": display_name,
+            "model_class": model_cfg["model_class"],
+            "features_key": features_key,
+            "features_display": feat_display,
+            "components": feat_cfg["components"],
+            "config": {
+                "n_cv_folds": N_CV_FOLDS,
+                "held_out_index": HELD_OUT_INDEX,
+                "random_state": RANDOM_STATE,
+                "needs_scaling": model_cfg["needs_scaling"],
+                "hyperparameters": {k: str(v)
+                                    for k, v in model_cfg["params"].items()},
+                "n_features": n_features_final,
+                "feature_names": feature_names,
+                "component_info": component_info,
+            },
+            "cv_summary": {m: {"mean": s["mean"], "std": s["std"]}
+                           for m, s in summary.items()},
+            "fold_metrics": all_fold_metrics,
+            "held_out_metrics": ho_metrics,
+            "held_out_predictions": {
+                "y_true": y_ho.tolist(),
+                "y_prob": ho_probs.tolist(),
+            },
+            "best_fold_id": best_fold_id,
+            "best_fold_auc": best_fold_auc,
+            "fold_predictions": all_fold_predictions,
         }
 
-    results_path = MODEL_DIR / f"cv_results_{run_tag}_{timestamp}.json"
-    with open(results_path, "w") as f:
-        json.dump(results, f, indent=2, default=str)
-    print(f"\nResults saved: {results_path}")
+        if all_fold_weights:
+            results["avg_feature_weights"] = {
+                feature_names[i]: float(avg_weights[i])
+                for i in sorted_indices[:min(50, len(feature_names))]
+            }
 
-    best_model_path = MODEL_DIR / f"best_{run_tag}_model.pkl"
-    with open(best_model_path, "wb") as f:
-        pickle.dump(best_fold_model, f)
-    print(f"Best model saved: {best_model_path}")
+        results_path = MODEL_DIR / f"cv_results_{run_tag}_{timestamp}.json"
+        with open(results_path, "w") as f:
+            json.dump(results, f, indent=2, default=str)
+        print(f"\nResults saved: {results_path}")
 
-    artifacts_path = MODEL_DIR / f"best_{run_tag}_artifacts.pkl"
-    with open(artifacts_path, "wb") as f:
-        pickle.dump(best_fold_artifacts, f)
-    print(f"Fold artifacts saved: {artifacts_path}")
+        best_model_path = MODEL_DIR / f"best_{run_tag}_model.pkl"
+        with open(best_model_path, "wb") as f:
+            pickle.dump(best_fold_model, f)
+        print(f"Best model saved: {best_model_path}")
 
-    feat_names_path = MODEL_DIR / f"{run_tag}_feature_names.json"
-    with open(feat_names_path, "w") as f:
-        json.dump(feature_names, f, indent=2)
-    print(f"Feature names saved: {feat_names_path}")
+        artifacts_path = MODEL_DIR / f"best_{run_tag}_artifacts.pkl"
+        with open(artifacts_path, "wb") as f:
+            pickle.dump(best_fold_artifacts, f)
+        print(f"Fold artifacts saved: {artifacts_path}")
 
-    # ── Footer ──
-    t_end = time.time()
-    total_minutes = (t_end - t_start) / 60
-    print(f"\n{'=' * 80}")
-    print("RUN SUMMARY")
-    print("=" * 80)
-    print(f"  Total runtime:    {t_end - t_start:.1f}s ({total_minutes:.1f} min)")
-    print(f"  Model:            {display_name} ({model_key})")
-    print(f"  Feature set:      {feat_display} ({features_key})")
-    print(f"  Components:       {feat_cfg['components']}")
-    print(f"  Scaling:          {'yes' if model_cfg['needs_scaling'] else 'no'}")
-    print(f"  Features (final): {n_features_final}")
-    if csv_feature_cols:
-        print(f"    CSV features:   {len(csv_feature_cols)}")
-    for info in component_info["emb_components"]:
-        print(f"    {info['key']} PCA:     {info['pca_total']}")
-    print(f"  CV folds:         {N_CV_FOLDS}")
-    print(f"  Best fold:        {best_fold_id} (AUC = {best_fold_auc:.4f})")
-    print(f"  Held-out AUC:     {ho_metrics['auc_roc']:.4f}")
-    print(f"  Held-out MCC:     {ho_metrics['mcc']:.4f}")
-    print(f"  Models dir:       {MODEL_DIR}/")
-    print(f"  Results file:     {results_path}")
-    print(f"  Feature names:    {feat_names_path}")
-    print(f"  Log file:         {LOG_PATH}")
-    print(f"  Completed:        {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("=" * 80)
+        feat_names_path = MODEL_DIR / f"{run_tag}_feature_names.json"
+        with open(feat_names_path, "w") as f:
+            json.dump(feature_names, f, indent=2)
+        print(f"Feature names saved: {feat_names_path}")
+
+        # ── Footer ──
+        t_end = time.time()
+        total_minutes = (t_end - t_start) / 60
+        print(f"\n{'=' * 80}")
+        print("RUN SUMMARY")
+        print("=" * 80)
+        print(f"  Total runtime:    {t_end - t_start:.1f}s ({total_minutes:.1f} min)")
+        print(f"  Model:            {display_name} ({model_key})")
+        print(f"  Feature set:      {feat_display} ({features_key})")
+        print(f"  Components:       {feat_cfg['components']}")
+        print(f"  Scaling:          {'yes' if model_cfg['needs_scaling'] else 'no'}")
+        print(f"  Features (final): {n_features_final}")
+        if csv_feature_cols:
+            print(f"    CSV features:   {len(csv_feature_cols)}")
+        for info in component_info["emb_components"]:
+            print(f"    {info['key']} PCA:     {info['pca_total']}")
+        print(f"  CV folds:         {N_CV_FOLDS}")
+        print(f"  Best fold:        {best_fold_id} (AUC = {best_fold_auc:.4f})")
+        print(f"  Held-out AUC:     {ho_metrics['auc_roc']:.4f}")
+        print(f"  Held-out MCC:     {ho_metrics['mcc']:.4f}")
+        print(f"  Models dir:       {MODEL_DIR}/")
+        print(f"  Results file:     {results_path}")
+        print(f"  Feature names:    {feat_names_path}")
+        print(f"  Log file:         {LOG_PATH}")
+        print(f"  Completed:        {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print("=" * 80)
 
     logger.close()

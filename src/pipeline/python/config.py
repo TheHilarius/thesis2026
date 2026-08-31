@@ -144,6 +144,9 @@ EMBEDDING_REGIONS = ["peptide_emb", "n_flank_emb", "c_flank_emb"]
 
 PCA_COMPONENTS_PER_REGION = 50
 
+# PCA optimization sweep values
+PCA_COMPONENTS_SWEEP = [10, 25, 50, 75, 100, 150]
+
 # ──────────────────────────────────────────────
 # CROSS-VALIDATION SETTINGS
 # ──────────────────────────────────────────────
