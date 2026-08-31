@@ -99,3 +99,6 @@ data/processed/af_*_output.log
 reference_manager/.venv/
 reference_manager/nbib/
 reference_manager/*.json
+
+reference_manager/
+graphify_out/
