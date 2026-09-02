@@ -1,0 +1,99 @@
+======================================================================
+  04B_PCA_OPTIMIZATION — Joint PCA Optimization
+======================================================================
+  Timestamp:      2026-08-31 11:16:37
+  Features:       ['handcrafted_sparse_esmc']
+  Grid:           [5, 10, 15, 20, 25]
+  Combinations:   125
+  Refine:         OFF
+  Outer folds:    6
+  Inner folds:    5
+  Parallel:       6 workers
+  Caching:        ON
+  GPU (cuML):     ON
+  Log:            /home/hilarius/projects/thesis2026/logs/04b_pca_optimization_log_20260831_111637.txt
+======================================================================
+
+  GPU detected (cuML available)
+
+Loading split data...
+  Shape: (46122, 100)
+
+######################################################################
+  FEATURE SET: handcrafted_sparse_esmc
+######################################################################
+
+======================================================================
+  JOINT PCA OPTIMIZATION
+======================================================================
+  Grid: [5, 10, 15, 20, 25]
+  Combinations: 125 (5³)
+  Inner folds: 5
+  Outer folds: 6
+  Parallel workers: 6
+  Caching: ON
+  GPU acceleration: ON (cuML)
+  Total evaluations (coarse): 7,500
+======================================================================
+
+Running 6 outer folds in parallel (6 workers)...
+
+Completed in 41622.2s (693.7 min)
+
+======================================================================
+  JOINT PCA RESULTS
+======================================================================
+
+  RF:
+
+  FINAL PCA SELECTION (pooled inner-CV):
+    Best tuple: [20, 5, 20]
+    Pooled inner-CV AUC: 0.6083
+
+  OUTER VALIDATION PERFORMANCE:
+    Per-fold AUCs: ['0.6099', '0.6117', '0.6037', '0.6091', '0.6070', '0.6124']
+    Mean ± SD: 0.6089 ± 0.0029
+    Per-fold best combos: [[15, 5, 10], [15, 5, 20], [20, 10, 5], [20, 5, 5], [20, 5, 20], [20, 10, 5]]
+    Per-fold inner-CV AUCs: ['0.6102', '0.6086', '0.6111', '0.6127', '0.6137', '0.6078']
+
+  LR:
+
+  FINAL PCA SELECTION (pooled inner-CV):
+    Best tuple: [10, 25, 15]
+    Pooled inner-CV AUC: 0.6043
+
+  OUTER VALIDATION PERFORMANCE:
+    Per-fold AUCs: ['0.6001', '0.6084', '0.6018', '0.5898', '0.6026', '0.6142']
+    Mean ± SD: 0.6028 ± 0.0075
+    Per-fold best combos: [[10, 25, 15], [10, 25, 15], [10, 25, 15], [15, 25, 5], [10, 25, 15], [10, 25, 15]]
+    Per-fold inner-CV AUCs: ['0.6060', '0.6054', '0.6056', '0.6027', '0.6065', '0.6030']
+
+  Saved: /home/hilarius/projects/thesis2026/results/figures/models/pca_optimization/joint_pca_results_handcrafted_sparse_esmc.json
+  Saved: /home/hilarius/projects/thesis2026/results/figures/models/pca_optimization/joint_pca_sweep_handcrafted_sparse_esmc.csv
+  Saved: /home/hilarius/projects/thesis2026/results/figures/models/pca_optimization/joint_pca_stability_handcrafted_sparse_esmc.png
+  Saved: /home/hilarius/projects/thesis2026/results/figures/models/pca_optimization/joint_pca_performance_handcrafted_sparse_esmc.png
+
+Optimal PCA settings saved: /home/hilarius/projects/thesis2026/models/pca_optimal_settings.json
+
+======================================================================
+FINAL PCA SETTINGS (pooled inner-CV)
+======================================================================
+
+  handcrafted_sparse_esmc:
+    RF: [20, 5, 20]
+    LR: [10, 25, 15]
+
+======================================================================
+RUN SUMMARY
+======================================================================
+  Total runtime:    41636.5s (693.9 min)
+  Feature sets:     1
+  Grid:             [5, 10, 15, 20, 25]
+  Combinations:     125
+  Outer folds:      6
+  Inner folds:      5
+  Parallel workers: 6
+  Optimal settings: /home/hilarius/projects/thesis2026/models/pca_optimal_settings.json
+  Log:              /home/hilarius/projects/thesis2026/logs/04b_pca_optimization_log_20260831_111637.txt
+  Completed:        2026-08-31 22:50:33
+======================================================================
