@@ -151,12 +151,11 @@ def load_embedding_data(embedding_key):
             if region in f:
                 data["regions"][region] = f[region][:]
 
-    n_regions = len(data["regions"])
     first_region = list(data["regions"].values())[0]
     emb_dim = first_region.shape[1]
     data["emb_dim"] = emb_dim
 
-    print(f"    Loaded: {data['n_samples']} samples, {n_regions} regions, "
+    print(f"    Loaded: {data['n_samples']} samples, "
           f"dim={emb_dim}")
 
     return data
@@ -312,17 +311,15 @@ def load_all_components(df_split, feat_cfg):
         emb_data["pca_components"] = pca_components
         emb_data_dict[comp_key] = emb_data
 
-        n_regions = len(emb_data["regions"])
         emb_dim = emb_data["emb_dim"]
         component_info["emb_components"].append({
             "key": comp_key,
             "display_name": comp["display_name"],
             "embedding_key": emb_key,
             "emb_dim": emb_dim,
-            "n_regions": n_regions,
-            "raw_dim": n_regions * emb_dim,
+            "raw_dim": emb_dim,
             "pca_components": pca_components,
-            "pca_total": pca_components * n_regions,
+            "pca_total": pca_components,
         })
 
     return df, csv_feature_cols, emb_data_dict, component_info
@@ -384,15 +381,13 @@ def impute_nan_single(X, col_medians):
 # 6. DATA PREPARATION — EMBEDDING PART
 # ──────────────────────────────────────────────
 
-def concatenate_regions(emb_data, indices):
+def get_context_matrix(emb_data, indices):
     """
-    Concatenate all region embeddings for given sample indices.
-    E.g. peptide_emb(1152) + n_flank_emb(1152) + c_flank_emb(1152) = 3456 dims.
+    Return the single context embedding matrix (n_flank + peptide + c_flank,
+    mean-pooled at generation time) for the given sample indices.
     """
-    parts = []
-    for region_name in sorted(emb_data["regions"].keys()):
-        parts.append(emb_data["regions"][region_name][indices])
-    return np.concatenate(parts, axis=1).astype(np.float64)
+    region_name = EMBEDDING_REGIONS[0]
+    return emb_data["regions"][region_name][indices].astype(np.float64)
 
 
 # ──────────────────────────────────────────────
@@ -462,33 +457,18 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
     print("Embedding components loaded:", emb_data_dict.keys())
     for comp_key, emb_data in emb_data_dict.items():
         pca_components = emb_data["pca_components"]
-        n_regions = len(emb_data["regions"])
-        pca_per_region = emb_data.get("pca_per_region", None)
 
-        # Clean inf values in all regions first
-        for region_name, region_data in emb_data["regions"].items():
-            for idx_list in [train_indices, test_indices]:
-                arr = region_data[idx_list]
-                arr[np.isinf(arr)] = 0.0
-                arr[np.isnan(arr)] = 0.0
+        # Single context matrix, clean inf/nan
+        X_emb_train = get_context_matrix(emb_data, train_indices)
+        X_emb_test = get_context_matrix(emb_data, test_indices)
+        X_emb_train[np.isinf(X_emb_train)] = 0.0
+        X_emb_train[np.isnan(X_emb_train)] = 0.0
+        X_emb_test[np.isinf(X_emb_test)] = 0.0
+        X_emb_test[np.isnan(X_emb_test)] = 0.0
 
-        # ── Zero-vector handling (per-region) ──
-        # Identify samples where ALL regions have zero vectors
-        all_region_norms = []
-        for region_name in sorted(emb_data["regions"].keys()):
-            region_norms = np.linalg.norm(
-                emb_data["regions"][region_name][train_indices], axis=1
-            )
-            all_region_norms.append(region_norms)
-        train_norms = np.min(all_region_norms, axis=0)  # zero if ANY region is zero
-
-        all_region_norms_test = []
-        for region_name in sorted(emb_data["regions"].keys()):
-            region_norms = np.linalg.norm(
-                emb_data["regions"][region_name][test_indices], axis=1
-            )
-            all_region_norms_test.append(region_norms)
-        test_norms = np.min(all_region_norms_test, axis=0)
+        # ── Zero-vector handling ──
+        train_norms = np.linalg.norm(X_emb_train, axis=1)
+        test_norms = np.linalg.norm(X_emb_test, axis=1)
 
         train_nonzero_mask = train_norms > 0.0
         test_nonzero_mask = test_norms > 0.0
@@ -502,98 +482,30 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
               f"train={n_train_zero}/{len(train_norms)} ({pct_train_zero:.1f}%), "
               f"test={n_test_zero}/{len(test_norms)} ({pct_test_zero:.1f}%)")
 
-        # ── PCA: per-region or concatenated ──
-        if pca_per_region is not None:
-            # Per-region PCA: fit separate PCA for peptide, nflank, cflank
-            pca_dict = {}
-            region_parts_train = []
-            region_parts_test = []
-            total_components = 0
-            total_variance = 0.0
+        # ── PCA on the single context array ──
+        X_emb_train_valid = X_emb_train[train_nonzero_mask]
 
-            for region_name in sorted(emb_data["regions"].keys()):
-                pca_n = pca_per_region[region_name]
-                X_region_train = emb_data["regions"][region_name][train_indices].copy()
-                X_region_test = emb_data["regions"][region_name][test_indices].copy()
+        total_components = min(
+            pca_components,
+            X_emb_train_valid.shape[1],
+            X_emb_train_valid.shape[0],
+        )
 
-                # Non-zero mask for this region
-                region_norms_train = np.linalg.norm(X_region_train, axis=1)
-                region_nonzero = region_norms_train > 0.0
-                X_region_train_valid = X_region_train[region_nonzero]
+        pca = PCA(n_components=total_components, random_state=RANDOM_STATE)
+        pca.fit(X_emb_train_valid)
 
-                pca_n_actual = min(
-                    pca_n,
-                    X_region_train_valid.shape[1],
-                    X_region_train_valid.shape[0],
-                )
+        X_emb_train = pca.transform(X_emb_train)
+        X_emb_test = pca.transform(X_emb_test)
 
-                pca = PCA(n_components=pca_n_actual, random_state=RANDOM_STATE)
-                pca.fit(X_region_train_valid)
+        explained = pca.explained_variance_ratio_.sum() * 100
+        print(f"    {comp_key}: PCA {emb_data['emb_dim']} → "
+              f"{total_components} ({explained:.1f}% variance, fitted on "
+              f"{train_nonzero_mask.sum()} non-zero samples)")
 
-                X_region_train = pca.transform(X_region_train)
-                X_region_test = pca.transform(X_region_test)
-
-                explained = pca.explained_variance_ratio_.sum() * 100
-                total_variance += explained * (X_region_train.shape[1] /
-                                               (emb_data["emb_dim"] * n_regions))
-                total_components += pca_n_actual
-
-                region_parts_train.append(X_region_train)
-                region_parts_test.append(X_region_test)
-                pca_dict[region_name] = pca
-
-                region_label = region_name.replace("_emb", "")
-                print(f"    {comp_key}/{region_label}: PCA "
-                      f"{X_region_train.shape[1]} → {pca_n_actual} "
-                      f"({explained:.1f}% variance)")
-
-            fold_artifacts["pca_dict"][comp_key] = pca_dict
-
-            X_emb_train = np.concatenate(region_parts_train, axis=1)
-            X_emb_test = np.concatenate(region_parts_test, axis=1)
-
-            # Build feature names
-            for region_name in sorted(emb_data["regions"].keys()):
-                pca_n = pca_per_region[region_name]
-                region_label = region_name.replace("_emb", "")
-                feature_names.extend(
-                    [f"{comp_key}_{region_label}_PC{i + 1:03d}"
-                     for i in range(pca_n_actual)]
-                )
-
-            print(f"    {comp_key}: PCA total {total_components} components "
-                  f"(per-region)")
-
-        else:
-            # Concatenated PCA (original behavior)
-            X_emb_train = concatenate_regions(emb_data, train_indices)
-            X_emb_test = concatenate_regions(emb_data, test_indices)
-
-            X_emb_train_valid = X_emb_train[train_nonzero_mask]
-
-            total_components = pca_components * n_regions
-            total_components = min(
-                total_components,
-                X_emb_train_valid.shape[1],
-                X_emb_train_valid.shape[0],
-            )
-
-            pca = PCA(n_components=total_components, random_state=RANDOM_STATE)
-            pca.fit(X_emb_train_valid)
-
-            X_emb_train = pca.transform(X_emb_train)
-            X_emb_test = pca.transform(X_emb_test)
-
-            explained = pca.explained_variance_ratio_.sum() * 100
-            print(f"    {comp_key}: PCA {emb_data['emb_dim'] * n_regions} → "
-                  f"{total_components} ({pca_components}/region × {n_regions} "
-                  f"regions, {explained:.1f}% variance, fitted on "
-                  f"{train_nonzero_mask.sum()} non-zero samples)")
-
-            fold_artifacts["pca_dict"][comp_key] = pca
-            feature_names.extend(
-                [f"{comp_key}_PC{i + 1:03d}" for i in range(total_components)]
-            )
+        fold_artifacts["pca_dict"][comp_key] = pca
+        feature_names.extend(
+            [f"{comp_key}_PC{i + 1:03d}" for i in range(total_components)]
+        )
 
         parts_train.append(X_emb_train)
         parts_test.append(X_emb_test)
@@ -693,29 +605,12 @@ def prepare_validation(df, csv_feature_cols, emb_data_dict, model_cfg,
 
 def _transform_embeddings(emb_data, indices, pca_obj):
     """
-    Transform embedding data through PCA.
-
-    Handles both:
-      - Single PCA object (concatenated regions)
-      - Dict of PCA objects per region (per-region PCA)
+    Transform the single context embedding through its fitted PCA.
     """
-    if isinstance(pca_obj, dict):
-        # Per-region PCA: transform each region separately
-        region_parts = []
-        for region_name in sorted(emb_data["regions"].keys()):
-            X_region = emb_data["regions"][region_name][indices].copy()
-            X_region[np.isinf(X_region)] = 0.0
-            X_region[np.isnan(X_region)] = 0.0
-            pca = pca_obj[region_name]
-            X_region = pca.transform(X_region)
-            region_parts.append(X_region)
-        return np.concatenate(region_parts, axis=1)
-    else:
-        # Concatenated PCA (original behavior)
-        X_emb = concatenate_regions(emb_data, indices)
-        X_emb[np.isinf(X_emb)] = 0.0
-        X_emb[np.isnan(X_emb)] = 0.0
-        return pca_obj.transform(X_emb)
+    X_emb = get_context_matrix(emb_data, indices)
+    X_emb[np.isinf(X_emb)] = 0.0
+    X_emb[np.isnan(X_emb)] = 0.0
+    return pca_obj.transform(X_emb)
 
 
 def predict_with_averaging(df, csv_feature_cols, emb_data_dict, model_cfg,
@@ -844,20 +739,8 @@ def parse_args():
     )
     parser.add_argument(
         "--pca", type=int, default=None,
-        help="Override PCA components per region for ALL embedding components "
-             "(default: use config.py value)",
-    )
-    parser.add_argument(
-        "--pca-peptide", type=int, default=None,
-        help="PCA components for peptide region only (overrides --pca)",
-    )
-    parser.add_argument(
-        "--pca-nflank", type=int, default=None,
-        help="PCA components for n-flank region only (overrides --pca)",
-    )
-    parser.add_argument(
-        "--pca-cflank", type=int, default=None,
-        help="PCA components for c-flank region only (overrides --pca)",
+        help="Override PCA components for the context embedding of ALL "
+             "embedding components (default: use config.py value)",
     )
     parser.add_argument(
         "--nested", action="store_true",
@@ -883,16 +766,8 @@ if __name__ == "__main__":
 
     # ── PCA override ──
     pca_override = args.pca
-    pca_per_region = {
-        "peptide": args.pca_peptide,
-        "n_flank": args.pca_nflank,
-        "c_flank": args.pca_cflank,
-    }
-    has_per_region = any(v is not None for v in pca_per_region.values())
-    if pca_override is not None and has_per_region:
-        print(f"  [CLI OVERRIDE] Per-region PCA overrides global --pca value")
-    elif pca_override is not None:
-        print(f"  [CLI OVERRIDE] PCA components per region: {pca_override}")
+    if pca_override is not None:
+        print(f"  [CLI OVERRIDE] PCA components: {pca_override}")
 
     display_name = model_cfg["display_name"]
     feat_display = feat_cfg["display_name"]
@@ -962,31 +837,7 @@ if __name__ == "__main__":
         # Update component_info for logging
         for info in component_info["emb_components"]:
             info["pca_components"] = pca_override
-            info["pca_total"] = pca_override * info["n_regions"]
-
-    # Apply per-region PCA overrides (higher priority than global --pca)
-    if has_per_region:
-        for comp_key, emb_data in emb_data_dict.items():
-            # Store per-region PCA as dict
-            region_pca = {}
-            for region_name in sorted(emb_data["regions"].keys()):
-                # Map region key to CLI arg name
-                # "peptide_emb" -> "peptide", "n_flank_emb" -> "n_flank", etc.
-                region_base = region_name.replace("_emb", "")
-                cli_val = pca_per_region.get(region_base)
-                if cli_val is not None:
-                    region_pca[region_name] = cli_val
-                else:
-                    # Fall back to existing pca_components value
-                    region_pca[region_name] = emb_data["pca_components"]
-            emb_data["pca_per_region"] = region_pca
-            # Update pca_components to reflect the primary region (peptide)
-            # for backward compat in logging
-            emb_data["pca_total"] = sum(region_pca.values())
-
-        for info in component_info["emb_components"]:
-            info["pca_per_region"] = region_pca
-            info["pca_total"] = sum(region_pca.values())
+            info["pca_total"] = pca_override
 
     del df_split  # free the original copy
 
@@ -1020,10 +871,8 @@ if __name__ == "__main__":
         print(f"\n  Embedding components ({len(component_info['emb_components'])}):")
         for info in component_info["emb_components"]:
             print(f"    [{info['key']}] {info['display_name']}")
-            print(f"      Raw dim: {info['raw_dim']} "
-                  f"({info['n_regions']} regions × {info['emb_dim']})")
-            print(f"      After PCA: {info['pca_total']} "
-                  f"({info['pca_components']}/region × {info['n_regions']} regions)")
+            print(f"      Context dim:    {info['raw_dim']}")
+            print(f"      After PCA: {info['pca_total']}")
             total_emb_features += info["pca_total"]
 
     estimated_total = total_csv_features + total_emb_features

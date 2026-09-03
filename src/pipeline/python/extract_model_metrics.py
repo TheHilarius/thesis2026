@@ -37,6 +37,20 @@ def infer_embedding_mode(results):
     if feature_set in ("handcrafted_sparse", "handcrafted_blosum"):
         return "none"
 
+    # New-format results: read component_info (robust to any PCA value)
+    emb_components = (results.get("config", {})
+                      .get("component_info", {})
+                      .get("emb_components", []))
+    if emb_components:
+        is_pca = [c.get("pca_total", -1) < c.get("raw_dim", -2)
+                  for c in emb_components]
+        if all(is_pca):
+            return _emb_source_mode(feature_set, suffix="pca")
+        if not any(is_pca):
+            return _emb_source_mode(feature_set, suffix="full")
+        return _emb_source_mode(feature_set, suffix="mixed")
+
+    # Legacy-format results (3 regions, thresholds = 50/region or full dims/region)
     if feature_set == "esmc":
         return "esmc_pca" if n_features == 150 else "esmc_full"
 
@@ -53,6 +67,16 @@ def infer_embedding_mode(results):
         return "all_pca" if n_features == 931 else "all_full"
 
     return "unknown"
+
+
+def _emb_source_mode(feature_set, suffix):
+    if "esmc" in feature_set and "esmif" in feature_set:
+        return f"all_{suffix}"
+    if "esmc" in feature_set:
+        return f"esmc_{suffix}"
+    if "esmif" in feature_set:
+        return f"esmif_{suffix}"
+    return f"emb_{suffix}"
 
 
 def main():

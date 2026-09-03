@@ -38,9 +38,7 @@ EMBEDDING_SOURCES = {
         "prepared_path": PREPARED_EMBEDDING_DIR / "esmc_prepared.h5",
         "emb_dim": 1152,
         "region_map": {
-            "peptide": "peptide_emb",
-            "n_flank": "n_flank_emb",
-            "c_flank": "c_flank_emb",
+            "context": "context_emb",
         },
         "peptide_id_col": "peptide_seqs",
         "uniprot_id_col": "uniprot_ids",
@@ -53,9 +51,7 @@ EMBEDDING_SOURCES = {
         "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_prepared.h5",
         "emb_dim": 512,
         "region_map": {
-            "peptide": "peptide_if_struct",
-            "n_flank": "n_flank_if_struct",
-            "c_flank": "c_flank_if_struct",
+            "context": "context_if_struct",
         },
         "peptide_id_col": "peptide_ids",
         "uniprot_id_col": "uniprot_ids",
@@ -68,9 +64,7 @@ EMBEDDING_SOURCES = {
         "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_hybrid_prepared.h5",
         "emb_dim": 512,
         "region_map": {
-            "peptide": "peptide_if_struct",
-            "n_flank": "n_flank_if_struct",
-            "c_flank": "c_flank_if_struct",
+            "context": "context_if_struct",
         },
         "peptide_id_col": "peptide_ids",
         "uniprot_id_col": "uniprot_ids",
@@ -84,9 +78,7 @@ EMBEDDING_SOURCES = {
         "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_hybrid_80_fb_prepared.h5",
         "emb_dim": 512,
         "region_map": {
-            "peptide": "peptide_if_struct",
-            "n_flank": "n_flank_if_struct",
-            "c_flank": "c_flank_if_struct",
+            "context": "context_if_struct",
         },
         "peptide_id_col": "peptide_ids",
         "uniprot_id_col": "uniprot_ids",
@@ -99,9 +91,7 @@ EMBEDDING_SOURCES = {
         "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_hybrid_60_fb_prepared.h5",
         "emb_dim": 512,
         "region_map": {
-            "peptide": "peptide_if_struct",
-            "n_flank": "n_flank_if_struct",
-            "c_flank": "c_flank_if_struct",
+            "context": "context_if_struct",
         },
         "peptide_id_col": "peptide_ids",
         "uniprot_id_col": "uniprot_ids",
@@ -114,9 +104,7 @@ EMBEDDING_SOURCES = {
         "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_hybrid_40_fb_prepared.h5",
         "emb_dim": 512,
         "region_map": {
-            "peptide": "peptide_if_struct",
-            "n_flank": "n_flank_if_struct",
-            "c_flank": "c_flank_if_struct",
+            "context": "context_if_struct",
         },
         "peptide_id_col": "peptide_ids",
         "uniprot_id_col": "uniprot_ids",
@@ -129,9 +117,7 @@ EMBEDDING_SOURCES = {
         "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_hybrid_20_fb_prepared.h5",
         "emb_dim": 512,
         "region_map": {
-            "peptide": "peptide_if_struct",
-            "n_flank": "n_flank_if_struct",
-            "c_flank": "c_flank_if_struct",
+            "context": "context_if_struct",
         },
         "peptide_id_col": "peptide_ids",
         "uniprot_id_col": "uniprot_ids",
@@ -140,9 +126,10 @@ EMBEDDING_SOURCES = {
     },
 }
 
-EMBEDDING_REGIONS = ["peptide_emb", "n_flank_emb", "c_flank_emb"]
+EMBEDDING_REGIONS = ["context_emb"]
 
-PCA_COMPONENTS_PER_REGION = 50
+# PCA components for the single context embedding
+PCA_COMPONENTS = 50
 
 # PCA optimization sweep values
 PCA_COMPONENTS_SWEEP = [10, 25, 50, 75, 100, 150]
@@ -225,44 +212,44 @@ FEATURE_COMPONENTS = {
         "display_name": "ESM-C (600M) embeddings",
         "type": "embedding",
         "embedding_key": "esmc",
-        "pca_components": PCA_COMPONENTS_PER_REGION,
+        "pca_components": PCA_COMPONENTS,
     },
     "esmif": {
         "display_name": "ESM-IF1 embeddings",
         "type": "embedding",
         "embedding_key": "esmif",
-        "pca_components": PCA_COMPONENTS_PER_REGION,
+        "pca_components": PCA_COMPONENTS,
     },
     "esmif_hybrid": {
         "display_name": "ESM-IF1 hybrid (PDB+AF2) embeddings",
         "type": "embedding",
         "embedding_key": "esmif_hybrid",
-        "pca_components": PCA_COMPONENTS_PER_REGION,
+        "pca_components": PCA_COMPONENTS,
     },
     # In FEATURE_COMPONENTS:
     "esmif_hybrid_80_fb": {
         "display_name": "ESM-IF1 hybrid 80% + AF2 fallback",
         "type": "embedding",
         "embedding_key": "esmif_hybrid_80_fb",
-        "pca_components": PCA_COMPONENTS_PER_REGION,
+        "pca_components": PCA_COMPONENTS,
     },
     "esmif_hybrid_60_fb": {
         "display_name": "ESM-IF1 hybrid 60% + AF2 fallback",
         "type": "embedding",
         "embedding_key": "esmif_hybrid_60_fb",
-        "pca_components": PCA_COMPONENTS_PER_REGION,
+        "pca_components": PCA_COMPONENTS,
     },
     "esmif_hybrid_40_fb": {
         "display_name": "ESM-IF1 hybrid 40% + AF2 fallback",
         "type": "embedding",
         "embedding_key": "esmif_hybrid_40_fb",
-        "pca_components": PCA_COMPONENTS_PER_REGION,
+        "pca_components": PCA_COMPONENTS,
     },
     "esmif_hybrid_20_fb": {
         "display_name": "ESM-IF1 hybrid 20% + AF2 fallback",
         "type": "embedding",
         "embedding_key": "esmif_hybrid_20_fb",
-        "pca_components": PCA_COMPONENTS_PER_REGION,
+        "pca_components": PCA_COMPONENTS,
     },
 }
 

@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
 04b_pca_optimization_cuml.py
-Joint PCA component optimization with cuML GPU acceleration.
+PCA component optimization with cuML GPU acceleration.
 
-Evaluates ALL (peptide × n_flank × c_flank) combinations jointly across
-6 outer folds. Final PCA is selected by pooling mean inner-CV AUC across
-all 6 outer folds for each coarse combination.
+Evaluates all PCA component values for the single context embedding
+jointly across 6 outer folds. Final PCA is selected by pooling mean
+inner-CV AUC across all 6 outer folds for each grid value.
 
 Procedure:
-  1. Use fixed coarse grid (default: 5,10,15,20,25) → 125 combinations
+  1. Use fixed coarse grid (default: 5,10,15,20,25) → N values
   2. For each outer fold: hold out 1 bin as validation, inner CV on 5 bins
-  3. Evaluate all 125 combos using inner CV, select best per fold
-  4. Evaluate selected combo once on untouched outer validation
-  5. After all 6 folds: pool inner-CV scores, select best complete tuple
-  6. Write best tuple to pca_optimal_settings.json
+  3. Evaluate all values using inner CV, select best per fold
+  4. Evaluate selected value once on the untouched outer validation
+  5. After all 6 folds: pool inner-CV scores, select best value
+  6. Write best value to pca_optimal_settings.json
 
 Final PCA selection uses pooled inner-CV scores across all 6 outer folds.
 Outer validation AUCs are reported separately as evaluation of the procedure.
@@ -94,7 +94,7 @@ class Logger:
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="04b_pca_optimization: joint PCA optimization for embeddings",
+        description="04b_pca_optimization: PCA optimization for the context embedding",
     )
     parser.add_argument(
         "--features", nargs="+", required=True,
@@ -102,7 +102,7 @@ def parse_args():
     )
     parser.add_argument(
         "--joint-pca", action="store_true",
-        help="Use joint PCA optimization (combinations of all regions)",
+        help="Run PCA grid optimization for the context embedding",
     )
     parser.add_argument(
         "--grid", type=str, default="5,10,15,20,25",
@@ -157,10 +157,12 @@ import h5py
 
 def load_embedding_h5(emb_source):
     """Load prepared embedding HDF5 into dict of regions."""
+    from config import EMBEDDING_REGIONS
+
     prepared_path = emb_source["prepared_path"]
     data = {"regions": {}}
     with h5py.File(prepared_path, "r") as f:
-        for region in ["peptide_emb", "n_flank_emb", "c_flank_emb"]:
+        for region in EMBEDDING_REGIONS:
             if region in f:
                 data["regions"][region] = f[region][:]
     return data
@@ -458,11 +460,10 @@ def _get_sklearn_rf(use_parallel=True):
 # 5b. FINE GRID GENERATION
 # ──────────────────────────────────────────────
 
-def generate_fine_grid(best_combo, coarse_grid, fine_size=5):
+def generate_fine_grid(best_value, coarse_grid, fine_size=5):
     """
-    Generate fine grid around best coarse combo.
+    Generate fine grid around best coarse value (single context region).
 
-    For each region, fine grid = fine_size values centered on best.
     Steps between values depend on fine_size:
       - fine_size=5: [best-2, best-1, best, best+1, best+2] (step 1)
       - fine_size=4: [best-2, best-1, best+1, best+2] (skip best)
@@ -470,30 +471,23 @@ def generate_fine_grid(best_combo, coarse_grid, fine_size=5):
       - fine_size=2: [best-1, best+1] (skip best)
       - fine_size=1: [best] (no refinement)
     """
-    fine_per_region = []
     coarse_max = max(coarse_grid) + 5
 
-    for val in best_combo:
-        if fine_size <= 1:
-            vals = [val]
-        elif fine_size == 2:
-            # skip best (already in coarse)
-            vals = [max(1, val-1), min(coarse_max, val+1)]
-        elif fine_size == 3:
-            vals = [max(1, val-1), val, min(coarse_max, val+1)]
-        elif fine_size == 4:
-            # skip best
-            vals = [max(1, val-2), max(1, val-1),
-                    min(coarse_max, val+1), min(coarse_max, val+2)]
-        else:
-            # fine_size >= 5: centered, step 1
-            half = fine_size // 2
-            vals = [max(1, val - half + i) for i in range(fine_size)]
-            vals = [min(coarse_max, v) for v in vals]
-        fine_per_region.append(sorted(set(vals)))
+    if fine_size <= 1:
+        vals = [best_value]
+    elif fine_size == 2:
+        vals = [max(1, best_value - 1), min(coarse_max, best_value + 1)]
+    elif fine_size == 3:
+        vals = [max(1, best_value - 1), best_value, min(coarse_max, best_value + 1)]
+    elif fine_size == 4:
+        vals = [max(1, best_value - 2), max(1, best_value - 1),
+                min(coarse_max, best_value + 1), min(coarse_max, best_value + 2)]
+    else:
+        half = fine_size // 2
+        vals = [max(1, best_value - half + i) for i in range(fine_size)]
+        vals = [min(coarse_max, v) for v in vals]
 
-    # All combinations of fine values
-    return list(product(*fine_per_region))
+    return sorted(set(vals))
 
 
 # ──────────────────────────────────────────────
@@ -548,7 +542,7 @@ def evaluate_single_combination(df, csv_X, emb_data_dict, pca_config,
 
 def evaluate_outer_fold(args):
     """
-    Evaluate one outer fold with joint PCA optimization.
+    Evaluate one outer fold with PCA grid optimization.
 
     Evaluates all coarse combinations using inner CV, selects the best
     complete tuple, then evaluates that tuple once on the untouched
@@ -583,20 +577,16 @@ def evaluate_outer_fold(args):
     for model_key, model_cfg in models.items():
         is_gpu = model_cfg.get("is_gpu", False)
         print(f"  [Fold {outer_fold}] {model_key.upper()}: starting "
-              f"({total_coarse} coarse combos × {total_inner} inner folds, "
+              f"({total_coarse} grid values × {total_inner} inner folds, "
               f"GPU={'ON' if is_gpu else 'OFF'})", flush=True)
 
         # ── Stage 1: Coarse sweep ──
         inner_folds = [f for f in all_folds if f != outer_fold][:n_inner]
-        combo_scores = {}
+        value_scores = {}
         t_model_start = time.time()
 
-        for combo_idx, combo in enumerate(pca_combinations):
-            pca_config = {
-                "peptide_emb": combo[0],
-                "n_flank_emb": combo[1],
-                "c_flank_emb": combo[2],
-            }
+        for combo_idx, pca_n in enumerate(pca_combinations):
+            pca_config = {"context_emb": pca_n}
 
             inner_aucs = []
             for inner_val_fold in inner_folds:
@@ -613,23 +603,23 @@ def evaluate_outer_fold(args):
                 )
                 inner_aucs.append(auc)
 
-            combo_scores[combo] = np.mean(inner_aucs)
+            value_scores[pca_n] = np.mean(inner_aucs)
 
-            # Progress logging every 25 combos
+            # Progress logging every 25 values
             if (combo_idx + 1) % 25 == 0 or combo_idx == 0:
                 elapsed = time.time() - t_model_start
                 rate = (combo_idx + 1) / elapsed if elapsed > 0 else 0
                 eta = (total_coarse - combo_idx - 1) / rate if rate > 0 else 0
-                best_so_far = max(combo_scores.values())
+                best_so_far = max(value_scores.values())
                 print(f"  [Fold {outer_fold}] {model_key.upper()}: "
                       f"COARSE {combo_idx + 1}/{total_coarse} "
                       f"({(combo_idx + 1) / total_coarse * 100:.0f}%) "
                       f"[{elapsed:.0f}s, ETA {eta:.0f}s] "
                       f"best={best_so_far:.4f}", flush=True)
 
-        # Select best coarse combination
-        best_coarse = max(combo_scores, key=combo_scores.get)
-        best_coarse_auc = combo_scores[best_coarse]
+        # Select best coarse value
+        best_coarse = max(value_scores, key=value_scores.get)
+        best_coarse_auc = value_scores[best_coarse]
         coarse_time = time.time() - t_model_start
         print(f"  [Fold {outer_fold}] {model_key.upper()}: COARSE DONE "
               f"(best={best_coarse}, AUC={best_coarse_auc:.4f}, {coarse_time:.0f}s)",
@@ -640,11 +630,7 @@ def evaluate_outer_fold(args):
         best_final_auc = best_coarse_auc
 
         # ── Final evaluation on outer test ──
-        pca_config_best = {
-            "peptide_emb": best_final[0],
-            "n_flank_emb": best_final[1],
-            "c_flank_emb": best_final[2],
-        }
+        pca_config_best = {"context_emb": best_final}
 
         outer_auc = evaluate_single_combination(
             df, csv_X, emb_data_dict, pca_config_best,
@@ -653,10 +639,10 @@ def evaluate_outer_fold(args):
         )
 
         outer_result[model_key] = {
-            "best_combo": best_final,
+            "best_value": best_final,
             "best_inner_auc": best_final_auc,
             "outer_auc": outer_auc,
-            "combo_scores": combo_scores,
+            "value_scores": value_scores,
         }
 
         model_time = time.time() - t_model_start
@@ -676,14 +662,14 @@ def run_joint_pca_optimization(df, csv_feature_cols, emb_data_dict,
                                n_workers=6, use_cache=True, use_gpu=False,
                                do_refine=False, fine_size=5):
     """
-    Joint PCA optimization: evaluate all combinations of (peptide, nflank, cflank).
+    PCA optimization: evaluate all grid values for the single context region.
 
     Coarse-only by default. Optional fine refinement via --refine flag.
 
     Parameters:
     -----------
     pca_grid : list
-        Grid values per region (e.g., [5,10,15,20,25])
+        Grid values for the context region (e.g., [5,10,15,20,25])
     n_outer : int
         Number of outer folds (default: 6)
     n_inner : int
@@ -699,17 +685,17 @@ def run_joint_pca_optimization(df, csv_feature_cols, emb_data_dict,
     fine_size : int
         [EXPERIMENTAL] Values per region in fine grid (default: 5)
     """
-    # Generate all combinations
-    combinations = list(product(pca_grid, repeat=3))
+    # Grid values for the single context region
+    combinations = list(pca_grid)
     n_combos = len(combinations)
     n_evals_per_combo = n_inner * 2  # 2 models (RF + LR)
     total_evals = n_combos * n_evals_per_combo * n_outer
 
     print(f"\n{'='*70}")
-    print(f"  JOINT PCA OPTIMIZATION")
+    print(f"  PCA OPTIMIZATION (single context embedding)")
     print(f"{'='*70}")
     print(f"  Grid: {pca_grid}")
-    print(f"  Combinations: {n_combos} ({len(pca_grid)}³)")
+    print(f"  Values: {n_combos}")
     if do_refine:
         print(f"  Refinement: ON (experimental)")
     print(f"  Inner folds: {n_inner}")
@@ -757,11 +743,11 @@ def run_joint_pca_optimization(df, csv_feature_cols, emb_data_dict,
 
 def aggregate_joint_results(results):
     """
-    Pool inner-CV scores across all outer folds for each coarse combo.
+    Pool inner-CV scores across all outer folds for each grid value.
 
-    For each of the 125 coarse combinations, collect its mean inner-CV AUC
-    from all 6 outer folds and average them. Select the complete tuple
-    with the highest pooled mean inner-CV AUC.
+    For each grid value, collect its mean inner-CV AUC from all 6 outer
+    folds and average them. Select the value with the highest pooled mean
+    inner-CV AUC.
 
     Outer validation AUCs are reported separately as evaluation of the
     PCA-selection procedure — they are NOT used for final PCA selection.
@@ -771,37 +757,37 @@ def aggregate_joint_results(results):
 
     for model_key in models:
         outer_aucs = [r[model_key]["outer_auc"] for r in results]
-        best_combos = [r[model_key]["best_combo"] for r in results]
+        best_values = [r[model_key]["best_value"] for r in results]
         best_inner_aucs = [r[model_key]["best_inner_auc"] for r in results]
 
-        # Pool: collect combo_scores from all folds
-        all_combo_scores = {}
+        # Pool: collect value_scores from all folds
+        all_value_scores = {}
         for r in results:
-            for combo, score in r[model_key]["combo_scores"].items():
-                if combo not in all_combo_scores:
-                    all_combo_scores[combo] = []
-                all_combo_scores[combo].append(score)
+            for value, score in r[model_key]["value_scores"].items():
+                if value not in all_value_scores:
+                    all_value_scores[value] = []
+                all_value_scores[value].append(score)
 
-        # Average inner-CV scores across all 6 folds for each combo
+        # Average inner-CV scores across all 6 folds for each value
         pooled_scores = {}
-        for combo, scores in all_combo_scores.items():
-            pooled_scores[combo] = np.mean(scores)
+        for value, scores in all_value_scores.items():
+            pooled_scores[value] = np.mean(scores)
 
-        # Select best complete tuple by pooled score
-        best_pooled_combo = max(pooled_scores, key=pooled_scores.get)
-        best_pooled_auc = pooled_scores[best_pooled_combo]
+        # Select best value by pooled score
+        best_pooled_value = max(pooled_scores, key=pooled_scores.get)
+        best_pooled_auc = pooled_scores[best_pooled_value]
 
         aggregated[model_key] = {
             # Outer validation (evaluation of procedure, NOT for selection)
             "mean_outer_auc": float(np.mean(outer_aucs)),
             "std_outer_auc": float(np.std(outer_aucs)),
             "outer_aucs": outer_aucs,
-            # Per-fold best combos and inner-CV AUCs
-            "best_combos": [list(c) for c in best_combos],
+            # Per-fold best values and inner-CV AUCs
+            "best_values": best_values,
             "best_inner_aucs": best_inner_aucs,
             # Pooled selection (used for final PCA)
             "pooled_scores": {str(k): v for k, v in pooled_scores.items()},
-            "best_pooled_combo": list(best_pooled_combo),
+            "best_pooled_value": best_pooled_value,
             "best_pooled_auc": best_pooled_auc,
         }
 
@@ -809,9 +795,9 @@ def aggregate_joint_results(results):
 
 
 def print_joint_results(aggregated, outer_results):
-    """Print detailed results from joint PCA optimization."""
+    """Print detailed results from PCA optimization."""
     print(f"\n{'='*70}")
-    print(f"  JOINT PCA RESULTS")
+    print(f"  PCA OPTIMIZATION RESULTS")
     print(f"{'='*70}")
 
     for model_key in ["rf", "lr"]:
@@ -820,14 +806,14 @@ def print_joint_results(aggregated, outer_results):
         # Final PCA selection (pooled inner-CV)
         print(f"\n  {model_key.upper()}:")
         print(f"\n  FINAL PCA SELECTION (pooled inner-CV):")
-        print(f"    Best tuple: {stats['best_pooled_combo']}")
+        print(f"    Best value: {stats['best_pooled_value']}")
         print(f"    Pooled inner-CV AUC: {stats['best_pooled_auc']:.4f}")
 
         # Outer validation performance (evaluation of procedure)
         print(f"\n  OUTER VALIDATION PERFORMANCE:")
         print(f"    Per-fold AUCs: {[f'{a:.4f}' for a in stats['outer_aucs']]}")
         print(f"    Mean ± SD: {stats['mean_outer_auc']:.4f} ± {stats['std_outer_auc']:.4f}")
-        print(f"    Per-fold best combos: {stats['best_combos']}")
+        print(f"    Per-fold best values: {stats['best_values']}")
         print(f"    Per-fold inner-CV AUCs: {[f'{a:.4f}' for a in stats['best_inner_aucs']]}")
 
 
@@ -863,14 +849,12 @@ def save_joint_results(aggregated, outer_results, features_key, out_dir):
     csv_rows = []
     for model_key in ["rf", "lr"]:
         stats = aggregated[model_key]
-        for i, (combo, auc) in enumerate(zip(stats["best_combos"], stats["outer_aucs"])):
+        for i, (value, auc) in enumerate(zip(stats["best_values"], stats["outer_aucs"])):
             csv_rows.append({
                 "feature_set": features_key,
                 "model": model_key,
                 "outer_fold": i,
-                "peptide_pca": combo[0],
-                "nflank_pca": combo[1],
-                "cflank_pca": combo[2],
+                "context_pca": value,
                 "inner_cv_auc": stats["best_inner_aucs"][i],
                 "outer_auc": auc,
             })
@@ -879,14 +863,12 @@ def save_joint_results(aggregated, outer_results, features_key, out_dir):
     csv_df.to_csv(csv_path, index=False)
     print(f"  Saved: {csv_path}")
 
-    # Save optimal settings — pooled best tuple (not mode)
+    # Save optimal settings — pooled best value (not mode)
     optimal = {}
     for model_key in ["rf", "lr"]:
         stats = aggregated[model_key]
         optimal[model_key] = {
-            "peptide_emb": stats["best_pooled_combo"][0],
-            "n_flank_emb": stats["best_pooled_combo"][1],
-            "c_flank_emb": stats["best_pooled_combo"][2],
+            "context_emb": stats["best_pooled_value"],
         }
     return optimal
 
@@ -896,41 +878,34 @@ def save_joint_results(aggregated, outer_results, features_key, out_dir):
 # ──────────────────────────────────────────────
 
 def plot_joint_pca_stability(aggregated, out_dir, feature_set_name):
-    """Plot PCA stability across outer folds."""
+    """Plot PCA stability across outer folds (single context region)."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
-    regions = ["peptide_emb", "n_flank_emb", "c_flank_emb"]
-    region_labels = {"peptide_emb": "Peptide", "n_flank_emb": "N-flank",
-                     "c_flank_emb": "C-flank"}
+    fig, ax = plt.subplots(figsize=(8, 5))
     model_colors = {"rf": "#2ecc71", "lr": "#3498db"}
 
-    for ax, region in zip(axes, regions):
-        for model_key in ["rf", "lr"]:
-            # Extract per-fold values for this region from best_combos
-            region_idx = regions.index(region)
-            values = [c[region_idx] for c in aggregated[model_key]["best_combos"]]
-            x = np.arange(len(values))
-            offset = 0.2 if model_key == "rf" else -0.2
+    for model_key in ["rf", "lr"]:
+        values = aggregated[model_key]["best_values"]
+        x = np.arange(len(values))
+        offset = 0.2 if model_key == "rf" else -0.2
 
-            # Mark the pooled best value
-            pooled_best = aggregated[model_key]["best_pooled_combo"][region_idx]
+        pooled_best = aggregated[model_key]["best_pooled_value"]
 
-            ax.bar(x + offset, values, 0.4,
-                   color=model_colors[model_key], alpha=0.7,
-                   label=f"{model_key.upper()} (pooled best={pooled_best})")
+        ax.bar(x + offset, values, 0.4,
+               color=model_colors[model_key], alpha=0.7,
+               label=f"{model_key.upper()} (pooled best={pooled_best})")
 
-        ax.set_xlabel("Outer Fold")
-        ax.set_ylabel("PCA Components")
-        ax.set_title(f"{region_labels[region]} Region")
-        ax.set_xticks(x)
-        ax.set_xticklabels([f"Fold {i}" for i in range(len(values))])
-        ax.legend(fontsize=8)
-        ax.grid(True, axis="y", alpha=0.3)
+    ax.set_xlabel("Outer Fold")
+    ax.set_ylabel("PCA Components")
+    ax.set_title("Context Region")
+    ax.set_xticks(np.arange(len(aggregated["rf"]["best_values"])))
+    ax.set_xticklabels([f"Fold {i}" for i in range(len(aggregated["rf"]["best_values"]))])
+    ax.legend(fontsize=8)
+    ax.grid(True, axis="y", alpha=0.3)
 
-    fig.suptitle(f"Joint PCA Stability — {feature_set_name}",
+    fig.suptitle(f"PCA Stability — {feature_set_name}",
                  fontsize=14, fontweight="bold")
     fig.tight_layout()
 
@@ -961,7 +936,7 @@ def plot_joint_pca_performance(aggregated, out_dir, feature_set_name):
 
     ax.set_xlabel("Outer Fold")
     ax.set_ylabel("AUC-ROC")
-    ax.set_title(f"Joint PCA Performance — {feature_set_name}")
+    ax.set_title(f"PCA Optimization Performance — {feature_set_name}")
     ax.set_xticks(x)
     ax.set_xticklabels([f"Fold {i}" for i in range(len(aucs))])
     ax.legend()
@@ -1000,7 +975,7 @@ if __name__ == "__main__":
     print(f"  Timestamp:      {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"  Features:       {args.features}")
     print(f"  Grid:           {pca_grid}")
-    print(f"  Combinations:   {len(pca_grid)**3}")
+    print(f"  Grid values:     {len(pca_grid)}")
     print(f"  Refine:         {'ON (experimental)' if args.refine else 'OFF'}")
     print(f"  Outer folds:    {args.outer_folds}")
     print(f"  Inner folds:    {args.inner_folds}")
@@ -1104,7 +1079,7 @@ if __name__ == "__main__":
     print(f"  Total runtime:    {t_end - t_start:.1f}s ({total_minutes:.1f} min)")
     print(f"  Feature sets:     {len(args.features)}")
     print(f"  Grid:             {pca_grid}")
-    print(f"  Combinations:     {len(pca_grid)**3}")
+    print(f"  Grid values:       {len(pca_grid)}")
     print(f"  Outer folds:      {args.outer_folds}")
     print(f"  Inner folds:      {args.inner_folds}")
     print(f"  Parallel workers: {args.parallel}")

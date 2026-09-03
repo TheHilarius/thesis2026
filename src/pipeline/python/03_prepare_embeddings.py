@@ -67,7 +67,7 @@ def load_raw_embeddings(h5_path, emb_source):
     EMBEDDING_SOURCES.  Returns (data_dict, metadata_dict, all_dataset_names).
 
     The data_dict uses CANONICAL keys:
-      - "peptide_emb", "n_flank_emb", "c_flank_emb"
+      - "context_emb" (single mean-pooled n-flank+peptide+c-flank window)
       - "peptide_ids", "uniprot_ids"
       - "row_indices", "start", "end" (if available)
     """

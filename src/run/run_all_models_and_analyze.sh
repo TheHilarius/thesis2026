@@ -23,6 +23,8 @@ MODEL_DIR="../../models"
 
 ESMC_DIM=1152
 ESMIF_DIM=512
+# Combined ESM-C + ESM-IF context embeddings: 1152 + 512
+COMBINED_DIM=1664
 
 # Timestamp marking the start of this batch — used to filter
 # only the cv_results_*.json files produced by THIS run for analysis.
@@ -122,7 +124,7 @@ done
 
 for model in "${MODELS[@]}"; do
     for feat in "${ESMC_FEATURES[@]}"; do
-        run_cmd "[$model] $feat (no-PCA, full ${ESMC_DIM} dims/region)" \
+        run_cmd "[$model] $feat (no-PCA, full ${ESMC_DIM} context dims)" \
             python "$SCRIPT" --model "$model" --features "$feat" --pca "$ESMC_DIM"
     done
 done
@@ -149,7 +151,7 @@ done
 
 for model in "${MODELS[@]}"; do
     for feat in "${ESMIF_FEATURES[@]}"; do
-        run_cmd "[$model] $feat (no-PCA, full ${ESMIF_DIM} dims/region)" \
+        run_cmd "[$model] $feat (no-PCA, full ${ESMIF_DIM} context dims)" \
             python "$SCRIPT" --model "$model" --features "$feat" --pca "$ESMIF_DIM"
     done
 done
@@ -171,8 +173,8 @@ done
 
 for model in "${MODELS[@]}"; do
     for feat in "${BOTH_FEATURES[@]}"; do
-        run_cmd "[$model] $feat (no-PCA, full dims)" \
-            python "$SCRIPT" --model "$model" --features "$feat" --pca "$ESMC_DIM"
+        run_cmd "[$model] $feat (no-PCA, full ${COMBINED_DIM} context dims)" \
+            python "$SCRIPT" --model "$model" --features "$feat" --pca "$COMBINED_DIM"
     done
 done
 

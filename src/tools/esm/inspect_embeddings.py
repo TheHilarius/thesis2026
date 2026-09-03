@@ -3,6 +3,8 @@
 inspect_embeddings.py
 
 Summarise and visualise ESM protein embeddings (ESM-C or ESM-IF) stored in HDF5.
+Supports both the current single context-embedding format and the legacy
+3-region (peptide / n_flank / c_flank) format.
 
 Usage:
     python src/tools/esm/inspect_embeddings.py \
@@ -11,9 +13,9 @@ Usage:
         --out_dir results/embedding_inspection/esmc
 
     python src/tools/esm/inspect_embeddings.py \
-        data/processed/embeddings/esm_if_embeddings.h5 \
+        data/processed/embeddings/esmif_structure_embeddings.h5 \
         data/processed/df_all.csv \
-        --out_dir results/embedding_inspection/esm_if
+        --out_dir results/embedding_inspection/esmif
 """
 
 import argparse
@@ -63,30 +65,49 @@ with h5py.File(args.h5_path, "r") as f:
         print(f"  {key:<24}: shape={ds.shape}  dtype={ds.dtype}")
 
     # ── Auto-detect format ────────────────────────────────────────────────
-    if "peptide_emb" in available_keys:
-        MODEL_TYPE  = "ESM-C"
-        KEY_PEP     = "peptide_emb"
-        KEY_NF      = "n_flank_emb"
-        KEY_CF      = "c_flank_emb"
+    if "context_emb" in available_keys:
+        MODEL_TYPE = "ESM-C"
+        KEY_CTX     = "context_emb"
         KEY_PEPSEQ  = "peptide_seqs"
-    elif "peptide_if_struct" in available_keys:
+    elif "context_if_struct" in available_keys:
         MODEL_TYPE  = "ESM-IF"
-        KEY_PEP     = "peptide_if_struct"
-        KEY_NF      = "n_flank_if_struct"
-        KEY_CF      = "c_flank_if_struct"
+        KEY_CTX     = "context_if_struct"
         KEY_PEPSEQ  = "peptide_ids"
+    elif "peptide_emb" in available_keys:
+        # Legacy 3-region ESM-C format
+        MODEL_TYPE = "ESM-C (legacy 3-region)"
+        KEY_CTX    = None
+        KEY_PEPSEQ = "peptide_seqs"
+    elif "peptide_if_struct" in available_keys:
+        # Legacy 3-region ESM-IF format
+        MODEL_TYPE = "ESM-IF (legacy 3-region)"
+        KEY_CTX    = None
+        KEY_PEPSEQ = "peptide_ids"
     else:
         raise ValueError(
             f"Cannot detect embedding format. "
             f"Available keys: {available_keys}\n"
-            f"Expected 'peptide_emb' (ESM-C) or 'peptide_if_struct' (ESM-IF)")
+            f"Expected 'context_emb' / 'context_if_struct' (single) or "
+            f"'peptide_emb' / 'peptide_if_struct' (legacy 3-region)")
 
     print(f"\n  Detected format: {MODEL_TYPE}")
 
     # ── Load arrays ───────────────────────────────────────────────────────
-    pep_emb  = f[KEY_PEP][:]
-    nf_emb   = f[KEY_NF][:]
-    cf_emb   = f[KEY_CF][:]
+    if KEY_CTX is not None:
+        emb_dict = {"context": f[KEY_CTX][:]}
+    elif MODEL_TYPE.startswith("ESM-C"):
+        emb_dict = {
+            "peptide": f["peptide_emb"][:],
+            "n_flank": f["n_flank_emb"][:],
+            "c_flank": f["c_flank_emb"][:],
+        }
+    else:
+        emb_dict = {
+            "peptide": f["peptide_if_struct"][:],
+            "n_flank": f["n_flank_if_struct"][:],
+            "c_flank": f["c_flank_if_struct"][:],
+        }
+
     pep_seqs = np.array([s.decode() for s in f[KEY_PEPSEQ][:]])
     uid_seqs = np.array([s.decode() for s in f["uniprot_ids"][:]])
 
@@ -97,8 +118,12 @@ with h5py.File(args.h5_path, "r") as f:
     has_row_idx  = "row_indices" in available_keys
     row_idx      = f["row_indices"][:] if has_row_idx else None
 
-n_samples, emb_dim = pep_emb.shape
-print(f"\n  Loaded {n_samples} samples, embedding dim = {emb_dim}")
+primary_name = next(iter(emb_dict))
+primary_emb  = emb_dict[primary_name]
+n_samples, emb_dim = primary_emb.shape
+n_regions = len(emb_dict)
+print(f"\n  Loaded {n_samples} samples, embedding dim = {emb_dim}, "
+      f"{n_regions} region(s)")
 print(f"  Model type: {MODEL_TYPE}")
 
 # ── Load CSV for labels ───────────────────────────────────────────────────────
@@ -157,9 +182,7 @@ if (labels == -1).any():
 valid = labels >= 0
 if not valid.all():
     print(f"  Restricting analyses to {valid.sum()} matched samples")
-    pep_emb     = pep_emb[valid]
-    nf_emb      = nf_emb[valid]
-    cf_emb      = cf_emb[valid]
+    emb_dict = {k: v[valid] for k, v in emb_dict.items()}
     labels      = labels[valid]
     pep_lengths = pep_lengths[valid]
     pep_seqs    = pep_seqs[valid]
@@ -168,18 +191,14 @@ if not valid.all():
         fallback = fallback[valid]
     n_samples = valid.sum()
 
+primary_emb = emb_dict[primary_name]
+
 # ═════════════════════════════════════════════════════════════════════════════
 #  1. BASIC EMBEDDING STATISTICS
 # ═════════════════════════════════════════════════════════════════════════════
 print("\n" + "=" * 65)
 print("  1. Basic Embedding Statistics")
 print("=" * 65)
-
-emb_dict = {
-    "peptide": pep_emb,
-    "n_flank": nf_emb,
-    "c_flank": cf_emb,
-}
 
 for name, emb in emb_dict.items():
     norms  = np.linalg.norm(emb, axis=1)
@@ -217,9 +236,10 @@ print("\n" + "=" * 65)
 print("  2. Plotting L2 norm distributions...")
 print("=" * 65)
 
-fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+fig, axes = plt.subplots(1, n_regions, figsize=(5 * n_regions, 4),
+                         squeeze=False)
 fig.suptitle(f"{MODEL_TYPE}: L2 Norm Distributions", fontsize=13, y=1.02)
-for ax, (name, emb) in zip(axes, emb_dict.items()):
+for ax, (name, emb) in zip(axes[0], emb_dict.items()):
     norms     = np.linalg.norm(emb, axis=1)
     norms_pos = norms[labels == 1]
     norms_neg = norms[labels == 0]
@@ -240,7 +260,7 @@ for ax, (name, emb) in zip(axes, emb_dict.items()):
 
 plt.tight_layout()
 plt.savefig(out_dir / "l2_norm_distributions.png", dpi=150, bbox_inches="tight")
-plt.close()
+plt.close(fig)
 print(f"  Saved: {out_dir / 'l2_norm_distributions.png'}")
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -250,9 +270,10 @@ print("\n" + "=" * 65)
 print("  3. Per-dimension mean difference (positive vs negative)...")
 print("=" * 65)
 
-fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+fig, axes = plt.subplots(1, n_regions, figsize=(5 * n_regions, 4),
+                         squeeze=False)
 fig.suptitle(f"{MODEL_TYPE}: Per-Dimension Mean Difference", fontsize=13, y=1.02)
-for ax, (name, emb) in zip(axes, emb_dict.items()):
+for ax, (name, emb) in zip(axes[0], emb_dict.items()):
     mean_pos = emb[labels == 1].mean(axis=0)
     mean_neg = emb[labels == 0].mean(axis=0)
     diff     = mean_pos - mean_neg
@@ -270,53 +291,60 @@ for ax, (name, emb) in zip(axes, emb_dict.items()):
 
 plt.tight_layout()
 plt.savefig(out_dir / "per_dim_mean_diff.png", dpi=150, bbox_inches="tight")
-plt.close()
+plt.close(fig)
 print(f"  Saved: {out_dir / 'per_dim_mean_diff.png'}")
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  4. COSINE SIMILARITY BETWEEN EMBEDDING TYPES
+#  4. CROSS-REGION COSINE SIMILARITY (legacy 3-region format only)
 # ═════════════════════════════════════════════════════════════════════════════
-print("\n" + "=" * 65)
-print("  4. Cosine similarity between peptide / n_flank / c_flank...")
-print("=" * 65)
+if n_regions == 3:
+    print("\n" + "=" * 65)
+    print("  4. Cosine similarity between peptide / n_flank / c_flank...")
+    print("=" * 65)
 
-pairs = [
-    ("peptide↔n_flank", pep_emb, nf_emb),
-    ("peptide↔c_flank", pep_emb, cf_emb),
-    ("n_flank↔c_flank", nf_emb,  cf_emb),
-]
+    pep_emb, nf_emb, cf_emb = (emb_dict["peptide"], emb_dict["n_flank"],
+                               emb_dict["c_flank"])
+    pairs = [
+        ("peptide↔n_flank", pep_emb, nf_emb),
+        ("peptide↔c_flank", pep_emb, cf_emb),
+        ("n_flank↔c_flank", nf_emb,  cf_emb),
+    ]
 
-fig, axes = plt.subplots(1, 3, figsize=(15, 4))
-fig.suptitle(f"{MODEL_TYPE}: Cross-Region Cosine Similarity", fontsize=13, y=1.02)
-for ax, (pair_name, emb_a, emb_b) in zip(axes, pairs):
-    norms_a = np.linalg.norm(emb_a, axis=1)
-    norms_b = np.linalg.norm(emb_b, axis=1)
-    valid   = (norms_a > 0) & (norms_b > 0)
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+    fig.suptitle(f"{MODEL_TYPE}: Cross-Region Cosine Similarity", fontsize=13, y=1.02)
+    for ax, (pair_name, emb_a, emb_b) in zip(axes, pairs):
+        norms_a = np.linalg.norm(emb_a, axis=1)
+        norms_b = np.linalg.norm(emb_b, axis=1)
+        valid   = (norms_a > 0) & (norms_b > 0)
 
-    cos_sim = np.sum(emb_a[valid] * emb_b[valid], axis=1) / (
-              norms_a[valid] * norms_b[valid])
+        cos_sim = np.sum(emb_a[valid] * emb_b[valid], axis=1) / (
+                  norms_a[valid] * norms_b[valid])
 
-    cos_pos = cos_sim[labels[valid] == 1]
-    cos_neg = cos_sim[labels[valid] == 0]
+        cos_pos = cos_sim[labels[valid] == 1]
+        cos_neg = cos_sim[labels[valid] == 0]
 
-    ax.hist(cos_pos, bins=60, alpha=0.6, label="Positive", density=True,
-            color="steelblue")
-    ax.hist(cos_neg, bins=60, alpha=0.6, label="Negative", density=True,
-            color="salmon")
-    ax.set_xlabel("Cosine similarity")
-    ax.set_ylabel("Density")
-    ax.set_title(pair_name)
-    ax.legend(fontsize=8)
+        ax.hist(cos_pos, bins=60, alpha=0.6, label="Positive", density=True,
+                color="steelblue")
+        ax.hist(cos_neg, bins=60, alpha=0.6, label="Negative", density=True,
+                color="salmon")
+        ax.set_xlabel("Cosine similarity")
+        ax.set_ylabel("Density")
+        ax.set_title(pair_name)
+        ax.legend(fontsize=8)
 
-    print(f"  {pair_name:<22}: "
-          f"median(pos)={np.median(cos_pos):.3f}  "
-          f"median(neg)={np.median(cos_neg):.3f}  "
-          f"(n_valid={valid.sum()})")
+        print(f"  {pair_name:<22}: "
+              f"median(pos)={np.median(cos_pos):.3f}  "
+              f"median(neg)={np.median(cos_neg):.3f}  "
+              f"(n_valid={valid.sum()})")
 
-plt.tight_layout()
-plt.savefig(out_dir / "cosine_similarity.png", dpi=150, bbox_inches="tight")
-plt.close()
-print(f"  Saved: {out_dir / 'cosine_similarity.png'}")
+    plt.tight_layout()
+    plt.savefig(out_dir / "cosine_similarity.png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Saved: {out_dir / 'cosine_similarity.png'}")
+else:
+    print("\n" + "=" * 65)
+    print("  4. Cross-region cosine similarity: skipped (single embedding)")
+    print("=" * 65)
 
 # ═════════════════════════════════════════════════════════════════════════════
 #  5. INTER-SAMPLE COSINE SIMILARITY (WITHIN-CLASS vs BETWEEN-CLASS)
@@ -340,9 +368,10 @@ def sample_cosines(idx_a, idx_b, emb, n=n_pairs):
     mask = norm > 0
     return dot[mask] / norm[mask]
 
-fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+fig, axes = plt.subplots(1, n_regions, figsize=(5 * n_regions, 4),
+                         squeeze=False)
 fig.suptitle(f"{MODEL_TYPE}: Inter-Sample Cosine Similarity", fontsize=13, y=1.02)
-for ax, (name, emb) in zip(axes, emb_dict.items()):
+for ax, (name, emb) in zip(axes[0], emb_dict.items()):
     cos_pp = sample_cosines(pos_idx, pos_idx, emb)
     cos_nn = sample_cosines(neg_idx, neg_idx, emb)
     cos_pn = sample_cosines(pos_idx, neg_idx, emb)
@@ -361,7 +390,7 @@ for ax, (name, emb) in zip(axes, emb_dict.items()):
 
 plt.tight_layout()
 plt.savefig(out_dir / "inter_sample_cosine.png", dpi=150, bbox_inches="tight")
-plt.close()
+plt.close(fig)
 print(f"  Saved: {out_dir / 'inter_sample_cosine.png'}")
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -371,9 +400,9 @@ print("\n" + "=" * 65)
 print("  6. PCA analysis...")
 print("=" * 65)
 
-fig = plt.figure(figsize=(16, 10))
+fig = plt.figure(figsize=(5 * max(n_regions, 1) + 1, 10))
 fig.suptitle(f"{MODEL_TYPE}: PCA Analysis", fontsize=14, y=1.01)
-gs  = gridspec.GridSpec(2, 3, figure=fig, hspace=0.35, wspace=0.3)
+gs  = gridspec.GridSpec(2, n_regions, figure=fig, hspace=0.35, wspace=0.3)
 
 for col, (name, emb) in enumerate(emb_dict.items()):
     norms = np.linalg.norm(emb, axis=1)
@@ -414,23 +443,23 @@ for col, (name, emb) in enumerate(emb_dict.items()):
     ax_sc.legend(fontsize=8, markerscale=3)
 
 plt.savefig(out_dir / "pca_analysis.png", dpi=150, bbox_inches="tight")
-plt.close()
+plt.close(fig)
 print(f"  Saved: {out_dir / 'pca_analysis.png'}")
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  7. t-SNE (peptide embeddings only, subsampled)
+#  7. t-SNE (primary embedding, subsampled)
 # ═════════════════════════════════════════════════════════════════════════════
 print("\n" + "=" * 65)
-print("  7. t-SNE on peptide embeddings...")
+print(f"  7. t-SNE on {primary_name} embeddings...")
 print("=" * 65)
 
-norms_pep = np.linalg.norm(pep_emb, axis=1)
-valid_pep = norms_pep > 0
-n_valid   = valid_pep.sum()
+norms_pri = np.linalg.norm(primary_emb, axis=1)
+valid_pri = norms_pri > 0
+n_valid   = valid_pri.sum()
 n_tsne    = min(args.max_tsne, n_valid)
 
-sub_idx  = rng.choice(np.where(valid_pep)[0], size=n_tsne, replace=False)
-sub_emb  = pep_emb[sub_idx]
+sub_idx  = rng.choice(np.where(valid_pri)[0], size=n_tsne, replace=False)
+sub_emb  = primary_emb[sub_idx]
 sub_lab  = labels[sub_idx]
 
 print(f"  Running t-SNE on {n_tsne} samples (perplexity=30)...")
@@ -448,10 +477,10 @@ for lab, color, lname in [(0, "salmon", "Negative"), (1, "steelblue", "Positive"
                c=color, alpha=0.3, s=8, label=lname, rasterized=True)
 ax.set_xlabel("t-SNE 1")
 ax.set_ylabel("t-SNE 2")
-ax.set_title(f"{MODEL_TYPE}: t-SNE of peptide embeddings (n={n_tsne})")
+ax.set_title(f"{MODEL_TYPE}: t-SNE of {primary_name} embeddings (n={n_tsne})")
 ax.legend(markerscale=3)
 plt.savefig(out_dir / "tsne_peptide.png", dpi=150, bbox_inches="tight")
-plt.close()
+plt.close(fig)
 print(f"  Saved: {out_dir / 'tsne_peptide.png'}")
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -461,9 +490,10 @@ print("\n" + "=" * 65)
 print("  8. Top discriminative dimensions (Mann-Whitney per dim)...")
 print("=" * 65)
 
-fig, axes = plt.subplots(1, 3, figsize=(16, 5))
+fig, axes = plt.subplots(1, n_regions, figsize=(5 * n_regions + 1, 5),
+                         squeeze=False)
 fig.suptitle(f"{MODEL_TYPE}: Top Discriminative Dimensions", fontsize=13, y=1.02)
-for ax, (name, emb) in zip(axes, emb_dict.items()):
+for ax, (name, emb) in zip(axes[0], emb_dict.items()):
     pvals  = np.zeros(emb_dim)
     effect = np.zeros(emb_dim)
 
@@ -499,7 +529,7 @@ for ax, (name, emb) in zip(axes, emb_dict.items()):
 
 plt.tight_layout()
 plt.savefig(out_dir / "top_discriminative_dims.png", dpi=150, bbox_inches="tight")
-plt.close()
+plt.close(fig)
 print(f"  Saved: {out_dir / 'top_discriminative_dims.png'}")
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -510,10 +540,10 @@ print("  9. Embedding norm vs peptide length...")
 print("=" * 65)
 
 fig, ax = plt.subplots(figsize=(8, 5))
-pep_norms   = np.linalg.norm(pep_emb, axis=1)
+pri_norms   = np.linalg.norm(primary_emb, axis=1)
 unique_lens = sorted(np.unique(pep_lengths[pep_lengths > 0]))
 
-bp_data = [pep_norms[pep_lengths == l] for l in unique_lens]
+bp_data = [pri_norms[pep_lengths == l] for l in unique_lens]
 # Filter out empty groups
 valid_lens = [l for l, d in zip(unique_lens, bp_data) if len(d) > 0]
 bp_data    = [d for d in bp_data if len(d) > 0]
@@ -525,7 +555,7 @@ if bp_data:
         patch.set_facecolor("steelblue")
         patch.set_alpha(0.6)
     ax.set_xlabel("Peptide length")
-    ax.set_ylabel("Peptide embedding L2 norm")
+    ax.set_ylabel(f"{primary_name} embedding L2 norm")
     ax.set_title(f"{MODEL_TYPE}: Embedding norm vs peptide length")
 
     for l in valid_lens:
@@ -533,7 +563,7 @@ if bp_data:
         ax.text(l, ax.get_ylim()[0], f"n={n}", ha="center", va="top", fontsize=7)
 
 plt.savefig(out_dir / "norm_vs_length.png", dpi=150, bbox_inches="tight")
-plt.close()
+plt.close(fig)
 print(f"  Saved: {out_dir / 'norm_vs_length.png'}")
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -572,12 +602,10 @@ for p in sorted(out_dir.glob("*")):
     print(f"  {p.name}")
 
 
-import pandas as pd
-import numpy as np
-
+# ── Structure coverage (per protein) ──────────────────────────────────────────
 df_cov = pd.DataFrame({
     "uniprot": uid_seqs,
-    "zero": np.linalg.norm(pep_emb, axis=1) == 0
+    "zero": np.linalg.norm(primary_emb, axis=1) == 0
 })
 
 protein_cov = df_cov.groupby("uniprot")["zero"].mean()
@@ -586,12 +614,7 @@ print(protein_cov.describe())
 print("\nProteins with 100% missing structure:", (protein_cov == 1).sum())
 print("Proteins with any structure:", (protein_cov < 1).sum())
 
-
-row_missing = (
-    (np.linalg.norm(pep_emb, axis=1) == 0) |
-    (np.linalg.norm(nf_emb, axis=1) == 0) |
-    (np.linalg.norm(cf_emb, axis=1) == 0)
-)
+row_missing = np.linalg.norm(primary_emb, axis=1) == 0
 
 print("Row-level missing %:", row_missing.mean())
 print("Rows missing:", row_missing.sum())
