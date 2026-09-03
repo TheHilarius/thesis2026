@@ -2,9 +2,10 @@
 """
 embed_peptides_full_protein.py
 
-Embeds FULL protein sequences with ESM-C, then extracts mean-pooled
-residue embeddings for the peptide, n-flank and c-flank regions using
-start/end coordinates within the protein.
+Embeds FULL protein sequences with ESM-C, then extracts a single
+mean-pooled residue embedding for the full context window
+(n-flank + peptide + c-flank) using start/end coordinates within the
+protein.
 
 Each unique protein is embedded once; every peptide from that protein
 is then extracted from the shared protein embedding.
@@ -30,7 +31,7 @@ from pathlib import Path
 
 # ── Args ──────────────────────────────────────────────────────────────────────
 parser = argparse.ArgumentParser(
-    description="Embed full proteins with ESM-C; extract peptide/flank embeddings"
+    description="Embed full proteins with ESM-C; extract single context-window embeddings"
 )
 parser.add_argument("csv_path", help="Input CSV (e.g. data/processed/df_all.csv)")
 parser.add_argument("out_h5",   help="Output HDF5 file")
@@ -277,10 +278,8 @@ def get_flank_len(row, col):
 print(f"\nEmbedding {n_proteins} proteins...")
 print(f"(On CPU this will be slow — expect ~1-5 sec per protein)\n")
 
-peptide_embs   = np.zeros((len(df), EMB_DIM), dtype=np.float32)
-n_flank_embs   = np.zeros((len(df), EMB_DIM), dtype=np.float32)
-c_flank_embs   = np.zeros((len(df), EMB_DIM), dtype=np.float32)
-fallback_flags = np.zeros(len(df), dtype=np.int8)
+context_embs    = np.zeros((len(df), EMB_DIM), dtype=np.float32)
+fallback_flags  = np.zeros(len(df), dtype=np.int8)
 
 n_done       = 0
 n_fallback   = 0
@@ -323,15 +322,13 @@ with torch.no_grad():
                 row = df.iloc[idx]
                 s0, e0 = get_peptide_span_0idx(row)
 
-                peptide_embs[idx] = mean_pool(residue_emb[s0:e0])
-
                 nf_len   = get_flank_len(row, COL_NFLANK)
                 nf_start = max(0, s0 - nf_len)
-                n_flank_embs[idx] = mean_pool(residue_emb[nf_start:s0])
 
                 cf_len = get_flank_len(row, COL_CFLANK)
                 cf_end = min(prot_len, e0 + cf_len)
-                c_flank_embs[idx] = mean_pool(residue_emb[e0:cf_end])
+
+                context_embs[idx] = mean_pool(residue_emb[nf_start:cf_end])
 
             # Free memory immediately
             del residue_emb
@@ -350,13 +347,10 @@ with torch.no_grad():
                 s_w = s0 - win_start
                 e_w = e0 - win_start
 
-                peptide_embs[idx] = mean_pool(win_emb[s_w:e_w])
-
                 nf_start_w = max(0, s_w - nf_len)
-                n_flank_embs[idx] = mean_pool(win_emb[nf_start_w:s_w])
-
                 cf_end_w = min(len(win_emb), e_w + cf_len)
-                c_flank_embs[idx] = mean_pool(win_emb[e_w:cf_end_w])
+
+                context_embs[idx] = mean_pool(win_emb[nf_start_w:cf_end_w])
 
                 fallback_flags[idx] = 1
                 n_fallback += 1
@@ -385,9 +379,7 @@ if oom_proteins:
 # ── Save ──────────────────────────────────────────────────────────────────────
 print(f"\nSaving to {args.out_h5}...")
 with h5py.File(args.out_h5, "w") as f:
-    f.create_dataset("peptide_emb",   data=peptide_embs,   dtype="float32")
-    f.create_dataset("n_flank_emb",   data=n_flank_embs,   dtype="float32")
-    f.create_dataset("c_flank_emb",   data=c_flank_embs,   dtype="float32")
+    f.create_dataset("context_emb",   data=context_embs,   dtype="float32")
     f.create_dataset("fallback_flag", data=fallback_flags,  dtype="int8")
 
     f.create_dataset("peptide_seqs",
@@ -413,7 +405,5 @@ with h5py.File(args.out_h5, "w") as f:
     f.attrs["total_time_sec"]   = elapsed_total
 
 print("\nDone ✓")
-print(f"  peptide_emb  : {peptide_embs.shape}")
-print(f"  n_flank_emb  : {n_flank_embs.shape}")
-print(f"  c_flank_emb  : {c_flank_embs.shape}")
+print(f"  context_emb  : {context_embs.shape}")
 print(f"  fallback_flag: {fallback_flags.shape}  (sum={fallback_flags.sum()})")

@@ -5,7 +5,7 @@ set_working_directory <- function() {
   current_user <- Sys.info()[["user"]]
   
   if (current_user == "olive") {
-    setwd("C:/Users/olive/Documents/R/special_course_spring2026")
+    setwd("C:/Users/olive/Documents/R/thesis2026")
   } else if (current_user == "mj607") {
     setwd("//wsl$/Ubuntu/home/hilarius/projects/thesis2026")
   } else if (current_user == "hilarius") {

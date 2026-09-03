@@ -31,17 +31,18 @@ def load_h5(h5_path):
     print(f"\nLoading HDF5: {h5_path}")
     with h5py.File(h5_path, "r") as f:
         uniprot_ids = f["uniprot_ids"][:].astype(str)
-        peptide_emb = f["peptide_if_struct"][:]
-        n_flank_emb = f["n_flank_if_struct"][:]
-        c_flank_emb = f["c_flank_if_struct"][:]
+        if 'context_if_struct' in f:
+            ctx_emb = f["context_if_struct"][:]
+        elif 'context_emb' in f:
+            ctx_emb = f["context_emb"][:]
+        else:
+            raise KeyError(f"No context embedding dataset found in {h5_path}")
 
     zero = lambda x: np.all(x == 0, axis=1)
 
     return {
         "uniprot_ids": uniprot_ids,
-        "peptide_zero": zero(peptide_emb),
-        "nflank_zero": zero(n_flank_emb),
-        "cflank_zero": zero(c_flank_emb),
+        "ctx_zero": zero(ctx_emb),
         "n_samples": len(uniprot_ids),
     }
 
@@ -89,15 +90,11 @@ def protein_coverage(df, h5_uniprot_ids, missing_structures_set):
 def peptide_coverage(df, h5_data):
     n_total = len(df)
 
-    peptide_zero = h5_data["peptide_zero"]
-    n_zero = h5_data["nflank_zero"]
-    c_zero = h5_data["cflank_zero"]
+    ctx_zero = h5_data["ctx_zero"]
 
     stats = {
         "peptides_total": n_total,
-        "peptide_missing_rate": float(peptide_zero.mean()),
-        "nflank_missing_rate": float(n_zero.mean()),
-        "cflank_missing_rate": float(c_zero.mean()),
+        "ctx_missing_rate": float(ctx_zero.mean()),
     }
 
     return stats
@@ -114,21 +111,17 @@ def per_protein_missingness(df, h5_data):
     """
 
     df = df.copy()
-    df["peptide_missing"] = h5_data["peptide_zero"]
-    df["nflank_missing"] = h5_data["nflank_zero"]
-    df["cflank_missing"] = h5_data["cflank_zero"]
+    df["ctx_missing"] = h5_data["ctx_zero"]
 
     grouped = df.groupby("uniprot_id").agg(
-        peptide_missing_rate=("peptide_missing", "mean"),
-        nflank_missing_rate=("nflank_missing", "mean"),
-        cflank_missing_rate=("cflank_missing", "mean"),
-        n_peptides=("peptide_missing", "size"),
+        ctx_missing_rate=("ctx_missing", "mean"),
+        n_peptides=("ctx_missing", "size"),
     )
 
     summary = {
-        "proteins_all_peptides_missing_structure": int((grouped["peptide_missing_rate"] == 1.0).sum()),
-        "proteins_any_structure": int((grouped["peptide_missing_rate"] < 1.0).sum()),
-        "proteins_mean_peptide_missing_rate": float(grouped["peptide_missing_rate"].mean()),
+        "proteins_all_peptides_missing_structure": int((grouped["ctx_missing_rate"] == 1.0).sum()),
+        "proteins_any_structure": int((grouped["ctx_missing_rate"] < 1.0).sum()),
+        "proteins_mean_ctx_missing_rate": float(grouped["ctx_missing_rate"].mean()),
     }
 
     return summary, grouped
@@ -206,7 +199,6 @@ def main():
     print("\n[Peptide level]")
     for k, v in peptide_stats.items():
         print(f"  {k}: {v:.4f}")
-
     print("\n[Protein peptide structure]")
     for k, v in protein_pep_stats.items():
         print(f"  {k}: {v}")

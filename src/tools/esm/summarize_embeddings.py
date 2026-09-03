@@ -13,25 +13,26 @@ from pathlib import Path
 
 
 def summarize(h5_path):
-    """Extract summary stats from an ESM-IF embedding HDF5 file."""
+    """Extract summary stats from an embedding HDF5 file."""
     with h5py.File(h5_path, 'r') as f:
-        pep = f['peptide_if_struct'][:]
-        n_fl = f['n_flank_if_struct'][:]
-        c_fl = f['c_flank_if_struct'][:]
+        if 'context_if_struct' in f:
+            ctx = f['context_if_struct'][:]
+        elif 'context_emb' in f:
+            ctx = f['context_emb'][:]
+        else:
+            raise KeyError(f"No 'context_if_struct' or 'context_emb' dataset in {h5_path}")
 
-        n_rows = len(pep)
-        emb_dim = pep.shape[1]
+        n_rows = len(ctx)
+        emb_dim = ctx.shape[1]
 
-        zero_pep = np.sum(np.linalg.norm(pep, axis=1) == 0.0)
-        zero_n = np.sum(np.linalg.norm(n_fl, axis=1) == 0.0)
-        zero_c = np.sum(np.linalg.norm(c_fl, axis=1) == 0.0)
+        zero_ctx = np.sum(np.linalg.norm(ctx, axis=1) == 0.0)
 
-        embedded = n_rows - zero_pep
+        embedded = n_rows - zero_ctx
 
         # Mean norm of non-zero embeddings (sanity check)
-        nonzero_mask = np.linalg.norm(pep, axis=1) > 0
-        mean_norm = np.mean(np.linalg.norm(pep[nonzero_mask], axis=1)) if nonzero_mask.any() else 0.0
-        std_norm = np.std(np.linalg.norm(pep[nonzero_mask], axis=1)) if nonzero_mask.any() else 0.0
+        nonzero_mask = np.linalg.norm(ctx, axis=1) > 0
+        mean_norm = np.mean(np.linalg.norm(ctx[nonzero_mask], axis=1)) if nonzero_mask.any() else 0.0
+        std_norm = np.std(np.linalg.norm(ctx[nonzero_mask], axis=1)) if nonzero_mask.any() else 0.0
 
         # Unique proteins
         if 'uniprot_ids' in f:
@@ -55,9 +56,7 @@ def summarize(h5_path):
         'n_rows': n_rows,
         'emb_dim': emb_dim,
         'embedded': embedded,
-        'zero_pep': zero_pep,
-        'zero_n': zero_n,
-        'zero_c': zero_c,
+        'zero_ctx': zero_ctx,
         'mean_norm': mean_norm,
         'std_norm': std_norm,
         'total_proteins': total_proteins,
@@ -97,12 +96,9 @@ def main():
                   f"({r['embedded_proteins']/r['total_proteins']*100:.1f}%)")
         print(f"  Embedded rows:     {r['embedded']}  "
               f"({r['embedded']/r['n_rows']*100:.1f}%)")
-        print(f"  Zero vectors:      pep={r['zero_pep']}  "
-              f"n={r['zero_n']}  c={r['zero_c']}")
-        print(f"  Zero rate:         {r['zero_pep']/r['n_rows']*100:.1f}%  / "
-              f"{r['zero_n']/r['n_rows']*100:.1f}%  / "
-              f"{r['zero_c']/r['n_rows']*100:.1f}%")
-        print(f"  Mean peptide norm: {r['mean_norm']:.3f} ± {r['std_norm']:.3f}")
+        print(f"  Zero vectors:      ctx={r['zero_ctx']}")
+        print(f"  Zero rate:         {r['zero_ctx']/r['n_rows']*100:.1f}%")
+        print(f"  Mean context norm: {r['mean_norm']:.3f} ± {r['std_norm']:.3f}")
         print(f"  Device used:       {r['device']}")
 
     # ── Comparison table ──────────────────────────────────────────────────
@@ -121,7 +117,7 @@ def main():
             prot_str = (f"{r['embedded_proteins']}/{r['total_proteins']}"
                         if r['total_proteins'] else "?")
             print(f"  {r['name']:<{name_w}} {r['n_rows']:>6} {r['embedded']:>9} "
-                  f"{r['zero_pep']/r['n_rows']*100:>6.1f}% "
+                  f"{r['zero_ctx']/r['n_rows']*100:>6.1f}% "
                   f"{prot_str:>9} {r['mean_norm']:>9.3f}")
 
     print()

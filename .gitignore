@@ -20,6 +20,8 @@ data/processed/netmhcpan/
 .RData
 .Rproj.user/
 *.Rproj
+*.Rprofile 
+!thesis2026.Rproj
 
 
 # Large data files

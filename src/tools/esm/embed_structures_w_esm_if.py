@@ -334,9 +334,7 @@ print(f"\nExtracting 3D embeddings for {n_rows} sequences...")
 print(f"Unique proteins: {df['uniprot_id'].nunique()}")
 
 # Output arrays in ORIGINAL row order (indexed by _orig_idx)
-peptide_embs = np.zeros((n_rows, EMB_DIM), dtype=np.float32)
-n_flank_embs = np.zeros((n_rows, EMB_DIM), dtype=np.float32)
-c_flank_embs = np.zeros((n_rows, EMB_DIM), dtype=np.float32)
+context_embs = np.zeros((n_rows, EMB_DIM), dtype=np.float32)
 
 # Original-order peptide/uniprot lists for HDF5 (filled during loop)
 orig_peptides = [''] * n_rows
@@ -424,19 +422,12 @@ with torch.no_grad():
         pep_start, pep_end, n_start, c_end, match_type = result
         match_stats[match_type] = match_stats.get(match_type, 0) + 1
 
-        # Slice and average
-        n_slice   = rep[n_start:pep_start]
-        pep_slice = rep[pep_start:pep_end]
-        c_slice   = rep[pep_end:c_end]
-
-        n_emb   = n_slice.mean(axis=0) if len(n_slice) > 0 else np.zeros(EMB_DIM)
-        pep_emb = pep_slice.mean(axis=0) if len(pep_slice) > 0 else np.zeros(EMB_DIM)
-        c_emb   = c_slice.mean(axis=0) if len(c_slice) > 0 else np.zeros(EMB_DIM)
+        # Slice the full context window (n_flank + peptide + c_flank) and average
+        ctx_slice = rep[n_start:c_end]
+        ctx_emb   = ctx_slice.mean(axis=0) if len(ctx_slice) > 0 else np.zeros(EMB_DIM)
 
         # Write to ORIGINAL row position
-        peptide_embs[orig_i] = pep_emb
-        n_flank_embs[orig_i] = n_emb
-        c_flank_embs[orig_i] = c_emb
+        context_embs[orig_i] = ctx_emb
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 total_loaded = chain_stats["A"] + chain_stats["other_validated"]
@@ -470,19 +461,14 @@ for mtype, count in match_stats.items():
 print(f"{'='*60}")
 
 # ── Zero-vector summary ──────────────────────────────────────────────────────
-zero_pep = np.sum(np.linalg.norm(peptide_embs, axis=1) == 0.0)
-zero_n   = np.sum(np.linalg.norm(n_flank_embs, axis=1) == 0.0)
-zero_c   = np.sum(np.linalg.norm(c_flank_embs, axis=1) == 0.0)
-print(f"\nZero vectors: peptide={zero_pep}, n_flank={zero_n}, c_flank={zero_c}")
-print(f"  (out of {n_rows} rows = {zero_pep/n_rows*100:.1f}% / "
-      f"{zero_n/n_rows*100:.1f}% / {zero_c/n_rows*100:.1f}%)")
+zero_ctx = np.sum(np.linalg.norm(context_embs, axis=1) == 0.0)
+print(f"\nZero vectors: context={zero_ctx}")
+print(f"  (out of {n_rows} rows = {zero_ctx/n_rows*100:.1f}%)")
 
 # ── Save ──────────────────────────────────────────────────────────────────────
 print(f"\nSaving to {args.out_h5}...")
 with h5py.File(args.out_h5, 'w') as f:
-    f.create_dataset('peptide_if_struct', data=peptide_embs,  dtype='float32')
-    f.create_dataset('n_flank_if_struct', data=n_flank_embs,  dtype='float32')
-    f.create_dataset('c_flank_if_struct', data=c_flank_embs,  dtype='float32')
+    f.create_dataset('context_if_struct', data=context_embs,  dtype='float32')
     f.create_dataset('peptide_ids',
                      data=np.array(orig_peptides, dtype='S20'))
     f.create_dataset('uniprot_ids',
