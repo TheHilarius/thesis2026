@@ -27,23 +27,23 @@ cat("Loading FASTA database to remove obsolete isoforms...\n")
 df_fasta_raw <- read_fasta_df("data/raw/fasta/combined_9mer.fasta") |>
   mutate(
     accession  = str_extract(header, "(?<=\\|)[^|]+(?=\\|)"),
-    uniprot_id = str_remove(accession, "-[0-9]+$"),
+    uniprot_id = accession,
     is_isoform = str_detect(accession, "-[0-9]+$")
   ) |>
   filter(!is.na(uniprot_id))
 
-# One sequence per UniProt ID. Prefer the canonical (non-isoform) entry;
-# otherwise keep the longest. Isoform accessions (e.g. P12345-2) now map to
-# their base accession instead of NA, so they deduplicate correctly.
+# Keep ALL isoform sequences — do not collapse isoforms to canonical IDs.
+# This preserves biological ground truth: if cleavage happened on isoform -7,
+# we need the 3D structure of isoform -7, not the canonical parent.
+# Isoforms without AlphaFold structures will cleanly fall into no_pdb exclusion.
 df_fasta <- df_fasta_raw |>
   mutate(seq_length = nchar(sequence)) |>
-  arrange(is_isoform, desc(seq_length)) |>
-  slice_head(n = 1, by = uniprot_id)
+  distinct(uniprot_id, .keep_all = TRUE)
 
 cat("FASTA entries loaded:      ", nrow(df_fasta_raw), "\n")
 cat("Isoform entries (`-N`):    ", sum(df_fasta_raw$is_isoform), "\n")
-cat("Unique proteins kept:      ", nrow(df_fasta), "\n")
-cat("Entries collapsed:         ", nrow(df_fasta_raw) - nrow(df_fasta), "\n\n")
+cat("Unique sequences kept:     ", nrow(df_fasta), "\n")
+cat("(Isoform IDs preserved — no canonical collapse)\n\n")
 
 # Length cutoff drives the unrunnable protein list below.
 df_iedb_pos <- df_iedb_pos |>
@@ -1190,7 +1190,9 @@ df_diag_after_sec <- df_diag_after_fasta |>
 n_diag_sec <- nrow(df_diag_after_fasta) - nrow(df_diag_after_sec)
 
 df_diag_after_len <- df_diag_after_sec |>
-  filter(seq_length <= 5000)
+  left_join(df_fasta |> select(uniprot_id, seq_length), by = "uniprot_id") |>
+  filter(seq_length <= 5000) |>
+  select(-seq_length)
 n_diag_len <- nrow(df_diag_after_sec) - nrow(df_diag_after_len)
 
 df_diag_after_af <- df_diag_after_len |>

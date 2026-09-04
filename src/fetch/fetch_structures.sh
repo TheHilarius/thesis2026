@@ -145,20 +145,7 @@ process_list() {
         # ── Step 1: AlphaFold2 ───────────────────────────────────────────────
         AF2_FILE="${OUT_DIR}/alphafold/${UNIPROT}.pdb"
 
-        # If base canonical already on disk (isoform sharing base) — reuse it
-        if [[ -f "${OUT_DIR}/alphafold/${BASE_ID}.pdb" && "${UNIPROT}" != "${BASE_ID}" ]]; then
-            echo "  [AF2] Using existing base structure: ${BASE_ID}"
-            COVERAGE=$(check_coverage "${OUT_DIR}/alphafold/${BASE_ID}.pdb" "${START}" "${END}")
-            echo "  [AF2] Coverage: ${COVERAGE}"
-            echo -e "${UNIPROT}\t${START}\t${END}\talphafold_base:${BASE_ID}\t${OUT_DIR}/alphafold/${BASE_ID}.pdb\t${COVERAGE}" >> "${LOG}"
-            if [[ "${COVERAGE}" != "ok" ]]; then
-                echo -e "${UNIPROT}\tBase AF2 partial coverage: ${COVERAGE}" >> "${MISSING}"
-            fi
-            ALREADY_DONE["${UNIPROT}"]=1
-            continue
-        fi
-
-        # Try fetching AF2 for this ID directly (v6 → v5 → v4)
+        # Strict: fetch exact ID only, no canonical fallback
         WORKED_VERSION=$(fetch_af2 "${UNIPROT}" "${AF2_FILE}" || true)
 
         if [[ "${WORKED_VERSION}" != "none" ]]; then
@@ -173,27 +160,8 @@ process_list() {
             continue
         fi
 
-        # AF2 failed — for isoforms try canonical base
+        # AF2 failed — no canonical fallback, strict failure
         echo "  [AF2] ✗ Not found in AlphaFold (tried v6, v5, v4)"
-
-        if [[ "${UNIPROT}" != "${BASE_ID}" ]]; then
-            echo "  [AF2] Trying canonical base: ${BASE_ID}"
-            BASE_AF2_FILE="${OUT_DIR}/alphafold/${BASE_ID}.pdb"
-            BASE_VERSION=$(fetch_af2 "${BASE_ID}" "${BASE_AF2_FILE}" || true)
-
-            if [[ "${BASE_VERSION}" != "none" ]]; then
-                COVERAGE=$(check_coverage "${BASE_AF2_FILE}" "${START}" "${END}")
-                echo "  [AF2] ✓ Canonical base v${BASE_VERSION}. Coverage: ${COVERAGE}"
-                echo -e "${UNIPROT}\t${START}\t${END}\talphafold_base:${BASE_ID}\t${BASE_AF2_FILE}\t${COVERAGE}" >> "${LOG}"
-                if [[ "${COVERAGE}" != "ok" ]]; then
-                    echo -e "${UNIPROT}\tBase AF2 partial coverage: ${COVERAGE}" >> "${MISSING}"
-                fi
-                ALREADY_DONE["${UNIPROT}"]=1
-                sleep 0.2
-                continue
-            fi
-            echo "  [AF2] ✗ Canonical base also failed"
-        fi
 
         echo "  Falling through to PDB..."
 
