@@ -124,6 +124,33 @@ EMBEDDING_SOURCES = {
         "has_row_indices": False,
         "has_start_end": False,
     },
+    # ── Context-window embeddings (single mean-pooled vector per sample) ──
+    "esmc_context": {
+        "display_name": "ESM-C (600M) context window",
+        "raw_path": EMBEDDING_DIR / "esmc_context_embeddings.h5",
+        "prepared_path": PREPARED_EMBEDDING_DIR / "esmc_context_prepared.h5",
+        "emb_dim": 1152,
+        "region_map": {
+            "context": "context_emb",
+        },
+        "peptide_id_col": "peptide_seqs",
+        "uniprot_id_col": "uniprot_ids",
+        "has_row_indices": True,
+        "has_start_end": True,
+    },
+    "esmif_context": {
+        "display_name": "ESM-IF1 context window",
+        "raw_path": EMBEDDING_DIR / "esmif_context_embeddings.h5",
+        "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_context_prepared.h5",
+        "emb_dim": 512,
+        "region_map": {
+            "context": "context_if_struct",
+        },
+        "peptide_id_col": "peptide_ids",
+        "uniprot_id_col": "uniprot_ids",
+        "has_row_indices": False,
+        "has_start_end": False,
+    },
 }
 
 EMBEDDING_REGIONS = ["context_emb"]
@@ -251,6 +278,19 @@ FEATURE_COMPONENTS = {
         "embedding_key": "esmif_hybrid_20_fb",
         "pca_components": PCA_COMPONENTS,
     },
+    # ── Context-window embeddings (single mean-pooled vector) ──
+    "esmc_context": {
+        "display_name": "ESM-C (600M) context window",
+        "type": "embedding",
+        "embedding_key": "esmc_context",
+        "pca_components": PCA_COMPONENTS_PER_REGION,
+    },
+    "esmif_context": {
+        "display_name": "ESM-IF1 context window",
+        "type": "embedding",
+        "embedding_key": "esmif_context",
+        "pca_components": PCA_COMPONENTS_PER_REGION,
+    },
 }
 
 # ──────────────────────────────────────────────
@@ -356,6 +396,31 @@ FEATURE_SETS = {
 	"handcrafted_esmif": {
         "display_name": "Structural + esmif",
         "components": ["handcrafted", "esmif"],
+    },
+    # ── Context-window embeddings ──
+    "esmc_context": {
+        "display_name": "ESM-C context window only",
+        "components": ["esmc_context"],
+    },
+    "esmif_context": {
+        "display_name": "ESM-IF1 context window only",
+        "components": ["esmif_context"],
+    },
+    "handcrafted_esmc_context": {
+        "display_name": "Structural + ESM-C context",
+        "components": ["handcrafted", "esmc_context"],
+    },
+    "handcrafted_esmif_context": {
+        "display_name": "Structural + ESM-IF1 context",
+        "components": ["handcrafted", "esmif_context"],
+    },
+    "handcrafted_sparse_esmc_context": {
+        "display_name": "Structural + one-hot + ESM-C context",
+        "components": ["handcrafted", "sparse", "esmc_context"],
+    },
+    "handcrafted_sparse_esmif_context": {
+        "display_name": "Structural + one-hot + ESM-IF1 context",
+        "components": ["handcrafted", "sparse", "esmif_context"],
     },
 }
 

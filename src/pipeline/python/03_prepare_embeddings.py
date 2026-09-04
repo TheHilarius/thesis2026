@@ -29,9 +29,17 @@ from config import (
     SPLIT_DATA_PATH, LOG_DIR, PREPARED_EMBEDDING_DIR,
     N_CV_FOLDS, HELD_OUT_INDEX,
     PEPTIDE_COL, LABEL_COL, FOLD_COL,
-    EMBEDDING_REGIONS,
     get_embedding_source, validate_config,
 )
+
+
+def get_embedding_regions(emb_source):
+    """Derive canonical region names from emb_source region_map.
+    
+    For 3-region entries: {"peptide": "peptide_emb", ...} → ["peptide_emb", ...]
+    For context entries:  {"context": "context_emb"}     → ["context_emb"]
+    """
+    return [f"{canonical}_emb" for canonical in emb_source["region_map"]]
 
 
 # ──────────────────────────────────────────────
@@ -279,14 +287,14 @@ def spot_check_alignment(emb_data, df, emb_positions, df_rows, n_check=500):
     return mismatches_pep, mismatches_uni, n_check
 
 
-def report_zero_vectors(emb_data, emb_positions):
+def report_zero_vectors(emb_data, emb_positions, embedding_regions):
     """Count and report zero embedding vectors per region."""
     print(f"\n  Zero vector report:")
     print(f"  {'Region':<20} {'Zeros':>8} {'%':>8}")
     print(f"  {'-' * 38}")
 
     zero_counts = {}
-    for region in EMBEDDING_REGIONS:
+    for region in embedding_regions:
         if region not in emb_data:
             continue
         arr = emb_data[region][emb_positions]
@@ -325,7 +333,7 @@ def report_label_distribution(labels, folds):
 # ──────────────────────────────────────────────
 
 def save_prepared(out_path, emb_data, emb_positions, df, df_rows,
-                  emb_metadata, embedding_key, emb_source):
+                  emb_metadata, embedding_key, emb_source, embedding_regions):
     """
     Save a self-contained HDF5 with canonical dataset names.
     """
@@ -347,7 +355,7 @@ def save_prepared(out_path, emb_data, emb_positions, df, df_rows,
 
     with h5py.File(out_path, "w") as f:
         # Embedding arrays under CANONICAL names
-        for region in EMBEDDING_REGIONS:
+        for region in embedding_regions:
             if region in emb_data:
                 arr = emb_data[region][emb_positions].astype(np.float32)
                 f.create_dataset(region, data=arr,
@@ -371,7 +379,7 @@ def save_prepared(out_path, emb_data, emb_positions, df, df_rows,
         f.attrs["display_name"] = emb_source["display_name"]
         f.attrs["n_samples"] = len(df_rows)
         f.attrs["emb_dim"] = emb_source["emb_dim"]
-        f.attrs["n_regions"] = sum(1 for r in EMBEDDING_REGIONS if r in emb_data)
+        f.attrs["n_regions"] = len(embedding_regions)
         f.attrs["n_folds"] = int(np.max(folds)) + 1
         f.attrs["held_out_index"] = HELD_OUT_INDEX
         f.attrs["prepared_timestamp"] = datetime.now().isoformat()
@@ -473,8 +481,8 @@ if __name__ == "__main__":
         if hasattr(arr, "shape"):
             print(f"    {key:<25} shape={str(arr.shape):<20} dtype={arr.dtype}")
 
-    available_regions = [r for r in EMBEDDING_REGIONS if r in emb_data]
-    missing_regions = [r for r in EMBEDDING_REGIONS if r not in emb_data]
+    available_regions = get_embedding_regions(emb_source)
+    missing_regions = [r for r in available_regions if r not in emb_data]
     print(f"\n  Canonical regions available: {available_regions}")
     if missing_regions:
         print(f"  WARNING: Missing canonical regions: {missing_regions}")
@@ -577,7 +585,7 @@ if __name__ == "__main__":
         print(f"  on the current version of the split data.")
 
     # -- Zero vector report --
-    zero_counts = report_zero_vectors(emb_data, emb_positions)
+    zero_counts = report_zero_vectors(emb_data, emb_positions, available_regions)
 
     # -- Save --
     print(f"\n{'=' * 80}")
@@ -588,7 +596,7 @@ if __name__ == "__main__":
     print(f"  Output: {out_path}")
     labels, folds = save_prepared(
         out_path, emb_data, emb_positions, df, df_rows,
-        emb_metadata, embedding_key, emb_source,
+        emb_metadata, embedding_key, emb_source, available_regions,
     )
     print(f"  [OK] Saved successfully")
 
