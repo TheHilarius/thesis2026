@@ -45,7 +45,8 @@ def main():
     # Strict UniProt accession filter: 6-10 alphanumeric chars starting with
     # a letter, optionally followed by -isoform. Rejects GenBank (AAX38256),
     # RefSeq (NP_, XP_), and other non-UniProt IDs.
-    UNIPROT_PATTERN = re.compile(r'^[A-Z][A-Z0-9]{5,9}(-[0-9]+)?$')
+    # Strict UniProt accession filter: Rejects GenBank (3 letters + numbers like AAX38256) and RefSeq (NP_, XP_)
+    UNIPROT_PATTERN = re.compile(r'^(?![A-Z]{3}[0-9])[A-Z][A-Z0-9]{5,9}(-[0-9]+)?$')
     unique_ids = [uid for uid in df['uniprot_id'].dropna().unique()
                   if UNIPROT_PATTERN.match(uid)]
     print(f"Found {len(unique_ids)} unique UniProt IDs (including isoforms) in the raw IEDB data.")
