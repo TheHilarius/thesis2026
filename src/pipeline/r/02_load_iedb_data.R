@@ -21,7 +21,7 @@ df_formatted <- df_raw |>
     epitope_name, epitope_modifications, pep_length,
     epitope_starting_position, epitope_ending_position,
     epitope_source_molecule, epitope_molecule_parent,
-    epitope_source_molecule_iri,
+    epitope_molecule_parent_iri,
     in_vivo_process_process_type, in_vivo_process_disease
   )) |>
   rename_with(~ str_remove(.x, "^epitope_"), starts_with("epitope_")) |>
@@ -30,8 +30,8 @@ df_formatted <- df_raw |>
     end     = ending_position,
     peptide = name
   ) |>
-  mutate(uniprot_id = str_extract(source_molecule_iri, "(?<=uniprot/)[A-Z0-9]+(?:-[0-9]+)?")) |>
-  select(-source_molecule_iri)
+  mutate(uniprot_id = str_extract(molecule_parent_iri, "(?<=uniprot/)[A-Z0-9]+(?:-[0-9]+)?")) |>
+  select(-molecule_parent_iri)
 
 # De-duplicate to unique peptide + Uniprot ID combinations
 df_dedup <- df_formatted |>
@@ -88,4 +88,4 @@ write_csv(iedb_stage_counts, "data/processed/iedb_stage_counts.csv")
 cat("Stage counts saved to data/processed/iedb_stage_counts.csv\n")
 
 cat("✅ Saved cleaned files to data/processed/\n")
-cat("Next step: run src/util/export_fasta_files_from_iedb.py on data/processed/pos_EL_all_epitopes_hla0201.csv\n")
+cat("Next step: run python src/fetch/fetch_uniprot_fastas.py\n")
