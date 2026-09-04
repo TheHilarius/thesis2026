@@ -735,19 +735,50 @@ get_netmhcpan_total <- function(netmhcpan_dir = "data/processed/netmhcpan/",
 #'         Returns NULL (with a warning) if the file cannot be read.
 
 extract_plddt_lookup <- function(uniprot_id, dir) {
+  #' Extract per-residue pLDDT from an AlphaFold PDB using base R string parsing.
+  #'
+  #' PDB ATOM record format (columns are 1-indexed):
+  #'   13-16  Atom name (e.g. " CA ")
+  #'   18     Alternate location indicator
+  #'   23-26  Residue sequence number (integer)
+  #'   27     Code for insertion of residues
+  #'   31-38  Orthogonal coordinates X
+  #'   39-46  Orthogonal coordinates Y
+  #'   47-54  Orthogonal coordinates Z
+  #'   61-66  Occupancy (sometimes) or temperature factor
+  #'   61-66  Actually: columns 61-66 = occupancy, 67-76 = segid
+  #'
+  #' AlphaFold PDBs store pLDDT in the B-factor column (cols 61-66).
+  #' We only need CA atoms (one per residue) for pLDDT scores.
+  
   pdb_path <- file.path(dir, paste0(uniprot_id, ".pdb"))
   
   tryCatch({
-    pdb <- bio3d::read.pdb(pdb_path, verbose = FALSE)
+    lines <- readLines(pdb_path, warn = FALSE)
     
-    # One row per residue — CA atoms carry the residue number and pLDDT
-    ca <- pdb$atom[pdb$atom$elety == "CA", ]
+    # Filter ATOM records for CA atoms only
+    atom_lines <- lines[substr(lines, 1, 6) == "ATOM  " &
+                        substr(lines, 13, 16) == " CA "]
+    
+    if (length(atom_lines) == 0) {
+      warning(sprintf("[extract_plddt_lookup] No CA atoms found for %s", uniprot_id))
+      return(NULL)
+    }
+    
+    # Extract residue numbers (columns 23-26)
+    residue_nums <- as.integer(trimws(substr(atom_lines, 23, 26)))
+    
+    # Extract B-factor / pLDDT (columns 61-66)
+    plddt_scores <- as.numeric(trimws(substr(atom_lines, 61, 66)))
+    
+    # Extract residue name (columns 18-20, three-letter code)
+    residue_names <- trimws(substr(atom_lines, 18, 20))
     
     tibble::tibble(
       uniprot_id  = uniprot_id,
-      residue_num = as.integer(ca$resno),
-      aa          = ca$resid,          # three-letter amino acid code
-      plddt       = as.numeric(ca$b)   # B-factor = pLDDT in AlphaFold PDBs
+      residue_num = residue_nums,
+      aa          = residue_names,
+      plddt       = plddt_scores
     )
   }, error = function(e) {
     warning(sprintf("[extract_plddt_lookup] Failed for %s: %s",

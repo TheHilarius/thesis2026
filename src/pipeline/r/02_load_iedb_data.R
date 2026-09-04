@@ -21,6 +21,7 @@ df_formatted <- df_raw |>
     epitope_name, epitope_modifications, pep_length,
     epitope_starting_position, epitope_ending_position,
     epitope_source_molecule, epitope_molecule_parent,
+    epitope_source_molecule_iri,
     epitope_molecule_parent_iri,
     in_vivo_process_process_type, in_vivo_process_disease
   )) |>
@@ -30,8 +31,17 @@ df_formatted <- df_raw |>
     end     = ending_position,
     peptide = name
   ) |>
-  mutate(uniprot_id = str_extract(molecule_parent_iri, "(?<=uniprot/)[A-Z0-9]+(?:-[0-9]+)?")) |>
-  select(-molecule_parent_iri)
+  mutate(
+      # Step 1: Extract from Source
+      source_uniprot_id = str_extract(source_molecule_iri, "(?<=uniprot/)[A-Z0-9]+(?:-[0-9]+)?"),
+      
+      # Step 2: Extract from Parent
+      parent_uniprot_id = str_extract(molecule_parent_iri, "(?<=uniprot/)[A-Z0-9]+(?:-[0-9]+)?"),
+      
+      # Step 3: Combine them (Prioritize Source, fall back to Parent)
+      uniprot_id = coalesce(source_uniprot_id, parent_uniprot_id)
+  ) |>
+  select(-source_molecule_iri, -molecule_parent_iri, -source_uniprot_id, -parent_uniprot_id)
 
 # De-duplicate to unique peptide + Uniprot ID combinations
 df_dedup <- df_formatted |>
