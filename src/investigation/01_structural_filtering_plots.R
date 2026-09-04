@@ -1,14 +1,14 @@
 #!/usr/bin/env Rscript
 # ==============================================================================
 # 01_structural_filtering_plots.R
-# Investigation plots for structural data filtering pipeline.
+# Investigation plots for the structural filtering pipeline.
 #
 # Generates:
-#   1. Euler/Venn diagram — protein-level filter overlap
-#   2. Stacked bar chart — peptide removal by filter stage
-#   3. Missing data comparison — old vs new dataset
-#   4. Positive peptide Venn — structural features missing in removed positives
-#   5. Positive peptide removal breakdown — structural vs non-structural
+#   1. Protein-level overlap plot
+#   2. Peptide removal by filter stage
+#   3. Missing data before vs after filtering
+#   4. Positive peptide structural loss
+#   5. Positive peptide removal breakdown
 #
 # Output: results/figures/filtering/
 # ==============================================================================
@@ -19,7 +19,7 @@ library(dplyr)
 library(tidyr)
 library(readr)
 
-# ── Paths ────────────────────────────────────────────────────────────────────
+# File paths.
 ROOT <- getwd()
 DATA_DIR <- file.path(ROOT, "data", "processed")
 OUT_DIR <- file.path(ROOT, "results", "figures", "filtering")
@@ -28,26 +28,24 @@ dir.create(OUT_DIR, showWarnings = FALSE, recursive = TRUE)
 cat("Output directory:", OUT_DIR, "\n")
 
 # ==============================================================================
-# 1. PROTEIN-LEVEL EULER / VENN DIAGRAM
-# ==============================================================================
+# Protein-level overlap plot.
 #
 # Sets from exclusion_ledger.csv:
-#   A = NetSurfP Length Filter (too_short OR too_long)
-#   B = AlphaFold No PDB (no_pdb)
-#   C = AF Range Exceeded (out_of_range)
+#   A = length cutoff (>5000 aa)
+#   B = AlphaFold no PDB
+#   C = AF range exceeded
 #
-# Note: A ⊂ B (all length-filtered proteins also lack a PDB)
-# ==============================================================================
+# The length cutoff is a subset of the no-PDB group.
 
 cat("\n=== Plot 1: Protein-Level Euler Diagram ===\n")
 
 ledger <- read_csv(file.path(DATA_DIR, "exclusion_ledger.csv"), show_col_types = FALSE)
 
-# Count each set (among excluded proteins only)
+# Count each set among excluded proteins only.
 excluded <- ledger |> filter(excluded == TRUE)
 
 n_netsurfp <- excluded |>
-  filter(too_short == TRUE | too_long == TRUE) |>
+  filter(too_long == TRUE) |>
   nrow()
 
 n_no_pdb <- excluded |>
@@ -60,11 +58,11 @@ n_oor <- excluded |>
 
 # Overlaps (all among excluded)
 n_netsurfp_no_pdb <- excluded |>
-  filter((too_short == TRUE | too_long == TRUE) & no_pdb == TRUE) |>
+  filter(too_long == TRUE & no_pdb == TRUE) |>
   nrow()
 
 n_netsurfp_oor <- excluded |>
-  filter((too_short == TRUE | too_long == TRUE) & out_of_range == TRUE) |>
+  filter(too_long == TRUE & out_of_range == TRUE) |>
   nrow()
 
 n_no_pdb_oor <- excluded |>
@@ -72,29 +70,28 @@ n_no_pdb_oor <- excluded |>
   nrow()
 
 n_all_three <- excluded |>
-  filter((too_short == TRUE | too_long == TRUE) & no_pdb == TRUE & out_of_range == TRUE) |>
+  filter(too_long == TRUE & no_pdb == TRUE & out_of_range == TRUE) |>
   nrow()
 
-cat(sprintf("  NetSurfP Length: %d proteins\n", n_netsurfp))
+cat(sprintf("  Length >5000 aa: %d proteins\n", n_netsurfp))
 cat(sprintf("  AlphaFold No PDB: %d proteins\n", n_no_pdb))
 cat(sprintf("  AF Range Exceeded: %d proteins\n", n_oor))
 cat(sprintf("  Overlap (Length ∩ NoPDB): %d\n", n_netsurfp_no_pdb))
 cat(sprintf("  Total excluded: %d\n", nrow(excluded)))
 
-# Euler diagram input — named vector with set intersections
-# Format: "A&B" for overlap, "A" for A-only, etc.
-# Since A ⊂ B: A∩B = all of A, A∩C = 0, B∩C = 0, A∩B∩C = 0
+# Euler input as set intersections.
+# A is a subset of B, so the overlap is the full length-cutoff set.
 euler_input <- c(
-  "NetSurfP Length"          = n_netsurfp - n_netsurfp_no_pdb,  # A-only (should be 0 since A⊂B)
-  "AlphaFold No PDB"         = n_no_pdb - n_netsurfp_no_pdb,    # B-only
-  "AF Range Exceeded"        = n_oor,                            # C-only
-  "NetSurfP Length&AlphaFold No PDB" = n_netsurfp_no_pdb,        # A∩B
-  "NetSurfP Length&AF Range Exceeded" = n_netsurfp_oor,           # A∩C
-  "AlphaFold No PDB&AF Range Exceeded" = n_no_pdb_oor,           # B∩C
-  "NetSurfP Length&AlphaFold No PDB&AF Range Exceeded" = n_all_three  # A∩B∩C
+  "Length >5000 aa" = n_netsurfp - n_netsurfp_no_pdb,
+  "AlphaFold No PDB" = n_no_pdb - n_netsurfp_no_pdb,
+  "AF Range Exceeded" = n_oor,
+  "Length >5000 aa&AlphaFold No PDB" = n_netsurfp_no_pdb,
+  "Length >5000 aa&AF Range Exceeded" = n_netsurfp_oor,
+  "AlphaFold No PDB&AF Range Exceeded" = n_no_pdb_oor,
+  "Length >5000 aa&AlphaFold No PDB&AF Range Exceeded" = n_all_three
 )
 
-# Remove zero entries for cleaner plot
+# Drop zero entries for a cleaner plot.
 euler_input <- euler_input[euler_input > 0]
 
 fit <- euler(euler_input)
@@ -107,44 +104,80 @@ plot(fit,
      labels = list(cex = 1.1, font = 3),
      fills = list(fill = c("#e74c3c", "#3498db", "#f39c12"), alpha = 0.65),
      edges = list(col = "black", lwd = 2),
-     main = "Protein-Level Filter Overlap")
+      main = "Protein-Level Filter Overlap")
 
 dev.off()
 cat("Saved: filtering_venn_protein.png\n")
 
-# ==============================================================================
-# 2. PEPTIDE-LEVEL STACKED BAR CHART
-# ==============================================================================
-#
-# Shows peptides removed at each filtering stage.
-# Data from sankey_counts.csv (cumulative cascade).
-# ==============================================================================
+# Protein length comparison by AlphaFold coverage.
+
+cat("\n=== Plot 1b: Protein Length Comparison ===\n")
+
+len_df <- ledger |>
+  filter(!is.na(seq_length), seq_length > 0) |>
+  mutate(alpha_fold_status = if_else(has_pdb, "Has AlphaFold structure", "No AlphaFold structure"))
+
+len_summary <- len_df |>
+  group_by(alpha_fold_status) |>
+  summarise(
+    n = n(),
+    median_len = median(seq_length),
+    mean_len = mean(seq_length),
+    .groups = "drop"
+  )
+
+print(len_summary)
+
+p_len <- ggplot(len_df, aes(x = seq_length, fill = alpha_fold_status, colour = alpha_fold_status)) +
+  geom_density(alpha = 0.25, linewidth = 1) +
+  scale_x_log10(labels = scales::comma) +
+  scale_fill_manual(values = c("Has AlphaFold structure" = "#2ecc71", "No AlphaFold structure" = "#e74c3c")) +
+  scale_colour_manual(values = c("Has AlphaFold structure" = "#2ecc71", "No AlphaFold structure" = "#e74c3c")) +
+  labs(
+    title = "Protein lengths look different when AlphaFold structures are missing",
+    subtitle = "Proteins with a structure versus proteins without one, on a log length scale",
+    x = "Protein length (log scale)",
+    y = "Density",
+    fill = NULL,
+    colour = NULL
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(color = "grey40"),
+    legend.position = "top"
+  )
+
+ggsave(file.path(OUT_DIR, "protein_length_alphaFold_comparison.png"),
+       p_len, width = 10, height = 5, dpi = 300)
+cat("Saved: protein_length_alphaFold_comparison.png\n")
+
+# Peptide removal by filter stage.
 
 cat("\n=== Plot 2: Peptide-Level Stacked Bar Chart ===\n")
 
 sankey <- read_csv(file.path(DATA_DIR, "sankey_counts.csv"), show_col_types = FALSE)
 
-# Define the filtering stages and their removal counts
-# These are the structural/preprocessing filters that remove peptides
+# Define the filter stages and their removal counts.
 filter_stages <- tibble(
   stage = factor(c(
     "PTM Filter",
     "Non-9mer",
     "Missing UniProt",
-    "NetSurfP Length",
+    "Length >5000 aa",
     "AlphaFold No PDB"
   ), levels = rev(c(
     "PTM Filter",
     "Non-9mer",
     "Missing UniProt",
-    "NetSurfP Length",
+    "Length >5000 aa",
     "AlphaFold No PDB"
   ))),
   removed = c(
     sankey$count[sankey$stage == "ptm"],
     sankey$count[sankey$stage == "non_9mer"],
     sankey$count[sankey$stage == "na_uniprot"],
-    sankey$count[sankey$stage == "nsp3_length"],
+    sankey$count[sankey$stage == "too_long"],
     sankey$count[sankey$stage == "alphafold"]
   ),
   category = factor(c(
@@ -190,12 +223,7 @@ ggsave(file.path(OUT_DIR, "filtering_stacked_bar.png"),
        p_bar, width = 10, height = 5, dpi = 300)
 cat("Saved: filtering_stacked_bar.png\n")
 
-# ==============================================================================
-# 3. MISSING DATA COMPARISON (OLD vs NEW)
-# ==============================================================================
-#
-# Grouped bar chart: structural features × missing count (old vs new).
-# ==============================================================================
+# Missing data before vs after filtering.
 
 cat("\n=== Plot 3: Missing Data Comparison ===\n")
 
@@ -205,7 +233,7 @@ df_new <- read_csv(file.path(DATA_DIR, "df_all.csv"), show_col_types = FALSE)
 structural_cols <- c("mean_plddt_peptide", "mean_plddt_nflank", "mean_plddt_cflank",
                      "mean_rsa_peptide", "mean_rsa_nflank", "mean_rsa_cflank")
 
-# Friendly labels
+# Friendly labels.
 feature_labels <- c(
   "mean_plddt_peptide" = "pLDDT Peptide",
   "mean_plddt_nflank"  = "pLDDT N-flank",
@@ -277,27 +305,21 @@ ggsave(file.path(OUT_DIR, "filtering_missing_comparison.png"),
 cat("Saved: filtering_missing_comparison.png\n")
 
 # ==============================================================================
-# 4. POSITIVE PEPTIDE VENN — STRUCTURAL FEATURES MISSING IN REMOVED POSITIVES
-# ==============================================================================
-#
-# Focus: only positive peptides (hard to replace, unlike negatives).
-# Sets among removed positive peptides:
-#   A = Missing pLDDT (no AlphaFold structure)
-#   B = Missing RSA (no NetSurfP structure)
-# ==============================================================================
+# Positive peptides removed for structural reasons.
+# Only positive peptides, since they are hard to replace.
 
 cat("\n=== Plot 4: Positive Peptide Euler Diagram ===\n")
 
-# Identify removed peptides (in old but not in new)
+# Identify removed peptides.
 old_peptides <- df_old |> pull(peptide) |> unique()
 new_peptides <- df_new |> pull(peptide) |> unique()
 removed_peptides <- setdiff(old_peptides, new_peptides)
 
-# Subset old data to removed positive peptides only
+# Keep only removed positive peptides.
 df_removed_pos <- df_old |>
   filter(label == 1, peptide %in% removed_peptides)
 
-# Count missing structural features among removed positives
+# Count missing structural features among removed positives.
 pos_no_plddt <- df_removed_pos |> filter(is.na(mean_plddt_peptide)) |> pull(peptide) |> unique()
 pos_no_rsa <- df_removed_pos |> filter(is.na(mean_rsa_peptide)) |> pull(peptide) |> unique()
 
@@ -313,10 +335,10 @@ cat(sprintf("  Total positive peptides removed: %d\n", n_pos_removed))
 cat(sprintf("  Missing pLDDT: %d (%.1f%%)\n", n_pos_no_plddt, n_pos_no_plddt / n_pos_removed * 100))
 cat(sprintf("  Missing RSA: %d (%.1f%%)\n", n_pos_no_rsa, n_pos_no_rsa / n_pos_removed * 100))
 cat(sprintf("  Missing both: %d (%.1f%%)\n", n_pos_no_both, n_pos_no_both / n_pos_removed * 100))
-cat(sprintf("  Out-of-range negatives (removed for other reasons): %d (%.1f%%)\n",
+cat(sprintf("  Other removed positives: %d (%.1f%%)\n",
             n_pos_has_structure, n_pos_has_structure / n_pos_removed * 100))
 
-# Euler input — 2-set Venn
+# Euler input.
 euler_pos_venn <- c(
   "Missing pLDDT" = n_pos_plddt_only,
   "Missing RSA" = n_pos_rsa_only,
@@ -326,7 +348,7 @@ euler_pos_venn <- euler_pos_venn[euler_pos_venn > 0]
 
 fit_pos_venn <- euler(euler_pos_venn)
 
-# Plot with better styling
+# Plot with simple styling.
 png(file.path(OUT_DIR, "filtering_venn_peptide_positives.png"),
     width = 3000, height = 2400, res = 300)
 
@@ -337,7 +359,7 @@ plot(fit_pos_venn,
      fills = list(fill = c("#e74c3c", "#3498db"), alpha = 0.6),
      edges = list(col = c("#c0392b", "#2980b9"), lwd = 3),
      main = paste0(
-       "Positive Peptides Removed by Structural Filter\n",
+        "Positive peptides removed by structural filtering\n",
        "1,782 positives removed: ",
        format(n_pos_no_plddt, big.mark = ","), " lack pLDDT, ",
        format(n_pos_no_rsa, big.mark = ","), " lack RSA, ",
@@ -347,24 +369,15 @@ plot(fit_pos_venn,
 dev.off()
 cat("Saved: filtering_venn_peptide_positives.png\n")
 
-# ==============================================================================
-# 5. POSITIVE PEPTIDE REMOVAL BREAKDOWN — STRUCTURAL vs NON-STRUCTURAL
-# ==============================================================================
-#
-# Stacked bar showing how removed positive peptides were categorized:
-# - Missing pLDDT only
-# - Missing RSA only
-# - Missing both
-# - Lost to protein-level pre-filter (out-of-range negatives)
-# ==============================================================================
+# Positive peptide removal breakdown.
 
 cat("\n=== Plot 5: Positive Peptide Removal Breakdown ===\n")
 
-# Build breakdown data
+# Build breakdown data.
 pos_breakdown <- tibble(
   category = factor(
-    c("Missing pLDDT only", "Missing RSA only", "Missing both", "Out-of-range negatives"),
-    levels = c("Missing pLDDT only", "Missing RSA only", "Missing both", "Out-of-range negatives")
+    c("Missing pLDDT only", "Missing RSA only", "Missing both", "Other removed positives"),
+    levels = c("Missing pLDDT only", "Missing RSA only", "Missing both", "Other removed positives")
   ),
   count = c(n_pos_plddt_only, n_pos_rsa_only, n_pos_no_both, n_pos_has_structure),
   pct = count / n_pos_removed * 100
@@ -378,7 +391,7 @@ for (i in seq_len(nrow(pos_breakdown))) {
               pos_breakdown$pct[i]))
 }
 
-# Stacked horizontal bar
+# Stacked horizontal bar.
 p_pos_breakdown <- ggplot(pos_breakdown, aes(x = count, y = "Removed\nPositives",
                                               fill = category)) +
   geom_col(width = 0.6, alpha = 0.85) +
@@ -389,7 +402,7 @@ p_pos_breakdown <- ggplot(pos_breakdown, aes(x = count, y = "Removed\nPositives"
     "Missing pLDDT only" = "#e74c3c",
     "Missing RSA only" = "#3498db",
     "Missing both" = "#8e44ad",
-    "Out-of-range negatives" = "#95a5a6"
+    "Other removed positives" = "#95a5a6"
   ), name = "Reason") +
   scale_x_continuous(labels = scales::comma, expand = expansion(mult = c(0, 0.1))) +
   labs(
@@ -416,9 +429,7 @@ ggsave(file.path(OUT_DIR, "filtering_positives_breakdown.png"),
        p_pos_breakdown, width = 10, height = 4, dpi = 300)
 cat("Saved: filtering_positives_breakdown.png\n")
 
-# ==============================================================================
-# Summary
-# ==============================================================================
+# Summary.
 
 cat("\n=== Done ===\n")
 cat("All plots saved to:", OUT_DIR, "\n")

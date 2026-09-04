@@ -6,25 +6,25 @@ library(eulerr)
 
 
 # ============================================================================
-# 0. LOAD COUNTS
+# Load cascade counts.
 # ============================================================================
 
 counts_raw <- read_csv("data/processed/sankey_counts.csv", show_col_types = FALSE)
 ct <- setNames(counts_raw$count, counts_raw$stage)
 
-# Sanity checks
+# Sanity checks.
 stopifnot(ct["duplicates"] + ct["unique_pairs"] == ct["raw_assays"])
 stopifnot(ct["ptm"] + ct["no_ptm"] == ct["unique_pairs"])
 stopifnot(ct["non_9mer"] + ct["9mer_all"] == ct["no_ptm"])
 stopifnot(ct["na_uniprot"] + ct["o60361"] + ct["dedup"] +
-            ct["missing_fasta"] + ct["selenocysteine"] +
-            ct["nsp3_length"] + ct["alphafold"] +
-            ct["9mer_verified"] == ct["9mer_all"])
+    ct["missing_fasta"] + ct["selenocysteine"] +
+    ct["too_long"] + ct["alphafold"] +
+    ct["9mer_verified"] == ct["9mer_all"])
 stopifnot(ct["iedb_recovered"] + ct["iedb_missed"] == ct["9mer_verified"])
 
 cat("✓ All cascade counts verified.\n\n")
 
-# Print for reference
+# Print the main counts.
 cat("=== Positives Pipeline ===\n")
 cat("Raw assays:             ", scales::comma(ct["raw_assays"]), "\n")
 cat("Duplicates:             ", scales::comma(ct["duplicates"]), "\n")
@@ -50,7 +50,7 @@ cat("Affinity removed:       ", scales::comma(ct["affinity_removed"]), "\n")
 cat("Rank-matched (TN):      ", scales::comma(ct["negatives_combined"]), "\n")
 
 # ==============================================================================
-# 1. POSITIVES PIPELINE SANKEY
+# Positives pipeline Sankey.
 # ==============================================================================
 
 nodes_pos <- data.frame(name = c(
@@ -61,14 +61,14 @@ nodes_pos <- data.frame(name = c(
   paste0(scales::comma(ct["no_ptm"])),                                        # 4
   paste0("Non-9-mers: ",             scales::comma(ct["non_9mer"])),          # 5
   paste0(scales::comma(ct["9mer_all"])),                                      # 6
-  paste0("No UniProt ID: ",          scales::comma(ct["na_uniprot"])),        # 7
-  paste0("No FASTA: ",               scales::comma(ct["missing_fasta"])),     # 8
-  paste0("Selenocysteine: ",         scales::comma(ct["selenocysteine"])),    # 9
-  paste0("NSP3 Length: ",            scales::comma(ct["nsp3_length"])),       # 10
-  paste0("Missing AlphaFold: ",      scales::comma(ct["alphafold"])),         # 11
-  paste0("Verified 9-mers: ",        scales::comma(ct["9mer_verified"])),     # 12
-  paste0("Not Predicted (FN): ",     scales::comma(ct["iedb_missed"])),       # 13
-  paste0("Predicted (TP): ",         scales::comma(ct["iedb_recovered"]))     # 14
+  paste0("No UniProt ID: ",          scales::comma(ct["na_uniprot"])),
+  paste0("No FASTA: ",               scales::comma(ct["missing_fasta"])),
+  paste0("Selenocysteine: ",         scales::comma(ct["selenocysteine"])),
+  paste0("Too long (>5000 aa): ",    scales::comma(ct["too_long"])),
+  paste0("Missing AlphaFold: ",      scales::comma(ct["alphafold"])),
+  paste0("Verified 9-mers: ",        scales::comma(ct["9mer_verified"])),
+  paste0("Not predicted (FN): ",     scales::comma(ct["iedb_missed"])),
+  paste0("Predicted (TP): ",         scales::comma(ct["iedb_recovered"]))
 ))
 
 links_pos <- data.frame(
@@ -77,8 +77,8 @@ links_pos <- data.frame(
   value  = c(ct["duplicates"], ct["unique_pairs"],
              ct["ptm"], ct["no_ptm"],
              ct["non_9mer"], ct["9mer_all"],
-             ct["na_uniprot"], ct["missing_fasta"], ct["selenocysteine"],
-             ct["nsp3_length"], ct["alphafold"],
+              ct["na_uniprot"], ct["missing_fasta"], ct["selenocysteine"],
+              ct["too_long"], ct["alphafold"],
              ct["9mer_verified"],
              ct["iedb_missed"], ct["iedb_recovered"])
 )
@@ -107,7 +107,7 @@ sankey_pos <- sankeyNetwork(
 )
 
 # ==============================================================================
-# 2. NEGATIVES PIPELINE SANKEY
+# Negatives pipeline Sankey.
 # ==============================================================================
 
 nodes_neg <- data.frame(name = c(
@@ -156,7 +156,7 @@ sankey_neg <- sankeyNetwork(
 
 
 # ==============================================================================
-# 3. PROPORTIONAL VENN DIAGRAM
+# Proportional Venn diagram.
 # ==============================================================================
 
 venn_data <- c(
@@ -182,7 +182,7 @@ venn_plot <- plot(
 )
 
 # ==============================================================================
-# 4. VIEW & EXPORT
+# View and export.
 # ==============================================================================
 
 sankey_pos
@@ -312,4 +312,3 @@ ggsave("results/methods_generation_pipeline.png", p_pipeline,
        width = 15, height = 3, dpi = 300)
 
 cat("✅ Polished pipeline saved to results/methods_generation_pipeline.png\n")
-
