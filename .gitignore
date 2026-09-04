@@ -27,8 +27,6 @@ data/processed/netmhcpan/
 # Large data files
 data/raw/iedb_200K_EL_epitopes.csv
 data/processed/pos_EL_all_epitopes_hla0201.csv
-data/processed/pos_EL_healthy_epitopes_hla0201.csv
-data/processed/pos_EL_cancer_epitopes_hla0201.csv
 data/processed/pos_EL_8-to-14mers_epitopes_hla0201.csv
 data/raw/iedb_200K_EL_epitopes.csv
 data/processed/pos_EL_all_epitopes_hla0201.csv
