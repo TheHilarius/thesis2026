@@ -1,0 +1,56 @@
+=================================================================
+DYNAMIC COORDINATE TRANSLATION — SUMMARY
+=================================================================
+
+Input dataset:               46122 peptides from 9034 proteins
+
+Protein-level results:
+  Exact match (clean):       9006 proteins
+  Mismatched (processed):    28 proteins
+
+Peptide-level results:
+  Clean cohort:              45978 peptides (99.7%)
+  Rescued cohort:            3 peptides (0.0%)
+  Quarantined cohort:        141 peptides (0.3%)
+  Total accounted:           46122 peptides
+
+Rescued peptide details:
+  A9YTQ3: 2 peptides rescued (AF coords: 52-75)
+  Q6ZNJ1: 1 peptides rescued (AF coords: 64-73)
+
+Quarantined peptide details:
+  translation_failed: 139 peptides
+  integrity_check_failed: 2 peptides
+
+  A9YTQ3: 1 peptides quarantined
+  O15018: 1 peptides quarantined
+  O43236: 1 peptides quarantined
+  O43451: 2 peptides quarantined
+  O60281: 6 peptides quarantined
+  P08195: 4 peptides quarantined
+  P13285: 1 peptides quarantined
+  P15924: 4 peptides quarantined
+  P43251: 4 peptides quarantined
+  P78312: 1 peptides quarantined
+  Q02224: 17 peptides quarantined
+  Q12955: 2 peptides quarantined
+  Q14643: 13 peptides quarantined
+  Q5SZK8: 2 peptides quarantined
+  Q6PEZ8: 4 peptides quarantined
+  Q6ZNJ1: 9 peptides quarantined
+  Q7Z407: 1 peptides quarantined
+  Q8N9I5: 1 peptides quarantined
+  Q8NCK7: 3 peptides quarantined
+  Q8NFP9: 1 peptides quarantined
+  Q8TDJ6: 10 peptides quarantined
+  Q9H0H0: 20 peptides quarantined
+  Q9H1Z9: 2 peptides quarantined
+  Q9H270: 7 peptides quarantined
+  Q9NQ90: 5 peptides quarantined
+  Q9NT68: 8 peptides quarantined
+  Q9WMB3: 1 peptides quarantined
+  Q9Y520: 10 peptides quarantined
+
+=================================================================
+Runtime: 4.4s
+=================================================================

@@ -1,0 +1,69 @@
+=================================================================
+SEQUENCE CONSISTENCY AUDIT — SUMMARY
+=================================================================
+
+Total unique proteins:        9034
+  With AF2 structure:         9034
+  Without AF2 structure:      0
+
+Alignment results (proteins with AF2):
+  Exact match:                9006 (99.7%)
+  Mismatch:                   28 (0.3%)
+  Parse error:                0
+
+Mismatch details:
+  Mean identity:              82.58%
+  Median identity:            93.12%
+  Min identity:               25.08%
+  Mean length diff:           -421.3 residues
+  AF2 longer than UniProt:    7
+  AF2 shorter than UniProt:   19
+  Same length but diff seq:   2
+
+  Top 20 worst mismatches (by identity):
+    Q8NFP9        UniProt= 2946  AF2=  739  diff=-2207  identity=25.1%
+    Q12955        UniProt= 4377  AF2= 1465  diff=-2912  identity=33.2%
+    Q9WMB3        UniProt= 2183  AF2=  946  diff=-1237  identity=43.3%
+    O43236        UniProt=  996  AF2=  478  diff= -518  identity=46.7%
+    O43451        UniProt= 2753  AF2= 1857  diff= -896  identity=67.5%
+    Q7Z407        UniProt= 3707  AF2= 2675  diff=-1032  identity=71.5%
+    P13285        UniProt=  497  AF2=  378  diff= -119  identity=76.1%
+    P78312        UniProt= 1515  AF2= 1265  diff= -250  identity=78.7%
+    Q8TDJ6        UniProt= 3036  AF2= 2400  diff= -636  identity=79.0%
+    P15924        UniProt= 2871  AF2= 2272  diff= -599  identity=79.1%
+    P08195        UniProt=  529  AF2=  630  diff= +101  identity=84.0%
+    Q5SZK8        UniProt= 3169  AF2= 2667  diff= -502  identity=84.1%
+    O15018        UniProt= 2839  AF2= 2640  diff= -199  identity=92.8%
+    Q9Y520        UniProt= 2896  AF2= 2700  diff= -196  identity=92.9%
+    Q6ZNJ1        UniProt= 2754  AF2= 2570  diff= -184  identity=93.3%
+    Q9NT68        UniProt= 2774  AF2= 2637  diff= -137  identity=93.9%
+    O60281        UniProt= 2723  AF2= 2578  diff= -145  identity=94.7%
+    Q8NCK7        UniProt=  447  AF2=  471  diff=  +24  identity=94.9%
+    Q02224        UniProt= 2701  AF2= 2580  diff= -121  identity=95.5%
+    P43251        UniProt=  523  AF2=  543  diff=  +20  identity=96.3%
+
+  Top 20 worst mismatches (by length diff):
+    Q12955        UniProt= 4377  AF2= 1465  diff=-2912  identity=33.2%
+    Q8NFP9        UniProt= 2946  AF2=  739  diff=-2207  identity=25.1%
+    Q9WMB3        UniProt= 2183  AF2=  946  diff=-1237  identity=43.3%
+    Q7Z407        UniProt= 3707  AF2= 2675  diff=-1032  identity=71.5%
+    O43451        UniProt= 2753  AF2= 1857  diff= -896  identity=67.5%
+    Q8TDJ6        UniProt= 3036  AF2= 2400  diff= -636  identity=79.0%
+    P15924        UniProt= 2871  AF2= 2272  diff= -599  identity=79.1%
+    O43236        UniProt=  996  AF2=  478  diff= -518  identity=46.7%
+    Q5SZK8        UniProt= 3169  AF2= 2667  diff= -502  identity=84.1%
+    P78312        UniProt= 1515  AF2= 1265  diff= -250  identity=78.7%
+    O15018        UniProt= 2839  AF2= 2640  diff= -199  identity=92.8%
+    Q9Y520        UniProt= 2896  AF2= 2700  diff= -196  identity=92.9%
+    Q6ZNJ1        UniProt= 2754  AF2= 2570  diff= -184  identity=93.3%
+    O60281        UniProt= 2723  AF2= 2578  diff= -145  identity=94.7%
+    Q9NT68        UniProt= 2774  AF2= 2637  diff= -137  identity=93.9%
+    Q02224        UniProt= 2701  AF2= 2580  diff= -121  identity=95.5%
+    P13285        UniProt=  497  AF2=  378  diff= -119  identity=76.1%
+    P08195        UniProt=  529  AF2=  630  diff= +101  identity=84.0%
+    Q14643        UniProt= 2758  AF2= 2695  diff=  -63  identity=97.7%
+    Q8NCK7        UniProt=  447  AF2=  471  diff=  +24  identity=94.9%
+
+=================================================================
+Runtime: 74.4s
+=================================================================
