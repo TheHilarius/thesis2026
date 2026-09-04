@@ -49,6 +49,33 @@ cat("Entries collapsed:         ", nrow(df_fasta_raw) - nrow(df_fasta), "\n\n")
 df_iedb_pos <- df_iedb_pos |>
   semi_join(df_fasta, by = "uniprot_id")
 
+# ── Biological Integrity Check: validate peptide coordinates ──────────────
+# Join canonical sequence from FASTA, then validate that the peptide at
+# reported start/end coordinates matches the actual amino acid string.
+# Drops peptides with isoform-mismatched coordinates (silent coordinate shifts).
+cat("\n--- Biological Integrity Check (positives) ---\n")
+df_iedb_pos <- df_iedb_pos |>
+  left_join(df_fasta |> select(uniprot_id, sequence), by = "uniprot_id") |>
+  validate_and_fix_positions(
+    sequence_col = "sequence",
+    peptide_col  = "peptide",
+    start_col    = "start",
+    end_col      = "end"
+  )
+
+coord_summary_pos <- df_iedb_pos |> count(position_status) |>
+  mutate(percentage = round(n / sum(n) * 100, 2))
+cat("Position validation (positives):\n")
+print(coord_summary_pos)
+
+n_unfixable_pos <- sum(df_iedb_pos$position_status == "unfixable", na.rm = TRUE)
+df_iedb_pos <- df_iedb_pos |>
+  filter(position_status %in% c("valid_original", "fixed")) |>
+  select(-start_original, -end_original, -position_originally_valid,
+         -position_status, -position_shift)
+cat("Dropped", n_unfixable_pos, "unfixable positives\n")
+cat("IEDB positives after coord validation:", nrow(df_iedb_pos), "\n\n")
+
 # Remove proteins with selenocysteine (U).
 n_before_sec <- nrow(df_iedb_pos)
 sec_proteins <- df_fasta |>
@@ -239,6 +266,32 @@ df_netmhcpan_binders_parsed <- df_netmhcpan_raw |>
   relocate(end,        .after = start)   |>
   relocate(id,         .after = binder)  |>
   select(-c(id, core, icore, score, ave))
+
+# ── Biological Integrity Check: validate negative coordinates ─────────────
+# NetMHCpan predictions from isoform sequences may have shifted coordinates
+# relative to the canonical FASTA. Validate and drop mismatches.
+cat("\n--- Biological Integrity Check (negatives) ---\n")
+df_netmhcpan_binders_parsed <- df_netmhcpan_binders_parsed |>
+  left_join(df_fasta |> select(uniprot_id, sequence), by = "uniprot_id") |>
+  validate_and_fix_positions(
+    sequence_col = "sequence",
+    peptide_col  = "peptide",
+    start_col    = "start",
+    end_col      = "end"
+  )
+
+coord_summary_neg <- df_netmhcpan_binders_parsed |> count(position_status) |>
+  mutate(percentage = round(n / sum(n) * 100, 2))
+cat("Position validation (negatives):\n")
+print(coord_summary_neg)
+
+n_unfixable_neg <- sum(df_netmhcpan_binders_parsed$position_status == "unfixable", na.rm = TRUE)
+df_netmhcpan_binders_parsed <- df_netmhcpan_binders_parsed |>
+  filter(position_status %in% c("valid_original", "fixed")) |>
+  select(-start_original, -end_original, -position_originally_valid,
+         -position_status, -position_shift)
+cat("Dropped", n_unfixable_neg, "unfixable negatives\n")
+cat("NetMHCpan binders after coord validation:", nrow(df_netmhcpan_binders_parsed), "\n\n")
 
 # Step F: Record predicted binders removed by AlphaFold filter.
 # Restricted to positive proteins that would enter the negative pool.
