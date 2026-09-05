@@ -12,7 +12,7 @@ my_packages <- c(
 
 df_epitopes <- read_csv("data/processed/df_combined_pos_and_neg.csv")
 
-df_fasta <- read_fasta_df("data/raw/fasta/combined_9mer.fasta") |>
+df_fasta <- read_fasta_df("data/raw/fasta/combined_full_length.fasta") |>
   mutate(
     accession  = str_extract(header, "(?<=\\|)[^|]+(?=\\|)"),
     uniprot_id = accession,
