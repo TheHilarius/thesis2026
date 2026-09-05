@@ -227,6 +227,9 @@ def main():
     print(f"\nLoading peptide data: {POS_EL}")
     df_pep = pd.read_csv(POS_EL)
     df_pep = df_pep[df_pep['pep_length'] == 9]  # 9-mers only
+    df_pep = df_pep.dropna(subset=['start', 'end'])
+    df_pep['start'] = df_pep['start'].astype(int)
+    df_pep['end'] = df_pep['end'].astype(int)
     print(f"  9-mer peptides: {len(df_pep)}")
 
     # Get proteins with AF2 structures
