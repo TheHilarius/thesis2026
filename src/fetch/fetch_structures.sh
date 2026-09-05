@@ -29,12 +29,53 @@ fi
 AF2_BASE="https://alphafold.ebi.ac.uk/files"
 PDB_SEARCH="https://search.rcsb.org/rcsbsearch/v2/query"
 PDB_BASE="https://files.rcsb.org/download"
+FASTA_PATH="data/raw/fasta/combined_full_length.fasta"
 
 mkdir -p "${OUT_DIR}/alphafold"
 mkdir -p "${OUT_DIR}/pdb_fallback"
 
 LOG="${OUT_DIR}/logs/fetch_log.tsv"
 MISSING="${OUT_DIR}/logs/missing_structures.tsv"
+
+# ── Parse FASTA for ground-truth sequence lengths ────────────────────────────
+declare -A FASTA_LENGTHS
+if [[ -f "${FASTA_PATH}" ]]; then
+    echo "Parsing ${FASTA_PATH} for sequence lengths..."
+    while IFS= read -r header; do
+        IFS= read -r seq_line
+        # Accumulate multi-line sequences
+        seq="${seq_line}"
+        while IFS= read -r next_line; do
+            if [[ "${next_line}" == ">"* ]]; then
+                # Extract accession between pipes: >sp|O43236|SEPT4... -> O43236
+                uid=$(echo "${header}" | awk -F'|' '{print $2}')
+                FASTA_LENGTHS["${uid}"]=${#seq}
+                header="${next_line}"
+                seq=""
+            else
+                seq="${seq}${next_line}"
+            fi
+        done < /dev/null  # dummy — use process substitution below
+        # This approach doesn't work for multi-line; use awk instead
+    done < /dev/null
+    # Use awk for reliable multi-line FASTA parsing
+    while IFS=$'\t' read -r uid length; do
+        FASTA_LENGTHS["${uid}"]="${length}"
+    done < <(awk '/^>/{if(seq && hdr){
+        split(hdr, a, "|");
+        uid=a[2];
+        printf "%s\t%d\n", uid, length(seq);
+    } hdr=$0; seq=""; next}
+    {seq=seq$0}
+    END{if(seq && hdr){
+        split(hdr, a, "|");
+        uid=a[2];
+        printf "%s\t%d\n", uid, length(seq);
+    }}' "${FASTA_PATH}")
+    echo "FASTA lengths loaded: ${#FASTA_LENGTHS[@]} entries"
+else
+    echo "WARNING: ${FASTA_PATH} not found — length validation disabled"
+fi
 
 # ── Resume logic ─────────────────────────────────────────────────────────────
 declare -A ALREADY_DONE
@@ -149,8 +190,37 @@ process_list() {
         WORKED_VERSION=$(fetch_af2 "${UNIPROT}" "${AF2_FILE}" || true)
 
         if [[ "${WORKED_VERSION}" != "none" ]]; then
+            # ── Length validation: does AF2 model match FASTA ground truth? ──
+            FASTA_LENGTH="${FASTA_LENGTHS[${UNIPROT}]:-}"
+            if [[ -n "${FASTA_LENGTH}" ]]; then
+                AF_LENGTH=$(grep "^SEQRES" "${AF2_FILE}" | \
+                            awk '{print $4}' | sort -n | tail -1)
+                if [[ -n "${AF_LENGTH}" && "${AF_LENGTH}" != "${FASTA_LENGTH}" ]]; then
+                    echo "  [AF2] ⚠ Length mismatch: AF2=${AF_LENGTH}, FASTA=${FASTA_LENGTH}"
+                    CORRECT_MODEL=$(python3 src/fetch/find_correct_af_model.py \
+                                    "${UNIPROT}" "${FASTA_LENGTH}" 2>/dev/null || true)
+                    if [[ -n "${CORRECT_MODEL}" ]]; then
+                        echo "  [AF2] ✓ Found correct model: ${CORRECT_MODEL}"
+                        ALT_URL="${AF2_BASE}/${CORRECT_MODEL}-model_v${WORKED_VERSION}.pdb"
+                        HTTP_ALT=$(curl -s -o "${AF2_FILE}" \
+                                       -w "%{http_code}" \
+                                       --retry 2 \
+                                       --max-time 30 \
+                                       "${ALT_URL}" || echo "000")
+                        if [[ "${HTTP_ALT}" == "200" ]]; then
+                            echo "  [AF2] ✓ Downloaded ${CORRECT_MODEL} (saved as ${UNIPROT}.pdb)"
+                        else
+                            echo "  [AF2] ✗ Failed to download ${CORRECT_MODEL}, keeping default"
+                            # Re-download the default
+                            fetch_af2 "${UNIPROT}" "${AF2_FILE}" >/dev/null 2>&1 || true
+                        fi
+                    else
+                        echo "  [AF2] ✗ No matching model found, keeping default"
+                    fi
+                fi
+            fi
             COVERAGE=$(check_coverage "${AF2_FILE}" "${START}" "${END}")
-            echo "  [AF2] ✓ Downloaded v${WORKED_VERSION}. Coverage: ${COVERAGE}"
+            echo "  [AF2] ✓ Coverage: ${COVERAGE}"
             echo -e "${UNIPROT}\t${START}\t${END}\talphafold_v${WORKED_VERSION}\t${AF2_FILE}\t${COVERAGE}" >> "${LOG}"
             if [[ "${COVERAGE}" != "ok" ]]; then
                 echo -e "${UNIPROT}\tAF2 partial coverage: ${COVERAGE}" >> "${MISSING}"

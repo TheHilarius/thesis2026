@@ -1,63 +1,56 @@
 #!/usr/bin/env python3
+"""
+fetch_uniprot_fastas.py — Download full-length protein sequences from UniProt.
+
+Reads unique uniprot_ids from pos_EL_all_epitopes_hla0201.csv (which includes
+isoforms resolved by 02_load_iedb_data.R). Queries UniProt with
+includeIsoform=true to ensure isoform-specific sequences are returned as
+separate FASTA entries.
+
+Output: data/raw/fasta/combined_full_length.fasta
+"""
 import pandas as pd
 import requests
 import re
 import sys
 from pathlib import Path
-from io import StringIO
 import time
+
 
 def main():
     # Paths
-    iedb_csv_path = Path("data/raw/iedb_200K_EL_epitopes.csv")
-    output_fasta = Path("data/raw/fasta/combined_9mer.fasta")
-    
-    # Ensure output directory exists
+    pos_el_path = Path("data/processed/pos_EL_all_epitopes_hla0201.csv")
+    output_fasta = Path("data/raw/fasta/combined_full_length.fasta")
+
     output_fasta.parent.mkdir(parents=True, exist_ok=True)
 
-    print(f"Reading raw IEDB dataset: {iedb_csv_path}...")
-    
-    # Read the CSV (IEDB uses comma or semicolon depending on the export, usually comma but with quoted strings)
-    # The snippet provided uses semicolons but standard IEDB uses commas. We'll try comma first, fallback to semicolon.
+    print(f"Reading processed epitope data: {pos_el_path}...")
+
     try:
-        # Read with semicolon separator and latin1 encoding. No skipped rows.
-        df = pd.read_csv(iedb_csv_path, sep=";", low_memory=False, encoding="latin1")
+        df = pd.read_csv(pos_el_path)
     except Exception as e:
         print(f"Error reading CSV: {e}")
         sys.exit(1)
 
-    if 'Epitope - Source Molecule IRI' not in df.columns:
-        print("[ERROR] 'Epitope - Source Molecule IRI' column not found!")
+    if 'uniprot_id' not in df.columns:
+        print("[ERROR] 'uniprot_id' column not found!")
         sys.exit(1)
 
-    # Extract UniProt IDs
-    # IEDB URLs look like: https://www.uniprot.org/uniprot/Q562F6.2 or Q14094-7
-    # We want to extract the ID, keeping isoforms (e.g., -7) but dropping sequence versions (e.g., .2)
-    def extract_uniprot_id(iri):
-        if pd.isna(iri):
-            return None
-        match = re.search(r'uniprot/([A-Z0-9]+(?:-\d+)?)', str(iri))
-        return match.group(1) if match else None
-
-    print("Extracting unique UniProt IDs...")
-    df['uniprot_id'] = df['Epitope - Source Molecule IRI'].apply(extract_uniprot_id)
-    
-    # Strict UniProt accession filter: 6-10 alphanumeric chars starting with
-    # a letter, optionally followed by -isoform. Rejects GenBank (AAX38256),
-    # RefSeq (NP_, XP_), and other non-UniProt IDs.
-    # Strict UniProt accession filter: Rejects GenBank (3 letters + numbers like AAX38256) and RefSeq (NP_, XP_)
+    # Strict UniProt accession filter
     UNIPROT_PATTERN = re.compile(r'^(?![A-Z]{3}[0-9])[A-Z][A-Z0-9]{5,9}(-[0-9]+)?$')
     unique_ids = [uid for uid in df['uniprot_id'].dropna().unique()
-                  if UNIPROT_PATTERN.match(uid)]
-    print(f"Found {len(unique_ids)} unique UniProt IDs (including isoforms) in the raw IEDB data.")
+                  if UNIPROT_PATTERN.match(str(uid))]
+
+    n_isoforms = sum(1 for uid in unique_ids if re.search(r'-\d+$', str(uid)))
+    print(f"Found {len(unique_ids)} unique UniProt IDs "
+          f"({n_isoforms} isoforms, {len(unique_ids) - n_isoforms} canonical)")
 
     # Batch download from UniProt REST API
-    # UniProt allows batches of up to 500 for fasta retrieval
     batch_size = 50
     batches = [unique_ids[i:i + batch_size] for i in range(0, len(unique_ids), batch_size)]
-    
-    print(f"Downloading FASTA sequences from UniProt in {len(batches)} batches...")
-    
+
+    print(f"Downloading from UniProt in {len(batches)} batches (includeIsoform=true)...")
+
     total_downloaded = 0
     with open(output_fasta, "w") as out_f:
         for i, batch in enumerate(batches, 1):
@@ -65,36 +58,37 @@ def main():
             url = "https://rest.uniprot.org/uniprotkb/stream"
             params = {
                 "query": query,
-                "format": "fasta"
+                "format": "fasta",
+                "includeIsoform": "true",
             }
-            
+
             try:
-                response = requests.get(url, params=params)
+                response = requests.get(url, params=params, timeout=30)
                 response.raise_for_status()
-                
-                # Write directly to file
+
                 fasta_data = response.text
                 if fasta_data.strip():
                     out_f.write(fasta_data)
                     if not fasta_data.endswith("\n"):
                         out_f.write("\n")
-                    
-                    # Count how many '>' headers we got in this batch
                     total_downloaded += fasta_data.count(">")
-                
-                print(f"  Batch {i}/{len(batches)} complete...")
-                time.sleep(1) # Be polite to the API
-                
+
+                if i % 10 == 0 or i == len(batches):
+                    print(f"  Batch {i}/{len(batches)} ({total_downloaded} sequences so far)")
+                time.sleep(1)
+
             except Exception as e:
                 print(f"[ERROR] Failed to fetch batch {i}: {e}")
 
-    print("\n=== SUMMARY ===")
-    print(f"Extracted {len(unique_ids)} required IDs from raw IEDB data.")
-    print(f"Successfully downloaded {total_downloaded} FASTA sequences to:")
-    print(f" -> {output_fasta}")
-    
+    print(f"\n=== SUMMARY ===")
+    print(f"Queried:             {len(unique_ids)} IDs")
+    print(f"Downloaded:          {total_downloaded} FASTA sequences")
+    print(f"Output:              {output_fasta}")
+
     if total_downloaded < len(unique_ids):
-        print("\n[NOTE] Some IDs were not found on UniProt. This usually happens if an ID is obsolete or deleted.")
+        print(f"\n[NOTE] {len(unique_ids) - total_downloaded} IDs not found on UniProt "
+              f"(obsolete or deleted).")
+
 
 if __name__ == "__main__":
     main()
