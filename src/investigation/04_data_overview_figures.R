@@ -18,7 +18,7 @@ stopifnot(ct["ptm"] + ct["no_ptm"] == ct["unique_pairs"])
 stopifnot(ct["non_9mer"] + ct["9mer_all"] == ct["no_ptm"])
 stopifnot(ct["na_uniprot"] + ct["o60361"] + ct["dedup"] +
     ct["missing_fasta"] + ct["selenocysteine"] +
-    ct["too_long"] + ct["alphafold"] +
+    ct["sequence_length_cutoff"] + ct["alphafold"] +
     ct["9mer_verified"] == ct["9mer_all"])
 stopifnot(ct["iedb_recovered"] + ct["iedb_missed"] == ct["9mer_verified"])
 
@@ -64,7 +64,7 @@ nodes_pos <- data.frame(name = c(
   paste0("No UniProt ID: ",          scales::comma(ct["na_uniprot"])),
   paste0("No FASTA: ",               scales::comma(ct["missing_fasta"])),
   paste0("Selenocysteine: ",         scales::comma(ct["selenocysteine"])),
-  paste0("Too long (>5000 aa): ",    scales::comma(ct["too_long"])),
+  paste0("Too long (>5000 aa): ",    scales::comma(ct["sequence_length_cutoff"])),
   paste0("Missing AlphaFold: ",      scales::comma(ct["alphafold"])),
   paste0("Verified 9-mers: ",        scales::comma(ct["9mer_verified"])),
   paste0("Not predicted (FN): ",     scales::comma(ct["iedb_missed"])),
@@ -78,7 +78,7 @@ links_pos <- data.frame(
              ct["ptm"], ct["no_ptm"],
              ct["non_9mer"], ct["9mer_all"],
               ct["na_uniprot"], ct["missing_fasta"], ct["selenocysteine"],
-              ct["too_long"], ct["alphafold"],
+              ct["sequence_length_cutoff"], ct["alphafold"],
              ct["9mer_verified"],
              ct["iedb_missed"], ct["iedb_recovered"])
 )
