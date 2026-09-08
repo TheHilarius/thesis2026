@@ -24,7 +24,7 @@ if (n_before > n_after) {
 
 # Validate against FASTA database ────────────────────────────────────────
 cat("Loading FASTA database to remove obsolete isoforms...\n")
-df_fasta_raw <- read_fasta_df("data/raw/fasta/combined_full_length.fasta") |>
+df_fasta_raw <- read_fasta_df("data/raw/fasta/combined_positives_only.fasta") |>
   mutate(
     accession  = str_extract(header, "(?<=\\|)[^|]+(?=\\|)"),
     uniprot_id = accession,

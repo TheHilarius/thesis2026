@@ -7,7 +7,9 @@ isoforms resolved by 02_load_iedb_data.R). Queries UniProt with
 includeIsoform=true to ensure isoform-specific sequences are returned as
 separate FASTA entries.
 
-Output: data/raw/fasta/combined_full_length.fasta
+Outputs:
+  data/raw/fasta/combined_full_length.fasta       — all accessions (with isoforms)
+  data/raw/fasta/combined_positives_only.fasta    — proteins with positive epitopes only
 """
 import pandas as pd
 import requests
@@ -21,6 +23,7 @@ def main():
     # Paths
     pos_el_path = Path("data/processed/pos_EL_all_epitopes_hla0201.csv")
     output_fasta = Path("data/raw/fasta/combined_full_length.fasta")
+    positives_fasta = Path("data/raw/fasta/combined_positives_only.fasta")
 
     output_fasta.parent.mkdir(parents=True, exist_ok=True)
 
@@ -84,6 +87,19 @@ def main():
     print(f"Queried:             {len(unique_ids)} IDs")
     print(f"Downloaded:          {total_downloaded} FASTA sequences")
     print(f"Output:              {output_fasta}")
+
+    # ── Filter to proteins with positive epitopes ──────────────────────────────
+    print(f"\nFiltering to proteins with positive epitopes...")
+    pos_ids = set(df['uniprot_id'].dropna().unique())
+
+    from Bio import SeqIO
+    all_records = list(SeqIO.parse(str(output_fasta), "fasta"))
+    pos_records = [r for r in all_records if r.id.split("|")[1] in pos_ids]
+    SeqIO.write(pos_records, str(positives_fasta), "fasta")
+
+    print(f"Full FASTA:           {len(all_records)} entries")
+    print(f"Positives-only FASTA: {len(pos_records)} entries")
+    print(f"Output:               {positives_fasta}")
 
     if total_downloaded < len(unique_ids):
         print(f"\n[NOTE] {len(unique_ids) - total_downloaded} IDs not found on UniProt "
