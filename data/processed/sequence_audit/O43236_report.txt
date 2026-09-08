@@ -1,0 +1,27 @@
+==================================================
+  O43236 STRUCTURE AUDIT
+==================================================
+
+UniProt Entry:
+  Accession:        O43236
+  Canonical Length: 996 aa
+  Sequence (first 30): MVKTNKPGAKVAVSAQRGSEVTTNTSPQQG
+
+Downloaded AlphaFold Model:
+  File:             /home/hilarius/projects/thesis2026/data/processed/structures/alphafold/O43236.pdb
+  Source:           alphafold_v6
+  SEQRES Length:    996 aa
+  Sequence (first 30): MVKTNKPGAKVAVSAQRGSEVTTNTSPQQG
+
+Sequence Comparison:
+  Length Match:     True
+  Length Difference: 0 aa
+
+Peptide Context:
+  FISPFGHGL (259-267): MATCH
+    Expected: GPYGPIPSKPKALYRNMNLDSLLKL
+    AF2:      GPYGPIPSKPKALYRNMNLDSLLKL
+
+NOTE: Coverage check passes (peptide within AF2 coordinate range)
+but the AF2 model may correspond to a different isoform/sequence.
+This is why context-window validation is the primary check.

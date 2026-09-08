@@ -1,0 +1,17 @@
+==================================================
+  AUDIT STATISTICS
+==================================================
+
+Total proteins audited:             11809
+Whole-protein length matches:       11796
+Whole-protein length mismatches:    13
+No AF2 sequence:                    0
+
+Total peptides audited:             31091
+Context-window matches:             28676
+Context-window mismatches:          34
+Skipped (no structure/FASTA):       2381
+
+Isoform suffix proteins:            124
+Mismatches investigated:            13
+Alternative model available:        0
