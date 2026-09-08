@@ -36,55 +36,11 @@ df_merged <- df_epitopes %>%
 
 cat("Total epitopes perfectly matched to proteins:", nrow(df_merged), "\n")
 
-# ============================================================================
-# STEP 2: VALIDATE AND FIX POSITIONS
-# ============================================================================
-
-cat("\n=== VALIDATING AND FIXING POSITIONS ===\n\n")
-
-df_validated <- df_merged %>%
-  validate_and_fix_positions(
-    sequence_col = "sequence",
-    peptide_col = "peptide",
-    start_col = "start",
-    end_col = "end"
-  )
-
-cat("Position validation summary:\n")
-position_summary <- df_validated %>%
-  count(position_status) %>%
-  mutate(percentage = round(n / sum(n) * 100, 2))
-print(position_summary)
+# NOTE: Script 04 (04_evaluate_netmhcpan_sensitivity.R) MUST be run first.
+# All peptides here already have validated coordinates.
 
 # ============================================================================
-# FILTER AND CLEAN DATA
-# ============================================================================
-
-df_clean <- df_validated %>%
-  filter(position_status %in% c("valid_original", "fixed")) %>%
-  select(
-    -start_original,
-    -end_original,
-    -position_originally_valid,
-    -position_status
-  )
-
-df_verification <- df_clean %>%
-  mutate(
-    verify_extract = substr(sequence, start, end),
-    verify_match = (peptide == verify_extract)
-  )
-
-cat("\n✓ Verification complete - all positions correct:", 
-    all(df_verification$verify_match), "\n")
-
-df_clean <- df_verification %>%
-  select(-verify_extract, -verify_match)
-
-cat("\nFinal clean dataset:", nrow(df_clean), "epitopes\n")
-
-# ============================================================================
-# STEP 3: EXTRACT FLANKING REGIONS
+# STEP 2: EXTRACT FLANKING REGIONS
 # ============================================================================
 
 cat("\n=== EXTRACTING FLANKING REGIONS ===\n\n")
@@ -92,7 +48,7 @@ cat("\n=== EXTRACTING FLANKING REGIONS ===\n\n")
 N_FLANK_SIZE <- 10
 C_FLANK_SIZE <- 10
 
-df_with_flanks <- df_clean %>%
+df_with_flanks <- df_merged %>%
   extract_flanking_regions(
     sequence_col = "sequence",
     peptide_col = "peptide",
@@ -108,7 +64,7 @@ df_with_flanks <- df_clean %>%
   select(-c(distance_from_n_terminus,distance_from_c_terminus))
 
 # ============================================================================
-# STEP 4: EXTRACT CLEAVAGE SITE POSITIONS
+# STEP 3: EXTRACT CLEAVAGE SITE POSITIONS
 # ============================================================================
 
 cat("\n=== EXTRACTING CLEAVAGE SITE POSITIONS ===\n\n")
