@@ -29,7 +29,7 @@ fi
 AF2_BASE="https://alphafold.ebi.ac.uk/files"
 PDB_SEARCH="https://search.rcsb.org/rcsbsearch/v2/query"
 PDB_BASE="https://files.rcsb.org/download"
-FASTA_PATH="data/raw/fasta/combined_full_length.fasta"
+FASTA_PATH="data/raw/fasta/combined_positives_only.fasta"
 
 mkdir -p "${OUT_DIR}/alphafold"
 mkdir -p "${OUT_DIR}/pdb_fallback"
