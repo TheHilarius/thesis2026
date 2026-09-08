@@ -288,7 +288,7 @@ p1 <- ggplot(plot_data, aes(x = diff, y = feature, fill = direction)) +
     x = "Difference in prevalence (presented − non-presented)",
     y = NULL, fill = "Direction"
   ) +
-  theme_minimal(base_size = 11) +
+  theme_minimal(base_size = 11, base_family = "sans") +
   theme(legend.position = "bottom")
 
 print(p1)
@@ -320,7 +320,7 @@ p2 <- ggplot(heatmap_data, aes(x = window, y = state_label, fill = diff)) +
     subtitle = "Positive (blue) = more common in presented peptides (BH-corrected)",
     x = "Window", y = "Secondary Structure"
   ) +
-  theme_minimal(base_size = 12) +
+  theme_minimal(base_size = 12, base_family = "sans") +
   theme(panel.grid = element_blank())
 
 print(p2)
@@ -355,7 +355,7 @@ p3 <- ggplot(trans_data, aes(x = boundary, y = state_label, fill = diff)) +
     subtitle = "Does a continuous structure span the proteasomal cleavage site? (BH-corrected)",
     x = "Boundary", y = "Secondary Structure"
   ) +
-  theme_minimal(base_size = 12) +
+  theme_minimal(base_size = 12, base_family = "sans") +
   theme(panel.grid = element_blank())
 
 print(p3)

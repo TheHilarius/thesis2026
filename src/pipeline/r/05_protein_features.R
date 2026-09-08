@@ -30,7 +30,7 @@ df_fasta <- read_fasta_df("data/raw/fasta/combined_full_length.fasta") |>
 # Join epitopes to their source proteins
 df_merged <- df_epitopes %>%
   left_join(
-    df_fasta %>% select(uniprot_id, sequence),
+    df_fasta %>% select(uniprot_id),
     by = "uniprot_id"
   )
 

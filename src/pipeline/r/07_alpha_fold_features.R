@@ -1,5 +1,4 @@
 library(tidyverse)
-library(bio3d)
 source("src/pipeline/r/functions.R")
 set_working_directory()
 
