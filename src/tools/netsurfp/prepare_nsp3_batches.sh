@@ -1,8 +1,8 @@
 #!/bin/bash
 
-INPUT="data/raw/fasta/combined_8_to_14mer_nsp3_clean.fasta"
+INPUT="data/raw/fasta/combined_positives_only_clean.fasta"
 BATCH_DIR="data/raw/fasta/batches"
-MAX_SEQS=5000
+MAX_SEQS=250
 MAX_RESIDUES=10000000
 
 mkdir -p "$BATCH_DIR"
