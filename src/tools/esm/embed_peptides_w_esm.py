@@ -14,10 +14,8 @@ If a protein causes OOM, a window centred on each peptide is used
 as automatic fallback (flagged in output).
 
 Usage:
-    python src/tools/esm/embed_peptides_w_esm.py \
-        data/processed/df_all.csv \
-        data/processed/embeddings/esmc_protein_embeddings.h5 \
-        --model esmc_600m
+    python src/tools/esm/embed_peptides_w_esm.py
+    python src/tools/esm/embed_peptides_w_esm.py --csv path/to/input.csv --out path/to/output.h5 --model esmc_600m
 """
 
 import argparse
@@ -33,8 +31,10 @@ from pathlib import Path
 parser = argparse.ArgumentParser(
     description="Embed full proteins with ESM-C; extract single context-window embeddings"
 )
-parser.add_argument("csv_path", help="Input CSV (e.g. data/processed/df_all.csv)")
-parser.add_argument("out_h5",   help="Output HDF5 file")
+parser.add_argument("--csv",  default="data/processed/df_all.csv",
+                    help="Input CSV (default: data/processed/df_all.csv)")
+parser.add_argument("--out",  default="data/processed/embeddings/esmc_context_embeddings.h5",
+                    help="Output HDF5 file (default: data/processed/embeddings/esmc_context_embeddings.h5)")
 parser.add_argument("--model",  default="esmc_600m",
                     choices=["esmc_300m", "esmc_600m"])
 parser.add_argument("--max_seq_len", type=int, default=None,
@@ -45,7 +45,7 @@ parser.add_argument("--fallback_window", type=int, default=2048,
 args = parser.parse_args()
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-Path(args.out_h5).parent.mkdir(parents=True, exist_ok=True)
+Path(args.out).parent.mkdir(parents=True, exist_ok=True)
 
 print("=" * 65)
 print("  ESM-C Full-Protein Peptide Embedding")
@@ -54,8 +54,8 @@ print(f"{'Model':<20}: {args.model}")
 print(f"{'Device':<20}: {DEVICE}")
 print(f"{'Max seq length':<20}: {args.max_seq_len or 'None (try all, OOM fallback)'}")
 print(f"{'Fallback window':<20}: {args.fallback_window}")
-print(f"{'Input CSV':<20}: {args.csv_path}")
-print(f"{'Output HDF5':<20}: {args.out_h5}")
+print(f"{'Input CSV':<20}: {args.csv}")
+print(f"{'Output HDF5':<20}: {args.out}")
 print()
 
 # ── Column names (matched to df_all.csv) ─────────────────────────────────────
@@ -82,7 +82,7 @@ print(f"{'Embedding dim':<20}: {EMB_DIM}")
 
 # ── Load CSV ──────────────────────────────────────────────────────────────────
 print("\nLoading CSV...")
-df = pd.read_csv(args.csv_path)
+df = pd.read_csv(args.csv)
 print(f"Total rows: {len(df)}")
 
 required = [COL_PEPTIDE, COL_PROTEIN, COL_START, COL_END, COL_UNIPROT]
@@ -377,8 +377,8 @@ if oom_proteins:
     print(f"    Lengths                : min={min(oom_lens)}, max={max(oom_lens)}")
 
 # ── Save ──────────────────────────────────────────────────────────────────────
-print(f"\nSaving to {args.out_h5}...")
-with h5py.File(args.out_h5, "w") as f:
+print(f"\nSaving to {args.out}...")
+with h5py.File(args.out, "w") as f:
     f.create_dataset("context_emb",   data=context_embs,   dtype="float32")
     f.create_dataset("fallback_flag", data=fallback_flags,  dtype="int8")
 
@@ -399,7 +399,7 @@ with h5py.File(args.out_h5, "w") as f:
     f.attrs["n_oom_proteins"]   = len(oom_proteins)
     f.attrs["fallback_window"]  = args.fallback_window
     f.attrs["max_seq_len"]      = str(args.max_seq_len)
-    f.attrs["csv_source"]       = args.csv_path
+    f.attrs["csv_source"]       = args.csv
     f.attrs["coord_convention"] = CONVENTION
     f.attrs["device"]           = DEVICE
     f.attrs["total_time_sec"]   = elapsed_total

@@ -15,11 +15,8 @@ Fixes over the original:
      tries AlphaFold structure before giving up → fewer zero vectors
 
 Usage:
-    python src/tools/esm/embed_structures_esmif_gpu.py \
-        data/processed/df_all.csv \
-        data/processed/structures_hybrid_80/selected/ \
-        data/processed/embeddings/esmif_hybrid_80_embeddings.h5 \
-        --af2-fallback-dir data/processed/structures/alphafold/
+    python src/tools/esm/embed_structures_esmif_gpu.py
+    python src/tools/esm/embed_structures_esmif_gpu.py --csv path/to/input.csv --pdb path/to/pdbs/ --out path/to/output.h5 --af2 path/to/af2/
 """
 
 import argparse
@@ -99,11 +96,14 @@ class LRUCache(OrderedDict):
 
 # ── Args ──────────────────────────────────────────────────────────────────────
 parser = argparse.ArgumentParser()
-parser.add_argument('csv_path', help="Path to your final ML dataset CSV")
-parser.add_argument('pdb_dir',  help="Directory containing primary .pdb or .cif files")
-parser.add_argument('out_h5',   help="Path to save the output HDF5 embeddings")
-parser.add_argument('--af2-fallback-dir', default=None,
-                    help="Directory with AlphaFold structures for per-peptide fallback")
+parser.add_argument('--csv',  default="data/processed/df_all.csv",
+                    help="Input CSV (default: data/processed/df_all.csv)")
+parser.add_argument('--pdb',  default="data/processed/structures_hybrid_80/selected/",
+                    help="Directory with primary PDB/CIF files (default: data/processed/structures_hybrid_80/selected/)")
+parser.add_argument('--out',  default="data/processed/embeddings/esmif_context_embeddings.h5",
+                    help="Output HDF5 (default: data/processed/embeddings/esmif_context_embeddings.h5)")
+parser.add_argument('--af2',  default="data/processed/structures/alphafold/",
+                    help="AlphaFold structures for per-peptide fallback (default: data/processed/structures/alphafold/)")
 parser.add_argument('--cache-size', type=int, default=500,
                     help="Max proteins to keep in memory (default: 500)")
 parser.add_argument('--force-cpu', action='store_true',
@@ -129,17 +129,17 @@ else:
     USE_GPU = False
     print("No GPU available, using CPU.")
 
-AF2_FALLBACK = args.af2_fallback_dir is not None
+AF2_FALLBACK = args.af2 is not None
 if AF2_FALLBACK:
-    if not os.path.isdir(args.af2_fallback_dir):
-        print(f"ERROR: AF2 fallback dir not found: {args.af2_fallback_dir}")
+    if not os.path.isdir(args.af2):
+        print(f"ERROR: AF2 fallback dir not found: {args.af2}")
         AF2_FALLBACK = False
     else:
-        af2_file_count = len(glob.glob(os.path.join(args.af2_fallback_dir, "*.pdb"))) + \
-                         len(glob.glob(os.path.join(args.af2_fallback_dir, "*.cif")))
-        print(f"AF2 fallback  : ENABLED ({af2_file_count} files in {args.af2_fallback_dir})")
+        af2_file_count = len(glob.glob(os.path.join(args.af2, "*.pdb"))) + \
+                         len(glob.glob(os.path.join(args.af2, "*.cif")))
+        print(f"AF2 fallback  : ENABLED ({af2_file_count} files in {args.af2})")
 
-Path(args.out_h5).parent.mkdir(parents=True, exist_ok=True)
+Path(args.out).parent.mkdir(parents=True, exist_ok=True)
 
 print(f"Device        : {DEVICE}")
 if DEVICE == "cuda":
@@ -191,7 +191,7 @@ def encode_structure_safe(coords):
 
 # ── Load CSV ──────────────────────────────────────────────────────────────────
 print("Loading CSV...")
-df = pd.read_csv(args.csv_path)
+df = pd.read_csv(args.csv)
 before = len(df)
 df = df.dropna(subset=['peptide', 'uniprot_id', 'start', 'end'])
 print(f"Total rows to process: {len(df)} (dropped {before - len(df)} NaNs)")
@@ -447,7 +447,7 @@ with torch.no_grad():
             if AF2_FALLBACK:
                 af2_cached = af2_cache.get(uid)
                 if af2_cached is None:
-                    af2_rep, af2_seq = load_af2_fallback(uid, args.af2_fallback_dir)
+                    af2_rep, af2_seq = load_af2_fallback(uid, args.af2)
                     if af2_rep is not None:
                         af2_cache.put(uid, (af2_rep, af2_seq))
                         af2_cached = (af2_rep, af2_seq)
@@ -472,14 +472,14 @@ with torch.no_grad():
         # ── Load and cache primary structure ──────────────────────────────
         cached = structure_cache.get(uid)
         if cached is None:
-            struct_path = find_structure_file(uid, args.pdb_dir)
+            struct_path = find_structure_file(uid, args.pdb)
             if not struct_path:
                 missing_structures.add(uid)
                 chain_stats["failed"] += 1
 
                 # Immediately try AF2 fallback for this first row
                 if AF2_FALLBACK:
-                    af2_rep, af2_seq = load_af2_fallback(uid, args.af2_fallback_dir)
+                    af2_rep, af2_seq = load_af2_fallback(uid, args.af2)
                     if af2_rep is not None:
                         af2_cache.put(uid, (af2_rep, af2_seq))
                         result = find_peptide_in_structure(af2_seq, len(af2_rep), row)
@@ -507,7 +507,7 @@ with torch.no_grad():
 
                 # Try AF2 fallback for rejected structures too
                 if AF2_FALLBACK:
-                    af2_rep, af2_seq = load_af2_fallback(uid, args.af2_fallback_dir)
+                    af2_rep, af2_seq = load_af2_fallback(uid, args.af2)
                     if af2_rep is not None:
                         af2_cache.put(uid, (af2_rep, af2_seq))
                         result = find_peptide_in_structure(af2_seq, len(af2_rep), row)
@@ -545,7 +545,7 @@ with torch.no_grad():
         if result is None and AF2_FALLBACK:
             af2_cached = af2_cache.get(uid)
             if af2_cached is None:
-                af2_rep, af2_seq = load_af2_fallback(uid, args.af2_fallback_dir)
+                af2_rep, af2_seq = load_af2_fallback(uid, args.af2)
                 if af2_rep is not None:
                     af2_cache.put(uid, (af2_rep, af2_seq))
                     af2_cached = (af2_rep, af2_seq)
@@ -624,8 +624,8 @@ if AF2_FALLBACK:
           f"that would have been zero vectors.")
 
 # ── Save ──────────────────────────────────────────────────────────────────────
-print(f"\nSaving to {args.out_h5}...")
-with h5py.File(args.out_h5, 'w') as f:
+print(f"\nSaving to {args.out}...")
+with h5py.File(args.out, 'w') as f:
     f.create_dataset('context_if_struct', data=context_embs,  dtype='float32')
     f.create_dataset('peptide_ids',
                      data=np.array(orig_peptides, dtype='S20'))
