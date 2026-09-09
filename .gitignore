@@ -103,3 +103,5 @@ reference_manager/*.json
 reference_manager/
 graphify-out/
 data/processed/nsp3_backup_20260907/
+*.out
+*.err
