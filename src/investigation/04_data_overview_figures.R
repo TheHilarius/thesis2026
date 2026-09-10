@@ -12,14 +12,25 @@ library(eulerr)
 counts_raw <- read_csv("data/processed/sankey_counts.csv", show_col_types = FALSE)
 ct <- setNames(counts_raw$count, counts_raw$stage)
 
-# Sanity checks.
+# Sanity checks — validate each stage of the 3-step cascade.
 stopifnot(ct["duplicates"] + ct["unique_pairs"] == ct["raw_assays"])
 stopifnot(ct["ptm"] + ct["no_ptm"] == ct["unique_pairs"])
 stopifnot(ct["non_9mer"] + ct["9mer_all"] == ct["no_ptm"])
+
+# Stage 1: Sequence integrity (na_uniprot, missing_fasta, unfixable_coords, selenocysteine)
 stopifnot(ct["na_uniprot"] + ct["o60361"] + ct["dedup"] +
-    ct["missing_fasta"] + ct["selenocysteine"] +
-    ct["sequence_length_cutoff"] + ct["alphafold"] +
-    ct["9mer_verified"] == ct["9mer_all"])
+    ct["missing_fasta"] + ct["unfixable_coords"] + ct["selenocysteine"] +
+    ct["seq_validated"] == ct["9mer_all"])
+
+# Stage 2: Length filter (too_short, too_long)
+stopifnot(ct["too_short"] + ct["too_long"] +
+    ct["length_validated"] == ct["seq_validated"])
+
+# Stage 3: Structure filter (missing_alphafold, out_of_range)
+stopifnot(ct["missing_alphafold"] + ct["out_of_range"] +
+    ct["9mer_verified"] == ct["length_validated"])
+
+# Final split
 stopifnot(ct["iedb_recovered"] + ct["iedb_missed"] == ct["9mer_verified"])
 
 cat("✓ All cascade counts verified.\n\n")
@@ -37,7 +48,14 @@ cat("  NA uniprot_id:        ", scales::comma(ct["na_uniprot"]), "\n")
 cat("  O60361:               ", scales::comma(ct["o60361"]), "\n")
 cat("  Dedup:                ", scales::comma(ct["dedup"]), "\n")
 cat("  Missing FASTA:        ", scales::comma(ct["missing_fasta"]), "\n")
+cat("  Unfixable coords:     ", scales::comma(ct["unfixable_coords"]), "\n")
 cat("  Selenocysteine:       ", scales::comma(ct["selenocysteine"]), "\n")
+cat("Sequence-Validated:     ", scales::comma(ct["seq_validated"]), "\n")
+cat("  Too short (<130 aa):  ", scales::comma(ct["too_short"]), "\n")
+cat("  Too long  (>5000 aa): ", scales::comma(ct["too_long"]), "\n")
+cat("Length-Validated:        ", scales::comma(ct["length_validated"]), "\n")
+cat("  Missing AlphaFold:    ", scales::comma(ct["missing_alphafold"]), "\n")
+cat("  Out of Range:         ", scales::comma(ct["out_of_range"]), "\n")
 cat("Verified 9-mers:        ", scales::comma(ct["9mer_verified"]), "\n")
 cat("  Recovered (TP):       ", scales::comma(ct["iedb_recovered"]), "\n")
 cat("  Missed (FN):          ", scales::comma(ct["iedb_missed"]), "\n")
@@ -50,48 +68,130 @@ cat("Affinity removed:       ", scales::comma(ct["affinity_removed"]), "\n")
 cat("Rank-matched (TN):      ", scales::comma(ct["negatives_combined"]), "\n")
 
 # ==============================================================================
-# Positives pipeline Sankey.
+# Positives pipeline Sankey — full cascade from raw assays.
+# Early: Raw → Duplicates → Unique Peptides → PTMs → No-PTM → Non-9-mer → 9-mers
+# Stage 1: Sequence Integrity (na_uniprot, missing_fasta, unfixable_coords, selenocysteine)
+# Stage 2: Length Filter (too_short, too_long)
+# Stage 3: Structure Filter (missing_alphafold, out_of_range)
 # ==============================================================================
 
 nodes_pos <- data.frame(name = c(
+  # Early cascade
   paste0("Raw Assays: ",              scales::comma(ct["raw_assays"])),       # 0
-  paste0(scales::comma(ct["duplicates"])),                                    # 1
+  paste0("Duplicates: ",              scales::comma(ct["duplicates"])),       # 1
   paste0("Unique Peptides: ",         scales::comma(ct["unique_pairs"])),     # 2
   paste0("PTMs: ",                    scales::comma(ct["ptm"])),              # 3
-  paste0(scales::comma(ct["no_ptm"])),                                        # 4
+  paste0("No-PTMs: ",                 scales::comma(ct["no_ptm"])),           # 4
   paste0("Non-9-mers: ",             scales::comma(ct["non_9mer"])),          # 5
-  paste0(scales::comma(ct["9mer_all"])),                                      # 6
-  paste0("No UniProt ID: ",          scales::comma(ct["na_uniprot"])),
-  paste0("No FASTA: ",               scales::comma(ct["missing_fasta"])),
-  paste0("Selenocysteine: ",         scales::comma(ct["selenocysteine"])),
-  paste0("Too long (>5000 aa): ",    scales::comma(ct["sequence_length_cutoff"])),
-  paste0("Missing AlphaFold: ",      scales::comma(ct["alphafold"])),
-  paste0("Verified 9-mers: ",        scales::comma(ct["9mer_verified"])),
-  paste0("Not predicted (FN): ",     scales::comma(ct["iedb_missed"])),
-  paste0("Predicted (TP): ",         scales::comma(ct["iedb_recovered"]))
+  paste0("9-mers: ",                  scales::comma(ct["9mer_all"])),          # 6
+  # Stage 1: Sequence integrity (grey streams)
+  paste0("No UniProt ID: ",           scales::comma(ct["na_uniprot"])),        # 7
+  paste0("No FASTA: ",                scales::comma(ct["missing_fasta"])),     # 8
+  paste0("Unfixable coords: ",        scales::comma(ct["unfixable_coords"])),  # 9
+  paste0("Selenocysteine: ",          scales::comma(ct["selenocysteine"])),    # 10
+  # Stage 1: Green node
+  paste0("Sequence-Validated: ",      scales::comma(ct["seq_validated"])),     # 11
+  # Stage 2: Length filter (grey streams)
+  paste0("Too short (<130 aa): ",     scales::comma(ct["too_short"])),        # 12
+  paste0("Too long (>5000 aa): ",     scales::comma(ct["too_long"])),         # 13
+  # Stage 2: Green node
+  paste0("Length-Validated: ",        scales::comma(ct["length_validated"])),  # 14
+  # Stage 3: Structure filter (grey streams)
+  paste0("Missing AlphaFold: ",       scales::comma(ct["missing_alphafold"])), # 15
+  paste0("Out of Range: ",            scales::comma(ct["out_of_range"])),      # 16
+  # Stage 3: Green node
+  paste0("Verified 9-mers: ",         scales::comma(ct["9mer_verified"])),     # 17
+  # Final split
+  paste0("Not predicted (FN): ",      scales::comma(ct["iedb_missed"])),       # 18
+  paste0("Predicted (TP): ",          scales::comma(ct["iedb_recovered"]))    # 19
 ))
 
 links_pos <- data.frame(
-  source = c(0, 0, 2, 2, 4, 4, 6, 6, 6, 6, 6, 6, 12, 12),
-  target = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
-  value  = c(ct["duplicates"], ct["unique_pairs"],
-             ct["ptm"], ct["no_ptm"],
-             ct["non_9mer"], ct["9mer_all"],
-              ct["na_uniprot"], ct["missing_fasta"], ct["selenocysteine"],
-              ct["sequence_length_cutoff"], ct["alphafold"],
-             ct["9mer_verified"],
-             ct["iedb_missed"], ct["iedb_recovered"])
+  source = c(
+    # Early: Raw Assays (0) → Duplicates (1) + Unique Peptides (2)
+    0, 0,
+    # Unique Peptides (2) → PTMs (3) + No-PTMs (4)
+    2, 2,
+    # No-PTMs (4) → Non-9-mers (5) + 9-mers (6)
+    4, 4,
+    # Stage 1: 9-mers (6) → grey streams (7,8,9,10) + green (11)
+    6, 6, 6, 6, 6,
+    # Stage 2: Sequence-Validated (11) → grey streams (12,13) + green (14)
+    11, 11, 11,
+    # Stage 3: Length-Validated (14) → grey streams (15,16) + green (17)
+    14, 14, 14,
+    # Final split: Verified (17) → FN (18) + TP (19)
+    17, 17
+  ),
+  target = c(
+    # Early
+    1, 2,
+    3, 4,
+    5, 6,
+    # Stage 1
+    7, 8, 9, 10, 11,
+    # Stage 2
+    12, 13, 14,
+    # Stage 3
+    15, 16, 17,
+    # Final
+    18, 19
+  ),
+  value  = c(
+    # Early
+    ct["duplicates"], ct["unique_pairs"],
+    ct["ptm"], ct["no_ptm"],
+    ct["non_9mer"], ct["9mer_all"],
+    # Stage 1
+    ct["na_uniprot"], ct["missing_fasta"], ct["unfixable_coords"], ct["selenocysteine"],
+    ct["seq_validated"],
+    # Stage 2
+    ct["too_short"], ct["too_long"],
+    ct["length_validated"],
+    # Stage 3
+    ct["missing_alphafold"], ct["out_of_range"],
+    ct["9mer_verified"],
+    # Final
+    ct["iedb_missed"], ct["iedb_recovered"]
+  )
 )
 
-nodes_pos$group <- c("raw",     "discard", "keep",    "discard", "keep",
-                     "discard", "keep",
-                     "discard", "discard", "discard", "discard", "discard", "keep",
-                     "discard", "keep")
-links_pos$group <- c("discard", "keep",
-                     "discard", "keep",
-                     "discard", "keep",
-                     "discard", "discard", "discard", "discard", "discard", "keep",
-                     "discard", "keep")
+nodes_pos$group <- c(
+  "raw",      # 0: Raw Assays
+  "discard",  # 1: Duplicates
+  "keep",     # 2: Unique Peptides
+  "discard",  # 3: PTMs
+  "keep",     # 4: No-PTMs
+  "discard",  # 5: Non-9-mers
+  "keep",     # 6: 9-mers
+  "discard",  # 7: na_uniprot
+  "discard",  # 8: missing_fasta
+  "discard",  # 9: unfixable_coords
+  "discard",  # 10: selenocysteine
+  "keep",     # 11: seq_validated
+  "discard",  # 12: too_short
+  "discard",  # 13: too_long
+  "keep",     # 14: length_validated
+  "discard",  # 15: missing_alphafold
+  "discard",  # 16: out_of_range
+  "keep",     # 17: 9mer_verified
+  "discard",  # 18: iedb_missed
+  "keep"      # 19: iedb_recovered
+)
+links_pos$group <- c(
+  # Early
+  "discard", "keep",
+  "discard", "keep",
+  "discard", "keep",
+  # Stage 1
+  "discard", "discard", "discard", "discard", "keep",
+  # Stage 2
+  "discard", "discard", "keep",
+  # Stage 3
+  "discard", "discard", "keep",
+  # Final
+  "discard", "keep"
+)
 
 color_pos <- 'd3.scaleOrdinal()
   .domain(["keep", "discard", "raw"])

@@ -5,8 +5,7 @@ set_working_directory()
 # ── 0. Config ─────────────────────────────────────────────────────────────────
 # During development, point at the single test file folder
 # Later just change this path to the full alphafold directory
-af_dirs <- c("data/processed/structures/alphafold/",
-             "data/processed/structures/alphafold_supplement/")
+af_dirs <- "data/processed/structures/alphafold/"
 
 # ── 1. Load peptide table ─────────────────────────────────────────────────────
 df_raw <- read_csv("data/processed/epitopes_pos_and_neg_features_with_nsp3.csv")

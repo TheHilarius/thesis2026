@@ -1,5 +1,4 @@
-library(tidyverse)
-
+suppressPackageStartupMessages(library(tidyverse))
 # Working directory setup
 set_working_directory <- function() {
   current_user <- Sys.info()[["user"]]

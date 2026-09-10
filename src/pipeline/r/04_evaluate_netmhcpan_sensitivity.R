@@ -1,10 +1,10 @@
-library(tidyverse)
+suppressPackageStartupMessages(library(tidyverse))
 source("src/pipeline/r/functions.R")
 set_working_directory()
-library(ggplot2)
+suppressPackageStartupMessages(library(ggplot2))
 
 # Load IEDB positives 
-df_raw <- read_csv("data/processed/pos_EL_all_epitopes_hla0201.csv")
+df_raw <- read_csv("data/processed/pos_EL_all_epitopes_hla0201.csv", show_col_types = FALSE)
 
 df_iedb_pos <- df_raw |>
   filter(pep_length == 9) |>
@@ -45,7 +45,6 @@ cat("Isoform entries (`-N`):    ", sum(df_fasta_raw$is_isoform), "\n")
 cat("Unique sequences kept:     ", nrow(df_fasta), "\n")
 cat("(Isoform IDs preserved — no canonical collapse)\n\n")
 
-# Length cutoff drives the unrunnable protein list below.
 df_iedb_pos <- df_iedb_pos |>
   semi_join(df_fasta, by = "uniprot_id")
 
@@ -74,10 +73,14 @@ df_iedb_pos <- df_iedb_pos |>
   select(-start_original, -end_original, -position_originally_valid,
          -position_status, -position_shift)
 cat("Dropped", n_unfixable_pos, "unfixable positives\n")
+if (n_unfixable_pos > 0) {
+  cat("  (These peptides could not be found anywhere in the reference FASTA.\n")
+  cat("   Likely causes: IEDB curational errors, uncaptured splice variants,\n")
+  cat("   or point mutations not present in the wild-type reference genome.)\n")
+}
 cat("IEDB positives after coord validation:", nrow(df_iedb_pos), "\n\n")
 
 # Remove proteins with selenocysteine (U).
-n_before_sec <- nrow(df_iedb_pos)
 sec_proteins <- df_fasta |>
   filter(str_detect(sequence, "U")) |>
   pull(uniprot_id)
@@ -96,38 +99,87 @@ cat("Removed", n_iedb_sec, "IEDB positives from", length(sec_proteins),
 cat("IEDB positives after Sec filter:", nrow(df_iedb_pos), "\n")
 
 # ── Unified protein exclusion ledger ──────────────────────────────────────
+# STRICT ORDER: Length filter FIRST, then AlphaFold checks.
+# This prevents loading pLDDT data for proteins that will be excluded by length.
 # Check ALL proteins against ALL filters before applying any removals.
 # This enables overlap analysis and prevents sequential bias.
 cat("\n--- Building exclusion ledger (all proteins) ---\n")
 
-# Snapshot pre-filter states (needed for downstream binder tracking)
-df_iedb_pos_pre_length <- df_iedb_pos
-df_iedb_pos_pre_af     <- df_iedb_pos
+# Snapshot pre-filter state (needed for peptide ledger and overlap analysis)
+df_iedb_pos_pre_af <- df_iedb_pos
 
-# Scan for AlphaFold PDB files (covers ALL proteins, not just survivors)
-af_dirs <- c("data/processed/structures/alphafold/",
-             "data/processed/structures/alphafold_supplement/")
-af_files <- unlist(lapply(af_dirs, list.files, pattern = "\\.pdb$", full.names = FALSE))
-af_proteins <- str_remove(af_files, "\\.pdb$")
-
-cat("  AlphaFold PDB files available:", length(af_proteins), "\n")
-
-# Build ledger: one row per protein with IEDB positives
+# ── STEP 1: Length filter (applied FIRST) ────────────────────────────────
 df_ledger <- tibble(
   uniprot_id = unique(df_iedb_pos$uniprot_id)
 ) |>
   left_join(df_fasta |> select(uniprot_id, seq_length), by = "uniprot_id") |>
   mutate(
-    has_pdb      = uniprot_id %in% af_proteins,
-    too_short    = seq_length < 130,
-    too_long     = seq_length > 5000,
-    no_pdb       = !has_pdb,
-    out_of_range = FALSE  # filled below after pLDDT check
+    too_short       = seq_length < 130,
+    too_long        = seq_length > 5000,
+    length_excluded = too_short | too_long
   )
 
-# Out-of-range check: compute max modelled residue for ALL proteins with PDBs
+n_too_short <- sum(df_ledger$too_short)
+n_too_long  <- sum(df_ledger$too_long)
+cat("  Length filter (130-5000 aa):\n")
+cat("    Too short (<130 aa):", n_too_short, "proteins\n")
+cat("    Too long  (>5000 aa):", n_too_long, "proteins\n")
+cat("    Total length-excluded:", n_too_short + n_too_long, "proteins\n")
+cat("    Peptides lost:",
+    sum(df_iedb_pos_pre_af$uniprot_id %in% (df_ledger |> filter(too_short) |> pull(uniprot_id))),
+    "+",
+    sum(df_iedb_pos_pre_af$uniprot_id %in% (df_ledger |> filter(too_long) |> pull(uniprot_id))),
+    "IEDB positives\n")
+
+# ── STEP 2: AlphaFold checks (ONLY for proteins passing length filter) ────
+af_dirs <- "data/processed/structures/alphafold/"
+af_files <- list.files(af_dirs, pattern = "\\.pdb$", full.names = FALSE)
+af_proteins <- str_remove(af_files, "\\.pdb$")
+
+cat("  AlphaFold PDB files available:", length(af_proteins), "\n")
+
+# Add AlphaFold status to ledger (no_pdb flagged for all proteins for diagnostics)
+df_ledger <- df_ledger |>
+  mutate(
+    has_pdb = uniprot_id %in% af_proteins,
+    no_pdb  = !has_pdb
+  )
+
+# ── Dynamic breakdown of missing AlphaFold structures ──────────────────────
+# Cross-reference no_pdb proteins against the fetch logs to explain WHY
+# structures are missing. These logs are produced by fetch_structures.sh.
+no_pdb_ids <- df_ledger$uniprot_id[df_ledger$no_pdb & !df_ledger$length_excluded]
+
+if (length(no_pdb_ids) > 0) {
+  missing_log <- read_tsv("data/processed/structures/logs/missing_structures.tsv",
+                          show_col_types = FALSE)
+  invalid_log <- read_tsv("data/processed/structures/logs/invalid_uniprot_ids.tsv",
+                          show_col_types = FALSE)
+  truly_invalid <- read_tsv("data/processed/structures/logs/truly_invalid_ids.tsv",
+                            show_col_types = FALSE)
+
+  n_no_af2    <- sum(no_pdb_ids %in% missing_log$uniprot_id)
+  n_isoform   <- sum(grepl("-", no_pdb_ids) & no_pdb_ids %in% invalid_log$uniprot_id)
+  # NP/RefSeq anomaly: regex in script 02 extracts "NP" from RefSeq IRIs like
+  # "uniprot/NP_000959.2" because [A-Z0-9]+ doesn't match underscores.
+  # coalesce picks "NP" over the correct parent ID. 6 peptides affected.
+  # We intentionally let them drop here to avoid re-running the pipeline for 6 peptides.
+  n_invalid   <- sum(no_pdb_ids %in% truly_invalid$uniprot_id)
+  n_other     <- length(no_pdb_ids) - n_no_af2 - n_isoform - n_invalid
+
+  cat("  AlphaFold breakdown (", length(no_pdb_ids), " proteins without PDBs):\n")
+  cat("    No AF2/PDB structure exists:       ", n_no_af2, "\n")
+  if (n_isoform > 0) cat("    Isoforms not modeled by AF2:       ", n_isoform, "\n")
+  if (n_invalid > 0) cat("    Invalid IDs (RefSeq NP_ anomaly):  ", n_invalid,
+        " (Safely dropped; caused by upstream regex edge-case)\n")
+  if (n_other > 0)   cat("    Other:                              ", n_other, "\n")
+}
+
+# ── STEP 3: Out-of-range check (ONLY for proteins with PDBs) ─────────────
+# Load pLDDT only for proteins that have PDBs AND pass length filter
+af_proteins_needed <- df_ledger$uniprot_id[df_ledger$has_pdb & !df_ledger$length_excluded]
+
 af_lookup <- list()
-af_proteins_needed <- unique(df_ledger$uniprot_id[df_ledger$has_pdb])
 for (d in af_dirs) {
   af_lookup <- c(af_lookup, build_plddt_lookup(proteins_needed = af_proteins_needed, dir = d))
 }
@@ -146,20 +198,30 @@ proteins_out_of_range <- df_iedb_pos |>
 df_ledger <- df_ledger |>
   mutate(out_of_range = uniprot_id %in% proteins_out_of_range$uniprot_id)
 
-# Build the protein exclusion ledger.
+# Log AlphaFold exclusions (only among proteins that passed length filter)
+n_no_pdb <- sum(df_ledger$no_pdb & !df_ledger$length_excluded)
+n_oor     <- sum(df_ledger$out_of_range & !df_ledger$length_excluded)
+cat("  AlphaFold filter (among length-passing proteins):\n")
+cat("    No PDB:", n_no_pdb, "proteins\n")
+cat("    Out of range:", n_oor, "proteins\n")
+# Only count length-passing proteins to avoid double-counting overlap with length filter
+cat("    Peptides lost:",
+    sum(df_iedb_pos_pre_af$uniprot_id %in% (df_ledger |> filter(no_pdb & !length_excluded) |> pull(uniprot_id))),
+    "+",
+    sum(df_iedb_pos_pre_af$uniprot_id %in% (df_ledger |> filter(out_of_range & !length_excluded) |> pull(uniprot_id))),
+    "IEDB positives\n")
+
+# ── Build final exclusion flags ──────────────────────────────────────────
+# Length takes priority in exclusion_reasons (first match wins)
 df_ledger <- df_ledger |>
   mutate(
     excluded = too_short | too_long | no_pdb | out_of_range,
     exclusion_reasons = case_when(
-      too_short & out_of_range ~ "too_short, out_of_range",
-      too_short & no_pdb       ~ "too_short, no_pdb",
-      too_long  & out_of_range ~ "too_long, out_of_range",
-      too_long  & no_pdb       ~ "too_long, no_pdb",
-      too_short                 ~ "too_short",
-      too_long                  ~ "too_long",
-      no_pdb                    ~ "no_pdb",
-      out_of_range              ~ "out_of_range",
-      TRUE                      ~ ""
+      too_short ~ "too_short",
+      too_long  ~ "too_long",
+      no_pdb    ~ "no_pdb",
+      out_of_range ~ "out_of_range",
+      TRUE      ~ ""
     )
   )
 
@@ -185,16 +247,6 @@ cat("    no_pdb:           ", sum(df_ledger$no_pdb), "\n")
 cat("    out_of_range:     ", sum(df_ledger$out_of_range), "\n")
 cat("  Retained:           ", sum(!df_ledger$excluded), "\n")
 
-# Derive backward-compatible variables from ledger
-nsp3_unrunnable_ids <- df_ledger |>
-  filter(too_long) |>
-  pull(uniprot_id)
-
-# af_proteins already set above (all proteins with PDB files)
-proteins_out_of_range <- df_ledger |>
-  filter(out_of_range) |>
-  select(uniprot_id)
-
 # Apply single unified filter
 df_iedb_pos <- df_iedb_pos |>
   semi_join(df_ledger |> filter(!excluded), by = "uniprot_id")
@@ -205,30 +257,6 @@ cat("  Positives remaining:", nrow(df_iedb_pos), "\n\n")
 
 write_csv(df_iedb_pos, "data/processed/pos_EL_9mers_epitopes_hla0201.csv")
 cat("IEDB positives:", nrow(df_iedb_pos), "\n")
-
-# Rebuild removed-positive dataframes from the ledger.
-# df_pos_removed_len keeps positives from proteins over the length cutoff.
-df_pos_removed_len <- df_iedb_pos_pre_length |>
-  filter(uniprot_id %in% nsp3_unrunnable_ids) |>
-  left_join(df_fasta |> select(uniprot_id, seq_length), by = "uniprot_id") |>
-  distinct(peptide, uniprot_id, .keep_all = TRUE) |>
-  mutate(removal_reason = if_else(seq_length < 130, "too_short", "too_long"))
-
-# df_pos_removed_af_nopdb keeps positives from proteins without a PDB.
-df_pos_removed_af_nopdb <- df_iedb_pos_pre_af |>
-  filter(!uniprot_id %in% af_proteins) |>
-  distinct(peptide, uniprot_id, .keep_all = TRUE) |>
-  mutate(removal_reason = "no_pdb")
-
-# df_pos_removed_af_range keeps positives from proteins with peptides beyond the modelled range.
-df_pos_removed_af_range <- df_iedb_pos_pre_af |>
-  filter(uniprot_id %in% proteins_out_of_range$uniprot_id) |>
-  distinct(peptide, uniprot_id, .keep_all = TRUE) |>
-  mutate(removal_reason = "out_of_range")
-
-# df_pos_removed_af combines AlphaFold removals.
-df_pos_removed_af <- bind_rows(df_pos_removed_af_nopdb, df_pos_removed_af_range) |>
-  distinct(peptide, uniprot_id, .keep_all = TRUE)
 
 # Protein lookup table 
 df_protein_lookup <- df_iedb_pos |>
@@ -267,112 +295,7 @@ df_netmhcpan_binders_parsed <- df_netmhcpan_raw |>
   relocate(id,         .after = binder)  |>
   select(-c(id, core, icore, score, ave))
 
-# ── Biological Integrity Check: validate negative coordinates ─────────────
-# NetMHCpan predictions from isoform sequences may have shifted coordinates
-# relative to the canonical FASTA. Validate and drop mismatches.
-cat("\n--- Biological Integrity Check (negatives) ---\n")
-df_netmhcpan_binders_parsed <- df_netmhcpan_binders_parsed |>
-  left_join(df_fasta |> select(uniprot_id, sequence), by = "uniprot_id") |>
-  validate_and_fix_positions(
-    sequence_col = "sequence",
-    peptide_col  = "peptide",
-    start_col    = "start",
-    end_col      = "end"
-  )
-
-coord_summary_neg <- df_netmhcpan_binders_parsed |> count(position_status) |>
-  mutate(percentage = round(n / sum(n) * 100, 2))
-cat("Position validation (negatives):\n")
-print(coord_summary_neg)
-
-n_unfixable_neg <- sum(df_netmhcpan_binders_parsed$position_status == "unfixable", na.rm = TRUE)
-df_netmhcpan_binders_parsed <- df_netmhcpan_binders_parsed |>
-  filter(position_status %in% c("valid_original", "fixed")) |>
-  select(-start_original, -end_original, -position_originally_valid,
-         -position_status, -position_shift)
-cat("Dropped", n_unfixable_neg, "unfixable negatives\n")
-cat("NetMHCpan binders after coord validation:", nrow(df_netmhcpan_binders_parsed), "\n\n")
-
-# Step F: Record predicted binders removed by AlphaFold filter.
-# Restricted to positive proteins that would enter the negative pool.
-# AlphaFold-only exclusions: proteins removed by no_pdb or out_of_range
-# that were NOT already caught by the NetSurfP length filter.
-# This prevents double-counting binders removed by both filters.
-af_unrunnable_ids <- df_ledger |>
-  filter((no_pdb | out_of_range) & !(too_short | too_long)) |>
-  pull(uniprot_id)
-
-df_binders_removed_af <- df_netmhcpan_binders_parsed |>
-  filter(uniprot_id %in% af_unrunnable_ids,
-         uniprot_id %in% df_iedb_pos_pre_af$uniprot_id) |>
-  distinct(peptide, uniprot_id, .keep_all = TRUE)
-
-af_reason_lookup <- bind_rows(
-  tibble(uniprot_id = unique(df_pos_removed_af_nopdb$uniprot_id), removal_reason = "no_pdb"),
-  tibble(uniprot_id = proteins_out_of_range$uniprot_id,           removal_reason = "out_of_range")
-)
-
-df_neg_removed_af <- df_binders_removed_af |>
-  anti_join(df_iedb_pos_pre_af, by = c("peptide", "uniprot_id")) |>
-  left_join(df_fasta |> select(uniprot_id, seq_length), by = "uniprot_id") |>
-  left_join(af_reason_lookup, by = "uniprot_id")
-
-cat("AlphaFold filter — unique binders removed (positive proteins):", nrow(df_binders_removed_af), "\n")
-cat("  of which negatives (not IEDB positives):", nrow(df_neg_removed_af), "\n")
-cat("  (overlap = removed positives recovered as TP:",
-    nrow(df_binders_removed_af) - nrow(df_neg_removed_af), ")\n")
-
-# Step G: Classify AlphaFold-removed positives by NetMHCpan recovery
-df_pos_removed_af <- df_pos_removed_af |>
-  left_join(
-    df_netmhcpan_binders_parsed |>
-      select(peptide, uniprot_id, rank) |>
-      slice_min(rank, n = 1, with_ties = FALSE, by = c(peptide, uniprot_id)),
-    by = c("peptide", "uniprot_id")
-  ) |>
-  mutate(pool = if_else(!is.na(rank), "TP", "FN"))
-
-cat("\nAlphaFold-removed positives by NetMHCpan recovery:\n")
-df_pos_removed_af |> count(pool) |> print()
-
-# Step H: AlphaFold filter diagnostics
-df_af_unrunnable_proteins <- df_fasta |>
-  filter(uniprot_id %in% af_unrunnable_ids) |>
-  select(uniprot_id, seq_length) |>
-  left_join(af_reason_lookup, by = "uniprot_id") |>
-  left_join(df_pos_removed_af |> count(uniprot_id, name = "n_pos_removed"),
-            by = "uniprot_id") |>
-  left_join(df_neg_removed_af  |> count(uniprot_id, name = "n_neg_removed"),
-            by = "uniprot_id") |>
-  mutate(across(starts_with("n_"), ~ replace_na(.x, 0L))) |>
-  arrange(seq_length)
-
-write_csv(df_af_unrunnable_proteins, "data/processed/alphafold_unrunnable_proteins.csv")
-write_csv(df_pos_removed_af,        "data/processed/alphafold_removed_positives.csv")
-write_csv(df_neg_removed_af,        "data/processed/alphafold_removed_negatives.csv")
-
-cat("\nSaved AlphaFold filter diagnostics:\n")
-cat("  alphafold_unrunnable_proteins.csv —", nrow(df_af_unrunnable_proteins), "proteins\n")
-cat("  alphafold_removed_positives.csv   —", nrow(df_pos_removed_af), "positives\n")
-cat("  alphafold_removed_negatives.csv   —", nrow(df_neg_removed_af), "negatives\n")
-
-# Record predicted binders removed by the length cutoff.
-# Keep only positive proteins and deduplicate by peptide and UniProt ID.
-df_binders_removed_len <- df_netmhcpan_binders_parsed |>
-  filter(uniprot_id %in% nsp3_unrunnable_ids,
-         uniprot_id %in% df_iedb_pos_pre_length$uniprot_id) |>
-  distinct(peptide, uniprot_id, .keep_all = TRUE)
-
-df_neg_removed_len <- df_binders_removed_len |>
-  anti_join(df_iedb_pos_pre_length, by = c("peptide", "uniprot_id")) |>
-  left_join(df_fasta |> select(uniprot_id, seq_length), by = "uniprot_id") |>
-  mutate(removal_reason = if_else(seq_length < 130, "too_short", "too_long"))
-
-cat("Length cutoff (>5000 aa) — unique binders removed (positive proteins):", nrow(df_binders_removed_len), "\n")
-cat("  of which negatives (not IEDB positives):", nrow(df_neg_removed_len), "\n")
-cat("  (overlap = removed positives recovered as TP:",
-    nrow(df_binders_removed_len) - nrow(df_neg_removed_len), ")\n")
-
+# Filter binders to valid proteins and join metadata
 df_netmhcpan_binders <- df_netmhcpan_binders_parsed |>
   semi_join(df_protein_lookup, by = "uniprot_id") |>
   left_join(df_protein_lookup, by = "uniprot_id")
@@ -391,11 +314,6 @@ cat("The", nrow(missing_proteins), "proteins without 9-mer binders have",
 
 
 # Compare NetMHCpan vs IEDB 
-#df_iedb_pos <- df_iedb_pos |>
-#  left_join(
-#    df_netmhcpan_binders |> select(peptide, uniprot_id, rank),
-#    by = c("peptide", "uniprot_id")
-#  )
 df_iedb_pos <- df_iedb_pos |>
   left_join(
     df_netmhcpan_binders |>
@@ -406,69 +324,27 @@ df_iedb_pos <- df_iedb_pos |>
 cat("IEDB positives with rank (TP):", sum(!is.na(df_iedb_pos$rank)), "\n")
 cat("IEDB positives without rank (FN):", sum(is.na(df_iedb_pos$rank)), "\n")
 
-# Classify length-removed positives by whether NetMHCpan would have recovered them
-df_pos_removed_len <- df_pos_removed_len |>
-  left_join(
-    df_netmhcpan_binders_parsed |>
-      select(peptide, uniprot_id, rank) |>
-      slice_min(rank, n = 1, with_ties = FALSE, by = c(peptide, uniprot_id)),
-    by = c("peptide", "uniprot_id")
-  ) |>
-  mutate(pool = if_else(!is.na(rank), "TP", "FN"))
-
-cat("\nLength-removed positives by NetMHCpan recovery:\n")
-df_pos_removed_len |>
-  count(pool) |>
-  print()
-
-# Length-cutoff diagnostics.
-df_nsp3_unrunnable_proteins <- df_fasta |>
-  filter(uniprot_id %in% nsp3_unrunnable_ids) |>
-  select(uniprot_id, seq_length) |>
-  mutate(removal_reason = if_else(seq_length < 130, "too_short", "too_long")) |>
-  left_join(df_pos_removed_len |> count(uniprot_id, name = "n_pos_removed"),
-            by = "uniprot_id") |>
-  left_join(df_neg_removed_len  |> count(uniprot_id, name = "n_neg_removed"),
-            by = "uniprot_id") |>
-  mutate(across(starts_with("n_"), ~ replace_na(.x, 0L))) |>
-  arrange(seq_length)
-
-write_csv(df_nsp3_unrunnable_proteins, "data/processed/nsp3_unrunnable_proteins.csv")
-write_csv(df_pos_removed_len,          "data/processed/nsp3_removed_positives.csv")
-write_csv(df_neg_removed_len,          "data/processed/nsp3_removed_negatives.csv")
-
-cat("\nSaved length-cutoff diagnostics:\n")
-cat("  nsp3_unrunnable_proteins.csv —", nrow(df_nsp3_unrunnable_proteins), "proteins\n")
-cat("  nsp3_removed_positives.csv   —", nrow(df_pos_removed_len), "positives\n")
-cat("  nsp3_removed_negatives.csv   —", nrow(df_neg_removed_len), "negatives\n")
-
 # Combined removed-proteins file from the exclusion ledger.
+# Pull counts directly from the ledger using peptide-level data.
 df_all_removed_proteins <- df_ledger |>
   filter(excluded) |>
+  # n_positives: IEDB positive peptides from each excluded protein
   left_join(
-    df_pos_removed_len |> count(uniprot_id, name = "n_pos_removed_len"),
+    df_iedb_pos_pre_af |> count(uniprot_id, name = "n_positives"),
     by = "uniprot_id"
   ) |>
+  # n_negatives: NetMHCpan binders from each excluded protein, minus IEDB positives
   left_join(
-    df_pos_removed_af |> count(uniprot_id, name = "n_pos_removed_af"),
-    by = "uniprot_id"
-  ) |>
-  left_join(
-    df_neg_removed_len |> count(uniprot_id, name = "n_neg_removed_len"),
-    by = "uniprot_id"
-  ) |>
-  left_join(
-    df_neg_removed_af |> count(uniprot_id, name = "n_neg_removed_af"),
+    df_netmhcpan_binders_parsed |>
+      anti_join(df_iedb_pos_pre_af, by = c("peptide", "uniprot_id")) |>
+      count(uniprot_id, name = "n_negatives"),
     by = "uniprot_id"
   ) |>
   mutate(
     across(starts_with("n_"), ~ replace_na(.x, 0L)),
-    n_positives = n_pos_removed_len + n_pos_removed_af,
-    n_negatives = n_neg_removed_len + n_neg_removed_af,
     filter_stage = case_when(
-      (too_short | too_long) & !no_pdb & !out_of_range ~ "NetSurfP",
-      (no_pdb | out_of_range) & !(too_short | too_long) ~ "AlphaFold",
-      (too_short | too_long) & (no_pdb | out_of_range) ~ "Both",
+      too_short | too_long ~ "NetSurfP",
+      no_pdb | out_of_range ~ "AlphaFold",
       TRUE ~ "Unknown"
     )
   ) |>
@@ -744,24 +620,10 @@ p3 <- ggplot(df_rank_pre, aes(x = rank, colour = label)) +
 
 cat("\n--- Pre-filtering negatives with out-of-range peptides ---\n")
 
-# Build pLDDT lookup for all proteins in df_netmhcpan_only
-af_lookup_pre <- list()
-af_proteins_needed_pre <- unique(df_netmhcpan_only$uniprot_id)
-for (d in af_dirs) {
-  af_lookup_pre <- c(af_lookup_pre, build_plddt_lookup(
-    proteins_needed = af_proteins_needed_pre, dir = d
-  ))
-}
-
-# Get max_modelled per protein
-af_modelled_pre <- map_dfr(names(af_lookup_pre), function(uid) {
-  lkp <- af_lookup_pre[[uid]]
-  tibble(uniprot_id = uid, max_modelled = max(lkp$residue_num))
-})
-
-# Identify proteins where ANY negative peptide falls beyond max_modelled
+# Reuse af_modelled from the ledger section (already loaded for all retained proteins)
+# This avoids reloading pLDDT for ~9354 proteins — saves significant compute time.
 oor_neg_proteins <- df_netmhcpan_only |>
-  left_join(af_modelled_pre, by = "uniprot_id") |>
+  left_join(af_modelled, by = "uniprot_id") |>
   filter(end > max_modelled) |>
   distinct(uniprot_id)
 
@@ -1172,33 +1034,66 @@ df_diag_9mer   <- df_raw |> filter(pep_length == 9)
 n_diag_9mer    <- nrow(df_diag_9mer)
 n_diag_non9mer <- nrow(df_raw) - n_diag_9mer
 
-n_is_o60361 <- sum(df_diag_9mer$uniprot_id == "O60361", na.rm = TRUE)
-n_is_na     <- sum(is.na(df_diag_9mer$uniprot_id))
+# Step 1: Explicit NA filter (matches pipeline line 11)
+df_diag_after_na <- df_diag_9mer |> filter(!is.na(uniprot_id))
+n_is_na <- nrow(df_diag_9mer) - nrow(df_diag_after_na)
 
-df_diag_after_filter <- df_diag_9mer |> filter(uniprot_id != "O60361")
+# Step 2: O60361 filter
+n_is_o60361 <- sum(df_diag_after_na$uniprot_id == "O60361", na.rm = TRUE)
+df_diag_after_filter <- df_diag_after_na |> filter(uniprot_id != "O60361")
 
+# Step 3: Deduplication
 df_diag_dedup <- df_diag_after_filter |>
   distinct(peptide, uniprot_id, start, end, .keep_all = TRUE)
 n_diag_dedup <- nrow(df_diag_after_filter) - nrow(df_diag_dedup)
 
+# Step 4: FASTA semi-join
 df_diag_after_fasta <- df_diag_dedup |>
   semi_join(df_fasta, by = "uniprot_id")
 n_diag_missing_fasta <- nrow(df_diag_dedup) - nrow(df_diag_after_fasta)
 
-df_diag_after_sec <- df_diag_after_fasta |>
+# Step 5: Coordinate validation (replays validate_and_fix_positions)
+# Drops unfixable peptides AND rows with NA start/end (no_protein_sequence).
+df_diag_after_coord <- df_diag_after_fasta |>
+  left_join(df_fasta |> select(uniprot_id, sequence), by = "uniprot_id") |>
+  validate_and_fix_positions(
+    sequence_col = "sequence",
+    peptide_col  = "peptide",
+    start_col    = "start",
+    end_col      = "end"
+  ) |>
+  filter(position_status %in% c("valid_original", "fixed")) |>
+  select(-start_original, -end_original, -position_originally_valid,
+         -position_status, -position_shift, -sequence)
+n_diag_unfixable <- nrow(df_diag_after_fasta) - nrow(df_diag_after_coord)
+
+# Step 6: Selenocysteine filter
+df_diag_after_sec <- df_diag_after_coord |>
   filter(!uniprot_id %in% sec_proteins)
-n_diag_sec <- nrow(df_diag_after_fasta) - nrow(df_diag_after_sec)
+n_diag_sec <- nrow(df_diag_after_coord) - nrow(df_diag_after_sec)
+
+# ── Sequence-Validated node (after all pre-ledger filters) ──
+n_seq_validated <- nrow(df_diag_after_sec)
+
+# ── Length filter: PEPTIDE counts (not protein counts) ──
+n_diag_too_short <- sum(df_diag_after_sec$uniprot_id %in% (df_ledger |> filter(too_short) |> pull(uniprot_id)))
+n_diag_too_long  <- sum(df_diag_after_sec$uniprot_id %in% (df_ledger |> filter(too_long) |> pull(uniprot_id)))
 
 df_diag_after_len <- df_diag_after_sec |>
   left_join(df_fasta |> select(uniprot_id, seq_length), by = "uniprot_id") |>
-  filter(seq_length <= 5000) |>
+  filter(seq_length >= 130, seq_length <= 5000) |>
   select(-seq_length)
-n_diag_len <- nrow(df_diag_after_sec) - nrow(df_diag_after_len)
+
+# ── Length-Validated node ──
+n_length_validated <- nrow(df_diag_after_len)
+
+# ── AlphaFold filter: PEPTIDE counts ──
+n_diag_missing_af <- sum(!df_diag_after_len$uniprot_id %in% af_proteins)
+n_diag_out_of_range <- sum(df_diag_after_len$uniprot_id %in% proteins_out_of_range$uniprot_id)
 
 df_diag_after_af <- df_diag_after_len |>
   filter(uniprot_id %in% af_proteins) |>
   filter(!uniprot_id %in% proteins_out_of_range$uniprot_id)
-n_diag_af <- nrow(df_diag_after_len) - nrow(df_diag_after_af)
 
 n_9mer_verified <- nrow(df_diag_after_af)
 
@@ -1216,21 +1111,26 @@ stopifnot(n_iedb_recovered + n_iedb_missed == n_9mer_verified)
 # Print summary
 cat("COMPLETE CASCADE:\n")
 cat(strrep("-", 50), "\n")
-cat("  Input file:           ", nrow(df_raw), "\n")
-cat("  Non-9-mers:           ", n_diag_non9mer, "\n")
-cat("  9-mers:               ", n_diag_9mer, "\n")
-cat("  - NA uniprot_id:      ", n_is_na, "\n")
-cat("  - O60361:             ", n_is_o60361, "\n")
-cat("  - Dedup:              ", n_diag_dedup, "\n")
-cat("  - Missing FASTA:      ", n_diag_missing_fasta, "\n")
-cat("  - Selenocysteine:     ", n_diag_sec, "\n")
-cat("  - Sequence Length Cutoff (>5000 aa): ", n_diag_len, "\n")
-cat("  - AlphaFold:                         ", n_diag_af, "\n")
-cat("  Final verified:       ", n_9mer_verified, "\n")
-cat("  Recovered by NetMHCpan:", n_iedb_recovered, "\n")
-cat("  Missed by NetMHCpan:  ", n_iedb_missed, "\n")
-cat("  TP in df_combined:    ", sum(df_combined$label == 1), "\n")
-cat("  FN in iedb_only:      ", nrow(df_iedb_only), "\n\n")
+cat("  Input file:              ", nrow(df_raw), "\n")
+cat("  Non-9-mers:              ", n_diag_non9mer, "\n")
+cat("  9-mers:                  ", n_diag_9mer, "\n")
+cat("  - NA uniprot_id:         ", n_is_na, "\n")
+cat("  - O60361:                ", n_is_o60361, "\n")
+cat("  - Dedup:                 ", n_diag_dedup, "\n")
+cat("  - Missing FASTA:         ", n_diag_missing_fasta, "\n")
+cat("  - Unfixable coordinates: ", n_diag_unfixable, "\n")
+cat("  - Selenocysteine:        ", n_diag_sec, "\n")
+cat("  Sequence-Validated:      ", n_seq_validated, "\n")
+cat("  - Too short (<130 aa):   ", n_diag_too_short, "peptides\n")
+cat("  - Too long  (>5000 aa):  ", n_diag_too_long, "peptides\n")
+cat("  Length-Validated:         ", n_length_validated, "\n")
+cat("  - Missing AlphaFold:     ", n_diag_missing_af, "\n")
+cat("  - Out of Range:          ", n_diag_out_of_range, "\n")
+cat("  Final verified:          ", n_9mer_verified, "\n")
+cat("  Recovered by NetMHCpan:  ", n_iedb_recovered, "\n")
+cat("  Missed by NetMHCpan:     ", n_iedb_missed, "\n")
+cat("  TP in df_combined:       ", sum(df_combined$label == 1), "\n")
+cat("  FN in iedb_only:         ", nrow(df_iedb_only), "\n\n")
 
 # Verify cascade matches actual data
 cascade_diff <- nrow(df_iedb_pos) - n_9mer_verified
@@ -1250,7 +1150,10 @@ df_sankey_counts <- tibble(
   stage = c(
     names(iedb_ct),
     "non_9mer", "9mer_all",
-    "na_uniprot", "o60361", "dedup", "missing_fasta", "selenocysteine", "sequence_length_cutoff", "alphafold",
+    "na_uniprot", "o60361", "dedup", "missing_fasta", "unfixable_coords", "selenocysteine",
+    "seq_validated",
+    "too_short", "too_long", "length_validated",
+    "missing_alphafold", "out_of_range",
     "9mer_verified",
     "iedb_recovered", "iedb_missed",
     "tp_in_combined", "fn_in_iedb_only",
@@ -1260,7 +1163,10 @@ df_sankey_counts <- tibble(
   count = c(
     unname(iedb_ct),
     n_diag_non9mer, n_diag_9mer,
-    n_is_na, n_is_o60361, n_diag_dedup, n_diag_missing_fasta, n_diag_sec, n_diag_len, n_diag_af,
+    n_is_na, n_is_o60361, n_diag_dedup, n_diag_missing_fasta, n_diag_unfixable, n_diag_sec,
+    n_seq_validated,
+    n_diag_too_short, n_diag_too_long, n_length_validated,
+    n_diag_missing_af, n_diag_out_of_range,
     n_9mer_verified,
     n_iedb_recovered, n_iedb_missed,
     sum(df_combined$label == 1), nrow(df_iedb_only),
