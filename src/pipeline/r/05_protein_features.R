@@ -1,4 +1,4 @@
-library(tidyverse)
+suppressPackageStartupMessages(library(tidyverse))
 source("src/pipeline/r/functions.R")
 set_working_directory()
 
@@ -10,7 +10,7 @@ my_packages <- c(
   "progress"       
 )
 
-df_epitopes <- read_csv("data/processed/df_combined_pos_and_neg.csv")
+df_epitopes <- read_csv("data/processed/df_combined_pos_and_neg.csv", show_col_types = FALSE)
 
 df_fasta <- read_fasta_df("data/raw/fasta/combined_positives_only.fasta") |>
   mutate(
@@ -30,7 +30,7 @@ df_fasta <- read_fasta_df("data/raw/fasta/combined_positives_only.fasta") |>
 # Join epitopes to their source proteins
 df_merged <- df_epitopes %>%
   left_join(
-    df_fasta %>% select(uniprot_id),
+    df_fasta %>% select(uniprot_id, sequence),
     by = "uniprot_id"
   )
 
