@@ -1,9 +1,9 @@
-library(tidyverse)
-library(data.table)
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(data.table))
 source("src/pipeline/r/functions.R")
 set_working_directory()
 
-df_raw <- read_csv("data/processed/epitopes_pos_and_neg_features.csv")
+df_raw <- read_csv("data/processed/epitopes_pos_and_neg_features.csv", show_col_types = FALSE)
 
 df_peptides <- df_raw |>
   select(peptide, n_flank, c_flank, full_context, uniprot_id, start, end) |>
