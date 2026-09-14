@@ -283,13 +283,13 @@ FEATURE_COMPONENTS = {
         "display_name": "ESM-C (600M) context window",
         "type": "embedding",
         "embedding_key": "esmc_context",
-        "pca_components": PCA_COMPONENTS_PER_REGION,
+        "pca_components": PCA_COMPONENTS,
     },
     "esmif_context": {
         "display_name": "ESM-IF1 context window",
         "type": "embedding",
         "embedding_key": "esmif_context",
-        "pca_components": PCA_COMPONENTS_PER_REGION,
+        "pca_components": PCA_COMPONENTS,
     },
 }
 

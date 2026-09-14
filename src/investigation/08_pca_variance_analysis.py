@@ -46,7 +46,7 @@ FEATURE_SETS = {
     },
 }
 
-THRESHOLDS = [0.80, 0.85, 0.90, 0.95, 0.99]
+THRESHOLDS = [0.50, 0.80, 0.85, 0.90, 0.95, 0.99]
 
 OUT_DIR = FIGURES_DIR / "pca_optimization"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
