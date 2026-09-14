@@ -292,7 +292,7 @@ p1 <- ggplot(plot_data, aes(x = diff, y = feature, fill = direction)) +
   theme(legend.position = "bottom")
 
 print(p1)
-ggsave("results/q8_feature_differences.png", p1, width = 10, height = 10, dpi = 150)
+ggsave("results/figures/netsurfp3/q8_feature_differences.png", p1, width = 10, height = 10, dpi = 150)
 
 # --- Plot 2: Heatmap — points by state × window ---
 heatmap_data <- q8_full |>
@@ -324,7 +324,7 @@ p2 <- ggplot(heatmap_data, aes(x = window, y = state_label, fill = diff)) +
   theme(panel.grid = element_blank())
 
 print(p2)
-ggsave("results/q8_point_heatmap.png", p2, width = 7, height = 6, dpi = 150)
+ggsave("results/figures/netsurfp3/q8_point_heatmap.png", p2, width = 7, height = 6, dpi = 150)
 
 # --- Plot 3: Heatmap — transitions by state × boundary ---
 trans_data <- q8_full |>
@@ -359,13 +359,13 @@ p3 <- ggplot(trans_data, aes(x = boundary, y = state_label, fill = diff)) +
   theme(panel.grid = element_blank())
 
 print(p3)
-ggsave("results/q8_transition_heatmap.png", p3, width = 7, height = 6, dpi = 150)
+ggsave("results/figures/netsurfp3/q8_transition_heatmap.png", p3, width = 7, height = 6, dpi = 150)
 
 # ============================================================================
 # WRITE LOG FILE
 # ============================================================================
 
-log_file <- paste0("results/q8_feature_analysis_log_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".txt")
+log_file <- paste0("results/logs/netsurfp3/q8_feature_analysis_log_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".txt")
 sink(log_file)
 
 cat("=" |> strrep(70), "\n")

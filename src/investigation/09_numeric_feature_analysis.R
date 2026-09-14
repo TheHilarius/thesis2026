@@ -8,7 +8,6 @@ set_working_directory()
 
 # =============================================================================
 # CONFIGURATION
-# =============================================================================
 # Change this to "base", "sparse", or "blosum50"
 dataset_type <- "sparse" 
 
@@ -20,15 +19,19 @@ if (dataset_type == "base") {
   run_suffix <- paste0("_", dataset_type)
 }
 
-results_dir <- "results"
-figures_dir <- file.path("results", "figures", paste0("numeric_9mer", run_suffix))
-per_feature_dir <- file.path(figures_dir, "per_feature")
-heatmap_dir <- file.path(figures_dir, "heatmap")
+results_dir <- file.path("results", paste0("numeric_9mer", run_suffix))
+figures_dir <- file.path("results", paste0("numeric_9mer", run_suffix))
+with_pl_and_pc_dir <- file.path(figures_dir, "with_pl_and_pc")
+per_feature_dir <- file.path(with_pl_and_pc_dir, "per_feature")
+heatmap_dir <- file.path(with_pl_and_pc_dir, "heatmap")
+no_pl_no_pc_dir <- file.path(figures_dir, "no_pl_no_pc")
 
 dir.create(results_dir, showWarnings = FALSE, recursive = TRUE)
 dir.create(figures_dir, showWarnings = FALSE, recursive = TRUE)
+dir.create(with_pl_and_pc_dir, showWarnings = FALSE, recursive = TRUE)
 dir.create(per_feature_dir, showWarnings = FALSE, recursive = TRUE)
 dir.create(heatmap_dir, showWarnings = FALSE, recursive = TRUE)
+dir.create(no_pl_no_pc_dir, showWarnings = FALSE, recursive = TRUE)
 
 # Load data
 message("Loading dataset: ", input_file)
@@ -839,3 +842,173 @@ for (region_name in names(forest_regions)) {
   message("  Saved: forest_", region_name)
 }
 message("\n✅ Done.")
+
+# =============================================================================
+# FILTERED PLOTS: No protein_length, No PCs
+# =============================================================================
+message("\n=== Generating filtered plots (no protein_length, no PCs) ===")
+
+# Define filtered feature lists
+filtered_continuous <- map(continuous_features, ~ setdiff(.x, "protein_length"))
+filtered_all_continuous <- unlist(filtered_continuous, use.names = FALSE)
+filtered_all_numeric <- c(filtered_all_continuous, all_binary)
+
+filtered_wilcox_results <- imap(filtered_continuous, function(features, group_name) {
+  if (length(features) == 0) return(NULL)
+  res <- map_dfr(features, ~ safe_wilcox(df_raw, .x)) |>
+    mutate(group = group_name,
+           p_adj = p.adjust(p_value, method = "BH"),
+           direction = case_when(
+             smd > 0 ~ "Higher in presented",
+             smd < 0 ~ "Lower in presented",
+             TRUE ~ "No difference"),
+           abs_smd = abs(smd)) |>
+    arrange(p_adj, desc(abs_smd))
+  res
+})
+
+filtered_numeric_test_results <- bind_rows(filtered_wilcox_results) |>
+  mutate(p_adj_global = p.adjust(p_value, method = "BH"))
+
+# --- Filtered Wilcoxon plots ---
+for (group_name in names(filtered_continuous)) {
+  plot_df <- filtered_numeric_test_results |>
+    filter(group == group_name, !is.na(smd), is.finite(smd)) |>
+    mutate(feature_label = pretty_feature_label(feature),
+           feature_label = fct_reorder(feature_label, smd))
+  if (nrow(plot_df) == 0) next
+
+  p_wilcox <- ggplot(plot_df, aes(x = smd, y = feature_label, color = direction)) +
+    geom_errorbarh(aes(xmin = smd_ci_low, xmax = smd_ci_high), height = 0.2, linewidth = 0.7) +
+    geom_point(size = 3) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey40") +
+    scale_color_manual(values = c("Higher in presented" = "#2ecc71",
+                                  "Lower in presented" = "#e74c3c",
+                                  "No difference" = "grey50")) +
+    coord_cartesian(xlim = c(-0.3, 0.3)) +
+    labs(title = paste("Wilcoxon (filtered) —", group_name),
+         x = "Standardized mean difference (95% CI)", y = NULL, color = "Direction") +
+    theme_bw() + theme(legend.position = "bottom")
+
+  ggsave(file.path(no_pl_no_pc_dir, paste0("wilcoxon_", group_name, ".png")),
+         plot = p_wilcox, width = 8, height = 6, dpi = 300)
+}
+
+# --- Filtered Logistic regression ---
+filtered_logit_scaled <- map_dfr(filtered_all_numeric, ~ safe_logit(df_raw, .x, scale_feature = TRUE)) |>
+  mutate(p_adj = p.adjust(p_value, method = "BH")) |> arrange(p_adj)
+
+# Filtered odds ratios — all features
+filtered_all_or <- filtered_logit_scaled |>
+  filter(!is.na(odds_ratio), !is.na(conf_low), !is.na(conf_high)) |>
+  mutate(feature = fct_reorder(feature, odds_ratio))
+
+max_log_dist_all <- max(abs(log10(c(filtered_all_or$conf_low, filtered_all_or$conf_high))), na.rm = TRUE) * 1.1
+sym_limits_all <- c(10^(-max_log_dist_all), 10^(max_log_dist_all))
+
+p_or_all <- ggplot(filtered_all_or, aes(x = odds_ratio, y = feature)) +
+  geom_point(size = 2.5, color = "#2ecc71") +
+  geom_errorbarh(aes(xmin = conf_low, xmax = conf_high), height = 0.2, color = "grey30") +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  scale_x_log10(limits = sym_limits_all) +
+  labs(title = "All features — univariate logistic regression (scaled, filtered)",
+       x = "Odds ratio (log scale, symmetric around 1.0)", y = "Feature") +
+  theme_bw()
+
+ggsave(file.path(no_pl_no_pc_dir, "odds_ratios_all_scaled.png"),
+       plot = p_or_all, width = 9, height = max(6, nrow(filtered_all_or) * 0.3 + 2), dpi = 300)
+
+# Filtered odds ratios — top 30
+filtered_top_or <- filtered_all_or |>
+  mutate(abs_log_or = abs(log(odds_ratio))) |>
+  slice_max(abs_log_or, n = 30) |>
+  select(-abs_log_or)
+
+max_log_dist_top <- max(abs(log10(c(filtered_top_or$conf_low, filtered_top_or$conf_high))), na.rm = TRUE) * 1.1
+sym_limits_top <- c(10^(-max_log_dist_top), 10^(max_log_dist_top))
+
+p_or_top <- ggplot(filtered_top_or, aes(x = odds_ratio, y = feature)) +
+  geom_point(size = 3, color = "#2ecc71") +
+  geom_errorbarh(aes(xmin = conf_low, xmax = conf_high), height = 0.2, color = "grey30") +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  scale_x_log10(limits = sym_limits_top) +
+  labs(title = "Top 30 features — univariate logistic regression (scaled, filtered)",
+       x = "Odds ratio (log scale, symmetric around 1.0)", y = "Feature") +
+  theme_bw()
+
+ggsave(file.path(no_pl_no_pc_dir, "odds_ratios_top30_scaled.png"),
+       plot = p_or_top, width = 8, height = 6, dpi = 300)
+
+# --- Filtered Forest plots (per region) ---
+for (region_name in names(forest_regions)) {
+  feats <- forest_regions[[region_name]]
+  # Remove protein_length from peptide region
+  if (region_name == "peptide") feats <- setdiff(feats, "protein_length")
+
+  plot_df <- filtered_logit_scaled |>
+    filter(feature %in% feats, !is.na(odds_ratio), !is.na(conf_low), !is.na(conf_high)) |>
+    mutate(
+      feature_label = pretty_feature_label(feature),
+      type = ifelse(str_detect(feature, "^q8(point|trans)_"), "binary", "continuous"),
+      direction = case_when(
+        odds_ratio > 1 ~ "Higher in presented",
+        odds_ratio < 1 ~ "Lower in presented",
+        TRUE ~ "No difference"
+      ),
+      feature_label = fct_reorder(feature_label, odds_ratio)
+    )
+
+  if (nrow(plot_df) == 0) next
+
+  max_log_dist <- max(abs(log10(c(plot_df$conf_low, plot_df$conf_high))), na.rm = TRUE) * 1.1
+  sym_limits <- c(10^(-max_log_dist), 10^(max_log_dist))
+
+  p_forest <- ggplot(plot_df, aes(x = odds_ratio, y = feature_label,
+                                  color = direction, shape = type)) +
+    geom_point(size = 3) +
+    geom_errorbarh(aes(xmin = conf_low, xmax = conf_high), height = 0.2, linewidth = 0.5) +
+    geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+    scale_x_log10(limits = sym_limits) +
+    scale_color_manual(values = c("Higher in presented" = "#2ecc71",
+                                  "Lower in presented" = "#e74c3c",
+                                  "No difference" = "grey50")) +
+    scale_shape_manual(values = c("continuous" = 16, "binary" = 17)) +
+    labs(title = paste0("Univariate logistic regression (filtered) — ", region_name),
+         subtitle = "Scaled odds ratios | ● continuous | ▲ binary (q8point)",
+         x = "Odds ratio (log scale, symmetric around 1.0)",
+         y = NULL, color = "Direction", shape = "Type") +
+    theme_bw() +
+    theme(legend.position = "bottom", legend.box = "vertical")
+
+  ggsave(file.path(no_pl_no_pc_dir, paste0("forest_", region_name, ".png")),
+         plot = p_forest, width = 9, height = max(4, nrow(plot_df) * 0.35 + 2), dpi = 300)
+}
+
+# --- Filtered Volcano plot ---
+volcano_continuous_filtered <- filtered_numeric_test_results |>
+  filter(!is.na(smd), !is.na(p_adj_global), p_adj_global > 0) |>
+  transmute(feature, effect_size = smd, log_p = -log10(p_adj_global), type = "continuous")
+
+volcano_binary <- binary_prop_results |>
+  filter(!is.na(prop_diff), !is.na(p_adj), p_adj > 0) |>
+  transmute(feature, effect_size = prop_diff, log_p = -log10(p_adj), type = "binary")
+
+volcano_data_filtered <- bind_rows(volcano_continuous_filtered, volcano_binary)
+
+p_volcano_filtered <- ggplot(volcano_data_filtered, aes(x = effect_size, y = log_p, color = type)) +
+  geom_point(alpha = 0.8, size = 2) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey40") +
+  scale_color_manual(values = c("continuous" = "#e74c3c", "binary" = "#3498db")) +
+  geom_text_repel(
+    data = volcano_data_filtered |> slice_max(log_p, n = 10),
+    aes(label = feature), size = 3, color = "black",
+    box.padding = 0.5, max.overlaps = Inf
+  ) +
+  labs(title = "Feature association summary (filtered)",
+       subtitle = "Continuous: SMD from Wilcoxon | Binary: proportion diff from Fisher | No protein_length, no PCs",
+       x = "Effect size", y = "-log10(FDR-adjusted p-value)", color = "Type") +
+  theme_bw()
+ggsave(file.path(no_pl_no_pc_dir, "features_volcano.png"),
+       plot = p_volcano_filtered, width = 8, height = 6, dpi = 300)
+
+message("\n✅ Filtered plots done.")

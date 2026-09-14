@@ -17,7 +17,7 @@ set_working_directory()
 # 0. Setup output directories
 # -----------------------------------------------------------------------------
 dir.create("results",                         showWarnings = FALSE, recursive = TRUE)
-dir.create("results/figures/categorical",     showWarnings = FALSE, recursive = TRUE)
+dir.create("results/categorical",             showWarnings = FALSE, recursive = TRUE)
 
 # -----------------------------------------------------------------------------
 # 1. Load and clean data
@@ -202,14 +202,14 @@ test_results %>%
   select(feature_label, n_obs, chi2, cramers_v, v_interpretation, sig) %>%
   print(n = 20)
 
-write_csv(test_results, "results/categorical_feature_tests.csv")
+write_csv(test_results, "results/categorical/categorical_feature_tests.csv")
 
 # =============================================================================
 # 4. Compute per-residue enrichment
 # =============================================================================
 cat("\n--- Computing per-residue enrichment ---\n")
 enrichment_all <- map_dfr(all_pos_features, ~compute_enrichment(df_clean, .x))
-write_csv(enrichment_all, "results/residue_enrichment_tables.csv")
+write_csv(enrichment_all, "results/categorical/residue_enrichment_tables.csv")
 
 # =============================================================================
 # 5. Plots (Heatmaps and Bar Charts)
@@ -217,8 +217,8 @@ write_csv(enrichment_all, "results/residue_enrichment_tables.csv")
 cat("\n--- Generating plots ---\n")
 
 for (feat in all_pos_features) {
-  ggsave(paste0("results/figures/categorical/residue_bars/grouped_bar_", feat, ".png"), plot = plot_grouped_bar(df_clean, feat), width = 10, height = 5, dpi = 150)
-  ggsave(paste0("results/figures/categorical/residue_stacked/stacked_prop_", feat, ".png"), plot = plot_stacked_proportion(df_clean, feat), width = 10, height = 5, dpi = 150)
+  ggsave(paste0("results/categorical/residue_bars/grouped_bar_", feat, ".png"), plot = plot_grouped_bar(df_clean, feat), width = 10, height = 5, dpi = 150)
+  ggsave(paste0("results/categorical/residue_stacked/stacked_prop_", feat, ".png"), plot = plot_stacked_proportion(df_clean, feat), width = 10, height = 5, dpi = 150)
 }
 
 # -----------------------------------------------------------------------------
@@ -240,7 +240,7 @@ p_heat_all <- ggplot(hdata, aes(x = feature_label, y = residue, fill = log2_enri
   labs(title = "Log2 enrichment — All 29 Positions", subtitle = "Presented (label=1) vs Not Presented (label=0)", x = "Sequence Position", y = "Amino acid") +
   theme_bw(base_size = 12) + theme(plot.title = element_text(face = "bold"), axis.text.x = element_text(angle = 45, hjust = 1), panel.grid = element_blank())
 
-ggsave("results/figures/categorical/log2_enrichment_heatmap_all.png", plot = p_heat_all, width = 20, height = 8, dpi = 300)
+ggsave("results/categorical/log2_enrichment_heatmap_all.png", plot = p_heat_all, width = 20, height = 8, dpi = 300)
 
 # -----------------------------------------------------------------------------
 # 5b. Unified Odds-ratio dot plot (Faceted by all 17 positions)
@@ -259,7 +259,7 @@ p_or_all <- ggplot(plot_data, aes(x = log2(odds_ratio), y = residue, colour = en
   labs(title = "Per-residue odds ratios — All 29 Positions", subtitle = "log2(OR) > 0 → enriched in presented peptides", x = "log2(Odds Ratio)", y = "Amino acid") +
   theme_bw(base_size = 11) + theme(plot.title = element_text(face = "bold"), panel.grid.minor = element_blank(), legend.position = "bottom")
 
-ggsave("results/figures/categorical/odds_ratio_dotplot_all.png", plot = p_or_all, width = 16, height = 10, dpi = 300)
+ggsave("results/categorical/odds_ratio_dotplot_all.png", plot = p_or_all, width = 16, height = 10, dpi = 300)
 
 # =============================================================================
 # 6. Differential Sequence Logo Plot (Using ggseqlogo)
@@ -303,7 +303,7 @@ p_diff_logo <- ggseqlogo(diff_ppm, method = "custom") +
     panel.grid.major.y = element_line(color = "grey90")
   )
 
-ggsave("results/figures/categorical/differential_logo_29mer.png", plot = p_diff_logo, width = 20, height = 5, dpi = 300)
-cat("Saved: results/figures/categorical/differential_logo_29mer.png\n")
+ggsave("results/categorical/differential_logo_29mer.png", plot = p_diff_logo, width = 20, height = 5, dpi = 300)
+cat("Saved: results/categorical/differential_logo_29mer.png\n")
 
 cat("\n--- Analysis complete ---\n")

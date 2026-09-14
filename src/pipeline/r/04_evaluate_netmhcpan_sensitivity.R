@@ -848,7 +848,7 @@ p2b <- ggplot(df_rank_post, aes(x = rank, fill = label)) +
   theme(legend.position = "top", panel.grid.minor = element_blank(),
         plot.title.position = "plot")
 
-ggsave("results/affinity_bias_density_after.png", p2b, width = 7, height = 5, dpi = 150)
+ggsave("results/figures/netmhcpan/affinity_bias_density_after.png", p2b, width = 7, height = 5, dpi = 150)
 
 cat("Computing Cliff's Delta (before matching)...\n")
 cliff_before <- cliff_delta_sampled(df_positives$rank, df_netmhcpan_only$rank)
@@ -1003,12 +1003,12 @@ p6 <- ggplot(df_stat_compare, aes(x = group, y = rank, fill = group)) +
   )
 
 # Save all outputs 
-ggsave("results/confusion_matrix_9mer.png",              p1, width = 7,  height = 5,  dpi = 150)
-ggsave("results/affinity_bias_density_before.png",       p2, width = 7,  height = 5,  dpi = 150)
-ggsave("results/affinity_bias_ecdf_before.png",          p3, width = 7,  height = 5,  dpi = 150)
-ggsave("results/affinity_bias_options_ecdf.png", p5, width = 13.33, height = 7.5, dpi = 200)
-ggsave("results/affinity_bias_options_density.png", p4, width = 13.33, height = 7.5, dpi = 200)
-ggsave("results/affinity_bias_boxplot_comparison.png",   p6, width = 9,  height = 7,  dpi = 150)
+ggsave("results/figures/netmhcpan/confusion_matrix_9mer.png",              p1, width = 7,  height = 5,  dpi = 150)
+ggsave("results/figures/netmhcpan/affinity_bias_density_before.png",       p2, width = 7,  height = 5,  dpi = 150)
+ggsave("results/figures/netmhcpan/affinity_bias_ecdf_before.png",          p3, width = 7,  height = 5,  dpi = 150)
+ggsave("results/figures/netmhcpan/affinity_bias_options_ecdf.png", p5, width = 13.33, height = 7.5, dpi = 200)
+ggsave("results/figures/netmhcpan/affinity_bias_options_density.png", p4, width = 13.33, height = 7.5, dpi = 200)
+ggsave("results/figures/netmhcpan/affinity_bias_boxplot_comparison.png",   p6, width = 9,  height = 7,  dpi = 150)
 
 write_csv(df_rank_summary,  "data/processed/rank_distribution_summary.csv")
 write_csv(df_test_summary,  "data/processed/statistical_test_summary.csv")

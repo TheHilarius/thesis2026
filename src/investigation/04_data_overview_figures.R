@@ -297,7 +297,7 @@ saveNetwork(sankey_neg, "results/sankey/sankey_negatives.html")
 cat("Saved: results/sankey/sankey_positives.html\n")
 cat("Saved: results/sankey/sankey_negatives.html\n")
 
-png("results/venn_diagram_overlap.png", width = 800, height = 650, res = 150)
+png("results/figures/overview/venn_diagram_overlap.png", width = 800, height = 650, res = 150)
 print(venn_plot)
 dev.off()
 
@@ -408,7 +408,7 @@ p_pipeline <- ggplot() +
 # 4. EXPORT
 # ==============================================================================
 # Save with a matching 5:1 aspect ratio to prevent any stretching
-ggsave("results/methods_generation_pipeline.png", p_pipeline, 
+ggsave("results/figures/overview/methods_generation_pipeline.png", p_pipeline, 
        width = 15, height = 3, dpi = 300)
 
 cat("✅ Polished pipeline saved to results/methods_generation_pipeline.png\n")
