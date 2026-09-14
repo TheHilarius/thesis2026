@@ -124,6 +124,11 @@ def main():
         cfg = r.get("config", {})
         cv = r.get("cv_summary", {})
         ho = r.get("held_out_metrics", {})
+        # Nested CV fallback: use mean of outer_val_metrics when held_out_metrics absent
+        if not ho:
+            ovm = r.get("outer_val_metrics", [])
+            if ovm:
+                ho = {m: sum(o[m] for o in ovm) / len(ovm) for m in ovm[0]}
 
         row = {
             "result_file": str(path),
@@ -135,8 +140,6 @@ def main():
             "embedding_mode": infer_embedding_mode(r),
             "features": cfg.get("n_features", ""),
             "cv_folds": cfg.get("n_cv_folds", ""),
-            "best_fold": r.get("best_fold_id", ""),
-            "best_fold_auc": r.get("best_fold_auc", ""),
             "has_heldout_predictions": "held_out_predictions" in r,
         }
 
@@ -168,8 +171,6 @@ def main():
         "embedding_mode",
         "features",
         "cv_folds",
-        "best_fold",
-        "best_fold_auc",
         "has_heldout_predictions",
     ]
 

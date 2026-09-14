@@ -33,99 +33,6 @@ PREPARED_EMBEDDING_DIR = DATA_DIR / "embeddings_prepared"
 
 EMBEDDING_SOURCES = {
     "esmc": {
-        "display_name": "ESM-C (600M)",
-        "raw_path": EMBEDDING_DIR / "esmc_protein_embeddings.h5",
-        "prepared_path": PREPARED_EMBEDDING_DIR / "esmc_prepared.h5",
-        "emb_dim": 1152,
-        "region_map": {
-            "context": "context_emb",
-        },
-        "peptide_id_col": "peptide_seqs",
-        "uniprot_id_col": "uniprot_ids",
-        "has_row_indices": True,
-        "has_start_end": True,
-    },
-    "esmif": {
-        "display_name": "ESM-IF1",
-        "raw_path": EMBEDDING_DIR / "esmif_structure_embeddings.h5",
-        "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_prepared.h5",
-        "emb_dim": 512,
-        "region_map": {
-            "context": "context_if_struct",
-        },
-        "peptide_id_col": "peptide_ids",
-        "uniprot_id_col": "uniprot_ids",
-        "has_row_indices": False,
-        "has_start_end": False,
-    },
-    "esmif_hybrid": {
-        "display_name": "ESM-IF1 (hybrid PDB+AF2)",
-        "raw_path": EMBEDDING_DIR / "esmif_hybrid_structure_embeddings.h5",
-        "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_hybrid_prepared.h5",
-        "emb_dim": 512,
-        "region_map": {
-            "context": "context_if_struct",
-        },
-        "peptide_id_col": "peptide_ids",
-        "uniprot_id_col": "uniprot_ids",
-        "has_row_indices": False,
-        "has_start_end": False,
-    },
-    # In EMBEDDING_SOURCES:
-        "esmif_hybrid_80_fb": {
-        "display_name": "ESM-IF1 hybrid 80% + AF2 fallback",
-        "raw_path": EMBEDDING_DIR / "esmif_hybrid_80_fb_embeddings.h5",
-        "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_hybrid_80_fb_prepared.h5",
-        "emb_dim": 512,
-        "region_map": {
-            "context": "context_if_struct",
-        },
-        "peptide_id_col": "peptide_ids",
-        "uniprot_id_col": "uniprot_ids",
-        "has_row_indices": False,
-        "has_start_end": False,
-    },
-    "esmif_hybrid_60_fb": {
-        "display_name": "ESM-IF1 hybrid 60% + AF2 fallback",
-        "raw_path": EMBEDDING_DIR / "esmif_hybrid_60_fb_embeddings.h5",
-        "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_hybrid_60_fb_prepared.h5",
-        "emb_dim": 512,
-        "region_map": {
-            "context": "context_if_struct",
-        },
-        "peptide_id_col": "peptide_ids",
-        "uniprot_id_col": "uniprot_ids",
-        "has_row_indices": False,
-        "has_start_end": False,
-    },
-    "esmif_hybrid_40_fb": {
-        "display_name": "ESM-IF1 hybrid 40% + AF2 fallback",
-        "raw_path": EMBEDDING_DIR / "esmif_hybrid_40_fb_embeddings.h5",
-        "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_hybrid_40_fb_prepared.h5",
-        "emb_dim": 512,
-        "region_map": {
-            "context": "context_if_struct",
-        },
-        "peptide_id_col": "peptide_ids",
-        "uniprot_id_col": "uniprot_ids",
-        "has_row_indices": False,
-        "has_start_end": False,
-    },
-    "esmif_hybrid_20_fb": {
-        "display_name": "ESM-IF1 hybrid 20% + AF2 fallback",
-        "raw_path": EMBEDDING_DIR / "esmif_hybrid_20_fb_embeddings.h5",
-        "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_hybrid_20_fb_prepared.h5",
-        "emb_dim": 512,
-        "region_map": {
-            "context": "context_if_struct",
-        },
-        "peptide_id_col": "peptide_ids",
-        "uniprot_id_col": "uniprot_ids",
-        "has_row_indices": False,
-        "has_start_end": False,
-    },
-    # ── Context-window embeddings (single mean-pooled vector per sample) ──
-    "esmc_context": {
         "display_name": "ESM-C (600M) context window",
         "raw_path": EMBEDDING_DIR / "esmc_context_embeddings.h5",
         "prepared_path": PREPARED_EMBEDDING_DIR / "esmc_context_prepared.h5",
@@ -138,7 +45,7 @@ EMBEDDING_SOURCES = {
         "has_row_indices": True,
         "has_start_end": True,
     },
-    "esmif_context": {
+    "esmif": {
         "display_name": "ESM-IF1 context window",
         "raw_path": EMBEDDING_DIR / "esmif_context_embeddings.h5",
         "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_context_prepared.h5",
@@ -236,59 +143,15 @@ FEATURE_COMPONENTS = {
         "csv_path": BLOSUM_DATA_PATH,
     },
     "esmc": {
-        "display_name": "ESM-C (600M) embeddings",
+        "display_name": "ESM-C (600M) context window",
         "type": "embedding",
         "embedding_key": "esmc",
         "pca_components": PCA_COMPONENTS,
     },
     "esmif": {
-        "display_name": "ESM-IF1 embeddings",
-        "type": "embedding",
-        "embedding_key": "esmif",
-        "pca_components": PCA_COMPONENTS,
-    },
-    "esmif_hybrid": {
-        "display_name": "ESM-IF1 hybrid (PDB+AF2) embeddings",
-        "type": "embedding",
-        "embedding_key": "esmif_hybrid",
-        "pca_components": PCA_COMPONENTS,
-    },
-    # In FEATURE_COMPONENTS:
-    "esmif_hybrid_80_fb": {
-        "display_name": "ESM-IF1 hybrid 80% + AF2 fallback",
-        "type": "embedding",
-        "embedding_key": "esmif_hybrid_80_fb",
-        "pca_components": PCA_COMPONENTS,
-    },
-    "esmif_hybrid_60_fb": {
-        "display_name": "ESM-IF1 hybrid 60% + AF2 fallback",
-        "type": "embedding",
-        "embedding_key": "esmif_hybrid_60_fb",
-        "pca_components": PCA_COMPONENTS,
-    },
-    "esmif_hybrid_40_fb": {
-        "display_name": "ESM-IF1 hybrid 40% + AF2 fallback",
-        "type": "embedding",
-        "embedding_key": "esmif_hybrid_40_fb",
-        "pca_components": PCA_COMPONENTS,
-    },
-    "esmif_hybrid_20_fb": {
-        "display_name": "ESM-IF1 hybrid 20% + AF2 fallback",
-        "type": "embedding",
-        "embedding_key": "esmif_hybrid_20_fb",
-        "pca_components": PCA_COMPONENTS,
-    },
-    # ── Context-window embeddings (single mean-pooled vector) ──
-    "esmc_context": {
-        "display_name": "ESM-C (600M) context window",
-        "type": "embedding",
-        "embedding_key": "esmc_context",
-        "pca_components": PCA_COMPONENTS,
-    },
-    "esmif_context": {
         "display_name": "ESM-IF1 context window",
         "type": "embedding",
-        "embedding_key": "esmif_context",
+        "embedding_key": "esmif",
         "pca_components": PCA_COMPONENTS,
     },
 }
@@ -303,16 +166,12 @@ FEATURE_SETS = {
         "components": ["handcrafted"],
     },
     "esmc": {
-        "display_name": "ESM-C embeddings only",
+        "display_name": "ESM-C context window only",
         "components": ["esmc"],
     },
     "esmif": {
-        "display_name": "ESM-IF1 embeddings only",
+        "display_name": "ESM-IF1 context window only",
         "components": ["esmif"],
-    },
-    "esmif_hybrid": {
-        "display_name": "ESM-IF1 hybrid embeddings only",
-        "components": ["esmif_hybrid"],
     },
     # ── Structural + AA encoding ──
     "handcrafted_sparse": {
@@ -323,7 +182,15 @@ FEATURE_SETS = {
         "display_name": "Structural + BLOSUM50 AA",
         "components": ["handcrafted", "blosum"],
     },
-    # ── Structural + AA + single embedding ──
+    # ── Structural + AA + single embedding (context window) ──
+    "handcrafted_esmc": {
+        "display_name": "Structural + ESM-C context",
+        "components": ["handcrafted", "esmc"],
+    },
+    "handcrafted_esmif": {
+        "display_name": "Structural + ESM-IF1 context",
+        "components": ["handcrafted", "esmif"],
+    },
     "handcrafted_sparse_esmc": {
         "display_name": "Structural + one-hot + ESM-C",
         "components": ["handcrafted", "sparse", "esmc"],
@@ -331,10 +198,6 @@ FEATURE_SETS = {
     "handcrafted_sparse_esmif": {
         "display_name": "Structural + one-hot + ESM-IF",
         "components": ["handcrafted", "sparse", "esmif"],
-    },
-    "handcrafted_sparse_esmif_hybrid": {
-        "display_name": "Structural + one-hot + ESM-IF hybrid",
-        "components": ["handcrafted", "sparse", "esmif_hybrid"],
     },
     "handcrafted_blosum_esmc": {
         "display_name": "Structural + BLOSUM50 + ESM-C",
@@ -344,83 +207,10 @@ FEATURE_SETS = {
         "display_name": "Structural + BLOSUM50 + ESM-IF",
         "components": ["handcrafted", "blosum", "esmif"],
     },
-    # ── Kitchen sink ──
-    "all_sparse": {
+    # ── Combined context window ──
+    "handcrafted_sparse_esmc_esmif": {
         "display_name": "Structural + one-hot + ESM-C + ESM-IF",
         "components": ["handcrafted", "sparse", "esmc", "esmif"],
-    },
-    "all_blosum": {
-        "display_name": "Structural + BLOSUM50 + ESM-C + ESM-IF",
-        "components": ["handcrafted", "blosum", "esmc", "esmif"],
-    },
-        # ── Hybrid ESM-IF standalone (A/B comparison) ──
-    "esmif_hybrid_80_fb": {
-        "display_name": "ESM-IF1 hybrid 80% fb only",
-        "components": ["esmif_hybrid_80_fb"],
-    },
-    "esmif_hybrid_60_fb": {
-        "display_name": "ESM-IF1 hybrid 60% fb only",
-        "components": ["esmif_hybrid_60_fb"],
-    },
-    "esmif_hybrid_40_fb": {
-        "display_name": "ESM-IF1 hybrid 40% fb only",
-        "components": ["esmif_hybrid_40_fb"],
-    },
-    "esmif_hybrid_20_fb": {
-        "display_name": "ESM-IF1 hybrid 20% fb only",
-        "components": ["esmif_hybrid_20_fb"],
-    },
-    # ── Hybrid combined with handcrafted + sparse ──
-    "handcrafted_sparse_esmif_h80fb": {
-        "display_name": "Structural + one-hot + ESM-IF hybrid 80% fb",
-        "components": ["handcrafted", "sparse", "esmif_hybrid_80_fb"],
-    },
-    "handcrafted_sparse_esmif_h60fb": {
-        "display_name": "Structural + one-hot + ESM-IF hybrid 60% fb",
-        "components": ["handcrafted", "sparse", "esmif_hybrid_60_fb"],
-    },
-    "handcrafted_sparse_esmif_h40fb": {
-        "display_name": "Structural + one-hot + ESM-IF hybrid 40% fb",
-        "components": ["handcrafted", "sparse", "esmif_hybrid_40_fb"],
-    },
-    "handcrafted_sparse_esmif_h20fb": {
-        "display_name": "Structural + one-hot + ESM-IF hybrid 20% fb",
-        "components": ["handcrafted", "sparse", "esmif_hybrid_20_fb"],
-    },
-    # Without encodings, but use esmc for sequence info (no blosum/sparse)
-	"handcrafted_esmc": {
-        "display_name": "Structural + esmc",
-        "components": ["handcrafted", "esmc"],
-    },
-    # ONLY STRUCTURAL INFO
-	"handcrafted_esmif": {
-        "display_name": "Structural + esmif",
-        "components": ["handcrafted", "esmif"],
-    },
-    # ── Context-window embeddings ──
-    "esmc_context": {
-        "display_name": "ESM-C context window only",
-        "components": ["esmc_context"],
-    },
-    "esmif_context": {
-        "display_name": "ESM-IF1 context window only",
-        "components": ["esmif_context"],
-    },
-    "handcrafted_esmc_context": {
-        "display_name": "Structural + ESM-C context",
-        "components": ["handcrafted", "esmc_context"],
-    },
-    "handcrafted_esmif_context": {
-        "display_name": "Structural + ESM-IF1 context",
-        "components": ["handcrafted", "esmif_context"],
-    },
-    "handcrafted_sparse_esmc_context": {
-        "display_name": "Structural + one-hot + ESM-C context",
-        "components": ["handcrafted", "sparse", "esmc_context"],
-    },
-    "handcrafted_sparse_esmif_context": {
-        "display_name": "Structural + one-hot + ESM-IF1 context",
-        "components": ["handcrafted", "sparse", "esmif_context"],
     },
 }
 
