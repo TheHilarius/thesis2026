@@ -13,12 +13,12 @@ Examples:
     --split heldout \
     --split-by-model \
     --out-prefix results/figures/models/heldout_roc_selected \
-    --results models/cv_results_lr_handcrafted_blosum_esmc_*.json models/cv_results_rf_handcrafted_blosum_esmc_*.json
+    --results models/cv_results_lr_l2_handcrafted_blosum_esmc_*.json models/cv_results_rf_handcrafted_blosum_esmc_*.json
 
   python src/pipeline/python/07_compare_heldout_roc.py \
     --split cv \
     --out results/figures/models/cv_roc_selected.png \
-    --results models/cv_results_lr_handcrafted_blosum_esmc_*.json models/cv_results_rf_handcrafted_blosum_esmc_*.json
+    --results models/cv_results_lr_l2_handcrafted_blosum_esmc_*.json models/cv_results_rf_handcrafted_blosum_esmc_*.json
 """
 
 import argparse
@@ -219,7 +219,7 @@ def parse_args():
     parser.add_argument("--results", nargs="+", required=True)
     parser.add_argument("--split", choices=["heldout", "cv"], default="heldout")
     parser.add_argument("--split-by-model", action="store_true")
-    parser.add_argument("--model", choices=["lr", "rf"], default=None)
+    parser.add_argument("--model", choices=["lr_l2", "lr_elasticnet", "rf"], default=None)
     parser.add_argument("--out", default=None, help="Output PNG for one combined plot.")
     parser.add_argument("--out-prefix", default=None, help="Prefix when using --split-by-model.")
     parser.add_argument("--title", default=None)
@@ -262,7 +262,7 @@ def main():
         if args.out_prefix is None:
             raise SystemExit("--out-prefix is required with --split-by-model")
 
-        for model_key in ["lr", "rf"]:
+        for model_key in ["lr_l2", "lr_elasticnet", "rf"]:
             group = [(p, r) for p, r in loaded if r.get("model_key") == model_key]
             if not group:
                 continue

@@ -110,6 +110,7 @@ typing_extensions==4.16.0
 urllib3==2.7.0
 wcwidth==0.8.3
 wheel==0.48.0
+xgboost==3.4.1
 xxhash==4.0.1
 yarl==1.24.5
 zstd==1.5.7.2

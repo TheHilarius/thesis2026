@@ -45,13 +45,27 @@ DEFAULT_COMBOS = [
     ("rf", "handcrafted_sparse_esmif", 9),
     # Combined
     ("rf", "handcrafted_sparse_esmc_esmif", "esmc=1,esmif=9"),
-    # Same with LR
-    ("lr", "handcrafted", None),
-    ("lr", "handcrafted_sparse", None),
-    ("lr", "handcrafted_blosum", None),
-    ("lr", "handcrafted_sparse_esmc", 1),
-    ("lr", "handcrafted_sparse_esmif", 9),
-    ("lr", "handcrafted_sparse_esmc_esmif", "esmc=1,esmif=9"),
+    # Same with L2
+    ("lr_l2", "handcrafted", None),
+    ("lr_l2", "handcrafted_sparse", None),
+    ("lr_l2", "handcrafted_blosum", None),
+    ("lr_l2", "handcrafted_sparse_esmc", 1),
+    ("lr_l2", "handcrafted_sparse_esmif", 9),
+    ("lr_l2", "handcrafted_sparse_esmc_esmif", "esmc=1,esmif=9"),
+    # Same with ElasticNet
+    ("lr_elasticnet", "handcrafted", None),
+    ("lr_elasticnet", "handcrafted_sparse", None),
+    ("lr_elasticnet", "handcrafted_blosum", None),
+    ("lr_elasticnet", "handcrafted_sparse_esmc", 1),
+    ("lr_elasticnet", "handcrafted_sparse_esmif", 9),
+    ("lr_elasticnet", "handcrafted_sparse_esmc_esmif", "esmc=1,esmif=9"),
+    # XGBoost
+    ("xgb", "handcrafted", None),
+    ("xgb", "handcrafted_sparse", None),
+    ("xgb", "handcrafted_blosum", None),
+    ("xgb", "handcrafted_sparse_esmc", 1),
+    ("xgb", "handcrafted_sparse_esmif", 9),
+    ("xgb", "handcrafted_sparse_esmc_esmif", "esmc=1,esmif=9"),
 ]
 
 

@@ -15,7 +15,7 @@ Usage:
     python src/pipeline/python/06_feature_importance.py --features handcrafted_sparse
     python src/pipeline/python/06_feature_importance.py --features handcrafted_sparse --top 50
     python src/pipeline/python/06_feature_importance.py --features handcrafted_sparse_esmc --top 100
-    python src/pipeline/python/06_feature_importance.py --features handcrafted_sparse --models lr rf xgb
+    python src/pipeline/python/06_feature_importance.py --features handcrafted_sparse --models lr_l2 lr_elasticnet rf xgb
 """
 
 import argparse
@@ -39,8 +39,8 @@ from config import POSITION_AA_COLS
 parser = argparse.ArgumentParser(description="Feature importance extraction & visualization")
 parser.add_argument('--features', required=True,
                     help="Feature set tag (e.g. handcrafted_sparse, handcrafted_blosum)")
-parser.add_argument('--models', nargs='+', default=['lr', 'rf'],
-                    help="Which models to analyze (default: lr rf)")
+parser.add_argument('--models', nargs='+', default=['lr_l2', 'lr_elasticnet', 'rf'],
+                    help="Which models to analyze (default: lr_l2 lr_elasticnet rf)")
 parser.add_argument('--top', type=int, default=30,
                     help="Top features in the per-model plots (default: 30)")
 parser.add_argument('--top_compare', type=int, default=None,
@@ -72,7 +72,8 @@ OUT_FIG.mkdir(parents=True, exist_ok=True)
 OUT_TAB.mkdir(parents=True, exist_ok=True)
 
 MODEL_LABELS = {
-    'lr':   'Logistic Regression',
+    'lr_l2':       'Logistic Regression (L2)',
+    'lr_elasticnet': 'Logistic Regression (ElasticNet)',
     'rf':   'Random Forest',
     'xgb':  'XGBoost',
     'lgbm': 'LightGBM',

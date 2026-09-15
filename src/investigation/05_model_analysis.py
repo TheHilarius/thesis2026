@@ -45,7 +45,8 @@ from config import (
 
 COLORS = {
     "rf": "#2ecc71",
-    "lr": "#3498db",
+    "lr_l2": "#3498db",
+    "lr_elasticnet": "#9b59b6",
     "xgb": "#e74c3c",
     "svm": "#9b59b6",
     "default": "#7f8c8d",

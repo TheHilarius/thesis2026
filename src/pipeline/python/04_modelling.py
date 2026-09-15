@@ -5,7 +5,8 @@ Model-agnostic with composable feature sets.
 
 Usage:
     python 04_modelling.py --model rf  --features handcrafted
-    python 04_modelling.py --model lr  --features handcrafted_sparse
+    python 04_modelling.py --model lr_l2 --features handcrafted_sparse
+    python 04_modelling.py --model lr_elasticnet --features handcrafted_sparse
     python 04_modelling.py --model rf  --features handcrafted_sparse_esmc
     python 04_modelling.py --model rf  --features all_sparse
 """
@@ -76,13 +77,16 @@ class Logger:
 # 1. MODEL FACTORY
 # ──────────────────────────────────────────────
 
-def build_model(model_cfg):
+def build_model(model_cfg, param_overrides=None):
     """Instantiate a sklearn model from a MODEL_REGISTRY entry."""
     class_path = model_cfg["model_class"]
     module_path, class_name = class_path.rsplit(".", 1)
     module = importlib.import_module(module_path)
     cls = getattr(module, class_name)
-    return cls(**model_cfg["params"])
+    params = dict(model_cfg["params"])
+    if param_overrides:
+        params.update(param_overrides)
+    return cls(**params)
 
 
 # ──────────────────────────────────────────────
@@ -442,10 +446,19 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
         X_csv_train = df.iloc[train_indices][csv_feature_cols].values.astype(np.float64)
         X_csv_test = df.iloc[test_indices][csv_feature_cols].values.astype(np.float64)
 
-        X_csv_train, X_csv_test, col_medians = impute_nan(
-            X_csv_train, X_csv_test, csv_feature_cols, fold_id,
-        )
-        fold_artifacts["col_medians"] = col_medians
+        if model_cfg.get("skip_imputation"):
+            # Let models that handle NaN natively (e.g. XGBoost) see missing
+            # values directly. Only inf -> NaN is needed (XGB treats NaN as missing).
+            X_csv_train[np.isinf(X_csv_train)] = np.nan
+            X_csv_test[np.isinf(X_csv_test)] = np.nan
+            fold_artifacts["col_medians"] = None
+            print(f"    CSV features: {X_csv_train.shape[1]} columns "
+                  f"(imputation skipped — NaN passed natively)")
+        else:
+            X_csv_train, X_csv_test, col_medians = impute_nan(
+                X_csv_train, X_csv_test, csv_feature_cols, fold_id,
+            )
+            fold_artifacts["col_medians"] = col_medians
 
         parts_train.append(X_csv_train)
         parts_test.append(X_csv_test)
@@ -551,7 +564,10 @@ def prepare_held_out(df, csv_feature_cols, emb_data_dict, model_cfg, fold_artifa
     # ── CSV features ──
     if csv_feature_cols:
         X_csv = df.iloc[ho_indices][csv_feature_cols].values.astype(np.float64)
-        X_csv = impute_nan_single(X_csv, fold_artifacts["col_medians"])
+        if fold_artifacts["col_medians"] is not None:
+            X_csv = impute_nan_single(X_csv, fold_artifacts["col_medians"])
+        else:
+            X_csv[np.isinf(X_csv)] = np.nan
         parts.append(X_csv)
 
     # ── Embedding features ──
@@ -586,7 +602,10 @@ def prepare_validation(df, csv_feature_cols, emb_data_dict, model_cfg,
     # ── CSV features ──
     if csv_feature_cols:
         X_csv = df.iloc[val_indices][csv_feature_cols].values.astype(np.float64)
-        X_csv = impute_nan_single(X_csv, fold_artifacts["col_medians"])
+        if fold_artifacts["col_medians"] is not None:
+            X_csv = impute_nan_single(X_csv, fold_artifacts["col_medians"])
+        else:
+            X_csv[np.isinf(X_csv)] = np.nan
         parts.append(X_csv)
 
     # ── Embedding features ──
@@ -642,7 +661,16 @@ def predict_with_averaging(df, csv_feature_cols, emb_data_dict, model_cfg,
 # ──────────────────────────────────────────────
 
 def train_one_fold(model_cfg, X_train, y_train, X_test, y_test, fold_id):
-    model = build_model(model_cfg)
+    param_overrides = {}
+    if model_cfg.get("scale_pos_weight") == "auto":
+        n_pos = int(y_train.sum())
+        n_neg = int(len(y_train) - n_pos)
+        ratio = (n_neg / n_pos) if n_pos > 0 else 1.0
+        param_overrides["scale_pos_weight"] = ratio
+        print(f"    scale_pos_weight (auto) = {ratio:.4f} "
+              f"(neg={n_neg}, pos={n_pos})")
+
+    model = build_model(model_cfg, param_overrides=param_overrides)
     display = model_cfg["display_name"]
 
     print(f"    Training {display} ...")
@@ -753,6 +781,11 @@ def parse_args():
         help="Override PCA components: int for all embeddings ('13') "
              "or per-embedding dict ('esmc=1,esmif=9')",
     )
+    parser.add_argument(
+        "--C", type=float, default=None,
+        help="Override inverse regularization strength C (default: config.py value, "
+             "smaller = stronger reg)",
+    )
     return parser.parse_args()
 
 # ──────────────────────────────────────────────
@@ -774,6 +807,11 @@ if __name__ == "__main__":
     pca_override = args.pca
     if pca_override is not None:
         print(f"  [CLI OVERRIDE] PCA components: {pca_override}")
+
+    # ── C override ──
+    if args.C is not None:
+        print(f"  [CLI OVERRIDE] C: {args.C}")
+        model_cfg["params"]["C"] = args.C
 
     display_name = model_cfg["display_name"]
     feat_display = feat_cfg["display_name"]

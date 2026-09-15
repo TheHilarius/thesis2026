@@ -29,7 +29,7 @@ for feat in "${FEATURE_SETS[@]}"; do
 
   python src/pipeline/python/06_feature_importance.py \
     --features "$feat" \
-    --models lr rf \
+    --models lr_l2 lr_elasticnet rf \
     --top 30 \
     --top_compare 30 \
     --top_big 70 \

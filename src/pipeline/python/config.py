@@ -237,19 +237,59 @@ MODEL_REGISTRY = {
         "needs_scaling": False, #Random forests are tree-based models and do not require feature scaling.
         "coef_attr": "feature_importances_", #The attribute of the fitted model that contains feature importance scores.
     },
-    "lr": {
-        "display_name": "Logistic Regression",
+    "lr_l2": {
+        "display_name": "Logistic Regression (L2)",
         "model_class": "sklearn.linear_model.LogisticRegression",
         "params": {
-            "penalty": None,
-            "solver": "lbfgs", #optimization algorithm (Limited-memory BFGS)
-            "max_iter": 5000, #Maximum number of iterations taken for the solvers to converge. We set it to 5000 to ensure convergence given the potentially large feature space.
-            "class_weight": "balanced", #We have class imbalance, so use balanced weights to give more importance to the minority class.
+            "penalty": "l2",
+            "C": 1.0,                       # inverse regularization strength; smaller = stronger
+            "solver": "lbfgs",
+            "max_iter": 5000,
+            "class_weight": "balanced",
             "random_state": RANDOM_STATE,
             "verbose": 0,
         },
         "needs_scaling": True,
-        "coef_attr": "coef_", #The attribute of the fitted model that contains the coefficients for each feature. For logistic regression, this is typically "coef_".
+        "coef_attr": "coef_",
+    },
+    "lr_elasticnet": {
+        "display_name": "Logistic Regression (ElasticNet)",
+        "model_class": "sklearn.linear_model.LogisticRegression",
+        "params": {
+            "penalty": "elasticnet",
+            "C": 1.0,                       # inverse regularization strength; smaller = stronger
+            "solver": "saga",
+            "l1_ratio": 0.5,
+            "max_iter": 5000,
+            "class_weight": "balanced",
+            "random_state": RANDOM_STATE,
+            "verbose": 0,
+        },
+        "needs_scaling": True,
+        "coef_attr": "coef_",
+    },
+    "xgb": {
+        "display_name": "XGBoost",
+        "model_class": "xgboost.XGBClassifier",
+        "params": {
+            "n_estimators": 1000,           # number of boosting rounds
+            "max_depth": 6,                 # maximum tree depth
+            "learning_rate": 0.1,           # step size shrinkage (eta)
+            "subsample": 1.0,               # fraction of rows sampled per tree
+            "colsample_bytree": 1.0,        # fraction of features sampled per tree
+            "min_child_weight": 1,          # minimum sum of instance weight in a leaf
+            "reg_lambda": 1.0,              # L2 regularization
+            "reg_alpha": 0.0,               # L1 regularization
+            "gamma": 0.0,                   # min loss reduction required for a split
+            "eval_metric": "logloss",
+            "n_jobs": -1,                   # use all CPU cores
+            "verbosity": 0,                 # silent
+            "random_state": RANDOM_STATE,   # reproducibility
+        },
+        "needs_scaling": False,             # tree-based; no scaling required
+        "coef_attr": "feature_importances_",  # gain-based importance
+        "scale_pos_weight": "auto",         # computed per-fold from y_train
+        "skip_imputation": True,            # let XGBoost handle NaN natively
     },
 }
 
