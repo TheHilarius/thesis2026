@@ -410,23 +410,26 @@ extract_flanking_regions <- function(data,
                                      c_flank_size = 10) {
   #' Extract N-terminal and C-terminal flanking regions around epitopes
   #' 
-  #' description
-  #' Extracts the amino acid sequences flanking each epitope. These regions
-  #' are critical for predicting proteasome cleavage and TAP transport.
+  #' Extracts amino acid sequences flanking each epitope and pads with X to a
+  #' fixed-width context window (n_flank_size + peptide + c_flank_size).
   #' 
-  #' If the epitope is near the protein terminus, the flanking region is
-  #' padded with 'X' characters to maintain consistent length.
+  #' Padding is directional: N-flank is left-padded, C-flank is right-padded.
+  #' This preserves the Schechter-Berger cleavage-site frame so that position
+  #' columns (N10..N1, P1..P9, C1..C10) are always correctly aligned.
   #' 
   #' param data Data frame with epitopes and protein sequences
   #' param n_flank_size Number of residues to extract BEFORE epitope (default: 10)
   #' param c_flank_size Number of residues to extract AFTER epitope (default: 10)
   #' 
   #' return Data frame with added columns:
-  #'   - n_flank_seq: N-terminal flanking sequence
-  #'   - c_flank_seq: C-terminal flanking sequence
-  #'   - full_context: n_flank + peptide + c_flank
-  #'   - near_n_terminus: Boolean, TRUE if epitope is near protein start
-  #'   - near_c_terminus: Boolean, TRUE if epitope is near protein end
+  #'   - n_flank: N-terminal flank, padded to n_flank_size (X on left)
+  #'   - c_flank: C-terminal flank, padded to c_flank_size (X on right)
+  #'   - n_flank_raw: real N-terminal flank (no padding)
+  #'   - c_flank_raw: real C-terminal flank (no padding)
+  #'   - n_flank_len_real: number of real residues in N-flank (0..n_flank_size)
+  #'   - c_flank_len_real: number of real residues in C-flank (0..c_flank_size)
+  #'   - full_context: n_flank + peptide + c_flank (always n_flank_size + pep_len + c_flank_size)
+  #'   - protein_length: real protein length (unpadded)
   
   data %>%
     mutate(
@@ -434,34 +437,30 @@ extract_flanking_regions <- function(data,
       protein_length = nchar(.data[[sequence_col]]),
       
       # === N-TERMINAL FLANKING REGION ===
-      # This is the sequence BEFORE the epitope (upstream)
-      
-      # Calculate extraction boundaries
       n_flank_actual_start = pmax(1, .data[[start_col]] - n_flank_size),
       n_flank_actual_end = .data[[start_col]] - 1,
       
-      # Extract the sequence
-      n_flank = if_else(
+      n_flank_raw = if_else(
         n_flank_actual_end >= 1,
         substr(.data[[sequence_col]], n_flank_actual_start, n_flank_actual_end),
         ""
       ),
+      n_flank_len_real = nchar(n_flank_raw),
+      n_flank = paste0(strrep("X", n_flank_size - n_flank_len_real), n_flank_raw),
       
       # === C-TERMINAL FLANKING REGION ===
-      # This is the sequence AFTER the epitope (downstream)
-      
-      # Calculate extraction boundaries
       c_flank_actual_start = .data[[end_col]] + 1,
       c_flank_actual_end = pmin(protein_length, .data[[end_col]] + c_flank_size),
       
-      # Extract the sequence
-      c_flank = if_else(
+      c_flank_raw = if_else(
         c_flank_actual_start <= protein_length,
         substr(.data[[sequence_col]], c_flank_actual_start, c_flank_actual_end),
         ""
       ),
+      c_flank_len_real = nchar(c_flank_raw),
+      c_flank = paste0(c_flank_raw, strrep("X", c_flank_size - c_flank_len_real)),
       
-      # === COMBINED CONTEXT ===
+      # === COMBINED CONTEXT (always fixed width) ===
       full_context = paste0(n_flank, .data[[peptide_col]], c_flank),
       
       # Distance from termini (useful features)

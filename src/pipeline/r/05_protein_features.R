@@ -64,6 +64,43 @@ df_with_flanks <- df_merged %>%
   select(-c(distance_from_n_terminus,distance_from_c_terminus))
 
 # ============================================================================
+# STEP 2b: PROTEIN-LEVEL PADDING + PADDED SEQUENCE
+# ============================================================================
+
+cat("\n=== COMPUTING PROTEIN-LEVEL PADDING ===\n\n")
+
+df_with_flanks <- df_with_flanks |>
+  group_by(uniprot_id) |>
+  mutate(
+    n_pad_len = max(0L, N_FLANK_SIZE - n_flank_len_real),
+    c_pad_len = max(0L, C_FLANK_SIZE - c_flank_len_real),
+    sequence  = paste0(strrep("X", n_pad_len), sequence, strrep("X", c_pad_len))
+  ) |>
+  ungroup()
+
+# --- Validations (zero row-dropping) ---
+cat("Row count:", nrow(df_with_flanks), "\n")
+
+stopifnot("full_context must be 29 chars" =
+            all(nchar(df_with_flanks$full_context) == 29))
+stopifnot("n_flank_raw must contain no X" =
+            !any(grepl("X", df_with_flanks$n_flank_raw)))
+stopifnot("c_flank_raw must contain no X" =
+            !any(grepl("X", df_with_flanks$c_flank_raw)))
+stopifnot("padded sequence length mismatch" =
+            nchar(df_with_flanks$sequence) ==
+            df_with_flanks$protein_length +
+            df_with_flanks$n_pad_len +
+            df_with_flanks$c_pad_len)
+
+cat("  full_context length: 29 (all rows)\n")
+cat("  n_flank_raw X-free: TRUE\n")
+cat("  c_flank_raw X-free: TRUE\n")
+cat("  padded sequence length: consistent\n")
+cat("  n_pad_len range:", range(df_with_flanks$n_pad_len), "\n")
+cat("  c_pad_len range:", range(df_with_flanks$c_pad_len), "\n")
+
+# ============================================================================
 # STEP 3: EXTRACT CLEAVAGE SITE POSITIONS
 # ============================================================================
 
@@ -78,3 +115,26 @@ df_with_cleavage <- df_with_flanks %>%
 
 write_csv(df_with_cleavage, "data/processed/epitopes_pos_and_neg_features.csv")
 cat("\n✅ Saved final extracted features to data/processed/epitopes_pos_and_neg_features.csv\n")
+
+# ============================================================================
+# STEP 4: WRITE PADDED NSP3 INPUT FASTA
+# ============================================================================
+
+cat("\n=== WRITING PADDED NSP3 INPUT FASTA ===\n\n")
+
+nsp3_fasta_path <- "data/processed/nsp3_input_padded.fasta"
+
+df_fasta_out <- df_with_cleavage |>
+  distinct(uniprot_id, sequence) |>
+  filter(!is.na(sequence))
+
+# Write FASTA: header is strictly >{uid} (no sp| prefix)
+fasta_lines <- df_fasta_out |>
+  mutate(header = paste0(">", uniprot_id)) |>
+  mutate(block = paste0(header, "\n", sequence)) |>
+  pull(block)
+
+writeLines(fasta_lines, nsp3_fasta_path)
+
+cat("  Proteins written:", nrow(df_fasta_out), "\n")
+cat("  Output:", nsp3_fasta_path, "\n")
