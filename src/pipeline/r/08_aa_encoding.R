@@ -32,7 +32,7 @@ if (nrow(na_counts) > 0) {
 non_position_cols <- setdiff(colnames(df_raw), POSITION_COLS)
 
 # =============================================================================
-# 1. SPARSE (ONE-HOT) ENCODING — 17 x 20 = 340 binary features
+# 1. SPARSE (ONE-HOT) ENCODING — 29 x 20 = 580 binary features
 # =============================================================================
 
 cat("\n=== Sparse Encoding ===\n")
@@ -79,7 +79,7 @@ write_csv(df_sparse, "data/processed/df_all_sparse.csv")
 cat("Saved: data/processed/df_all_sparse.csv\n")
 
 # =============================================================================
-# 2. BLOSUM50 ENCODING — 17 x 20 = 340 continuous features
+# 2. BLOSUM50 ENCODING — 29 x 20 = 580 continuous features
 # =============================================================================
 
 cat("\n=== BLOSUM50 Encoding ===\n")

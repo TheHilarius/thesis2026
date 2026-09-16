@@ -26,7 +26,7 @@ from pathlib import Path
 from datetime import datetime
 
 SRC_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = SRC_DIR.parent.parent
+PROJECT_ROOT = SRC_DIR.parent.parent.parent
 MODELING_SCRIPT = SRC_DIR / "04_modelling.py"
 EXTRACT_SCRIPT = SRC_DIR / "extract_model_metrics.py"
 RESULTS_DIR = PROJECT_ROOT / "results" / "tables"
