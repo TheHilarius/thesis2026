@@ -108,3 +108,4 @@ data/processed/nsp3_backup_20260907/
 *.err
 docs/environment_setup_SOP.md
 models/
+results/tables/model*

@@ -1,0 +1,129 @@
+================================================================================
+  03_PREPARE_EMBEDDINGS -- ESM-C (600M) CONTEXT WINDOW
+================================================================================
+  Timestamp:       2026-09-16 13:29:31
+  Embedding key:   esmc
+  Raw HDF5:        /home/hilarius/projects/thesis2026/data/processed/embeddings/esmc_context_embeddings.h5
+  Split data:      /home/hilarius/projects/thesis2026/data/processed/df_all_with_folds.csv
+  Output:          /home/hilarius/projects/thesis2026/data/processed/embeddings_prepared/esmc_context_prepared.h5
+  Log:             /home/hilarius/projects/thesis2026/logs/03_prepare_embeddings_esmc_log_20260916_132931.txt
+
+  Source schema:
+    Embedding dim:   1152
+    Region mapping:
+      context      → context_emb
+    Peptide ID col:  peptide_seqs
+    UniProt ID col:  uniprot_ids
+    Has row_indices: True
+    Has start/end:   True
+================================================================================
+
+Loading split data: /home/hilarius/projects/thesis2026/data/processed/df_all_with_folds.csv
+  Shape: 46617 rows x 99 columns
+  Folds: [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5)]
+  Positives: 21601  Negatives: 25016
+
+Loading raw embeddings: /home/hilarius/projects/thesis2026/data/processed/embeddings/esmc_context_embeddings.h5
+
+  HDF5 metadata:
+    coord_convention          1idx_inclusive
+    csv_source                data/processed/df_all.csv
+    device                    cuda
+    emb_dim                   1152
+    fallback_window           2048
+    max_seq_len               None
+    model                     esmc_600m
+    n_fallback                0
+    n_oom_proteins            0
+    n_proteins                9148
+    n_samples                 46617
+    total_time_sec            1202.7969181537628
+
+  HDF5 datasets (raw):
+    context_emb
+    end
+    fallback_flag
+    peptide_seqs
+    row_indices
+    start
+    uniprot_ids
+
+  Loaded canonical datasets:
+    context_emb               shape=(46617, 1152)        dtype=float32
+    end                       shape=(46617,)             dtype=int32
+    fallback_flag             shape=(46617,)             dtype=int8
+    peptide_ids               shape=(46617,)             dtype=<U9
+    row_indices               shape=(46617,)             dtype=int64
+    start                     shape=(46617,)             dtype=int32
+    uniprot_ids               shape=(46617,)             dtype=<U10
+
+  Canonical regions available: ['context_emb']
+  Embedding dim: 1152
+  Embedding samples: 46617
+
+================================================================================
+ALIGNMENT
+================================================================================
+
+  Trying strategy: peptide+uniprot_id+start
+    Aligned: 46617 (100.0% coverage)
+    Spot-check: 0 peptide mismatches, 0 uniprot mismatches out of 500
+  [OK] Strategy 'peptide+uniprot_id+start' passed validation
+
+  Final alignment results:
+    Method:              peptide+uniprot_id+start
+    Embedding samples:   46617
+    Split data rows:     46617
+    Successfully aligned: 46617
+    Embedding unmatched: 0
+    Split data unmatched: 0
+    Coverage: 100.0% of split data
+
+  Zero vector report:
+  Region                  Zeros        %
+  --------------------------------------
+  context_emb                 0    0.00%
+
+================================================================================
+SAVING PREPARED EMBEDDINGS
+================================================================================
+  Output: /home/hilarius/projects/thesis2026/data/processed/embeddings_prepared/esmc_context_prepared.h5
+    context_emb: shape=(46617, 1152)
+  [OK] Saved successfully
+
+  Label distribution per fold:
+  Fold        Total      Pos      Neg    Pos %
+  ------------------------------------------
+  0            7770     3621     4149    46.6%
+  1            7770     3587     4183    46.2%
+  2            7770     3602     4168    46.4%
+  3            7769     3588     4181    46.2%
+  4            7769     3606     4163    46.4%
+  5            7769     3597     4172    46.3% (held-out)
+
+  Embedding norm stats per fold (context_emb):
+  Fold      Samples   Norm med   Norm std  Zero vecs
+  --------------------------------------------------
+  0            7770     1.1216     0.1568          0
+  1            7770     1.1204     0.1529          0
+  2            7770     1.1208     0.1573          0
+  3            7769     1.1242     0.1571          0
+  4            7769     1.1211     0.1537          0
+  5            7769     1.1241     0.1549          0
+
+================================================================================
+RUN SUMMARY
+================================================================================
+  Runtime:          10.7s
+  Embedding:        ESM-C (600M) context window
+  Embedding dim:    1152
+  Alignment method: peptide+uniprot_id+start
+  Aligned samples:  46617
+  Coverage:         100.0%
+  Regions:          ['context_emb']
+  Zero vectors:     {'context_emb': 0}
+  Output:           /home/hilarius/projects/thesis2026/data/processed/embeddings_prepared/esmc_context_prepared.h5
+  Output size:      191.9 MB
+  Log:              /home/hilarius/projects/thesis2026/logs/03_prepare_embeddings_esmc_log_20260916_132931.txt
+  Completed:        2026-09-16 13:29:41
+================================================================================

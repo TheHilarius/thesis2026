@@ -1,0 +1,121 @@
+================================================================================
+  03_PREPARE_EMBEDDINGS -- ESM-IF1 CONTEXT WINDOW
+================================================================================
+  Timestamp:       2026-09-16 13:29:45
+  Embedding key:   esmif
+  Raw HDF5:        /home/hilarius/projects/thesis2026/data/processed/embeddings/esmif_context_embeddings.h5
+  Split data:      /home/hilarius/projects/thesis2026/data/processed/df_all_with_folds.csv
+  Output:          /home/hilarius/projects/thesis2026/data/processed/embeddings_prepared/esmif_context_prepared.h5
+  Log:             /home/hilarius/projects/thesis2026/logs/03_prepare_embeddings_esmif_log_20260916_132945.txt
+
+  Source schema:
+    Embedding dim:   512
+    Region mapping:
+      context      → context_if_struct
+    Peptide ID col:  peptide_ids
+    UniProt ID col:  uniprot_ids
+    Has row_indices: False
+    Has start/end:   False
+================================================================================
+
+Loading split data: /home/hilarius/projects/thesis2026/data/processed/df_all_with_folds.csv
+  Shape: 46617 rows x 99 columns
+  Folds: [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5)]
+  Positives: 21601  Negatives: 25016
+
+Loading raw embeddings: /home/hilarius/projects/thesis2026/data/processed/embeddings/esmif_context_embeddings.h5
+
+  HDF5 metadata:
+    af2_fallback              True
+    af2_fallback_recoveries   0
+    cache_size                500
+    device                    cuda
+    emb_dim                   512
+    model                     esm_if1_gvp4_t16_142M_UR50
+    n_samples                 46617
+    primary_embeddings        46565
+
+  HDF5 datasets (raw):
+    context_if_struct
+    peptide_ids
+    uniprot_ids
+
+  Loaded canonical datasets:
+    context_emb               shape=(46617, 512)         dtype=float32
+    peptide_ids               shape=(46617,)             dtype=<U9
+    uniprot_ids               shape=(46617,)             dtype=<U10
+
+  Canonical regions available: ['context_emb']
+  Embedding dim: 512
+  Embedding samples: 46617
+
+================================================================================
+ALIGNMENT
+================================================================================
+
+  Trying strategy: peptide+uniprot_id
+    Aligned: 46617 (100.0% coverage)
+    Spot-check: 0 peptide mismatches, 0 uniprot mismatches out of 500
+  [OK] Strategy 'peptide+uniprot_id' passed validation
+
+  Final alignment results:
+    Method:              peptide+uniprot_id
+    Embedding samples:   46617
+    Split data rows:     46617
+    Successfully aligned: 46617
+    Embedding unmatched: 0
+    Split data unmatched: 0
+    Coverage: 100.0% of split data
+
+  Zero vector report:
+  Region                  Zeros        %
+  --------------------------------------
+  context_emb                52    0.11%
+
+  NOTE: 52 total zero vectors detected.
+  These represent samples without structural/sequence coverage.
+  They will map to the PCA mean after transformation.
+
+================================================================================
+SAVING PREPARED EMBEDDINGS
+================================================================================
+  Output: /home/hilarius/projects/thesis2026/data/processed/embeddings_prepared/esmif_context_prepared.h5
+    context_emb: shape=(46617, 512)
+  [OK] Saved successfully
+
+  Label distribution per fold:
+  Fold        Total      Pos      Neg    Pos %
+  ------------------------------------------
+  0            7770     3621     4149    46.6%
+  1            7770     3587     4183    46.2%
+  2            7770     3602     4168    46.4%
+  3            7769     3588     4181    46.2%
+  4            7769     3606     4163    46.4%
+  5            7769     3597     4172    46.3% (held-out)
+
+  Embedding norm stats per fold (context_emb):
+  Fold      Samples   Norm med   Norm std  Zero vecs
+  --------------------------------------------------
+  0            7770     4.7622     1.0647         13
+  1            7770     4.7549     1.0311          5
+  2            7770     4.7450     1.0211          6
+  3            7769     4.7615     1.0502         10
+  4            7769     4.7540     1.0159          5
+  5            7769     4.7720     1.0460         13
+
+================================================================================
+RUN SUMMARY
+================================================================================
+  Runtime:          6.3s
+  Embedding:        ESM-IF1 context window
+  Embedding dim:    512
+  Alignment method: peptide+uniprot_id
+  Aligned samples:  46617
+  Coverage:         100.0%
+  Regions:          ['context_emb']
+  Zero vectors:     {'context_emb': 52}
+  Output:           /home/hilarius/projects/thesis2026/data/processed/embeddings_prepared/esmif_context_prepared.h5
+  Output size:      86.1 MB
+  Log:              /home/hilarius/projects/thesis2026/logs/03_prepare_embeddings_esmif_log_20260916_132945.txt
+  Completed:        2026-09-16 13:29:51
+================================================================================
