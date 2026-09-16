@@ -10,7 +10,7 @@ POSITION_COLS <- c(
 
 AMINO_ACIDS <- c(
   "A", "C", "D", "E", "F", "G", "H", "I", "K", "L",
-  "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y"
+  "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y", "X"
 )
 
 df_raw <- read_csv("data/processed/df_all.csv", show_col_types = FALSE)
@@ -32,7 +32,7 @@ if (nrow(na_counts) > 0) {
 non_position_cols <- setdiff(colnames(df_raw), POSITION_COLS)
 
 # =============================================================================
-# 1. SPARSE (ONE-HOT) ENCODING — 29 x 20 = 580 binary features
+# 1. SPARSE (ONE-HOT) ENCODING — 29 x 21 = 609 binary features
 # =============================================================================
 
 cat("\n=== Sparse Encoding ===\n")
@@ -79,12 +79,12 @@ write_csv(df_sparse, "data/processed/df_all_sparse.csv")
 cat("Saved: data/processed/df_all_sparse.csv\n")
 
 # =============================================================================
-# 2. BLOSUM50 ENCODING — 29 x 20 = 580 continuous features
+# 2. BLOSUM50 ENCODING — 29 x 21 = 609 continuous features
 # =============================================================================
 
 cat("\n=== BLOSUM50 Encoding ===\n")
-cat("Encoding", length(POSITION_COLS), "positions x 20 BLOSUM50 dims =",
-    length(POSITION_COLS) * 20, "features\n")
+cat("Encoding", length(POSITION_COLS), "positions x", length(AMINO_ACIDS), "BLOSUM50 dims =",
+    length(POSITION_COLS) * length(AMINO_ACIDS), "features\n")
 
 blosum_features <- map_dfc(POSITION_COLS, \(pos) {
   blosum50_encode_position(df_raw, pos)
@@ -164,7 +164,7 @@ cat("Sparse:  ", nrow(df_sparse), "x", ncol(df_sparse),
     "  → data/processed/df_all_sparse.csv\n")
 cat("BLOSUM50:", nrow(df_blosum), "x", ncol(df_blosum),
     "  → data/processed/df_all_blosum50.csv\n")
-cat("Both have", length(non_position_cols), "non-position columns +",
-    length(POSITION_COLS) * 20, "encoded columns\n")
+cat("Both have", length(non_position_cols), "non-position columns +", length(POSITION_COLS) * length(AMINO_ACIDS), "encoded columns\n")
+
 cat("Column naming: {position}_{amino_acid}, e.g. P2_L, N4_A, C1_V\n")
-cat("NAs encoded as all-zero vectors in both schemes.\n")
+cat("NAs encoded as all-zero vectors; X is a real token (own column/row).\n")

@@ -11,18 +11,19 @@ af_dirs <- "data/processed/structures/alphafold/"
 df_raw <- read_csv("data/processed/epitopes_pos_and_neg_features_with_nsp3.csv")
 
 df_peptides <- df_raw |>
-  select(peptide, n_flank, c_flank, full_context, uniprot_id, start, end, protein_length, label) |>
+  select(peptide, n_flank, c_flank, full_context, uniprot_id, start, end,
+         protein_length, label, n_flank_len_real, c_flank_len_real) |>
   distinct() |>
   rename(pep_start = start, pep_end = end) |>
   mutate(
     pep_start    = as.integer(pep_start),
     pep_end      = as.integer(pep_end),
-    nflank_start = pep_start - nchar(n_flank),
+    nflank_start = pep_start - n_flank_len_real,
     nflank_end   = pep_start - 1L,
     cflank_start = pep_end   + 1L,
-    cflank_end   = pep_end   + nchar(c_flank),
-    window_start = pep_start - nchar(n_flank),
-    window_end   = pep_end   + nchar(c_flank)    
+    cflank_end   = pep_end   + c_flank_len_real,
+    window_start = pep_start - n_flank_len_real,
+    window_end   = pep_end   + c_flank_len_real    
   )
 
 cat("Peptides loaded:", nrow(df_peptides), "\n")
