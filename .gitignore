@@ -65,6 +65,7 @@ logs/fetch_hybrid_v2_80.log
 models/*.pkl
 models/*.pt
 models/*json
+models
 # VS Code local settings
 .vscode/
 
