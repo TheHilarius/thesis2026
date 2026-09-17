@@ -7,7 +7,7 @@ df_raw <- read_csv("data/processed/epitopes_pos_and_neg_features.csv", show_col_
 
 df_peptides <- df_raw |>
   select(peptide, n_flank, c_flank, full_context, uniprot_id, start, end,
-         n_flank_len_real, c_flank_len_real, n_pad_len, c_pad_len, protein_length) |>
+         n_flank_len_real, c_flank_len_real) |>
   distinct() |> 
   rename(pep_start = start, pep_end = end) |>
   mutate(
@@ -40,43 +40,6 @@ nsp3_data <- path_df_needed |>
   select(data) |>
   unnest(data)
 cat("Total residues loaded:", nrow(nsp3_data), "\n")
-
-# --- Shift NSP3 coordinates back to original protein coordinates ---
-# The padded FASTA prepended n_pad_len X residues at the N-terminus,
-# shifting every residue number. Shift back and drop padded X rows.
-# Real X residues (selenocysteine etc.) are within range and kept.
-pad_lookup <- df_peptides |>
-  select(uniprot_id, n_pad_len, c_pad_len, protein_length) |>
-  distinct()
-
-missing_pad <- setdiff(unique(nsp3_data$uniprot), pad_lookup$uniprot_id)
-if (length(missing_pad) > 0) {
-  stop("NSP3 proteins missing from pad_lookup: ",
-       paste(head(missing_pad, 5), collapse = ", "))
-}
-
-n_before <- nrow(nsp3_data)
-nsp3_data <- nsp3_data |>
-  left_join(pad_lookup, by = c("uniprot" = "uniprot_id")) |>
-  mutate(n = n - coalesce(n_pad_len, 0L)) |>
-  filter(n >= 1L, n <= protein_length) |>
-  select(-n_pad_len, -c_pad_len, -protein_length)
-cat("  Coordinate shift: dropped", n_before - nrow(nsp3_data),
-    "padded X rows (", nrow(nsp3_data), "real residues remain)\n")
-
-# Sanity: shifted max residue == real protein length
-len_check <- nsp3_data |>
-  group_by(uniprot) |>
-  summarise(max_n = max(n), .groups = "drop") |>
-  left_join(pad_lookup |> select(uniprot_id, protein_length),
-            by = c("uniprot" = "uniprot_id"))
-bad_len <- len_check |> filter(max_n != protein_length)
-if (nrow(bad_len) > 0) {
-  warning("Proteins with max residue != protein_length: ",
-          nrow(bad_len), " (", paste(head(bad_len$uniprot, 5), collapse = ", "), ")")
-} else {
-  cat("  Shift validation: all proteins pass\n")
-}
 
 cat("Indexing by protein...\n")
 nsp3_split <- split(nsp3_data, nsp3_data$uniprot)
@@ -156,8 +119,7 @@ netsurfp_features <- rsa_disorder |>
   left_join(q8_features,
             by = c("peptide", "n_flank", "c_flank", "full_context",
                    "uniprot_id", "pep_start", "pep_end")) |>
-  select(-any_of(c("protein_length", "n_flank_len_real", "c_flank_len_real",
-                      "n_pad_len", "c_pad_len")))
+  select(-any_of(c("n_flank_len_real", "c_flank_len_real")))
 
 cat("  Combined NSP3 features:", nrow(netsurfp_features), "rows,",
     ncol(netsurfp_features), "columns\n")

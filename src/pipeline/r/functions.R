@@ -613,18 +613,35 @@ read_nsp3_csv <- function(path, uniprot_id) {
 # of residues (peptide, nflank, cflank etc)
 # Now only computes RSA and disorder (Q8 handled by point system)
 # ─────────────────────────────────────────
-aggregate_nsp3_window <- function(res_df) {
-  
+aggregate_nsp3_window <- function(res_df, target_len, pad_side = "none", fallback = NULL) {
+  # Impute short/empty flanks, then compute mean/min/max.
+  # pad_side: "left" (N-flank, repeat first) / "right" (C-flank, repeat last)
+  #           / "none" (peptide, always full length).
+  # fallback: single-row df (P1 or P9) used when window is completely empty.
   if (nrow(res_df) == 0) {
-    return(tibble(
-      mean_rsa      = NA_real_,
-      mean_disorder = NA_real_
-    ))
+    if (is.null(fallback)) {
+      return(tibble(
+        mean_rsa = NA_real_, min_rsa = NA_real_, max_rsa = NA_real_,
+        mean_disorder = NA_real_, min_disorder = NA_real_, max_disorder = NA_real_
+      ))
+    }
+    res_df <- fallback
   }
-  
+  impute <- function(v, n, side) {
+    if (length(v) >= n) return(v[seq_len(n)])
+    pad_val <- if (side == "left") v[1] else v[length(v)]
+    pad <- rep(pad_val, n - length(v))
+    if (side == "left") c(pad, v) else c(v, pad)
+  }
+  rsa <- impute(res_df$rsa, target_len, pad_side)
+  dis <- impute(res_df$disorder, target_len, pad_side)
   tibble(
-    mean_rsa      = mean(res_df$rsa,      na.rm = TRUE),
-    mean_disorder = mean(res_df$disorder,  na.rm = TRUE)
+    mean_rsa      = mean(rsa, na.rm = TRUE),
+    min_rsa       = min(rsa, na.rm = TRUE),
+    max_rsa       = max(rsa, na.rm = TRUE),
+    mean_disorder = mean(dis, na.rm = TRUE),
+    min_disorder  = min(dis, na.rm = TRUE),
+    max_disorder  = max(dis, na.rm = TRUE)
   )
 }
 
@@ -662,10 +679,12 @@ extract_nsp3_windows <- function(uniprot_id,
     res[0, ]
   }
   
-  # Aggregate each window
-  pep_feats    <- aggregate_nsp3_window(pep_rows)
-  nflank_feats <- aggregate_nsp3_window(nflank_rows)
-  cflank_feats <- aggregate_nsp3_window(cflank_rows)
+  # Aggregate each window (impute flanks to 10; peptide always 9 real)
+  pep_feats    <- aggregate_nsp3_window(pep_rows,    target_len = 9,  pad_side = "none")
+  nflank_feats <- aggregate_nsp3_window(nflank_rows, target_len = 10, pad_side = "left",
+                                        fallback = if (nrow(pep_rows) > 0) pep_rows[1, ] else NULL)
+  cflank_feats <- aggregate_nsp3_window(cflank_rows, target_len = 10, pad_side = "right",
+                                        fallback = if (nrow(pep_rows) > 0) pep_rows[nrow(pep_rows), ] else NULL)
   
   # Add suffix so columns don't clash
   names(pep_feats)    <- paste0(names(pep_feats),    "_peptide")
@@ -862,6 +881,21 @@ mean_plddt_region <- function(uid, start, end, lookup_split) {
   mean(v, na.rm = TRUE)
 }
 
+
+#' Extract pLDDT vector with imputation for short/empty flanks.
+#' Empty window → use fallback (P1 or P9 pLDDT). Partially empty → pad
+#' with boundary value to target_len.
+extract_plddt_imputed <- function(uid, start, end, lookup_split,
+                                  target_len, pad_side, fallback) {
+  v <- extract_plddt_vector(uid, start, end, lookup_split)
+  if (length(v) == 0 || all(is.na(v))) v <- fallback
+  if (is.null(v) || length(v) == 0) return(rep(NA_real_, target_len))
+  if (length(v) >= target_len) return(v[seq_len(target_len)])
+  pad_val <- if (pad_side == "left") v[1] else v[length(v)]
+  pad <- rep(pad_val, target_len - length(v))
+  if (pad_side == "left") c(pad, v) else c(v, pad)
+}
+
 # ============================================================================
 # RE-ENGINEERED NETSURFP Q8 FEATURES — BIOLOGICAL POINT SYSTEM
 # ============================================================================
@@ -932,6 +966,20 @@ extract_q8_matrix <- function(nsp3_protein, start, end) {
   mat <- as.matrix(rows[, q8_cols])
   colnames(mat) <- Q8_STATES
   mat
+}
+
+#' Impute a Q8 probability block to a fixed number of rows.
+#' Pads with the boundary row (left = first, right = last) or fallback.
+impute_q8_block <- function(mat, target_rows, pad_side, fallback_row) {
+  if (nrow(mat) == 0) {
+    return(matrix(rep(fallback_row, target_rows), nrow = target_rows, byrow = TRUE,
+                  dimnames = list(NULL, Q8_STATES)))
+  }
+  if (nrow(mat) >= target_rows) return(mat[seq_len(target_rows), , drop = FALSE])
+  pad_row <- if (pad_side == "left") mat[1, ] else mat[nrow(mat), ]
+  pad <- matrix(rep(pad_row, target_rows - nrow(mat)),
+                nrow = target_rows - nrow(mat), byrow = TRUE)
+  if (pad_side == "left") rbind(pad, mat) else rbind(mat, pad)
 }
 
 
@@ -1132,61 +1180,22 @@ extract_nsp3_q8_features <- function(uniprot_id,
   nsp3_prot <- nsp3_split[[uniprot_id]]
   if (is.null(nsp3_prot)) return(make_na_result())
   
-  # Guard against NA peptide coordinates
   if (is.na(pep_start) || is.na(pep_end)) return(make_na_result())
   
-  prot_len <- max(nsp3_prot$n, na.rm = TRUE)
+  pep_mat <- extract_q8_matrix(nsp3_prot, pep_start, pep_end)
+  if (nrow(pep_mat) == 0) return(make_na_result())
   
-  # --- Determine actual valid ranges within the protein ---
-  # Peptide: always valid (9-mer, must exist in protein)
-  pep_start_c <- as.integer(pep_start)
-  pep_end_c   <- as.integer(pep_end)
-  actual_pep_len <- pep_end_c - pep_start_c + 1L
+  nflank_block <- impute_q8_block(
+    extract_q8_matrix(nsp3_prot, nflank_start, nflank_end),
+    target_rows = 10, pad_side = "left",
+    fallback_row = pep_mat[1, ])
+  cflank_block <- impute_q8_block(
+    extract_q8_matrix(nsp3_prot, cflank_start, cflank_end),
+    target_rows = 10, pad_side = "right",
+    fallback_row = pep_mat[nrow(pep_mat), ])
   
-  # N-flank: may be missing (peptide at N-terminus) or shorter
-  if (is.na(nflank_start) || is.na(nflank_end) || nflank_end < 1L || nflank_start > nflank_end) {
-    actual_nfl_len <- 0L
-    nfl_start_c    <- pep_start_c  # placeholder, won't be used
-  } else {
-    nfl_start_c    <- max(1L, as.integer(nflank_start))
-    nfl_end_c      <- min(as.integer(nflank_end), prot_len)
-    actual_nfl_len <- if (nfl_end_c >= nfl_start_c) nfl_end_c - nfl_start_c + 1L else 0L
-  }
-  
-  # C-flank: may be missing (peptide at C-terminus) or shorter
-  if (is.na(cflank_start) || is.na(cflank_end) || cflank_start > prot_len || cflank_start > cflank_end) {
-    actual_cfl_len <- 0L
-    cfl_end_c      <- pep_end_c  # placeholder, won't be used
-  } else {
-    cfl_start_c    <- as.integer(cflank_start)
-    cfl_end_c      <- min(as.integer(cflank_end), prot_len)
-    actual_cfl_len <- if (cfl_end_c >= cfl_start_c) cfl_end_c - cfl_start_c + 1L else 0L
-  }
-  
-  # --- Build full context range ---
-  full_start <- if (actual_nfl_len > 0) nfl_start_c else pep_start_c
-  full_end   <- if (actual_cfl_len > 0) cfl_end_c   else pep_end_c
-  
-  mat_full <- extract_q8_matrix(nsp3_prot, full_start, full_end)
-  
-  if (nrow(mat_full) == 0) return(make_na_result())
-  
-  # Verify dimensions match expectations
-  expected_len <- actual_nfl_len + actual_pep_len + actual_cfl_len
-  if (nrow(mat_full) != expected_len) {
-    warning(sprintf(
-      "Matrix size mismatch for %s pos %d-%d: expected %d rows, got %d",
-      uniprot_id, pep_start, pep_end, expected_len, nrow(mat_full)
-    ))
-    return(make_na_result())
-  }
-  
-  compute_q8_full_context(
-    prob_matrix = mat_full,
-    n_nflank    = actual_nfl_len,
-    n_peptide   = actual_pep_len,
-    n_cflank    = actual_cfl_len
-  )
+  mat_full <- rbind(nflank_block, pep_mat, cflank_block)
+  compute_q8_full_context(mat_full, n_nflank = 10, n_peptide = nrow(pep_mat), n_cflank = 10)
 }
 
 #  Cliff's Delta (overflow-safe, chunked computation) 

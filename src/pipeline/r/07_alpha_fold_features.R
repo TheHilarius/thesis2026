@@ -123,41 +123,43 @@ cat("Peptides removed:       ", nrow(df_af) - nrow(df_af_clean),"\n")
 
 alphafold_features <- df_af_clean |>
   mutate(
-    # ── Per-residue pLDDT vectors (list column) ─────────────────────────────
-    plddt_vec_peptide      = pmap(
-      list(uniprot_id, pep_start,    pep_end),
-      extract_plddt_vector,
-      lookup_split = plddt_lookup_split
+    # ── Boundary values for empty-flank imputation (P1 = first, P9 = last) ──
+    plddt_p1 = pmap(
+      list(uniprot_id, pep_start, pep_start),
+      extract_plddt_vector, lookup_split = plddt_lookup_split
     ),
-    plddt_vec_nflank       = pmap(
-      list(uniprot_id, nflank_start, nflank_end),
-      extract_plddt_vector,
-      lookup_split = plddt_lookup_split
+    plddt_p9 = pmap(
+      list(uniprot_id, pep_end, pep_end),
+      extract_plddt_vector, lookup_split = plddt_lookup_split
     ),
-    plddt_vec_cflank       = pmap(
-      list(uniprot_id, cflank_start, cflank_end),
-      extract_plddt_vector,
-      lookup_split = plddt_lookup_split
+
+    # ── Per-residue pLDDT vectors ──────────────────────────────────────────
+    plddt_vec_peptide = pmap(
+      list(uniprot_id, pep_start, pep_end),
+      extract_plddt_vector, lookup_split = plddt_lookup_split
     ),
-    
-    # ── Scalar summaries (mean pLDDT per region) ────────────────────────────
+    plddt_vec_nflank = pmap(
+      list(uniprot_id, nflank_start, nflank_end, plddt_p1),
+      \(uid, s, e, fb) extract_plddt_imputed(uid, s, e, plddt_lookup_split, 10, "left", fb)
+    ),
+    plddt_vec_cflank = pmap(
+      list(uniprot_id, cflank_start, cflank_end, plddt_p9),
+      \(uid, s, e, fb) extract_plddt_imputed(uid, s, e, plddt_lookup_split, 10, "right", fb)
+    ),
+
+    # ── Scalar summaries: mean/min/max per region ──────────────────────────
     mean_plddt_peptide = map_dbl(plddt_vec_peptide, ~ mean(.x, na.rm = TRUE)),
-    mean_plddt_nflank  = map_dbl(plddt_vec_nflank,  ~ mean(.x, na.rm = TRUE)),
-    mean_plddt_cflank  = map_dbl(plddt_vec_cflank,  ~ mean(.x, na.rm = TRUE)),
-    
-    # Standard deviation of pLDDT (measure of confidence variability)
-    sd_plddt_peptide = map_dbl(plddt_vec_peptide, ~ sd(.x, na.rm = TRUE)),
-    sd_plddt_nflank  = map_dbl(plddt_vec_nflank,  ~ sd(.x, na.rm = TRUE)),
-    sd_plddt_cflank  = map_dbl(plddt_vec_cflank,  ~ sd(.x, na.rm = TRUE)),
-    
-    # Fraction of residues with pLDDT < 70 (disordered proxy)
-    # frac_disordered_peptide = map_dbl(plddt_vec_peptide, ~ mean(.x < 70, na.rm = TRUE)),
-    # frac_disordered_nflank  = map_dbl(plddt_vec_nflank,  ~ mean(.x < 70, na.rm = TRUE)),
-    # frac_disordered_cflank  = map_dbl(plddt_vec_cflank,  ~ mean(.x < 70, na.rm = TRUE)),
-    
-    # Min pLDDT in peptide (weakest-confidence residue)
-    min_plddt_peptide = map_dbl(plddt_vec_peptide, ~ min(.x, na.rm = TRUE))
-  )
+    min_plddt_peptide  = map_dbl(plddt_vec_peptide, ~ min(.x, na.rm = TRUE)),
+    max_plddt_peptide  = map_dbl(plddt_vec_peptide, ~ max(.x, na.rm = TRUE)),
+    mean_plddt_nflank  = map_dbl(plddt_vec_nflank, ~ mean(.x, na.rm = TRUE)),
+    min_plddt_nflank   = map_dbl(plddt_vec_nflank, ~ min(.x, na.rm = TRUE)),
+    max_plddt_nflank   = map_dbl(plddt_vec_nflank, ~ max(.x, na.rm = TRUE)),
+    mean_plddt_cflank  = map_dbl(plddt_vec_cflank, ~ mean(.x, na.rm = TRUE)),
+    min_plddt_cflank   = map_dbl(plddt_vec_cflank, ~ min(.x, na.rm = TRUE)),
+    max_plddt_cflank   = map_dbl(plddt_vec_cflank, ~ max(.x, na.rm = TRUE))
+  ) |>
+  # Drop intermediate list columns and boundary vectors
+  select(-plddt_p1, -plddt_p9, -plddt_vec_peptide, -plddt_vec_nflank, -plddt_vec_cflank)
 
 
 # Check how many peptides have no pLDDT coverage
@@ -169,16 +171,15 @@ cat("Peptides with no pLDDT coverage:", n_missing, "\n")
 
 cat("\n=== pLDDT feature summary ===\n")
 print(alphafold_features |>
-        select(mean_plddt_peptide, mean_plddt_nflank,
-               mean_plddt_cflank, min_plddt_peptide) |>
+        select(mean_plddt_peptide, min_plddt_peptide, max_plddt_peptide,
+               mean_plddt_nflank, mean_plddt_cflank) |>
         summary())
 
 # ── 4. Quick sanity check on the test protein ─────────────────────────────────
 # Show a few rows so you can verify the vectors look right
 alphafold_features |>
   filter(uniprot_id == "X6REB3") |>
-  select(peptide, pep_start, pep_end,
-         plddt_vec_peptide, mean_plddt_peptide) |>
+  select(peptide, pep_start, pep_end, mean_plddt_peptide) |>
   head(5) |>
   print()
 
@@ -192,18 +193,11 @@ alphafold_scalar <- alphafold_features |>
     peptide, uniprot_id, n_flank, c_flank, full_context,
     pep_start, pep_end,
     # pLDDT features: peptide
-    mean_plddt_peptide,
-    #sd_plddt_peptide,
-    #min_plddt_peptide,
-    #frac_disordered_peptide,
+    mean_plddt_peptide, min_plddt_peptide, max_plddt_peptide,
     # pLDDT features: N-flank
-    mean_plddt_nflank,
-    #sd_plddt_nflank,
-    #frac_disordered_nflank,
+    mean_plddt_nflank, min_plddt_nflank, max_plddt_nflank,
     # pLDDT features: C-flank
-    mean_plddt_cflank,
-    #sd_plddt_cflank,
-    #frac_disordered_cflank
+    mean_plddt_cflank, min_plddt_cflank, max_plddt_cflank
   )
 
 df_all <- df_raw |>

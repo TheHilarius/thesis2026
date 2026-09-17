@@ -1,6 +1,6 @@
 #!/bin/bash
 
-INPUT="data/processed/nsp3_input_padded.fasta"
+INPUT="data/raw/fasta/combined_positives_only_clean.fasta"
 BATCH_DIR="data/raw/fasta/batches"
 MAX_SEQS=250
 MAX_RESIDUES=10000000
