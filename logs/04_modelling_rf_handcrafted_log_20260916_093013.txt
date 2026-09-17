@@ -1,0 +1,135 @@
+================================================================================
+  04_MODELLING -- RANDOM FOREST + STRUCTURAL FEATURES ONLY
+================================================================================
+  Timestamp:       2026-09-16 09:30:13
+  Model key:       rf
+  Model class:     sklearn.ensemble.RandomForestClassifier
+  Feature set:     handcrafted (Structural features only)
+  Components:      ['handcrafted']
+  Data path:       C:\Users\olive\Documents\R\thesis2026\data\processed\df_all_with_folds.csv
+  Log path:        C:\Users\olive\Documents\R\thesis2026\logs\04_modelling_rf_handcrafted_log_20260916_093013.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   False
+
+  Model hyperparameters:
+    n_estimators              1000
+    max_depth                 None
+    min_samples_split         2
+    min_samples_leaf          1
+    max_features              sqrt
+    class_weight              balanced
+    n_jobs                    -1
+    random_state              42
+    verbose                   0
+================================================================================
+
+Loading split data: C:\Users\olive\Documents\R\thesis2026\data\processed\df_all_with_folds.csv
+  Shape: 53072 rows x 100 columns
+  [OK] Fold column validated: [0, 1, 2, 3, 4, 5]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  CSV components (1):
+    [handcrafted] Structural features
+      Source: split_data (built-in)
+  Total CSV features: 50
+    Structural: 50
+    AA-encoded: 0
+
+  Estimated total features: ~50
+    CSV:        50
+    Embeddings: 0 (after PCA)
+
+================================================================================
+PIPELINE READY: ~50 features, 5 folds, Random Forest
+================================================================================
+
+================================================================================
+NESTED CROSS-VALIDATION
+  Outer iterations: 6 (rotate validation bucket)
+  Inner folds:      5 (per outer iteration)
+  Total models:     30
+================================================================================
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 0/5 (validation bucket = 0)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 1) ──
+
+    NaN imputation report — 49 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_peptide                                    1299        332     0.2980
+    mean_disorder_peptide                               1299        332     0.0063
+    mean_rsa_nflank                                     1322        339     0.3494
+    mean_disorder_nflank                                1322        339     0.0106
+    mean_rsa_cflank                                     1386        349     0.3606
+    mean_disorder_cflank                                1386        349     0.0119
+    q8point_H_peptide                                   1299        332     1.0000
+    q8point_G_peptide                                   1299        332     0.0000
+    q8point_I_peptide                                   1299        332     0.0000
+    q8point_E_peptide                                   1299        332     0.0000
+    q8point_B_peptide                                   1299        332     0.0000
+    q8point_T_peptide                                   1299        332     0.0000
+    q8point_S_peptide                                   1299        332     0.0000
+    q8point_C_peptide                                   1299        332     1.0000
+    q8point_H_nflank                                    1299        332     1.0000
+    q8point_G_nflank                                    1299        332     0.0000
+    q8point_I_nflank                                    1299        332     0.0000
+    q8point_E_nflank                                    1299        332     0.0000
+    q8point_B_nflank                                    1299        332     0.0000
+    q8point_T_nflank                                    1299        332     0.0000
+    q8point_S_nflank                                    1299        332     0.0000
+    q8point_C_nflank                                    1299        332     1.0000
+    q8point_H_cflank                                    1299        332     1.0000
+    q8point_G_cflank                                    1299        332     0.0000
+    q8point_I_cflank                                    1299        332     0.0000
+    q8point_E_cflank                                    1299        332     0.0000
+    q8point_B_cflank                                    1299        332     0.0000
+    q8point_T_cflank                                    1299        332     0.0000
+    q8point_S_cflank                                    1299        332     0.0000
+    q8point_C_cflank                                    1299        332     1.0000
+    q8trans_H_n_pep                                     1299        332     0.0000
+    q8trans_G_n_pep                                     1299        332     0.0000
+    q8trans_I_n_pep                                     1299        332     0.0000
+    q8trans_E_n_pep                                     1299        332     0.0000
+    q8trans_B_n_pep                                     1299        332     0.0000
+    q8trans_T_n_pep                                     1299        332     0.0000
+    q8trans_S_n_pep                                     1299        332     0.0000
+    q8trans_C_n_pep                                     1299        332     0.0000
+    q8trans_H_pep_c                                     1299        332     0.0000
+    q8trans_G_pep_c                                     1299        332     0.0000
+    q8trans_I_pep_c                                     1299        332     0.0000
+    q8trans_E_pep_c                                     1299        332     0.0000
+    q8trans_B_pep_c                                     1299        332     0.0000
+    q8trans_T_pep_c                                     1299        332     0.0000
+    q8trans_S_pep_c                                     1299        332     0.0000
+    q8trans_C_pep_c                                     1299        332     0.0000
+    mean_plddt_peptide                                  4227       1063    90.5556
+    mean_plddt_nflank                                   4249       1071    89.1700
+    mean_plddt_cflank                                   4325       1080    88.8620
+    Total NaN — train: 72775 (4.11%), test: 18534 (4.19%)
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35380 samples (pos=15621, neg=19759, ratio=1.265)
+    Test:    8846 samples (pos=3923, neg=4923, ratio=1.255)
+    Features: 50
+    Training Random Forest ...
+    Training time: 11.5s
+    Inner fold 1 AUC: 0.6023 (12.2s)
+
+  ── Inner fold 2/5 (test bucket = 2) ──
+
+    NaN imputation report — 49 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------

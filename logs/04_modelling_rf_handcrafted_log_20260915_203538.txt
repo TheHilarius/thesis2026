@@ -1,0 +1,1261 @@
+================================================================================
+  04_MODELLING -- RANDOM FOREST + STRUCTURAL FEATURES ONLY
+================================================================================
+  Timestamp:       2026-09-15 20:35:38
+  Model key:       rf
+  Model class:     sklearn.ensemble.RandomForestClassifier
+  Feature set:     handcrafted (Structural features only)
+  Components:      ['handcrafted']
+  Data path:       C:\Users\olive\Documents\R\thesis2026\data\processed\df_all_with_folds.csv
+  Log path:        C:\Users\olive\Documents\R\thesis2026\logs\04_modelling_rf_handcrafted_log_20260915_203538.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   False
+
+  Model hyperparameters:
+    n_estimators              1000
+    max_depth                 None
+    min_samples_split         2
+    min_samples_leaf          1
+    max_features              sqrt
+    class_weight              balanced
+    n_jobs                    -1
+    random_state              42
+    verbose                   0
+================================================================================
+
+Loading split data: C:\Users\olive\Documents\R\thesis2026\data\processed\df_all_with_folds.csv
+  Shape: 53072 rows x 100 columns
+  [OK] Fold column validated: [0, 1, 2, 3, 4, 5]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  CSV components (1):
+    [handcrafted] Structural features
+      Source: split_data (built-in)
+  Total CSV features: 50
+    Structural: 50
+    AA-encoded: 0
+
+  Estimated total features: ~50
+    CSV:        50
+    Embeddings: 0 (after PCA)
+
+================================================================================
+PIPELINE READY: ~50 features, 5 folds, Random Forest
+================================================================================
+
+================================================================================
+NESTED CROSS-VALIDATION
+  Outer iterations: 6 (rotate validation bucket)
+  Inner folds:      5 (per outer iteration)
+  Total models:     30
+================================================================================
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 0/5 (validation bucket = 0)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 1) ──
+
+    NaN imputation report — 49 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_peptide                                    1299        332     0.2980
+    mean_disorder_peptide                               1299        332     0.0063
+    mean_rsa_nflank                                     1322        339     0.3494
+    mean_disorder_nflank                                1322        339     0.0106
+    mean_rsa_cflank                                     1386        349     0.3606
+    mean_disorder_cflank                                1386        349     0.0119
+    q8point_H_peptide                                   1299        332     1.0000
+    q8point_G_peptide                                   1299        332     0.0000
+    q8point_I_peptide                                   1299        332     0.0000
+    q8point_E_peptide                                   1299        332     0.0000
+    q8point_B_peptide                                   1299        332     0.0000
+    q8point_T_peptide                                   1299        332     0.0000
+    q8point_S_peptide                                   1299        332     0.0000
+    q8point_C_peptide                                   1299        332     1.0000
+    q8point_H_nflank                                    1299        332     1.0000
+    q8point_G_nflank                                    1299        332     0.0000
+    q8point_I_nflank                                    1299        332     0.0000
+    q8point_E_nflank                                    1299        332     0.0000
+    q8point_B_nflank                                    1299        332     0.0000
+    q8point_T_nflank                                    1299        332     0.0000
+    q8point_S_nflank                                    1299        332     0.0000
+    q8point_C_nflank                                    1299        332     1.0000
+    q8point_H_cflank                                    1299        332     1.0000
+    q8point_G_cflank                                    1299        332     0.0000
+    q8point_I_cflank                                    1299        332     0.0000
+    q8point_E_cflank                                    1299        332     0.0000
+    q8point_B_cflank                                    1299        332     0.0000
+    q8point_T_cflank                                    1299        332     0.0000
+    q8point_S_cflank                                    1299        332     0.0000
+    q8point_C_cflank                                    1299        332     1.0000
+    q8trans_H_n_pep                                     1299        332     0.0000
+    q8trans_G_n_pep                                     1299        332     0.0000
+    q8trans_I_n_pep                                     1299        332     0.0000
+    q8trans_E_n_pep                                     1299        332     0.0000
+    q8trans_B_n_pep                                     1299        332     0.0000
+    q8trans_T_n_pep                                     1299        332     0.0000
+    q8trans_S_n_pep                                     1299        332     0.0000
+    q8trans_C_n_pep                                     1299        332     0.0000
+    q8trans_H_pep_c                                     1299        332     0.0000
+    q8trans_G_pep_c                                     1299        332     0.0000
+    q8trans_I_pep_c                                     1299        332     0.0000
+    q8trans_E_pep_c                                     1299        332     0.0000
+    q8trans_B_pep_c                                     1299        332     0.0000
+    q8trans_T_pep_c                                     1299        332     0.0000
+    q8trans_S_pep_c                                     1299        332     0.0000
+    q8trans_C_pep_c                                     1299        332     0.0000
+    mean_plddt_peptide                                  4227       1063    90.5556
+    mean_plddt_nflank                                   4249       1071    89.1700
+    mean_plddt_cflank                                   4325       1080    88.8620
+    Total NaN — train: 72775 (4.11%), test: 18534 (4.19%)
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35380 samples (pos=15621, neg=19759, ratio=1.265)
+    Test:    8846 samples (pos=3923, neg=4923, ratio=1.255)
+    Features: 50
+    Training Random Forest ...
+    Training time: 11.2s
+    Inner fold 1 AUC: 0.6023 (11.7s)
+
+  ── Inner fold 2/5 (test bucket = 2) ──
+
+    NaN imputation report — 49 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_peptide                                    1278        353     0.2980
+    mean_disorder_peptide                               1278        353     0.0064
+    mean_rsa_nflank                                     1303        358     0.3494
+    mean_disorder_nflank                                1303        358     0.0106
+    mean_rsa_cflank                                     1356        379     0.3609
+    mean_disorder_cflank                                1356        379     0.0116
+    q8point_H_peptide                                   1278        353     1.0000
+    q8point_G_peptide                                   1278        353     0.0000
+    q8point_I_peptide                                   1278        353     0.0000
+    q8point_E_peptide                                   1278        353     0.0000
+    q8point_B_peptide                                   1278        353     0.0000
+    q8point_T_peptide                                   1278        353     0.0000
+    q8point_S_peptide                                   1278        353     0.0000
+    q8point_C_peptide                                   1278        353     1.0000
+    q8point_H_nflank                                    1278        353     1.0000
+    q8point_G_nflank                                    1278        353     0.0000
+    q8point_I_nflank                                    1278        353     0.0000
+    q8point_E_nflank                                    1278        353     0.0000
+    q8point_B_nflank                                    1278        353     0.0000
+    q8point_T_nflank                                    1278        353     0.0000
+    q8point_S_nflank                                    1278        353     0.0000
+    q8point_C_nflank                                    1278        353     1.0000
+    q8point_H_cflank                                    1278        353     1.0000
+    q8point_G_cflank                                    1278        353     0.0000
+    q8point_I_cflank                                    1278        353     0.0000
+    q8point_E_cflank                                    1278        353     0.0000
+    q8point_B_cflank                                    1278        353     0.0000
+    q8point_T_cflank                                    1278        353     0.0000
+    q8point_S_cflank                                    1278        353     0.0000
+    q8point_C_cflank                                    1278        353     1.0000
+    q8trans_H_n_pep                                     1278        353     0.0000
+    q8trans_G_n_pep                                     1278        353     0.0000
+    q8trans_I_n_pep                                     1278        353     0.0000
+    q8trans_E_n_pep                                     1278        353     0.0000
+    q8trans_B_n_pep                                     1278        353     0.0000
+    q8trans_T_n_pep                                     1278        353     0.0000
+    q8trans_S_n_pep                                     1278        353     0.0000
+    q8trans_C_n_pep                                     1278        353     0.0000
+    q8trans_H_pep_c                                     1278        353     0.0000
+    q8trans_G_pep_c                                     1278        353     0.0000
+    q8trans_I_pep_c                                     1278        353     0.0000
+    q8trans_E_pep_c                                     1278        353     0.0000
+    q8trans_B_pep_c                                     1278        353     0.0000
+    q8trans_T_pep_c                                     1278        353     0.0000
+    q8trans_S_pep_c                                     1278        353     0.0000
+    q8trans_C_pep_c                                     1278        353     0.0000
+    mean_plddt_peptide                                  4194       1096    90.5889
+    mean_plddt_nflank                                   4219       1101    89.1500
+    mean_plddt_cflank                                   4279       1126    88.9010
+    Total NaN — train: 71686 (4.05%), test: 19623 (4.44%)
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35381 samples (pos=15626, neg=19755, ratio=1.264)
+    Test:    8845 samples (pos=3918, neg=4927, ratio=1.258)
+    Features: 50
+    Training Random Forest ...
+    Training time: 10.7s
+    Inner fold 2 AUC: 0.6025 (11.2s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+
+    NaN imputation report — 49 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_peptide                                    1296        335     0.2980
+    mean_disorder_peptide                               1296        335     0.0065
+    mean_rsa_nflank                                     1321        340     0.3510
+    mean_disorder_nflank                                1321        340     0.0109
+    mean_rsa_cflank                                     1375        360     0.3607
+    mean_disorder_cflank                                1375        360     0.0117
+    q8point_H_peptide                                   1296        335     1.0000
+    q8point_G_peptide                                   1296        335     0.0000
+    q8point_I_peptide                                   1296        335     0.0000
+    q8point_E_peptide                                   1296        335     0.0000
+    q8point_B_peptide                                   1296        335     0.0000
+    q8point_T_peptide                                   1296        335     0.0000
+    q8point_S_peptide                                   1296        335     0.0000
+    q8point_C_peptide                                   1296        335     1.0000
+    q8point_H_nflank                                    1296        335     1.0000
+    q8point_G_nflank                                    1296        335     0.0000
+    q8point_I_nflank                                    1296        335     0.0000
+    q8point_E_nflank                                    1296        335     0.0000
+    q8point_B_nflank                                    1296        335     0.0000
+    q8point_T_nflank                                    1296        335     0.0000
+    q8point_S_nflank                                    1296        335     0.0000
+    q8point_C_nflank                                    1296        335     1.0000
+    q8point_H_cflank                                    1296        335     1.0000
+    q8point_G_cflank                                    1296        335     0.0000
+    q8point_I_cflank                                    1296        335     0.0000
+    q8point_E_cflank                                    1296        335     0.0000
+    q8point_B_cflank                                    1296        335     0.0000
+    q8point_T_cflank                                    1296        335     0.0000
+    q8point_S_cflank                                    1296        335     0.0000
+    q8point_C_cflank                                    1296        335     1.0000
+    q8trans_H_n_pep                                     1296        335     0.0000
+    q8trans_G_n_pep                                     1296        335     0.0000
+    q8trans_I_n_pep                                     1296        335     0.0000
+    q8trans_E_n_pep                                     1296        335     0.0000
+    q8trans_B_n_pep                                     1296        335     0.0000
+    q8trans_T_n_pep                                     1296        335     0.0000
+    q8trans_S_n_pep                                     1296        335     0.0000
+    q8trans_C_n_pep                                     1296        335     0.0000
+    q8trans_H_pep_c                                     1296        335     0.0000
+    q8trans_G_pep_c                                     1296        335     0.0000
+    q8trans_I_pep_c                                     1296        335     0.0000
+    q8trans_E_pep_c                                     1296        335     0.0000
+    q8trans_B_pep_c                                     1296        335     0.0000
+    q8trans_T_pep_c                                     1296        335     0.0000
+    q8trans_S_pep_c                                     1296        335     0.0000
+    q8trans_C_pep_c                                     1296        335     0.0000
+    mean_plddt_peptide                                  4225       1065    90.5911
+    mean_plddt_nflank                                   4250       1070    89.0880
+    mean_plddt_cflank                                   4315       1090    88.9130
+    Total NaN — train: 72614 (4.10%), test: 18695 (4.23%)
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35381 samples (pos=15647, neg=19734, ratio=1.261)
+    Test:    8845 samples (pos=3897, neg=4948, ratio=1.270)
+    Features: 50
+    Training Random Forest ...
+    Training time: 10.8s
+    Inner fold 3 AUC: 0.6105 (11.3s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+
+    NaN imputation report — 49 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_peptide                                    1331        300     0.2981
+    mean_disorder_peptide                               1331        300     0.0065
+    mean_rsa_nflank                                     1357        304     0.3505
+    mean_disorder_nflank                                1357        304     0.0109
+    mean_rsa_cflank                                     1412        323     0.3603
+    mean_disorder_cflank                                1412        323     0.0117
+    q8point_H_peptide                                   1331        300     1.0000
+    q8point_G_peptide                                   1331        300     0.0000
+    q8point_I_peptide                                   1331        300     0.0000
+    q8point_E_peptide                                   1331        300     0.0000
+    q8point_B_peptide                                   1331        300     0.0000
+    q8point_T_peptide                                   1331        300     0.0000
+    q8point_S_peptide                                   1331        300     0.0000
+    q8point_C_peptide                                   1331        300     1.0000
+    q8point_H_nflank                                    1331        300     1.0000
+    q8point_G_nflank                                    1331        300     0.0000
+    q8point_I_nflank                                    1331        300     0.0000
+    q8point_E_nflank                                    1331        300     0.0000
+    q8point_B_nflank                                    1331        300     0.0000
+    q8point_T_nflank                                    1331        300     0.0000
+    q8point_S_nflank                                    1331        300     0.0000
+    q8point_C_nflank                                    1331        300     1.0000
+    q8point_H_cflank                                    1331        300     1.0000
+    q8point_G_cflank                                    1331        300     0.0000
+    q8point_I_cflank                                    1331        300     0.0000
+    q8point_E_cflank                                    1331        300     0.0000
+    q8point_B_cflank                                    1331        300     0.0000
+    q8point_T_cflank                                    1331        300     0.0000
+    q8point_S_cflank                                    1331        300     0.0000
+    q8point_C_cflank                                    1331        300     1.0000
+    q8trans_H_n_pep                                     1331        300     0.0000
+    q8trans_G_n_pep                                     1331        300     0.0000
+    q8trans_I_n_pep                                     1331        300     0.0000
+    q8trans_E_n_pep                                     1331        300     0.0000
+    q8trans_B_n_pep                                     1331        300     0.0000
+    q8trans_T_n_pep                                     1331        300     0.0000
+    q8trans_S_n_pep                                     1331        300     0.0000
+    q8trans_C_n_pep                                     1331        300     0.0000
+    q8trans_H_pep_c                                     1331        300     0.0000
+    q8trans_G_pep_c                                     1331        300     0.0000
+    q8trans_I_pep_c                                     1331        300     0.0000
+    q8trans_E_pep_c                                     1331        300     0.0000
+    q8trans_B_pep_c                                     1331        300     0.0000
+    q8trans_T_pep_c                                     1331        300     0.0000
+    q8trans_S_pep_c                                     1331        300     0.0000
+    q8trans_C_pep_c                                     1331        300     0.0000
+    mean_plddt_peptide                                  4257       1033    90.5872
+    mean_plddt_nflank                                   4283       1037    89.1430
+    mean_plddt_cflank                                   4345       1060    88.8930
+    Total NaN — train: 74325 (4.20%), test: 16984 (3.84%)
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35381 samples (pos=15639, neg=19742, ratio=1.262)
+    Test:    8845 samples (pos=3905, neg=4940, ratio=1.265)
+    Features: 50
+    Training Random Forest ...
+    Training time: 10.8s
+    Inner fold 4 AUC: 0.6063 (21.3s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+
+    NaN imputation report — 49 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_peptide                                    1320        311     0.2976
+    mean_disorder_peptide                               1320        311     0.0063
+    mean_rsa_nflank                                     1341        320     0.3500
+    mean_disorder_nflank                                1341        320     0.0109
+    mean_rsa_cflank                                     1411        324     0.3610
+    mean_disorder_cflank                                1411        324     0.0118
+    q8point_H_peptide                                   1320        311     1.0000
+    q8point_G_peptide                                   1320        311     0.0000
+    q8point_I_peptide                                   1320        311     0.0000
+    q8point_E_peptide                                   1320        311     0.0000
+    q8point_B_peptide                                   1320        311     0.0000
+    q8point_T_peptide                                   1320        311     0.0000
+    q8point_S_peptide                                   1320        311     0.0000
+    q8point_C_peptide                                   1320        311     1.0000
+    q8point_H_nflank                                    1320        311     1.0000
+    q8point_G_nflank                                    1320        311     0.0000
+    q8point_I_nflank                                    1320        311     0.0000
+    q8point_E_nflank                                    1320        311     0.0000
+    q8point_B_nflank                                    1320        311     0.0000
+    q8point_T_nflank                                    1320        311     0.0000
+    q8point_S_nflank                                    1320        311     0.0000
+    q8point_C_nflank                                    1320        311     1.0000
+    q8point_H_cflank                                    1320        311     1.0000
+    q8point_G_cflank                                    1320        311     0.0000
+    q8point_I_cflank                                    1320        311     0.0000
+    q8point_E_cflank                                    1320        311     0.0000
+    q8point_B_cflank                                    1320        311     0.0000
+    q8point_T_cflank                                    1320        311     0.0000
+    q8point_S_cflank                                    1320        311     0.0000
+    q8point_C_cflank                                    1320        311     1.0000
+    q8trans_H_n_pep                                     1320        311     0.0000
+    q8trans_G_n_pep                                     1320        311     0.0000
+    q8trans_I_n_pep                                     1320        311     0.0000
+    q8trans_E_n_pep                                     1320        311     0.0000
+    q8trans_B_n_pep                                     1320        311     0.0000
+    q8trans_T_n_pep                                     1320        311     0.0000
+    q8trans_S_n_pep                                     1320        311     0.0000
+    q8trans_C_n_pep                                     1320        311     0.0000
+    q8trans_H_pep_c                                     1320        311     0.0000
+    q8trans_G_pep_c                                     1320        311     0.0000
+    q8trans_I_pep_c                                     1320        311     0.0000
+    q8trans_E_pep_c                                     1320        311     0.0000
+    q8trans_B_pep_c                                     1320        311     0.0000
+    q8trans_T_pep_c                                     1320        311     0.0000
+    q8trans_S_pep_c                                     1320        311     0.0000
+    q8trans_C_pep_c                                     1320        311     0.0000
+    mean_plddt_peptide                                  4257       1033    90.6111
+    mean_plddt_nflank                                   4279       1041    89.1630
+    mean_plddt_cflank                                   4356       1049    88.9250
+    Total NaN — train: 73836 (4.17%), test: 17473 (3.95%)
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35381 samples (pos=15643, neg=19738, ratio=1.262)
+    Test:    8845 samples (pos=3901, neg=4944, ratio=1.267)
+    Features: 50
+    Training Random Forest ...
+    Training time: 11.3s
+    Inner fold 5 AUC: 0.5903 (12.3s)
+
+  Averaging 5 inner models on validation bucket 0...
+  Outer fold 0 validation (n=8846, pos=3897, neg=4949):
+    AUC-ROC: 0.6096  |  AUC-PR: 0.5369  |  Acc: 0.5824  |  F1: 0.4264  |  MCC: 0.1271
+    Sens: 0.3523  |  Spec: 0.7636  |  PPV: 0.5399  |  NPV: 0.5996
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 1/5 (validation bucket = 1)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+
+    NaN imputation report — 49 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_peptide                                    1299        325     0.2980
+    mean_disorder_peptide                               1299        325     0.0063
+    mean_rsa_nflank                                     1322        330     0.3494
+    mean_disorder_nflank                                1322        330     0.0106
+    mean_rsa_cflank                                     1386        348     0.3606
+    mean_disorder_cflank                                1386        348     0.0119
+    q8point_H_peptide                                   1299        325     1.0000
+    q8point_G_peptide                                   1299        325     0.0000
+    q8point_I_peptide                                   1299        325     0.0000
+    q8point_E_peptide                                   1299        325     0.0000
+    q8point_B_peptide                                   1299        325     0.0000
+    q8point_T_peptide                                   1299        325     0.0000
+    q8point_S_peptide                                   1299        325     0.0000
+    q8point_C_peptide                                   1299        325     1.0000
+    q8point_H_nflank                                    1299        325     1.0000
+    q8point_G_nflank                                    1299        325     0.0000
+    q8point_I_nflank                                    1299        325     0.0000
+    q8point_E_nflank                                    1299        325     0.0000
+    q8point_B_nflank                                    1299        325     0.0000
+    q8point_T_nflank                                    1299        325     0.0000
+    q8point_S_nflank                                    1299        325     0.0000
+    q8point_C_nflank                                    1299        325     1.0000
+    q8point_H_cflank                                    1299        325     1.0000
+    q8point_G_cflank                                    1299        325     0.0000
+    q8point_I_cflank                                    1299        325     0.0000
+    q8point_E_cflank                                    1299        325     0.0000
+    q8point_B_cflank                                    1299        325     0.0000
+    q8point_T_cflank                                    1299        325     0.0000
+    q8point_S_cflank                                    1299        325     0.0000
+    q8point_C_cflank                                    1299        325     1.0000
+    q8trans_H_n_pep                                     1299        325     0.0000
+    q8trans_G_n_pep                                     1299        325     0.0000
+    q8trans_I_n_pep                                     1299        325     0.0000
+    q8trans_E_n_pep                                     1299        325     0.0000
+    q8trans_B_n_pep                                     1299        325     0.0000
+    q8trans_T_n_pep                                     1299        325     0.0000
+    q8trans_S_n_pep                                     1299        325     0.0000
+    q8trans_C_n_pep                                     1299        325     0.0000
+    q8trans_H_pep_c                                     1299        325     0.0000
+    q8trans_G_pep_c                                     1299        325     0.0000
+    q8trans_I_pep_c                                     1299        325     0.0000
+    q8trans_E_pep_c                                     1299        325     0.0000
+    q8trans_B_pep_c                                     1299        325     0.0000
+    q8trans_T_pep_c                                     1299        325     0.0000
+    q8trans_S_pep_c                                     1299        325     0.0000
+    q8trans_C_pep_c                                     1299        325     0.0000
+    mean_plddt_peptide                                  4227       1036    90.5556
+    mean_plddt_nflank                                   4249       1041    89.1700
+    mean_plddt_cflank                                   4325       1058    88.8620
+    Total NaN — train: 72775 (4.11%), test: 18141 (4.10%)
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35380 samples (pos=15621, neg=19759, ratio=1.265)
+    Test:    8846 samples (pos=3897, neg=4949, ratio=1.270)
+    Features: 50
+    Training Random Forest ...
+    Training time: 10.6s
+    Inner fold 0 AUC: 0.5996 (11.2s)
+
+  ── Inner fold 2/5 (test bucket = 2) ──
+
+    NaN imputation report — 49 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_peptide                                    1271        353     0.2977
+    mean_disorder_peptide                               1271        353     0.0064
+    mean_rsa_nflank                                     1294        358     0.3492
+    mean_disorder_nflank                                1294        358     0.0104
+    mean_rsa_cflank                                     1355        379     0.3602
+    mean_disorder_cflank                                1355        379     0.0118
+    q8point_H_peptide                                   1271        353     1.0000
+    q8point_G_peptide                                   1271        353     0.0000
+    q8point_I_peptide                                   1271        353     0.0000
+    q8point_E_peptide                                   1271        353     0.0000
+    q8point_B_peptide                                   1271        353     0.0000
+    q8point_T_peptide                                   1271        353     0.0000
+    q8point_S_peptide                                   1271        353     0.0000
+    q8point_C_peptide                                   1271        353     1.0000
+    q8point_H_nflank                                    1271        353     1.0000
+    q8point_G_nflank                                    1271        353     0.0000
+    q8point_I_nflank                                    1271        353     0.0000
+    q8point_E_nflank                                    1271        353     0.0000
+    q8point_B_nflank                                    1271        353     0.0000
+    q8point_T_nflank                                    1271        353     0.0000
+    q8point_S_nflank                                    1271        353     0.0000
+    q8point_C_nflank                                    1271        353     1.0000
+    q8point_H_cflank                                    1271        353     1.0000
+    q8point_G_cflank                                    1271        353     0.0000
+    q8point_I_cflank                                    1271        353     0.0000
+    q8point_E_cflank                                    1271        353     0.0000
+    q8point_B_cflank                                    1271        353     0.0000
+    q8point_T_cflank                                    1271        353     0.0000
+    q8point_S_cflank                                    1271        353     0.0000
+    q8point_C_cflank                                    1271        353     1.0000
+    q8trans_H_n_pep                                     1271        353     0.0000
+    q8trans_G_n_pep                                     1271        353     0.0000
+    q8trans_I_n_pep                                     1271        353     0.0000
+    q8trans_E_n_pep                                     1271        353     0.0000
+    q8trans_B_n_pep                                     1271        353     0.0000
+    q8trans_T_n_pep                                     1271        353     0.0000
+    q8trans_S_n_pep                                     1271        353     0.0000
+    q8trans_C_n_pep                                     1271        353     0.0000
+    q8trans_H_pep_c                                     1271        353     0.0000
+    q8trans_G_pep_c                                     1271        353     0.0000
+    q8trans_I_pep_c                                     1271        353     0.0000
+    q8trans_E_pep_c                                     1271        353     0.0000
+    q8trans_B_pep_c                                     1271        353     0.0000
+    q8trans_T_pep_c                                     1271        353     0.0000
+    q8trans_S_pep_c                                     1271        353     0.0000
+    q8trans_C_pep_c                                     1271        353     0.0000
+    mean_plddt_peptide                                  4167       1096    90.5567
+    mean_plddt_nflank                                   4189       1101    89.1870
+    mean_plddt_cflank                                   4257       1126    88.8750
+    Total NaN — train: 71293 (4.03%), test: 19623 (4.44%)
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35381 samples (pos=15600, neg=19781, ratio=1.268)
+    Test:    8845 samples (pos=3918, neg=4927, ratio=1.258)
+    Features: 50
+    Training Random Forest ...
+    Training time: 10.4s
+    Inner fold 2 AUC: 0.6041 (10.8s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+
+    NaN imputation report — 49 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_peptide                                    1289        335     0.2977
+    mean_disorder_peptide                               1289        335     0.0064
+    mean_rsa_nflank                                     1312        340     0.3507
+    mean_disorder_nflank                                1312        340     0.0107
+    mean_rsa_cflank                                     1374        360     0.3601
+    mean_disorder_cflank                                1374        360     0.0119
+    q8point_H_peptide                                   1289        335     1.0000
+    q8point_G_peptide                                   1289        335     0.0000
+    q8point_I_peptide                                   1289        335     0.0000
+    q8point_E_peptide                                   1289        335     0.0000
+    q8point_B_peptide                                   1289        335     0.0000
+    q8point_T_peptide                                   1289        335     0.0000
+    q8point_S_peptide                                   1289        335     0.0000
+    q8point_C_peptide                                   1289        335     1.0000
+    q8point_H_nflank                                    1289        335     1.0000
+    q8point_G_nflank                                    1289        335     0.0000
+    q8point_I_nflank                                    1289        335     0.0000
+    q8point_E_nflank                                    1289        335     0.0000
+    q8point_B_nflank                                    1289        335     0.0000
+    q8point_T_nflank                                    1289        335     0.0000
+    q8point_S_nflank                                    1289        335     0.0000
+    q8point_C_nflank                                    1289        335     1.0000
+    q8point_H_cflank                                    1289        335     1.0000
+    q8point_G_cflank                                    1289        335     0.0000
+    q8point_I_cflank                                    1289        335     0.0000
+    q8point_E_cflank                                    1289        335     0.0000
+    q8point_B_cflank                                    1289        335     0.0000
+    q8point_T_cflank                                    1289        335     0.0000
+    q8point_S_cflank                                    1289        335     0.0000
+    q8point_C_cflank                                    1289        335     1.0000
+    q8trans_H_n_pep                                     1289        335     0.0000
+    q8trans_G_n_pep                                     1289        335     0.0000
+    q8trans_I_n_pep                                     1289        335     0.0000
+    q8trans_E_n_pep                                     1289        335     0.0000
+    q8trans_B_n_pep                                     1289        335     0.0000
+    q8trans_T_n_pep                                     1289        335     0.0000
+    q8trans_S_n_pep                                     1289        335     0.0000
+    q8trans_C_n_pep                                     1289        335     0.0000
+    q8trans_H_pep_c                                     1289        335     0.0000
+    q8trans_G_pep_c                                     1289        335     0.0000
+    q8trans_I_pep_c                                     1289        335     0.0000
+    q8trans_E_pep_c                                     1289        335     0.0000
+    q8trans_B_pep_c                                     1289        335     0.0000
+    q8trans_T_pep_c                                     1289        335     0.0000
+    q8trans_S_pep_c                                     1289        335     0.0000
+    q8trans_C_pep_c                                     1289        335     0.0000
+    mean_plddt_peptide                                  4198       1065    90.5556
+    mean_plddt_nflank                                   4220       1070    89.1070
+    mean_plddt_cflank                                   4293       1090    88.8815
+    Total NaN — train: 72221 (4.08%), test: 18695 (4.23%)
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35381 samples (pos=15621, neg=19760, ratio=1.265)
+    Test:    8845 samples (pos=3897, neg=4948, ratio=1.270)
+    Features: 50
+    Training Random Forest ...
+    Training time: 10.7s
+    Inner fold 3 AUC: 0.6081 (11.1s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+
+    NaN imputation report — 49 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_peptide                                    1324        300     0.2979
+    mean_disorder_peptide                               1324        300     0.0064
+    mean_rsa_nflank                                     1348        304     0.3503
+    mean_disorder_nflank                                1348        304     0.0107
+    mean_rsa_cflank                                     1411        323     0.3598
+    mean_disorder_cflank                                1411        323     0.0119
+    q8point_H_peptide                                   1324        300     1.0000
+    q8point_G_peptide                                   1324        300     0.0000
+    q8point_I_peptide                                   1324        300     0.0000
+    q8point_E_peptide                                   1324        300     0.0000
+    q8point_B_peptide                                   1324        300     0.0000
+    q8point_T_peptide                                   1324        300     0.0000
+    q8point_S_peptide                                   1324        300     0.0000
+    q8point_C_peptide                                   1324        300     1.0000
+    q8point_H_nflank                                    1324        300     1.0000
+    q8point_G_nflank                                    1324        300     0.0000
+    q8point_I_nflank                                    1324        300     0.0000
+    q8point_E_nflank                                    1324        300     0.0000
+    q8point_B_nflank                                    1324        300     0.0000
+    q8point_T_nflank                                    1324        300     0.0000
+    q8point_S_nflank                                    1324        300     0.0000
+    q8point_C_nflank                                    1324        300     1.0000
+    q8point_H_cflank                                    1324        300     1.0000
+    q8point_G_cflank                                    1324        300     0.0000
+    q8point_I_cflank                                    1324        300     0.0000
+    q8point_E_cflank                                    1324        300     0.0000
+    q8point_B_cflank                                    1324        300     0.0000
+    q8point_T_cflank                                    1324        300     0.0000
+    q8point_S_cflank                                    1324        300     0.0000
+    q8point_C_cflank                                    1324        300     1.0000
+    q8trans_H_n_pep                                     1324        300     0.0000
+    q8trans_G_n_pep                                     1324        300     0.0000
+    q8trans_I_n_pep                                     1324        300     0.0000
+    q8trans_E_n_pep                                     1324        300     0.0000
+    q8trans_B_n_pep                                     1324        300     0.0000
+    q8trans_T_n_pep                                     1324        300     0.0000
+    q8trans_S_n_pep                                     1324        300     0.0000
+    q8trans_C_n_pep                                     1324        300     0.0000
+    q8trans_H_pep_c                                     1324        300     0.0000
+    q8trans_G_pep_c                                     1324        300     0.0000
+    q8trans_I_pep_c                                     1324        300     0.0000
+    q8trans_E_pep_c                                     1324        300     0.0000
+    q8trans_B_pep_c                                     1324        300     0.0000
+    q8trans_T_pep_c                                     1324        300     0.0000
+    q8trans_S_pep_c                                     1324        300     0.0000
+    q8trans_C_pep_c                                     1324        300     0.0000
+    mean_plddt_peptide                                  4230       1033    90.5544
+    mean_plddt_nflank                                   4253       1037    89.1755
+    mean_plddt_cflank                                   4323       1060    88.8560
+    Total NaN — train: 73932 (4.18%), test: 16984 (3.84%)
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35381 samples (pos=15613, neg=19768, ratio=1.266)
+    Test:    8845 samples (pos=3905, neg=4940, ratio=1.265)
+    Features: 50
+    Training Random Forest ...
+    Training time: 10.9s
+    Inner fold 4 AUC: 0.6083 (11.3s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+
+    NaN imputation report — 49 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_peptide                                    1313        311     0.2973
+    mean_disorder_peptide                               1313        311     0.0063
+    mean_rsa_nflank                                     1332        320     0.3498
+    mean_disorder_nflank                                1332        320     0.0106
+    mean_rsa_cflank                                     1410        324     0.3603
+    mean_disorder_cflank                                1410        324     0.0120
+    q8point_H_peptide                                   1313        311     1.0000
+    q8point_G_peptide                                   1313        311     0.0000
+    q8point_I_peptide                                   1313        311     0.0000
+    q8point_E_peptide                                   1313        311     0.0000
+    q8point_B_peptide                                   1313        311     0.0000
+    q8point_T_peptide                                   1313        311     0.0000
+    q8point_S_peptide                                   1313        311     0.0000
+    q8point_C_peptide                                   1313        311     1.0000
+    q8point_H_nflank                                    1313        311     1.0000
+    q8point_G_nflank                                    1313        311     0.0000
+    q8point_I_nflank                                    1313        311     0.0000
+    q8point_E_nflank                                    1313        311     0.0000
+    q8point_B_nflank                                    1313        311     0.0000
+    q8point_T_nflank                                    1313        311     0.0000
+    q8point_S_nflank                                    1313        311     0.0000
+    q8point_C_nflank                                    1313        311     1.0000
+    q8point_H_cflank                                    1313        311     1.0000
+    q8point_G_cflank                                    1313        311     0.0000
+    q8point_I_cflank                                    1313        311     0.0000
+    q8point_E_cflank                                    1313        311     0.0000
+    q8point_B_cflank                                    1313        311     0.0000
+    q8point_T_cflank                                    1313        311     0.0000
+    q8point_S_cflank                                    1313        311     0.0000
+    q8point_C_cflank                                    1313        311     1.0000
+    q8trans_H_n_pep                                     1313        311     0.0000
+    q8trans_G_n_pep                                     1313        311     0.0000
+    q8trans_I_n_pep                                     1313        311     0.0000
+    q8trans_E_n_pep                                     1313        311     0.0000
+    q8trans_B_n_pep                                     1313        311     0.0000
+    q8trans_T_n_pep                                     1313        311     0.0000
+    q8trans_S_n_pep                                     1313        311     0.0000
+    q8trans_C_n_pep                                     1313        311     0.0000
+    q8trans_H_pep_c                                     1313        311     0.0000
+    q8trans_G_pep_c                                     1313        311     0.0000
+    q8trans_I_pep_c                                     1313        311     0.0000
+    q8trans_E_pep_c                                     1313        311     0.0000
+    q8trans_B_pep_c                                     1313        311     0.0000
+    q8trans_T_pep_c                                     1313        311     0.0000
+    q8trans_S_pep_c                                     1313        311     0.0000
+    q8trans_C_pep_c                                     1313        311     0.0000
+    mean_plddt_peptide                                  4230       1033    90.5778
+    mean_plddt_nflank                                   4249       1041    89.1990
+    mean_plddt_cflank                                   4334       1049    88.8870
+    Total NaN — train: 73443 (4.15%), test: 17473 (3.95%)
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35381 samples (pos=15617, neg=19764, ratio=1.266)
+    Test:    8845 samples (pos=3901, neg=4944, ratio=1.267)
+    Features: 50
+    Training Random Forest ...
+    Training time: 10.6s
+    Inner fold 5 AUC: 0.5848 (11.0s)
+
+  Averaging 5 inner models on validation bucket 1...
+  Outer fold 1 validation (n=8846, pos=3923, neg=4923):
+    AUC-ROC: 0.6132  |  AUC-PR: 0.5444  |  Acc: 0.5841  |  F1: 0.4302  |  MCC: 0.1335
+    Sens: 0.3541  |  Spec: 0.7674  |  PPV: 0.5481  |  NPV: 0.5985
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 2/5 (validation bucket = 2)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+
+    NaN imputation report — 49 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_peptide                                    1278        325     0.2980
+    mean_disorder_peptide                               1278        325     0.0064
+    mean_rsa_nflank                                     1303        330     0.3494
+    mean_disorder_nflank                                1303        330     0.0106
+    mean_rsa_cflank                                     1356        348     0.3609
+    mean_disorder_cflank                                1356        348     0.0116
+    q8point_H_peptide                                   1278        325     1.0000
+    q8point_G_peptide                                   1278        325     0.0000
+    q8point_I_peptide                                   1278        325     0.0000
+    q8point_E_peptide                                   1278        325     0.0000
+    q8point_B_peptide                                   1278        325     0.0000
+    q8point_T_peptide                                   1278        325     0.0000
+    q8point_S_peptide                                   1278        325     0.0000
+    q8point_C_peptide                                   1278        325     1.0000
+    q8point_H_nflank                                    1278        325     1.0000
+    q8point_G_nflank                                    1278        325     0.0000
+    q8point_I_nflank                                    1278        325     0.0000
+    q8point_E_nflank                                    1278        325     0.0000
+    q8point_B_nflank                                    1278        325     0.0000
+    q8point_T_nflank                                    1278        325     0.0000
+    q8point_S_nflank                                    1278        325     0.0000
+    q8point_C_nflank                                    1278        325     1.0000
+    q8point_H_cflank                                    1278        325     1.0000
+    q8point_G_cflank                                    1278        325     0.0000
+    q8point_I_cflank                                    1278        325     0.0000
+    q8point_E_cflank                                    1278        325     0.0000
+    q8point_B_cflank                                    1278        325     0.0000
+    q8point_T_cflank                                    1278        325     0.0000
+    q8point_S_cflank                                    1278        325     0.0000
+    q8point_C_cflank                                    1278        325     1.0000
+    q8trans_H_n_pep                                     1278        325     0.0000
+    q8trans_G_n_pep                                     1278        325     0.0000
+    q8trans_I_n_pep                                     1278        325     0.0000
+    q8trans_E_n_pep                                     1278        325     0.0000
+    q8trans_B_n_pep                                     1278        325     0.0000
+    q8trans_T_n_pep                                     1278        325     0.0000
+    q8trans_S_n_pep                                     1278        325     0.0000
+    q8trans_C_n_pep                                     1278        325     0.0000
+    q8trans_H_pep_c                                     1278        325     0.0000
+    q8trans_G_pep_c                                     1278        325     0.0000
+    q8trans_I_pep_c                                     1278        325     0.0000
+    q8trans_E_pep_c                                     1278        325     0.0000
+    q8trans_B_pep_c                                     1278        325     0.0000
+    q8trans_T_pep_c                                     1278        325     0.0000
+    q8trans_S_pep_c                                     1278        325     0.0000
+    q8trans_C_pep_c                                     1278        325     0.0000
+    mean_plddt_peptide                                  4194       1036    90.5889
+    mean_plddt_nflank                                   4219       1041    89.1500
+    mean_plddt_cflank                                   4279       1058    88.9010
+    Total NaN — train: 71686 (4.05%), test: 18141 (4.10%)
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35381 samples (pos=15626, neg=19755, ratio=1.264)
+    Test:    8846 samples (pos=3897, neg=4949, ratio=1.270)
+    Features: 50
+    Training Random Forest ...
+    Training time: 10.3s
+    Inner fold 0 AUC: 0.6056 (10.9s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+
+    NaN imputation report — 49 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_peptide                                    1271        332     0.2977
+    mean_disorder_peptide                               1271        332     0.0064
+    mean_rsa_nflank                                     1294        339     0.3492
+    mean_disorder_nflank                                1294        339     0.0104
+    mean_rsa_cflank                                     1355        349     0.3602
+    mean_disorder_cflank                                1355        349     0.0118
+    q8point_H_peptide                                   1271        332     1.0000
+    q8point_G_peptide                                   1271        332     0.0000
+    q8point_I_peptide                                   1271        332     0.0000
+    q8point_E_peptide                                   1271        332     0.0000
+    q8point_B_peptide                                   1271        332     0.0000
+    q8point_T_peptide                                   1271        332     0.0000
+    q8point_S_peptide                                   1271        332     0.0000
+    q8point_C_peptide                                   1271        332     1.0000
+    q8point_H_nflank                                    1271        332     1.0000
+    q8point_G_nflank                                    1271        332     0.0000
+    q8point_I_nflank                                    1271        332     0.0000
+    q8point_E_nflank                                    1271        332     0.0000
+    q8point_B_nflank                                    1271        332     0.0000
+    q8point_T_nflank                                    1271        332     0.0000
+    q8point_S_nflank                                    1271        332     0.0000
+    q8point_C_nflank                                    1271        332     1.0000
+    q8point_H_cflank                                    1271        332     1.0000
+    q8point_G_cflank                                    1271        332     0.0000
+    q8point_I_cflank                                    1271        332     0.0000
+    q8point_E_cflank                                    1271        332     0.0000
+    q8point_B_cflank                                    1271        332     0.0000
+    q8point_T_cflank                                    1271        332     0.0000
+    q8point_S_cflank                                    1271        332     0.0000
+    q8point_C_cflank                                    1271        332     1.0000
+    q8trans_H_n_pep                                     1271        332     0.0000
+    q8trans_G_n_pep                                     1271        332     0.0000
+    q8trans_I_n_pep                                     1271        332     0.0000
+    q8trans_E_n_pep                                     1271        332     0.0000
+    q8trans_B_n_pep                                     1271        332     0.0000
+    q8trans_T_n_pep                                     1271        332     0.0000
+    q8trans_S_n_pep                                     1271        332     0.0000
+    q8trans_C_n_pep                                     1271        332     0.0000
+    q8trans_H_pep_c                                     1271        332     0.0000
+    q8trans_G_pep_c                                     1271        332     0.0000
+    q8trans_I_pep_c                                     1271        332     0.0000
+    q8trans_E_pep_c                                     1271        332     0.0000
+    q8trans_B_pep_c                                     1271        332     0.0000
+    q8trans_T_pep_c                                     1271        332     0.0000
+    q8trans_S_pep_c                                     1271        332     0.0000
+    q8trans_C_pep_c                                     1271        332     0.0000
+    mean_plddt_peptide                                  4167       1063    90.5567
+    mean_plddt_nflank                                   4189       1071    89.1870
+    mean_plddt_cflank                                   4257       1080    88.8750
+    Total NaN — train: 71293 (4.03%), test: 18534 (4.19%)
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35381 samples (pos=15600, neg=19781, ratio=1.268)
+    Test:    8846 samples (pos=3923, neg=4923, ratio=1.255)
+    Features: 50
+    Training Random Forest ...
+    Training time: 10.1s
+    Inner fold 1 AUC: 0.6083 (10.5s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+
+    NaN imputation report — 49 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_peptide                                    1268        335     0.2976
+    mean_disorder_peptide                               1268        335     0.0065
+    mean_rsa_nflank                                     1293        340     0.3508
+    mean_disorder_nflank                                1293        340     0.0107
+    mean_rsa_cflank                                     1344        360     0.3603
+    mean_disorder_cflank                                1344        360     0.0117
+    q8point_H_peptide                                   1268        335     1.0000
+    q8point_G_peptide                                   1268        335     0.0000
+    q8point_I_peptide                                   1268        335     0.0000
+    q8point_E_peptide                                   1268        335     0.0000
+    q8point_B_peptide                                   1268        335     0.0000
+    q8point_T_peptide                                   1268        335     0.0000
+    q8point_S_peptide                                   1268        335     0.0000
+    q8point_C_peptide                                   1268        335     1.0000
+    q8point_H_nflank                                    1268        335     1.0000
+    q8point_G_nflank                                    1268        335     0.0000
+    q8point_I_nflank                                    1268        335     0.0000
+    q8point_E_nflank                                    1268        335     0.0000
+    q8point_B_nflank                                    1268        335     0.0000
+    q8point_T_nflank                                    1268        335     0.0000
+    q8point_S_nflank                                    1268        335     0.0000
+    q8point_C_nflank                                    1268        335     1.0000
+    q8point_H_cflank                                    1268        335     1.0000
+    q8point_G_cflank                                    1268        335     0.0000
+    q8point_I_cflank                                    1268        335     0.0000
+    q8point_E_cflank                                    1268        335     0.0000
+    q8point_B_cflank                                    1268        335     0.0000
+    q8point_T_cflank                                    1268        335     0.0000
+    q8point_S_cflank                                    1268        335     0.0000
+    q8point_C_cflank                                    1268        335     1.0000
+    q8trans_H_n_pep                                     1268        335     0.0000
+    q8trans_G_n_pep                                     1268        335     0.0000
+    q8trans_I_n_pep                                     1268        335     0.0000
+    q8trans_E_n_pep                                     1268        335     0.0000
+    q8trans_B_n_pep                                     1268        335     0.0000
+    q8trans_T_n_pep                                     1268        335     0.0000
+    q8trans_S_n_pep                                     1268        335     0.0000
+    q8trans_C_n_pep                                     1268        335     0.0000
+    q8trans_H_pep_c                                     1268        335     0.0000
+    q8trans_G_pep_c                                     1268        335     0.0000
+    q8trans_I_pep_c                                     1268        335     0.0000
+    q8trans_E_pep_c                                     1268        335     0.0000
+    q8trans_B_pep_c                                     1268        335     0.0000
+    q8trans_T_pep_c                                     1268        335     0.0000
+    q8trans_S_pep_c                                     1268        335     0.0000
+    q8trans_C_pep_c                                     1268        335     0.0000
+    mean_plddt_peptide                                  4165       1065    90.5911
+    mean_plddt_nflank                                   4190       1070    89.0985
+    mean_plddt_cflank                                   4247       1090    88.9190
+    Total NaN — train: 71132 (4.02%), test: 18695 (4.23%)
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35382 samples (pos=15626, neg=19756, ratio=1.264)
+    Test:    8845 samples (pos=3897, neg=4948, ratio=1.270)
+    Features: 50
+    Training Random Forest ...
+    Training time: 10.9s
+    Inner fold 3 AUC: 0.6023 (11.3s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+
+    NaN imputation report — 49 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_peptide                                    1303        300     0.2978
+    mean_disorder_peptide                               1303        300     0.0065
+    mean_rsa_nflank                                     1329        304     0.3504
+    mean_disorder_nflank                                1329        304     0.0107
+    mean_rsa_cflank                                     1381        323     0.3600
+    mean_disorder_cflank                                1381        323     0.0117
+    q8point_H_peptide                                   1303        300     1.0000
+    q8point_G_peptide                                   1303        300     0.0000
+    q8point_I_peptide                                   1303        300     0.0000
+    q8point_E_peptide                                   1303        300     0.0000
+    q8point_B_peptide                                   1303        300     0.0000
+    q8point_T_peptide                                   1303        300     0.0000
+    q8point_S_peptide                                   1303        300     0.0000
+    q8point_C_peptide                                   1303        300     1.0000
+    q8point_H_nflank                                    1303        300     1.0000
+    q8point_G_nflank                                    1303        300     0.0000
+    q8point_I_nflank                                    1303        300     0.0000
+    q8point_E_nflank                                    1303        300     0.0000
+    q8point_B_nflank                                    1303        300     0.0000
+    q8point_T_nflank                                    1303        300     0.0000
+    q8point_S_nflank                                    1303        300     0.0000
+    q8point_C_nflank                                    1303        300     1.0000
+    q8point_H_cflank                                    1303        300     1.0000
+    q8point_G_cflank                                    1303        300     0.0000
+    q8point_I_cflank                                    1303        300     0.0000
+    q8point_E_cflank                                    1303        300     0.0000
+    q8point_B_cflank                                    1303        300     0.0000
+    q8point_T_cflank                                    1303        300     0.0000
+    q8point_S_cflank                                    1303        300     0.0000
+    q8point_C_cflank                                    1303        300     1.0000
+    q8trans_H_n_pep                                     1303        300     0.0000
+    q8trans_G_n_pep                                     1303        300     0.0000
+    q8trans_I_n_pep                                     1303        300     0.0000
+    q8trans_E_n_pep                                     1303        300     0.0000
+    q8trans_B_n_pep                                     1303        300     0.0000
+    q8trans_T_n_pep                                     1303        300     0.0000
+    q8trans_S_n_pep                                     1303        300     0.0000
+    q8trans_C_n_pep                                     1303        300     0.0000
+    q8trans_H_pep_c                                     1303        300     0.0000
+    q8trans_G_pep_c                                     1303        300     0.0000
+    q8trans_I_pep_c                                     1303        300     0.0000
+    q8trans_E_pep_c                                     1303        300     0.0000
+    q8trans_B_pep_c                                     1303        300     0.0000
+    q8trans_T_pep_c                                     1303        300     0.0000
+    q8trans_S_pep_c                                     1303        300     0.0000
+    q8trans_C_pep_c                                     1303        300     0.0000
+    mean_plddt_peptide                                  4197       1033    90.5889
+    mean_plddt_nflank                                   4223       1037    89.1560
+    mean_plddt_cflank                                   4277       1060    88.9010
+    Total NaN — train: 72843 (4.12%), test: 16984 (3.84%)
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35382 samples (pos=15618, neg=19764, ratio=1.265)
+    Test:    8845 samples (pos=3905, neg=4940, ratio=1.265)
+    Features: 50
+    Training Random Forest ...
+    Training time: 11.1s
+    Inner fold 4 AUC: 0.6055 (11.5s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+
+    NaN imputation report — 49 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_peptide                                    1292        311     0.2973
+    mean_disorder_peptide                               1292        311     0.0063
+    mean_rsa_nflank                                     1313        320     0.3498
+    mean_disorder_nflank                                1313        320     0.0107
+    mean_rsa_cflank                                     1380        324     0.3606
+    mean_disorder_cflank                                1380        324     0.0117
+    q8point_H_peptide                                   1292        311     1.0000
+    q8point_G_peptide                                   1292        311     0.0000
+    q8point_I_peptide                                   1292        311     0.0000
+    q8point_E_peptide                                   1292        311     0.0000
+    q8point_B_peptide                                   1292        311     0.0000
+    q8point_T_peptide                                   1292        311     0.0000
+    q8point_S_peptide                                   1292        311     0.0000
+    q8point_C_peptide                                   1292        311     1.0000
+    q8point_H_nflank                                    1292        311     1.0000
+    q8point_G_nflank                                    1292        311     0.0000
+    q8point_I_nflank                                    1292        311     0.0000
+    q8point_E_nflank                                    1292        311     0.0000
+    q8point_B_nflank                                    1292        311     0.0000
+    q8point_T_nflank                                    1292        311     0.0000
+    q8point_S_nflank                                    1292        311     0.0000
+    q8point_C_nflank                                    1292        311     1.0000
+    q8point_H_cflank                                    1292        311     1.0000
+    q8point_G_cflank                                    1292        311     0.0000
+    q8point_I_cflank                                    1292        311     0.0000
+    q8point_E_cflank                                    1292        311     0.0000
+    q8point_B_cflank                                    1292        311     0.0000
+    q8point_T_cflank                                    1292        311     0.0000
+    q8point_S_cflank                                    1292        311     0.0000
+    q8point_C_cflank                                    1292        311     1.0000
+    q8trans_H_n_pep                                     1292        311     0.0000
+    q8trans_G_n_pep                                     1292        311     0.0000
+    q8trans_I_n_pep                                     1292        311     0.0000
+    q8trans_E_n_pep                                     1292        311     0.0000
+    q8trans_B_n_pep                                     1292        311     0.0000
+    q8trans_T_n_pep                                     1292        311     0.0000
+    q8trans_S_n_pep                                     1292        311     0.0000
+    q8trans_C_n_pep                                     1292        311     0.0000
+    q8trans_H_pep_c                                     1292        311     0.0000
+    q8trans_G_pep_c                                     1292        311     0.0000
+    q8trans_I_pep_c                                     1292        311     0.0000
+    q8trans_E_pep_c                                     1292        311     0.0000
+    q8trans_B_pep_c                                     1292        311     0.0000
+    q8trans_T_pep_c                                     1292        311     0.0000
+    q8trans_S_pep_c                                     1292        311     0.0000
+    q8trans_C_pep_c                                     1292        311     0.0000
+    mean_plddt_peptide                                  4197       1033    90.6122
+    mean_plddt_nflank                                   4219       1041    89.1760
+    mean_plddt_cflank                                   4288       1049    88.9340
+    Total NaN — train: 72354 (4.09%), test: 17473 (3.95%)
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35382 samples (pos=15622, neg=19760, ratio=1.265)
+    Test:    8845 samples (pos=3901, neg=4944, ratio=1.267)
+    Features: 50
+    Training Random Forest ...
+    Training time: 10.7s
+    Inner fold 5 AUC: 0.5922 (11.2s)
+
+  Averaging 5 inner models on validation bucket 2...
+  Outer fold 2 validation (n=8845, pos=3918, neg=4927):
+    AUC-ROC: 0.6091  |  AUC-PR: 0.5393  |  Acc: 0.5825  |  F1: 0.4222  |  MCC: 0.1286
+    Sens: 0.3443  |  Spec: 0.7719  |  PPV: 0.5455  |  NPV: 0.5968
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 3/5 (validation bucket = 3)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+
+    NaN imputation report — 49 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_peptide                                    1296        325     0.2980
+    mean_disorder_peptide                               1296        325     0.0065
+    mean_rsa_nflank                                     1321        330     0.3510
+    mean_disorder_nflank                                1321        330     0.0109
+    mean_rsa_cflank                                     1375        348     0.3607
+    mean_disorder_cflank                                1375        348     0.0117
+    q8point_H_peptide                                   1296        325     1.0000
+    q8point_G_peptide                                   1296        325     0.0000
+    q8point_I_peptide                                   1296        325     0.0000
+    q8point_E_peptide                                   1296        325     0.0000
+    q8point_B_peptide                                   1296        325     0.0000
+    q8point_T_peptide                                   1296        325     0.0000
+    q8point_S_peptide                                   1296        325     0.0000
+    q8point_C_peptide                                   1296        325     1.0000
+    q8point_H_nflank                                    1296        325     1.0000
+    q8point_G_nflank                                    1296        325     0.0000
+    q8point_I_nflank                                    1296        325     0.0000
+    q8point_E_nflank                                    1296        325     0.0000
+    q8point_B_nflank                                    1296        325     0.0000
+    q8point_T_nflank                                    1296        325     0.0000
+    q8point_S_nflank                                    1296        325     0.0000
+    q8point_C_nflank                                    1296        325     1.0000
+    q8point_H_cflank                                    1296        325     1.0000
+    q8point_G_cflank                                    1296        325     0.0000
+    q8point_I_cflank                                    1296        325     0.0000
+    q8point_E_cflank                                    1296        325     0.0000
+    q8point_B_cflank                                    1296        325     0.0000
+    q8point_T_cflank                                    1296        325     0.0000
+    q8point_S_cflank                                    1296        325     0.0000
+    q8point_C_cflank                                    1296        325     1.0000
+    q8trans_H_n_pep                                     1296        325     0.0000
+    q8trans_G_n_pep                                     1296        325     0.0000
+    q8trans_I_n_pep                                     1296        325     0.0000
+    q8trans_E_n_pep                                     1296        325     0.0000
+    q8trans_B_n_pep                                     1296        325     0.0000
+    q8trans_T_n_pep                                     1296        325     0.0000
+    q8trans_S_n_pep                                     1296        325     0.0000
+    q8trans_C_n_pep                                     1296        325     0.0000
+    q8trans_H_pep_c                                     1296        325     0.0000
+    q8trans_G_pep_c                                     1296        325     0.0000
+    q8trans_I_pep_c                                     1296        325     0.0000
+    q8trans_E_pep_c                                     1296        325     0.0000
+    q8trans_B_pep_c                                     1296        325     0.0000
+    q8trans_T_pep_c                                     1296        325     0.0000
+    q8trans_S_pep_c                                     1296        325     0.0000
+    q8trans_C_pep_c                                     1296        325     0.0000
+    mean_plddt_peptide                                  4225       1036    90.5911
+    mean_plddt_nflank                                   4250       1041    89.0880
+    mean_plddt_cflank                                   4315       1058    88.9130
+    Total NaN — train: 72614 (4.10%), test: 18141 (4.10%)
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35381 samples (pos=15647, neg=19734, ratio=1.261)
+    Test:    8846 samples (pos=3897, neg=4949, ratio=1.270)
+    Features: 50
+    Training Random Forest ...
+    Training time: 9.9s
+    Inner fold 0 AUC: 0.6049 (10.5s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+
+    NaN imputation report — 49 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_peptide                                    1289        332     0.2977
+    mean_disorder_peptide                               1289        332     0.0064
+    mean_rsa_nflank                                     1312        339     0.3507
+    mean_disorder_nflank                                1312        339     0.0107
+    mean_rsa_cflank                                     1374        349     0.3601
+    mean_disorder_cflank                                1374        349     0.0119
+    q8point_H_peptide                                   1289        332     1.0000
+    q8point_G_peptide                                   1289        332     0.0000
+    q8point_I_peptide                                   1289        332     0.0000
+    q8point_E_peptide                                   1289        332     0.0000
+    q8point_B_peptide                                   1289        332     0.0000
+    q8point_T_peptide                                   1289        332     0.0000
+    q8point_S_peptide                                   1289        332     0.0000
+    q8point_C_peptide                                   1289        332     1.0000
+    q8point_H_nflank                                    1289        332     1.0000
+    q8point_G_nflank                                    1289        332     0.0000
+    q8point_I_nflank                                    1289        332     0.0000
+    q8point_E_nflank                                    1289        332     0.0000
+    q8point_B_nflank                                    1289        332     0.0000
+    q8point_T_nflank                                    1289        332     0.0000
+    q8point_S_nflank                                    1289        332     0.0000
+    q8point_C_nflank                                    1289        332     1.0000
+    q8point_H_cflank                                    1289        332     1.0000
+    q8point_G_cflank                                    1289        332     0.0000
+    q8point_I_cflank                                    1289        332     0.0000
+    q8point_E_cflank                                    1289        332     0.0000
+    q8point_B_cflank                                    1289        332     0.0000
+    q8point_T_cflank                                    1289        332     0.0000
+    q8point_S_cflank                                    1289        332     0.0000
+    q8point_C_cflank                                    1289        332     1.0000
+    q8trans_H_n_pep                                     1289        332     0.0000
+    q8trans_G_n_pep                                     1289        332     0.0000
+    q8trans_I_n_pep                                     1289        332     0.0000
+    q8trans_E_n_pep                                     1289        332     0.0000
+    q8trans_B_n_pep                                     1289        332     0.0000
+    q8trans_T_n_pep                                     1289        332     0.0000
+    q8trans_S_n_pep                                     1289        332     0.0000
+    q8trans_C_n_pep                                     1289        332     0.0000
+    q8trans_H_pep_c                                     1289        332     0.0000
+    q8trans_G_pep_c                                     1289        332     0.0000
+    q8trans_I_pep_c                                     1289        332     0.0000
+    q8trans_E_pep_c                                     1289        332     0.0000
+    q8trans_B_pep_c                                     1289        332     0.0000
+    q8trans_T_pep_c                                     1289        332     0.0000
+    q8trans_S_pep_c                                     1289        332     0.0000
+    q8trans_C_pep_c                                     1289        332     0.0000
+    mean_plddt_peptide                                  4198       1063    90.5556
+    mean_plddt_nflank                                   4220       1071    89.1070
+    mean_plddt_cflank                                   4293       1080    88.8815
+    Total NaN — train: 72221 (4.08%), test: 18534 (4.19%)
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35381 samples (pos=15621, neg=19760, ratio=1.265)
+    Test:    8846 samples (pos=3923, neg=4923, ratio=1.255)
+    Features: 50
+    Training Random Forest ...
+    Training time: 10.5s
+    Inner fold 1 AUC: 0.6070 (10.9s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+
+    NaN imputation report — 49 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_peptide                                    1268        353     0.2976
+    mean_disorder_peptide                               1268        353     0.0065
+    mean_rsa_nflank                                     1293        358     0.3508
+    mean_disorder_nflank                                1293        358     0.0107
+    mean_rsa_cflank                                     1344        379     0.3603
+    mean_disorder_cflank                                1344        379     0.0117
+    q8point_H_peptide                                   1268        353     1.0000
+    q8point_G_peptide                                   1268        353     0.0000
+    q8point_I_peptide                                   1268        353     0.0000
+    q8point_E_peptide                                   1268        353     0.0000
+    q8point_B_peptide                                   1268        353     0.0000
+    q8point_T_peptide                                   1268        353     0.0000
+    q8point_S_peptide                                   1268        353     0.0000
+    q8point_C_peptide                                   1268        353     1.0000
+    q8point_H_nflank                                    1268        353     1.0000
+    q8point_G_nflank                                    1268        353     0.0000
+    q8point_I_nflank                                    1268        353     0.0000
+    q8point_E_nflank                                    1268        353     0.0000
+    q8point_B_nflank                                    1268        353     0.0000
+    q8point_T_nflank                                    1268        353     0.0000
+    q8point_S_nflank                                    1268        353     0.0000
+    q8point_C_nflank                                    1268        353     1.0000
+    q8point_H_cflank                                    1268        353     1.0000
+    q8point_G_cflank                                    1268        353     0.0000
+    q8point_I_cflank                                    1268        353     0.0000
+    q8point_E_cflank                                    1268        353     0.0000
+    q8point_B_cflank                                    1268        353     0.0000
+    q8point_T_cflank                                    1268        353     0.0000
+    q8point_S_cflank                                    1268        353     0.0000
+    q8point_C_cflank                                    1268        353     1.0000
+    q8trans_H_n_pep                                     1268        353     0.0000
+    q8trans_G_n_pep                                     1268        353     0.0000
+    q8trans_I_n_pep                                     1268        353     0.0000
+    q8trans_E_n_pep                                     1268        353     0.0000
+    q8trans_B_n_pep                                     1268        353     0.0000
+    q8trans_T_n_pep                                     1268        353     0.0000
+    q8trans_S_n_pep                                     1268        353     0.0000
+    q8trans_C_n_pep                                     1268        353     0.0000
+    q8trans_H_pep_c                                     1268        353     0.0000
+    q8trans_G_pep_c                                     1268        353     0.0000
+    q8trans_I_pep_c                                     1268        353     0.0000
+    q8trans_E_pep_c                                     1268        353     0.0000
+    q8trans_B_pep_c                                     1268        353     0.0000
+    q8trans_T_pep_c                                     1268        353     0.0000
+    q8trans_S_pep_c                                     1268        353     0.0000
+    q8trans_C_pep_c                                     1268        353     0.0000
+    mean_plddt_peptide                                  4165       1096    90.5911
+    mean_plddt_nflank                                   4190       1101    89.0985
+    mean_plddt_cflank                                   4247       1126    88.9190
+    Total NaN — train: 71132 (4.02%), test: 19623 (4.44%)
+    CSV features: 50 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 50
+    Train:  35382 samples (pos=15626, neg=19756, ratio=1.264)
+    Test:    8845 samples (pos=3918, neg=4927, ratio=1.258)
+    Features: 50
+    Training Random Forest ...
+    Training time: 10.5s
+    Inner fold 2 AUC: 0.6015 (10.9s)
