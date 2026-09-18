@@ -1,409 +1,604 @@
 #!/usr/bin/env python3
 """
-embed_peptides_full_protein.py
+Embed fixed 29-residue full_context windows with ESM-C (full-protein first).
 
-Embeds FULL protein sequences with ESM-C, then extracts a single
-mean-pooled residue embedding for the full context window
-(n-flank + peptide + c-flank) using start/end coordinates within the
-protein.
+Four pad-handling modes produce four separate HDF5 files:
+  zero              - zero-fill pad positions
+  impute_boundary   - repeat nearest boundary residue (leftmost/rightmost real)
+  impute_bos_eos    - repeat BOS/<cls> for left pads, EOS/<eos> for right pads
+  pad_token         - replace X pads with <pad> token id, use sequence_id mask
 
-Each unique protein is embedded once; every peptide from that protein
-is then extracted from the shared protein embedding.
+Default pad-mode = impute_boundary.
+Default padded FASTA = data/processed/positives_clean_padded.fasta.
 
-If a protein causes OOM, a window centred on each peptide is used
-as automatic fallback (flagged in output).
+Requirements:
+  - df_all.csv must have columns: peptide, uniprot_id, full_context, start, end, sequence
+  - full_context must be exactly 29 characters for ALL rows (script aborts otherwise)
+  - Target .h5 files must NOT already exist (script errors, no overwrite)
 
 Usage:
+    # dry run (validate only)
+    python src/tools/esm/embed_peptides_w_esm.py --dry-run
+
+    # small debug run
+    python src/tools/esm/embed_peptides_w_esm.py --n-debug 200
+
+    # full run
     python src/tools/esm/embed_peptides_w_esm.py
-    python src/tools/esm/embed_peptides_w_esm.py --csv path/to/input.csv --out path/to/output.h5 --model esmc_600m
 """
+
+from __future__ import annotations
 
 import argparse
 import gc
 import time
-import h5py
-import torch
-import numpy as np
-import pandas as pd
 from pathlib import Path
 
-# ── Args ──────────────────────────────────────────────────────────────────────
-parser = argparse.ArgumentParser(
-    description="Embed full proteins with ESM-C; extract single context-window embeddings"
-)
-parser.add_argument("--csv",  default="data/processed/df_all.csv",
-                    help="Input CSV (default: data/processed/df_all.csv)")
-parser.add_argument("--out",  default="data/processed/embeddings/esmc_context_embeddings.h5",
-                    help="Output HDF5 file (default: data/processed/embeddings/esmc_context_embeddings.h5)")
-parser.add_argument("--model",  default="esmc_600m",
-                    choices=["esmc_300m", "esmc_600m"])
-parser.add_argument("--max_seq_len", type=int, default=None,
-                    help="Force windowed fallback above this length. "
-                         "Default: None (try full protein, fall back on OOM)")
-parser.add_argument("--fallback_window", type=int, default=2048,
-                    help="Window size for fallback when full protein fails/too long")
-args = parser.parse_args()
+import h5py
+import numpy as np
+import pandas as pd
+import torch
 
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-
-print("=" * 65)
-print("  ESM-C Full-Protein Peptide Embedding")
-print("=" * 65)
-print(f"{'Model':<20}: {args.model}")
-print(f"{'Device':<20}: {DEVICE}")
-print(f"{'Max seq length':<20}: {args.max_seq_len or 'None (try all, OOM fallback)'}")
-print(f"{'Fallback window':<20}: {args.fallback_window}")
-print(f"{'Input CSV':<20}: {args.csv}")
-print(f"{'Output HDF5':<20}: {args.out}")
-print()
-
-# ── Column names (matched to df_all.csv) ─────────────────────────────────────
-COL_PROTEIN = "sequence"
-COL_START   = "start"
-COL_END     = "end"
-COL_PEPTIDE = "peptide"
-COL_UNIPROT = "uniprot_id"
-COL_NFLANK  = "n_flank"
-COL_CFLANK  = "c_flank"
-
-# ── Load ESM-C ────────────────────────────────────────────────────────────────
 from esm.models.esmc import ESMC
 from esm.sdk.api import ESMProtein, LogitsConfig
+from esm.tokenization import get_esmc_model_tokenizers
 
-print("Loading ESM-C...")
-t0 = time.time()
-client = ESMC.from_pretrained(args.model).to(DEVICE)
-client.eval()
-print(f"ESM-C loaded ✓  ({time.time() - t0:.1f}s)")
+# ── Constants ─────────────────────────────────────────────────────────────────
+WINDOW_LEN = 29
+BOS_EOS_OFFSET = 2  # <cls> + <eos>
+DEFAULT_CSV = "data/processed/df_all.csv"
+DEFAULT_PAD_FASTA = "data/processed/positives_clean_padded.fasta"
+DEFAULT_OUTDIR = "data/processed/embeddings"
+DEFAULT_MODEL = "esmc_600m"
+DEFAULT_FALLBACK_WINDOW = 2048
 
-EMB_DIM = 960 if args.model == "esmc_300m" else 1152
-print(f"{'Embedding dim':<20}: {EMB_DIM}")
 
-# ── Load CSV ──────────────────────────────────────────────────────────────────
-print("\nLoading CSV...")
-df = pd.read_csv(args.csv)
-print(f"Total rows: {len(df)}")
+# ── CLI ───────────────────────────────────────────────────────────────────────
+def parse_args():
+    p = argparse.ArgumentParser(
+        description="Embed 29-mer full_context with ESM-C (4 pad modes)"
+    )
+    p.add_argument("--csv", default=DEFAULT_CSV, help="Input CSV")
+    p.add_argument("--out-dir", default=DEFAULT_OUTDIR, help="Output directory")
+    p.add_argument(
+        "--model",
+        default=DEFAULT_MODEL,
+        choices=["esmc_300m", "esmc_600m"],
+    )
+    p.add_argument("--fallback-window", type=int, default=DEFAULT_FALLBACK_WINDOW)
+    p.add_argument(
+        "--modes",
+        default="zero,impute_boundary,impute_bos_eos,pad_token",
+        help="Comma-separated modes to run",
+    )
+    p.add_argument("--pad-token-fasta", default=DEFAULT_PAD_FASTA)
+    p.add_argument("--device", default=None, help="Override device (cpu/cuda)")
+    p.add_argument("--dry-run", action="store_true", help="Validate inputs only")
+    p.add_argument("--n-debug", type=int, default=0, help="Process first N rows only")
+    return p.parse_args()
 
-required = [COL_PEPTIDE, COL_PROTEIN, COL_START, COL_END, COL_UNIPROT]
-missing  = [c for c in required if c not in df.columns]
-if missing:
-    raise ValueError(f"Missing columns: {missing}\nAvailable: {list(df.columns)}")
 
-before = len(df)
-df = df.dropna(subset=required).reset_index(drop=True)
-print(f"After dropping NaN in required cols: {len(df)}  (dropped {before - len(df)})")
+# ── Utilities ─────────────────────────────────────────────────────────────────
+def read_fasta(path: Path) -> dict[str, str]:
+    """Read FASTA into {header: sequence} dict."""
+    dd: dict[str, str] = {}
+    cur_h: str | None = None
+    cur_seq: list[str] = []
+    with open(path) as fh:
+        for line in fh:
+            line = line.rstrip("\n")
+            if not line:
+                continue
+            if line.startswith(">"):
+                if cur_h is not None:
+                    dd[cur_h] = "".join(cur_seq)
+                cur_h = line[1:].strip()
+                cur_seq = []
+            else:
+                cur_seq.append(line.strip())
+        if cur_h is not None:
+            dd[cur_h] = "".join(cur_seq)
+    return dd
 
-# ── Detect coordinate convention ──────────────────────────────────────────────
-print("\nDetecting coordinate convention (checking first 200 rows)...")
-n_check = min(200, len(df))
-n_0idx = n_1idx_inclusive = 0
 
-for i in range(n_check):
-    row  = df.iloc[i]
-    prot = str(row[COL_PROTEIN])
-    pep  = str(row[COL_PEPTIDE])
-    s, e = int(row[COL_START]), int(row[COL_END])
-
-    # Convention A: 0-indexed, half-open [s, e)
-    if 0 <= s < e <= len(prot) and prot[s:e] == pep:
-        n_0idx += 1
-
-    # Convention B: 1-indexed inclusive [s, e] → 0-indexed [s-1, e)
-    if s >= 1 and e <= len(prot) and prot[s-1 : e] == pep:
-        n_1idx_inclusive += 1
-
-print(f"  0-indexed [s, e) matches       : {n_0idx}/{n_check}")
-print(f"  1-indexed inclusive [s, e] hits : {n_1idx_inclusive}/{n_check}")
-
-if n_1idx_inclusive >= n_0idx and n_1idx_inclusive > n_check * 0.8:
-    CONVENTION = "1idx_inclusive"
-    print("  → Using 1-indexed inclusive convention")
-elif n_0idx > n_1idx_inclusive and n_0idx > n_check * 0.8:
-    CONVENTION = "0idx_halfopen"
-    print("  → Using 0-indexed half-open convention")
-else:
+def detect_convention(df: pd.DataFrame) -> str:
+    """Detect whether (start, end) is 0-indexed half-open or 1-indexed inclusive."""
+    n = min(200, len(df))
+    a, b = 0, 0
+    for i in range(n):
+        r = df.iloc[i]
+        prot, pep = str(r["sequence"]), str(r["peptide"])
+        s, e = int(r["start"]), int(r["end"])
+        if 0 <= s < e <= len(prot) and prot[s:e] == pep:
+            a += 1
+        if s >= 1 and e <= len(prot) and prot[s - 1 : e] == pep:
+            b += 1
+    if b >= a and b > n * 0.8:
+        return "1idx_inclusive"
+    if a > b and a > n * 0.8:
+        return "0idx_halfopen"
     raise RuntimeError(
-        f"Cannot reliably detect coordinate convention "
-        f"(0idx: {n_0idx}, 1idx_inclusive: {n_1idx_inclusive} / {n_check}). "
-        f"Check start/end columns and the protein sequence column."
+        f"Cannot detect coord convention (0idx={a}, 1idx={b}/{n})"
     )
 
 
-def get_peptide_span_0idx(row):
-    """Return (start_0, end_0_exclusive) for the peptide in the protein."""
-    s = int(row[COL_START])
-    e = int(row[COL_END])
-    if CONVENTION == "1idx_inclusive":
-        return s - 1, e          # prot[s-1 : e]
-    else:
-        return s, e              # prot[s : e]
+def span_0idx(row: pd.Series, conv: str) -> tuple[int, int]:
+    """Return (start_0, end_0_exclusive) for peptide in protein."""
+    s, e = int(row["start"]), int(row["end"])
+    return (s - 1, e) if conv == "1idx_inclusive" else (s, e)
 
-
-# ── Validate ALL coordinates ─────────────────────────────────────────────────
-print("\nValidating peptide coordinates against protein sequences...")
-mismatches = 0
-for i in range(len(df)):
-    row  = df.iloc[i]
-    prot = str(row[COL_PROTEIN])
-    pep  = str(row[COL_PEPTIDE])
-    s0, e0 = get_peptide_span_0idx(row)
-    if s0 < 0 or e0 > len(prot) or prot[s0:e0] != pep:
-        mismatches += 1
-        if mismatches <= 5:
-            print(f"  MISMATCH row {i}: prot[{s0}:{e0}]='{prot[s0:e0][:20]}' "
-                  f"!= peptide='{pep}' (prot_len={len(prot)})")
-
-if mismatches:
-    print(f"  ⚠  {mismatches}/{len(df)} coordinate mismatches — check your data!")
-else:
-    print(f"  All {len(df)} coordinates validated ✓")
-
-# ── Validate flank consistency ────────────────────────────────────────────────
-print("\nValidating flanks against protein sequence (first 500 rows)...")
-flank_mismatches = 0
-n_check_flank = min(500, len(df))
-for i in range(n_check_flank):
-    row  = df.iloc[i]
-    prot = str(row[COL_PROTEIN])
-    s0, e0 = get_peptide_span_0idx(row)
-
-    nf = str(row[COL_NFLANK]) if pd.notna(row[COL_NFLANK]) else ""
-    cf = str(row[COL_CFLANK]) if pd.notna(row[COL_CFLANK]) else ""
-
-    expected_nf = prot[s0 - len(nf) : s0] if len(nf) > 0 else ""
-    expected_cf = prot[e0 : e0 + len(cf)] if len(cf) > 0 else ""
-
-    if nf != expected_nf or cf != expected_cf:
-        flank_mismatches += 1
-        if flank_mismatches <= 3:
-            print(f"  row {i}: n_flank expected='{expected_nf}' got='{nf}' | "
-                  f"c_flank expected='{expected_cf}' got='{cf}'")
-
-if flank_mismatches:
-    print(f"  ⚠  {flank_mismatches}/{n_check_flank} flank mismatches")
-else:
-    print(f"  All {n_check_flank} flank checks passed ✓")
-
-# ── Check BOS/EOS offset ─────────────────────────────────────────────────────
-print("\nVerifying ESM-C BOS/EOS offset...")
-with torch.no_grad():
-    _test_seq = "ACDEFGHIKLMNPQRST"
-    _test_out = client.logits(
-        client.encode(ESMProtein(sequence=_test_seq)),
-        LogitsConfig(sequence=True, return_embeddings=True),
-    )
-    _test_emb = _test_out.embeddings.squeeze(0)
-    _offset = _test_emb.shape[0] - len(_test_seq)
-    print(f"  Sequence length  : {len(_test_seq)}")
-    print(f"  Embedding length : {_test_emb.shape[0]}")
-    print(f"  Offset (BOS+EOS) : {_offset}")
-    assert _offset == 2, f"Unexpected offset {_offset} — script assumes BOS + EOS = 2"
-    del _test_out, _test_emb
-
-# ── Group peptides by protein ─────────────────────────────────────────────────
-print("\nGrouping peptides by protein...")
-protein_groups = df.groupby(COL_UNIPROT).indices
-n_proteins = len(protein_groups)
-print(f"  {len(df)} peptides from {n_proteins} unique proteins")
-print(f"  Avg peptides/protein : {len(df)/n_proteins:.1f}")
-
-prot_lens = df.groupby(COL_UNIPROT)[COL_PROTEIN].first().str.len()
-print(f"  Protein lengths      : "
-      f"min={prot_lens.min()}, median={int(prot_lens.median())}, "
-      f"max={prot_lens.max()}")
-
-if args.max_seq_len is not None:
-    n_long = (prot_lens > args.max_seq_len).sum()
-    print(f"  Proteins > {args.max_seq_len} aa  : {n_long} → forced windowed fallback")
 
 # ── Embedding helpers ─────────────────────────────────────────────────────────
-def embed_sequence(seq: str) -> np.ndarray:
-    """Embed a sequence → residue embeddings [L, D] with BOS/EOS stripped."""
+def embed_full_protein(client, seq: str) -> np.ndarray:
+    """Full protein embedding via client.logits. Returns [L+2, D] numpy."""
     protein = ESMProtein(sequence=seq)
-    tensor  = client.encode(protein)
-    out     = client.logits(tensor, LogitsConfig(sequence=True, return_embeddings=True))
-    emb     = out.embeddings.squeeze(0).cpu().numpy()   # [L+2, D]
-    return emb[1:-1]                                     # [L, D]
+    tensor = client.encode(protein)
+    out = client.logits(
+        tensor, LogitsConfig(sequence=True, return_embeddings=True)
+    )
+    return out.embeddings.squeeze(0).cpu().numpy()  # [L+2, D]
 
 
-def try_embed_full(seq: str):
-    """Try embedding the full sequence. Returns embeddings or None on OOM."""
-    try:
-        emb = embed_sequence(seq)
-        return emb
-    except (RuntimeError, MemoryError) as e:
-        err_str = str(e).lower()
-        if "out of memory" in err_str or "memoryerror" in err_str or isinstance(e, MemoryError):
-            if DEVICE == "cuda":
-                torch.cuda.empty_cache()
-            gc.collect()
-            return None
-        raise
+def embed_padded_protein(
+    client, tokenizer, padded_seq: str, pad_token_id: int, device: torch.device
+) -> tuple[np.ndarray, int]:
+    """Embed padded protein with <pad> tokens + sequence_id mask.
 
+    Returns (emb [L_padded+2, D], n_left) where n_left = number of leading X's.
+    """
+    L_padded = len(padded_seq)
+    encoded = tokenizer.encode(padded_seq, add_special_tokens=True)
+    tokens = torch.tensor([encoded], dtype=torch.long, device=device)  # [1, L_padded+2]
 
-def embed_window(prot_seq: str, s0: int, e0: int, nf_len: int, cf_len: int):
-    """Embed a window centred on the peptide. Returns (residue_emb, win_start)."""
-    prot_len  = len(prot_seq)
-    pep_mid   = (s0 + e0) // 2
-    win_half  = args.fallback_window // 2
-    win_start = max(0, pep_mid - win_half)
-    win_end   = min(prot_len, win_start + args.fallback_window)
-    win_start = max(0, win_end - args.fallback_window)
+    if tokens.shape[1] != L_padded + 2:
+        raise RuntimeError(
+            f"Token length {tokens.shape[1]} != padded_seq len {L_padded} + 2"
+        )
 
-    win_seq     = prot_seq[win_start:win_end]
-    residue_emb = embed_sequence(win_seq)
-    return residue_emb, win_start
+    # identify X pad positions in the residue slots (exclude BOS/EOS)
+    pad_mask = torch.tensor(
+        [ch in ("X", "x") for ch in padded_seq],
+        dtype=torch.bool,
+        device=device,
+    )
 
+    tokens = tokens.clone()
+    tokens[0, 1:-1][pad_mask] = pad_token_id
 
-def mean_pool(emb_slice: np.ndarray) -> np.ndarray:
-    """Mean-pool [N, D] → [D]. Returns zeros if N == 0."""
-    if emb_slice.shape[0] == 0:
-        return np.zeros(EMB_DIM, dtype=np.float32)
-    return emb_slice.mean(axis=0).astype(np.float32)
+    # sequence_id: True for real + specials, False for pads
+    seq_id = torch.ones_like(tokens, dtype=torch.bool)
+    seq_id[0, 1:-1][pad_mask] = False
 
+    with torch.inference_mode():
+        out = client.forward(sequence_tokens=tokens, sequence_id=seq_id)
+    emb = out.embeddings[0].float().cpu().numpy()  # [L_padded+2, D]
 
-def get_flank_len(row, col):
-    """Get flank length, handling NaN / empty."""
-    val = row[col]
-    if pd.isna(val):
-        return 0
-    s = str(val)
-    if s in ("", "nan"):
-        return 0
-    return len(s)
-
-
-# ── Main embedding loop ──────────────────────────────────────────────────────
-print(f"\nEmbedding {n_proteins} proteins...")
-print(f"(On CPU this will be slow — expect ~1-5 sec per protein)\n")
-
-context_embs    = np.zeros((len(df), EMB_DIM), dtype=np.float32)
-fallback_flags  = np.zeros(len(df), dtype=np.int8)
-
-n_done       = 0
-n_fallback   = 0
-oom_proteins = set()
-t_start      = time.time()
-
-with torch.no_grad():
-    for prot_id, row_idxs in protein_groups.items():
-
-        # ── Progress ──────────────────────────────────────────────────────
-        if n_done % 50 == 0:
-            elapsed = time.time() - t_start
-            rate    = n_done / elapsed if elapsed > 0 else 0
-            eta     = (n_proteins - n_done) / rate if rate > 0 else float('inf')
-            eta_str = f"{eta/60:.0f}min" if eta < float('inf') else "?"
-            print(f"  [{n_done:>5}/{n_proteins}]  "
-                  f"{rate:.2f} prot/s  "
-                  f"ETA: {eta_str}  "
-                  f"fallbacks: {n_fallback}")
-
-        prot_seq = str(df.iloc[row_idxs[0]][COL_PROTEIN])
-        prot_len = len(prot_seq)
-
-        # ── Decide strategy ───────────────────────────────────────────────
-        force_fallback = (args.max_seq_len is not None) and (prot_len > args.max_seq_len)
-
-        residue_emb = None
-        if not force_fallback:
-            residue_emb = try_embed_full(prot_seq)
-            if residue_emb is None:
-                oom_proteins.add(prot_id)
-                print(f"    ⚠ OOM on {prot_id} (len={prot_len}) → windowed fallback")
-
-        # ── Case 1: full protein embedding succeeded ──────────────────────
-        if residue_emb is not None:
-            assert residue_emb.shape[0] == prot_len, \
-                f"{prot_id}: emb {residue_emb.shape[0]} != prot {prot_len}"
-
-            for idx in row_idxs:
-                row = df.iloc[idx]
-                s0, e0 = get_peptide_span_0idx(row)
-
-                nf_len   = get_flank_len(row, COL_NFLANK)
-                nf_start = max(0, s0 - nf_len)
-
-                cf_len = get_flank_len(row, COL_CFLANK)
-                cf_end = min(prot_len, e0 + cf_len)
-
-                context_embs[idx] = mean_pool(residue_emb[nf_start:cf_end])
-
-            # Free memory immediately
-            del residue_emb
-            gc.collect()
-
-        # ── Case 2: fallback — per-peptide windowed embedding ─────────────
+    # count leading X's
+    n_left = 0
+    for ch in padded_seq:
+        if ch in ("X", "x"):
+            n_left += 1
         else:
-            for idx in row_idxs:
-                row = df.iloc[idx]
-                s0, e0 = get_peptide_span_0idx(row)
-                nf_len = get_flank_len(row, COL_NFLANK)
-                cf_len = get_flank_len(row, COL_CFLANK)
+            break
 
-                win_emb, win_start = embed_window(prot_seq, s0, e0, nf_len, cf_len)
+    return emb, n_left
 
-                s_w = s0 - win_start
-                e_w = e0 - win_start
 
-                nf_start_w = max(0, s_w - nf_len)
-                cf_end_w = min(len(win_emb), e_w + cf_len)
+# ── Window builders (zero / impute) ──────────────────────────────────────────
+def make_zero_window(emb_full: np.ndarray, win_start: int, L: int):
+    """Zero-fill pads. Returns (window [29,D], pad_mask [29])."""
+    D = emb_full.shape[1]
+    w = np.zeros((WINDOW_LEN, D), dtype=np.float32)
+    pm = np.zeros(WINDOW_LEN, dtype=bool)
+    for i in range(WINDOW_LEN):
+        j = win_start + i
+        if 0 <= j < L:
+            w[i] = emb_full[j + 1]  # +1: skip BOS
+        else:
+            pm[i] = True
+    return w, pm
 
-                context_embs[idx] = mean_pool(win_emb[nf_start_w:cf_end_w])
 
-                fallback_flags[idx] = 1
-                n_fallback += 1
+def make_impute_boundary_window(emb_full: np.ndarray, win_start: int, L: int):
+    """Repeat nearest boundary residue. Returns (window [29,D], pad_mask [29])."""
+    D = emb_full.shape[1]
+    w = np.zeros((WINDOW_LEN, D), dtype=np.float32)
+    pm = np.zeros(WINDOW_LEN, dtype=bool)
+    valid: list[int] = []
+    for i in range(WINDOW_LEN):
+        j = win_start + i
+        if 0 <= j < L:
+            w[i] = emb_full[j + 1]
+            valid.append(i)
+        else:
+            pm[i] = True
+    if valid:
+        # fill left pads with first real, right pads with last real
+        for i in range(valid[0]):
+            w[i] = w[valid[0]]
+        for i in range(valid[-1] + 1, WINDOW_LEN):
+            w[i] = w[valid[-1]]
+    return w, pm
 
-                del win_emb
-                gc.collect()
 
-        n_done += 1
+def make_impute_bos_eos_window(emb_full: np.ndarray, win_start: int, L: int):
+    """BOS for left pads, EOS for right pads. Returns (window [29,D], pad_mask [29])."""
+    D = emb_full.shape[1]
+    w = np.zeros((WINDOW_LEN, D), dtype=np.float32)
+    pm = np.zeros(WINDOW_LEN, dtype=bool)
+    for i in range(WINDOW_LEN):
+        j = win_start + i
+        if j < 0:
+            w[i] = emb_full[0]  # BOS / <cls>
+            pm[i] = True
+        elif j >= L:
+            w[i] = emb_full[L + 1]  # EOS / <eos>
+            pm[i] = True
+        else:
+            w[i] = emb_full[j + 1]
+    return w, pm
 
-        if DEVICE == "cuda" and n_done % 200 == 0:
-            torch.cuda.empty_cache()
 
-elapsed_total = time.time() - t_start
-print(f"\n{'─' * 50}")
-print(f"  Proteins embedded        : {n_done}")
-print(f"  Peptides total           : {len(df)}")
-print(f"  Windowed-fallback used   : {n_fallback}/{len(df)}")
-print(f"  Total time               : {elapsed_total/60:.1f} min")
-print(f"  Avg time per protein     : {elapsed_total/n_done:.2f} s")
-if oom_proteins:
-    print(f"  OOM proteins             : {len(oom_proteins)}")
-    oom_lens = [len(str(df[df[COL_UNIPROT] == p].iloc[0][COL_PROTEIN]))
-                for p in oom_proteins]
-    print(f"    Lengths                : min={min(oom_lens)}, max={max(oom_lens)}")
+# ── Pad-token window extractor ────────────────────────────────────────────────
+def extract_pad_window(
+    emb_padded: np.ndarray,
+    win_start: int,
+    n_left: int,
+    L_orig: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Extract 29-mer from padded-protein embeddings. Returns (window, pad_mask)."""
+    D = emb_padded.shape[1]
+    L_padded = len(emb_padded) - 2  # subtract BOS/EOS
+    w = np.zeros((WINDOW_LEN, D), dtype=np.float32)
+    pm = np.zeros(WINDOW_LEN, dtype=bool)
+    for i in range(WINDOW_LEN):
+        j_orig = win_start + i
+        j_padded = j_orig + n_left
+        if 0 <= j_padded < L_padded and 0 <= j_orig < L_orig:
+            w[i] = emb_padded[j_padded + 1]  # +1 for BOS
+        else:
+            pm[i] = True
+    return w, pm
 
-# ── Save ──────────────────────────────────────────────────────────────────────
-print(f"\nSaving to {args.out}...")
-with h5py.File(args.out, "w") as f:
-    f.create_dataset("context_emb",   data=context_embs,   dtype="float32")
-    f.create_dataset("fallback_flag", data=fallback_flags,  dtype="int8")
 
-    f.create_dataset("peptide_seqs",
-                     data=np.array(df[COL_PEPTIDE].tolist(), dtype="S50"))
-    f.create_dataset("uniprot_ids",
-                     data=np.array(df[COL_UNIPROT].tolist(), dtype="S20"))
-    f.create_dataset("row_indices",
-                     data=np.array(df.index.tolist()))
-    f.create_dataset("start", data=df[COL_START].values.astype(np.int32))
-    f.create_dataset("end",   data=df[COL_END].values.astype(np.int32))
+# ── HDF5 helpers ──────────────────────────────────────────────────────────────
+def ensure_datasets(h5f: h5py.File, n_rows: int, emb_dim: int):
+    """Create window_embeddings, pad_mask, fallback_flag datasets if missing."""
+    if "window_embeddings" in h5f:
+        return
+    h5f.create_dataset(
+        "window_embeddings",
+        shape=(n_rows, WINDOW_LEN, emb_dim),
+        dtype="float32",
+        chunks=(min(64, n_rows), WINDOW_LEN, emb_dim),
+        compression="gzip",
+        compression_opts=4,
+    )
+    h5f.create_dataset(
+        "pad_mask",
+        shape=(n_rows, WINDOW_LEN),
+        dtype="uint8",
+        compression="gzip",
+    )
+    h5f.create_dataset(
+        "fallback_flag",
+        shape=(n_rows,),
+        dtype="uint8",
+    )
+    h5f.attrs["emb_dim"] = emb_dim
 
-    f.attrs["model"]            = args.model
-    f.attrs["emb_dim"]          = EMB_DIM
-    f.attrs["n_samples"]        = len(df)
-    f.attrs["n_proteins"]       = n_proteins
-    f.attrs["n_fallback"]       = int(n_fallback)
-    f.attrs["n_oom_proteins"]   = len(oom_proteins)
-    f.attrs["fallback_window"]  = args.fallback_window
-    f.attrs["max_seq_len"]      = str(args.max_seq_len)
-    f.attrs["csv_source"]       = args.csv
-    f.attrs["coord_convention"] = CONVENTION
-    f.attrs["device"]           = DEVICE
-    f.attrs["total_time_sec"]   = elapsed_total
 
-print("\nDone ✓")
-print(f"  context_emb  : {context_embs.shape}")
-print(f"  fallback_flag: {fallback_flags.shape}  (sum={fallback_flags.sum()})")
+# ── Main ──────────────────────────────────────────────────────────────────────
+def main():
+    args = parse_args()
+    outdir = Path(args.out_dir)
+    outdir.mkdir(parents=True, exist_ok=True)
+
+    modes = [m.strip() for m in args.modes.split(",")]
+    allowed = {"zero", "impute_boundary", "impute_bos_eos", "pad_token"}
+    for m in modes:
+        if m not in allowed:
+            raise SystemExit(f"Unknown mode {m}; allowed: {allowed}")
+
+    out_paths = {
+        "zero": outdir / "esmc_context_embeddings_zeropad.h5",
+        "impute_boundary": outdir / "esmc_context_embeddings_impute_boundary.h5",
+        "impute_bos_eos": outdir / "esmc_context_embeddings_impute_bos_eos.h5",
+        "pad_token": outdir / "esmc_context_embeddings_padtoken.h5",
+    }
+
+    # ── check no overwrite ──
+    for m in modes:
+        if out_paths[m].exists():
+            raise SystemExit(f"{out_paths[m]} exists; will not overwrite.")
+
+    # ── load CSV ──
+    df = pd.read_csv(args.csv)
+    required = ["peptide", "uniprot_id", "full_context", "start", "end", "sequence"]
+    missing = [c for c in required if c not in df.columns]
+    if missing:
+        raise SystemExit(f"Missing columns in CSV: {missing}")
+
+    if args.n_debug > 0:
+        df = df.iloc[: args.n_debug].reset_index(drop=True)
+
+    # ── validate full_context length ──
+    lens = df["full_context"].astype(str).str.len()
+    bad_count = (lens != WINDOW_LEN).sum()
+    if bad_count > 0:
+        bad_idx = df.index[lens != WINDOW_LEN].tolist()[:10]
+        raise SystemExit(
+            f"{bad_count} rows have full_context != {WINDOW_LEN}. "
+            f"Example indices: {bad_idx}"
+        )
+
+    conv = detect_convention(df)
+    groups = df.groupby("uniprot_id").indices
+    n_rows = len(df)
+
+    print(f"  {n_rows} rows, {len(groups)} unique proteins, coord={conv}")
+
+    # ── load padded FASTA ──
+    fasta_map: dict[str, str] = {}
+    if "pad_token" in modes:
+        fp = Path(args.pad_token_fasta)
+        if fp.exists():
+            fasta_map = read_fasta(fp)
+            print(f"  padded FASTA: {len(fasta_map)} entries from {fp}")
+        else:
+            print(
+                f"  Warning: {fp} not found. "
+                f"Will construct padded sequences from n_pad_len/c_pad_len."
+            )
+
+    # ── dry run ──
+    if args.dry_run:
+        print("Dry run OK. Inputs validated.")
+        print(f"  modes: {modes}")
+        return
+
+    # ── load model ──
+    device = torch.device(
+        args.device or ("cuda" if torch.cuda.is_available() else "cpu")
+    )
+    print(f"  Loading {args.model} on {device}...")
+    client = ESMC.from_pretrained(args.model).to(device)
+    client.eval()
+    tokenizer = get_esmc_model_tokenizers()
+    pad_token_id = tokenizer.pad_token_id
+    print(f"  pad_token_id={pad_token_id}")
+
+    # ── open HDF5 files ──
+    h5s: dict[str, h5py.File] = {}
+    for m in modes:
+        h5s[m] = h5py.File(out_paths[m], "w")
+        h5s[m].create_dataset(
+            "peptide",
+            data=df["peptide"].astype(str).tolist(),
+            dtype=h5py.string_dtype("utf-8"),
+        )
+        h5s[m].create_dataset(
+            "uniprot_id",
+            data=df["uniprot_id"].astype(str).tolist(),
+            dtype=h5py.string_dtype("utf-8"),
+        )
+        h5s[m].create_dataset(
+            "row_indices", data=df.index.to_numpy(dtype=np.int64)
+        )
+        h5s[m].attrs["model"] = args.model
+        h5s[m].attrs["csv_source"] = str(args.csv)
+        h5s[m].attrs["pad_mode"] = m
+        h5s[m].attrs["window_len"] = WINDOW_LEN
+        h5s[m].attrs["device"] = str(device)
+
+    emb_dim: int | None = None
+    stats = {
+        m: {"padded_rows": 0, "pad_slots": 0, "fallback": 0}
+        for m in modes
+    }
+    t0 = time.time()
+    prot_n = 0
+
+    # ── process proteins ──
+    for prot_id, row_idxs in groups.items():
+        prot_n += 1
+        prot_seq = str(df.iloc[row_idxs[0]]["sequence"])
+        L = len(prot_seq)
+
+        # ── full protein embedding (zero / impute modes) ──
+        emb_full: np.ndarray | None = None
+        try:
+            emb_full = embed_full_protein(client, prot_seq)
+            if emb_full.shape[0] - L != BOS_EOS_OFFSET:
+                raise RuntimeError(
+                    f"Offset mismatch {prot_id}: "
+                    f"emb={emb_full.shape[0]} prot={L}"
+                )
+        except (RuntimeError, MemoryError) as exc:
+            emb_full = None
+            print(f"  ⚠ full-protein fail {prot_id} (len={L}): {exc}")
+
+        if emb_full is not None and emb_dim is None:
+            emb_dim = int(emb_full.shape[1])
+            for m in modes:
+                ensure_datasets(h5s[m], n_rows, emb_dim)
+
+        # ── padded protein embedding (pad_token mode) ──
+        emb_padded: np.ndarray | None = None
+        n_left = 0
+        if "pad_token" in modes:
+            padded_seq: str | None = None
+
+            # try FASTA first
+            if prot_id in fasta_map:
+                padded_seq = fasta_map[prot_id]
+            # otherwise construct from n_pad_len / c_pad_len
+            elif "n_pad_len" in df.columns:
+                prot_rows = df.loc[row_idxs]
+                n_pad_max = int(prot_rows["n_pad_len"].max())
+                c_pad_max = int(prot_rows["c_pad_len"].max())
+                if n_pad_max > 0 or c_pad_max > 0:
+                    padded_seq = "X" * n_pad_max + prot_seq + "X" * c_pad_max
+
+            if padded_seq is not None:
+                try:
+                    emb_padded, n_left = embed_padded_protein(
+                        client, tokenizer, padded_seq, pad_token_id, device
+                    )
+                    L_padded = len(padded_seq)
+                    if emb_padded.shape[0] - L_padded != BOS_EOS_OFFSET:
+                        raise RuntimeError(
+                            f"Padded offset {prot_id}: "
+                            f"emb={emb_padded.shape[0]} padded={L_padded}"
+                        )
+                except (RuntimeError, MemoryError) as exc:
+                    emb_padded = None
+                    print(f"  ⚠ padded fail {prot_id}: {exc}")
+
+            if emb_padded is not None and emb_dim is None:
+                emb_dim = int(emb_padded.shape[1])
+                for m in modes:
+                    ensure_datasets(h5s[m], n_rows, emb_dim)
+
+        # ── extract windows per peptide ──
+        for ridx in row_idxs:
+            row = df.iloc[ridx]
+            s0, _e0 = span_0idx(row, conv)
+            win_start = s0 - 10
+            fallback = 0
+
+            for m in modes:
+                w: np.ndarray
+                pm: np.ndarray
+
+                if m == "pad_token":
+                    # ── pad-token: use padded protein embeddings ──
+                    if emb_padded is not None:
+                        w, pm = extract_pad_window(
+                            emb_padded, win_start, n_left, L
+                        )
+                    else:
+                        # fallback: embed the 29-mer window directly
+                        fc = str(row["full_context"])
+                        encoded = tokenizer.encode(
+                            fc, add_special_tokens=True
+                        )
+                        tokens = torch.tensor(
+                            [encoded], dtype=torch.long, device=device
+                        )
+                        x_mask = torch.tensor(
+                            [ch in ("X", "x") for ch in fc],
+                            dtype=torch.bool,
+                            device=device,
+                        )
+                        tokens = tokens.clone()
+                        tokens[0, 1:-1][x_mask] = pad_token_id
+                        seq_id = torch.ones_like(tokens, dtype=torch.bool)
+                        seq_id[0, 1:-1][x_mask] = False
+                        with torch.inference_mode():
+                            out = client.forward(
+                                sequence_tokens=tokens,
+                                sequence_id=seq_id,
+                            )
+                        w = out.embeddings[0].float().cpu().numpy()[1:-1].astype(
+                            np.float32
+                        )
+                        pm = x_mask.cpu().numpy()
+                        fallback = 1
+                else:
+                    # ── zero / impute: use full-protein embeddings ──
+                    if emb_full is not None:
+                        if m == "zero":
+                            w, pm = make_zero_window(emb_full, win_start, L)
+                        elif m == "impute_boundary":
+                            w, pm = make_impute_boundary_window(
+                                emb_full, win_start, L
+                            )
+                        elif m == "impute_bos_eos":
+                            w, pm = make_impute_bos_eos_window(
+                                emb_full, win_start, L
+                            )
+                    else:
+                        # OOM fallback: embed centred window
+                        pep_mid = s0 + 4
+                        wh = args.fallback_window // 2
+                        ws = max(0, pep_mid - wh)
+                        we = min(L, ws + args.fallback_window)
+                        ws = max(0, we - args.fallback_window)
+                        try:
+                            emb_win_full = embed_full_protein(
+                                client, prot_seq[ws:we]
+                            )
+                            emb_win = emb_win_full[1:-1]  # strip BOS/EOS
+                            Lw = emb_win.shape[0]
+                            emb_local = np.zeros(
+                                (Lw + 2, emb_win.shape[1]), dtype=np.float32
+                            )
+                            emb_local[1:-1] = emb_win
+                            wl = win_start - ws
+                            if m == "zero":
+                                w, pm = make_zero_window(emb_local, wl, Lw)
+                            elif m == "impute_boundary":
+                                w, pm = make_impute_boundary_window(
+                                    emb_local, wl, Lw
+                                )
+                            elif m == "impute_bos_eos":
+                                w, pm = make_impute_bos_eos_window(
+                                    emb_local, wl, Lw
+                                )
+                            fallback = 1
+                        except (RuntimeError, MemoryError):
+                            w = np.zeros(
+                                (WINDOW_LEN, emb_dim or 1152), dtype=np.float32
+                            )
+                            pm = np.ones(WINDOW_LEN, dtype=bool)
+                            fallback = 1
+
+                # ── write row ──
+                h5s[m]["window_embeddings"][ridx] = w
+                h5s[m]["pad_mask"][ridx] = pm.astype(np.uint8)
+                h5s[m]["fallback_flag"][ridx] = fallback
+
+                if pm.any():
+                    stats[m]["padded_rows"] += 1
+                    stats[m]["pad_slots"] += int(pm.sum())
+                if fallback:
+                    stats[m]["fallback"] += 1
+
+        # ── free per-protein ──
+        del emb_full, emb_padded
+        gc.collect()
+
+        if prot_n % 100 == 0:
+            elapsed = time.time() - t0
+            rate = prot_n / elapsed if elapsed > 0 else 0
+            eta = (len(groups) - prot_n) / rate if rate > 0 else float("inf")
+            eta_s = f"{eta / 60:.0f}min" if eta < float("inf") else "?"
+            print(
+                f"  [{prot_n}/{len(groups)}] "
+                f"{rate:.2f} prot/s  ETA: {eta_s}"
+            )
+
+    # ── finalize ──
+    elapsed = time.time() - t0
+    for m in modes:
+        h5s[m].attrs["n_rows"] = n_rows
+        h5s[m].attrs["total_time_sec"] = elapsed
+        h5s[m].attrs["padded_rows"] = stats[m]["padded_rows"]
+        h5s[m].attrs["pad_slots_total"] = stats[m]["pad_slots"]
+        h5s[m].attrs["fallback_rows"] = stats[m]["fallback"]
+        if m == "pad_token":
+            h5s[m].attrs["pad_token_id"] = int(pad_token_id)
+        h5s[m].close()
+
+    print(f"\nDone. {n_rows} rows, {elapsed:.1f}s")
+    for m in modes:
+        print(
+            f"  {m}: padded_rows={stats[m]['padded_rows']}, "
+            f"pad_slots={stats[m]['pad_slots']}, "
+            f"fallback={stats[m]['fallback']}"
+        )
+
+
+if __name__ == "__main__":
+    main()
