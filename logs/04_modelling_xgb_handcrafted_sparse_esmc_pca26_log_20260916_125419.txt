@@ -1,0 +1,683 @@
+================================================================================
+  04_MODELLING -- XGBOOST + STRUCTURAL + ONE-HOT + ESM-C
+================================================================================
+  Timestamp:       2026-09-16 12:54:19
+  Model key:       xgb
+  Model class:     xgboost.XGBClassifier
+  Feature set:     handcrafted_sparse_esmc (Structural + one-hot + ESM-C)
+  Components:      ['handcrafted', 'sparse', 'esmc']
+  Data path:       /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_with_folds.csv
+  Log path:        /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/logs/04_modelling_xgb_handcrafted_sparse_esmc_pca26_log_20260916_125419.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   False
+
+  Model hyperparameters:
+    n_estimators              1000
+    max_depth                 6
+    learning_rate             0.1
+    subsample                 1.0
+    colsample_bytree          1.0
+    min_child_weight          1
+    reg_lambda                1.0
+    reg_alpha                 0.0
+    gamma                     0.0
+    eval_metric               logloss
+    n_jobs                    -1
+    verbosity                 0
+    random_state              42
+================================================================================
+
+Loading split data: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_with_folds.csv
+  Shape: 46617 rows x 99 columns
+  [OK] Fold column validated: [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5)]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+  Loading CSV component: One-hot AA encoding
+    Loading: df_all_sparse.csv
+    Shape: 46617 rows x 649 columns
+    [OK] Alignment verified
+    New columns: 580
+
+  Merged 580 new columns → 46617 rows x 679 columns
+
+  Loading embedding component: ESM-C (600M) context window
+    Loading prepared embeddings: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/embeddings_prepared/esmc_context_prepared.h5
+    Loaded: 46617 samples, dim=1152
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  CSV components (2):
+    [handcrafted] Structural features
+      Source: split_data (built-in)
+    [sparse] One-hot AA encoding
+      Source: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_sparse.csv
+      New columns added: 580
+  Total CSV features: 630
+    Structural: 50
+    AA-encoded: 580
+
+  Embedding components (1):
+    [esmc] ESM-C (600M) context window
+      Context dim:    1152
+      After PCA: 26
+
+  Estimated total features: ~656
+    CSV:        630
+    Embeddings: 26 (after PCA)
+
+================================================================================
+PIPELINE READY: ~656 features, 5 folds, XGBoost
+================================================================================
+
+================================================================================
+NESTED CROSS-VALIDATION
+  Outer iterations: 6 (rotate validation bucket)
+  Inner folds:      5 (per outer iteration)
+  Total models:     30
+================================================================================
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 0/5 (validation bucket = 0)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 1) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31077 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31077 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31077 samples (pos=14393, neg=16684, ratio=1.159)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 656
+    scale_pos_weight (auto) = 1.1592 (neg=16684, pos=14393)
+    Training XGBoost ...
+    Training time: 26.4s
+    Inner fold 1 AUC: 0.7363 (29.2s)
+
+  ── Inner fold 2/5 (test bucket = 2) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31077 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31077 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31077 samples (pos=14378, neg=16699, ratio=1.161)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 656
+    scale_pos_weight (auto) = 1.1614 (neg=16699, pos=14378)
+    Training XGBoost ...
+    Training time: 20.6s
+    Inner fold 2 AUC: 0.7372 (22.9s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31078 samples (pos=14392, neg=16686, ratio=1.159)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 656
+    scale_pos_weight (auto) = 1.1594 (neg=16686, pos=14392)
+    Training XGBoost ...
+    Training time: 20.5s
+    Inner fold 3 AUC: 0.7370 (22.8s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31078 samples (pos=14374, neg=16704, ratio=1.162)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 656
+    scale_pos_weight (auto) = 1.1621 (neg=16704, pos=14374)
+    Training XGBoost ...
+    Training time: 20.5s
+    Inner fold 4 AUC: 0.7435 (22.8s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31078 samples (pos=14383, neg=16695, ratio=1.161)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 656
+    scale_pos_weight (auto) = 1.1607 (neg=16695, pos=14383)
+    Training XGBoost ...
+    Training time: 20.7s
+    Inner fold 5 AUC: 0.7389 (23.0s)
+
+  Averaging 5 inner models on validation bucket 0...
+  Outer fold 0 validation (n=7770, pos=3621, neg=4149):
+    AUC-ROC: 0.7533  |  AUC-PR: 0.7184  |  Acc: 0.6883  |  F1: 0.6626  |  MCC: 0.3730
+    Sens: 0.6567  |  Spec: 0.7158  |  PPV: 0.6685  |  NPV: 0.7050
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 1/5 (validation bucket = 1)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31077 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31077 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31077 samples (pos=14393, neg=16684, ratio=1.159)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 656
+    scale_pos_weight (auto) = 1.1592 (neg=16684, pos=14393)
+    Training XGBoost ...
+    Training time: 20.4s
+    Inner fold 0 AUC: 0.7333 (22.6s)
+
+  ── Inner fold 2/5 (test bucket = 2) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31077 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 26 (85.3% variance, fitted on 31077 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31077 samples (pos=14412, neg=16665, ratio=1.156)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 656
+    scale_pos_weight (auto) = 1.1563 (neg=16665, pos=14412)
+    Training XGBoost ...
+    Training time: 20.4s
+    Inner fold 2 AUC: 0.7305 (22.6s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31078 samples (pos=14426, neg=16652, ratio=1.154)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 656
+    scale_pos_weight (auto) = 1.1543 (neg=16652, pos=14426)
+    Training XGBoost ...
+    Training time: 20.5s
+    Inner fold 3 AUC: 0.7341 (22.7s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31078 samples (pos=14408, neg=16670, ratio=1.157)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 656
+    scale_pos_weight (auto) = 1.1570 (neg=16670, pos=14408)
+    Training XGBoost ...
+    Training time: 20.4s
+    Inner fold 4 AUC: 0.7399 (22.6s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31078 samples (pos=14417, neg=16661, ratio=1.156)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 656
+    scale_pos_weight (auto) = 1.1556 (neg=16661, pos=14417)
+    Training XGBoost ...
+    Training time: 20.5s
+    Inner fold 5 AUC: 0.7440 (22.6s)
+
+  Averaging 5 inner models on validation bucket 1...
+  Outer fold 1 validation (n=7770, pos=3587, neg=4183):
+    AUC-ROC: 0.7569  |  AUC-PR: 0.7138  |  Acc: 0.6932  |  F1: 0.6630  |  MCC: 0.3816
+    Sens: 0.6537  |  Spec: 0.7270  |  PPV: 0.6725  |  NPV: 0.7100
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 2/5 (validation bucket = 2)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31077 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31077 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31077 samples (pos=14378, neg=16699, ratio=1.161)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 656
+    scale_pos_weight (auto) = 1.1614 (neg=16699, pos=14378)
+    Training XGBoost ...
+    Training time: 20.5s
+    Inner fold 0 AUC: 0.7316 (22.8s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31077 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 26 (85.3% variance, fitted on 31077 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31077 samples (pos=14412, neg=16665, ratio=1.156)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 656
+    scale_pos_weight (auto) = 1.1563 (neg=16665, pos=14412)
+    Training XGBoost ...
+    Training time: 20.4s
+    Inner fold 1 AUC: 0.7300 (22.6s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31078 samples (pos=14411, neg=16667, ratio=1.157)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 656
+    scale_pos_weight (auto) = 1.1565 (neg=16667, pos=14411)
+    Training XGBoost ...
+    Training time: 20.6s
+    Inner fold 3 AUC: 0.7353 (22.8s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31078 samples (pos=14393, neg=16685, ratio=1.159)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 656
+    scale_pos_weight (auto) = 1.1592 (neg=16685, pos=14393)
+    Training XGBoost ...
+    Training time: 20.5s
+    Inner fold 4 AUC: 0.7427 (22.8s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31078 samples (pos=14402, neg=16676, ratio=1.158)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 656
+    scale_pos_weight (auto) = 1.1579 (neg=16676, pos=14402)
+    Training XGBoost ...
+    Training time: 20.5s
+    Inner fold 5 AUC: 0.7428 (22.8s)
+
+  Averaging 5 inner models on validation bucket 2...
+  Outer fold 2 validation (n=7770, pos=3602, neg=4168):
+    AUC-ROC: 0.7565  |  AUC-PR: 0.7185  |  Acc: 0.6871  |  F1: 0.6636  |  MCC: 0.3712
+    Sens: 0.6657  |  Spec: 0.7056  |  PPV: 0.6615  |  NPV: 0.7095
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 3/5 (validation bucket = 3)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31078 samples (pos=14392, neg=16686, ratio=1.159)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 656
+    scale_pos_weight (auto) = 1.1594 (neg=16686, pos=14392)
+    Training XGBoost ...
+    Training time: 20.5s
+    Inner fold 0 AUC: 0.7355 (22.6s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31078 samples (pos=14426, neg=16652, ratio=1.154)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 656
+    scale_pos_weight (auto) = 1.1543 (neg=16652, pos=14426)
+    Training XGBoost ...
+    Training time: 20.5s
+    Inner fold 1 AUC: 0.7418 (22.7s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31078 samples (pos=14411, neg=16667, ratio=1.157)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 656
+    scale_pos_weight (auto) = 1.1565 (neg=16667, pos=14411)
+    Training XGBoost ...
+    Training time: 20.4s
+    Inner fold 2 AUC: 0.7361 (22.6s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31079 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31079 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31079 samples (pos=14407, neg=16672, ratio=1.157)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 656
+    scale_pos_weight (auto) = 1.1572 (neg=16672, pos=14407)
+    Training XGBoost ...
+    Training time: 20.6s
+    Inner fold 4 AUC: 0.7408 (22.8s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31079 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31079 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31079 samples (pos=14416, neg=16663, ratio=1.156)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 656
+    scale_pos_weight (auto) = 1.1559 (neg=16663, pos=14416)
+    Training XGBoost ...
+    Training time: 20.8s
+    Inner fold 5 AUC: 0.7458 (23.0s)
+
+  Averaging 5 inner models on validation bucket 3...
+  Outer fold 3 validation (n=7769, pos=3588, neg=4181):
+    AUC-ROC: 0.7547  |  AUC-PR: 0.7117  |  Acc: 0.6826  |  F1: 0.6540  |  MCC: 0.3609
+    Sens: 0.6497  |  Spec: 0.7108  |  PPV: 0.6585  |  NPV: 0.7028
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 4/5 (validation bucket = 4)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31078 samples (pos=14374, neg=16704, ratio=1.162)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 656
+    scale_pos_weight (auto) = 1.1621 (neg=16704, pos=14374)
+    Training XGBoost ...
+    Training time: 20.1s
+    Inner fold 0 AUC: 0.7321 (22.3s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31078 samples (pos=14408, neg=16670, ratio=1.157)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 656
+    scale_pos_weight (auto) = 1.1570 (neg=16670, pos=14408)
+    Training XGBoost ...
+    Training time: 20.5s
+    Inner fold 1 AUC: 0.7383 (22.7s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31078 samples (pos=14393, neg=16685, ratio=1.159)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 656
+    scale_pos_weight (auto) = 1.1592 (neg=16685, pos=14393)
+    Training XGBoost ...
+    Training time: 20.2s
+    Inner fold 2 AUC: 0.7391 (22.5s)
+
+  ── Inner fold 4/5 (test bucket = 3) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31079 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31079 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31079 samples (pos=14407, neg=16672, ratio=1.157)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 656
+    scale_pos_weight (auto) = 1.1572 (neg=16672, pos=14407)
+    Training XGBoost ...
+    Training time: 20.2s
+    Inner fold 3 AUC: 0.7318 (22.4s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31079 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31079 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31079 samples (pos=14398, neg=16681, ratio=1.159)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 656
+    scale_pos_weight (auto) = 1.1586 (neg=16681, pos=14398)
+    Training XGBoost ...
+    Training time: 20.4s
+    Inner fold 5 AUC: 0.7411 (22.6s)
+
+  Averaging 5 inner models on validation bucket 4...
+  Outer fold 4 validation (n=7769, pos=3606, neg=4163):
+    AUC-ROC: 0.7629  |  AUC-PR: 0.7266  |  Acc: 0.6985  |  F1: 0.6747  |  MCC: 0.3938
+    Sens: 0.6736  |  Spec: 0.7202  |  PPV: 0.6758  |  NPV: 0.7181
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 5/5 (validation bucket = 5)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31078 samples (pos=14383, neg=16695, ratio=1.161)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 656
+    scale_pos_weight (auto) = 1.1607 (neg=16695, pos=14383)
+    Training XGBoost ...
+    Training time: 20.4s
+    Inner fold 0 AUC: 0.7351 (22.7s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31078 samples (pos=14417, neg=16661, ratio=1.156)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 656
+    scale_pos_weight (auto) = 1.1556 (neg=16661, pos=14417)
+    Training XGBoost ...
+    Training time: 20.1s
+    Inner fold 1 AUC: 0.7349 (22.3s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31078 samples (pos=14402, neg=16676, ratio=1.158)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 656
+    scale_pos_weight (auto) = 1.1579 (neg=16676, pos=14402)
+    Training XGBoost ...
+    Training time: 20.5s
+    Inner fold 2 AUC: 0.7349 (22.7s)
+
+  ── Inner fold 4/5 (test bucket = 3) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31079 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31079 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31079 samples (pos=14416, neg=16663, ratio=1.156)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 656
+    scale_pos_weight (auto) = 1.1559 (neg=16663, pos=14416)
+    Training XGBoost ...
+    Training time: 20.5s
+    Inner fold 3 AUC: 0.7369 (22.8s)
+
+  ── Inner fold 5/5 (test bucket = 4) ──
+    CSV features: 630 columns (imputation skipped — NaN passed natively)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31079 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 26 (85.2% variance, fitted on 31079 non-zero samples)
+    Total features after concatenation: 656
+    Train:  31079 samples (pos=14398, neg=16681, ratio=1.159)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 656
+    scale_pos_weight (auto) = 1.1586 (neg=16681, pos=14398)
+    Training XGBoost ...
+    Training time: 20.6s
+    Inner fold 4 AUC: 0.7373 (22.8s)
+
+  Averaging 5 inner models on validation bucket 5...
+  Outer fold 5 validation (n=7769, pos=3597, neg=4172):
+    AUC-ROC: 0.7633  |  AUC-PR: 0.7296  |  Acc: 0.6916  |  F1: 0.6636  |  MCC: 0.3790
+    Sens: 0.6569  |  Spec: 0.7215  |  PPV: 0.6704  |  NPV: 0.7092
+
+================================================================================
+NESTED CV RESULTS (mean ± std across 6 outer iterations)
+================================================================================
+
+================================================================================
+CROSS-VALIDATION SUMMARY (mean +/- std)
+================================================================================
+  auc_roc         0.7579 +/- 0.0038    [0.7533  0.7569  0.7565  0.7547  0.7629  0.7633]
+  auc_pr          0.7198 +/- 0.0064    [0.7184  0.7138  0.7185  0.7117  0.7266  0.7296]
+  accuracy        0.6902 +/- 0.0050    [0.6883  0.6932  0.6871  0.6826  0.6985  0.6916]
+  f1              0.6636 +/- 0.0060    [0.6626  0.6630  0.6636  0.6540  0.6747  0.6636]
+  mcc             0.3766 +/- 0.0101    [0.3730  0.3816  0.3712  0.3609  0.3938  0.3790]
+  sensitivity     0.6594 +/- 0.0080    [0.6567  0.6537  0.6657  0.6497  0.6736  0.6569]
+  specificity     0.7168 +/- 0.0071    [0.7158  0.7270  0.7056  0.7108  0.7202  0.7215]
+  ppv             0.6679 +/- 0.0061    [0.6685  0.6725  0.6615  0.6585  0.6758  0.6704]
+  npv             0.7091 +/- 0.0048    [0.7050  0.7100  0.7095  0.7028  0.7181  0.7092]
+
+================================================================================
+PER-OUTER-FOLD VALIDATION METRICS
+================================================================================
+  Outer   auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
+  -----------------------------------------------------------------------------------------------------------------------------
+  0       0.7533       0.7184       0.6883       0.6626       0.3730       0.6567       0.7158       0.6685       0.7050       
+  1       0.7569       0.7138       0.6932       0.6630       0.3816       0.6537       0.7270       0.6725       0.7100       
+  2       0.7565       0.7185       0.6871       0.6636       0.3712       0.6657       0.7056       0.6615       0.7095       
+  3       0.7547       0.7117       0.6826       0.6540       0.3609       0.6497       0.7108       0.6585       0.7028       
+  4       0.7629       0.7266       0.6985       0.6747       0.3938       0.6736       0.7202       0.6758       0.7181       
+  5       0.7633       0.7296       0.6916       0.6636       0.3790       0.6569       0.7215       0.6704       0.7092       
+  -----------------------------------------------------------------------------------------------------------------------------
+  mean    0.7579       0.7198       0.6902       0.6636       0.3766       0.6594       0.7168       0.6679       0.7091       
+  std     0.0038       0.0064       0.0050       0.0060       0.0101       0.0080       0.0071       0.0061       0.0048       
+
+================================================================================
+AVERAGED FEATURE IMPORTANCE ACROSS ALL 30 INNER MODELS
+================================================================================
+  Rank   Feature                                           Mean Imp          Std
+  -----------------------------------------------------------------------------
+  1      N1_P                                              0.008028     0.000415
+  2      N2_P                                              0.007033     0.000418
+  3      P5_P                                              0.006690     0.000578
+  4      C1_I                                              0.004766     0.000397
+  5      N3_P                                              0.004561     0.000304
+  6      P9_M                                              0.004412     0.000487
+  7      P8_P                                              0.004400     0.000179
+  8      P3_P                                              0.004087     0.000463
+  9      C1_A                                              0.004001     0.000336
+  10     C1_K                                              0.003965     0.000385
+  11     P2_F                                              0.003898     0.000340
+  12     P7_D                                              0.003897     0.000293
+  13     P3_H                                              0.003785     0.000446
+  14     P7_H                                              0.003741     0.000197
+  15     P2_M                                              0.003731     0.000533
+  16     P5_H                                              0.003713     0.000161
+  17     P6_F                                              0.003686     0.000495
+  18     P5_R                                              0.003554     0.000328
+  19     P6_M                                              0.003400     0.000459
+  20     P3_R                                              0.003329     0.000434
+  21     P6_G                                              0.003328     0.000341
+  22     P5_K                                              0.003328     0.000308
+  23     P7_G                                              0.003198     0.000187
+  24     P4_H                                              0.003198     0.000402
+  25     P8_K                                              0.003179     0.000322
+  26     C1_P                                              0.003175     0.000417
+  27     C1_S                                              0.003044     0.000374
+  28     P8_M                                              0.002992     0.000323
+  29     N2_I                                              0.002959     0.000220
+  30     C2_P                                              0.002911     0.000573
+
+Results saved: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/cv_results_xgb_handcrafted_sparse_esmc_pca26_20260916_125419.json
+Feature names saved: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/xgb_handcrafted_sparse_esmc_pca26_feature_names.json
+
+================================================================================
+RUN SUMMARY (NESTED CV)
+================================================================================
+  Total runtime:      700.6s (11.7 min)
+  Nested CV time:     696.9s (11.6 min)
+  Model:              XGBoost (xgb)
+  Feature set:        Structural + one-hot + ESM-C (handcrafted_sparse_esmc)
+  Components:         ['handcrafted', 'sparse', 'esmc']
+  Scaling:            no
+  Features (final):   656
+    CSV features:     630
+    esmc PCA:       26
+  Outer iterations:   6
+  Inner folds:        5
+  Total models:       30
+  Val AUC-ROC:        0.7579 ± 0.0038
+  Val MCC:            0.3766 ± 0.0101
+  Models dir:         /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/
+  Results file:       /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/cv_results_xgb_handcrafted_sparse_esmc_pca26_20260916_125419.json
+  Feature names:      /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/xgb_handcrafted_sparse_esmc_pca26_feature_names.json
+  Log file:           /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/logs/04_modelling_xgb_handcrafted_sparse_esmc_pca26_log_20260916_125419.txt
+  Completed:          2026-09-16 13:06:00
+================================================================================

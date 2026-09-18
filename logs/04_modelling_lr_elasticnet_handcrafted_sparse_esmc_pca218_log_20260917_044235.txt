@@ -1,0 +1,948 @@
+================================================================================
+  04_MODELLING -- LOGISTIC REGRESSION (ELASTICNET) + STRUCTURAL + ONE-HOT + ESM-C
+================================================================================
+  Timestamp:       2026-09-17 04:42:35
+  Model key:       lr_elasticnet
+  Model class:     sklearn.linear_model.LogisticRegression
+  Feature set:     handcrafted_sparse_esmc (Structural + one-hot + ESM-C)
+  Components:      ['handcrafted', 'sparse', 'esmc']
+  Data path:       /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_with_folds.csv
+  Log path:        /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/logs/04_modelling_lr_elasticnet_handcrafted_sparse_esmc_pca218_log_20260917_044235.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   True
+
+  Model hyperparameters:
+    penalty                   elasticnet
+    C                         1.0
+    solver                    saga
+    l1_ratio                  0.5
+    max_iter                  5000
+    class_weight              balanced
+    random_state              42
+    verbose                   0
+================================================================================
+
+Loading split data: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_with_folds.csv
+  Shape: 46617 rows x 99 columns
+  [OK] Fold column validated: [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5)]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+  Loading CSV component: One-hot AA encoding
+    Loading: df_all_sparse.csv
+    Shape: 46617 rows x 649 columns
+    [OK] Alignment verified
+    New columns: 580
+
+  Merged 580 new columns → 46617 rows x 679 columns
+
+  Loading embedding component: ESM-C (600M) context window
+    Loading prepared embeddings: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/embeddings_prepared/esmc_context_prepared.h5
+    Loaded: 46617 samples, dim=1152
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  CSV components (2):
+    [handcrafted] Structural features
+      Source: split_data (built-in)
+    [sparse] One-hot AA encoding
+      Source: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_sparse.csv
+      New columns added: 580
+  Total CSV features: 630
+    Structural: 50
+    AA-encoded: 580
+
+  Embedding components (1):
+    [esmc] ESM-C (600M) context window
+      Context dim:    1152
+      After PCA: 218
+
+  Estimated total features: ~848
+    CSV:        630
+    Embeddings: 218 (after PCA)
+
+================================================================================
+PIPELINE READY: ~848 features, 5 folds, Logistic Regression (ElasticNet)
+================================================================================
+
+================================================================================
+NESTED CROSS-VALIDATION
+  Outer iterations: 6 (rotate validation bucket)
+  Inner folds:      5 (per outer iteration)
+  Total models:     30
+================================================================================
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 0/5 (validation bucket = 0)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 1) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       25          8     0.3509
+    mean_disorder_nflank                                  25          8     0.0102
+    mean_rsa_cflank                                       95         12     0.3612
+    mean_disorder_cflank                                  95         12     0.0114
+    mean_plddt_nflank                                     25          8    89.1430
+    mean_plddt_cflank                                     95         12    88.9645
+    Total NaN — train: 360 (0.00%), test: 60 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31077 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31077 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31077 samples (pos=14393, neg=16684, ratio=1.159)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 539.4s
+    Inner fold 1 AUC: 0.7280 (544.9s)
+
+  ── Inner fold 2/5 (test bucket = 2) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       24          9     0.3506
+    mean_disorder_nflank                                  24          9     0.0102
+    mean_rsa_cflank                                       81         26     0.3617
+    mean_disorder_cflank                                  81         26     0.0116
+    mean_plddt_nflank                                     24          9    89.1620
+    mean_plddt_cflank                                     81         26    88.9095
+    Total NaN — train: 315 (0.00%), test: 105 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31077 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31077 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31077 samples (pos=14378, neg=16699, ratio=1.161)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 562.7s
+    Inner fold 2 AUC: 0.7431 (568.6s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       28          5     0.3505
+    mean_disorder_nflank                                  28          5     0.0101
+    mean_rsa_cflank                                       81         26     0.3615
+    mean_disorder_cflank                                  81         26     0.0115
+    mean_plddt_nflank                                     28          5    89.0965
+    mean_plddt_cflank                                     81         26    88.8560
+    Total NaN — train: 327 (0.00%), test: 93 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31078 samples (pos=14392, neg=16686, ratio=1.159)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 540.2s
+    Inner fold 3 AUC: 0.7324 (546.7s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       27          6     0.3513
+    mean_disorder_nflank                                  27          6     0.0103
+    mean_rsa_cflank                                       87         20     0.3624
+    mean_disorder_cflank                                  87         20     0.0116
+    mean_plddt_nflank                                     27          6    89.1560
+    mean_plddt_cflank                                     87         20    88.9250
+    Total NaN — train: 342 (0.00%), test: 78 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31078 samples (pos=14374, neg=16704, ratio=1.162)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 536.4s
+    Inner fold 4 AUC: 0.7418 (541.5s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       28          5     0.3499
+    mean_disorder_nflank                                  28          5     0.0101
+    mean_rsa_cflank                                       84         23     0.3613
+    mean_disorder_cflank                                  84         23     0.0113
+    mean_plddt_nflank                                     28          5    89.2070
+    mean_plddt_cflank                                     84         23    88.9680
+    Total NaN — train: 336 (0.00%), test: 84 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31078 samples (pos=14383, neg=16695, ratio=1.161)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 566.5s
+    Inner fold 5 AUC: 0.7437 (571.7s)
+
+  Averaging 5 inner models on validation bucket 0...
+  Outer fold 0 validation (n=7770, pos=3621, neg=4149):
+    AUC-ROC: 0.7360  |  AUC-PR: 0.6984  |  Acc: 0.6690  |  F1: 0.6548  |  MCC: 0.3378
+    Sens: 0.6736  |  Spec: 0.6650  |  PPV: 0.6370  |  NPV: 0.7001
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 1/5 (validation bucket = 1)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       25          4     0.3509
+    mean_disorder_nflank                                  25          4     0.0102
+    mean_rsa_cflank                                       95         16     0.3612
+    mean_disorder_cflank                                  95         16     0.0114
+    mean_plddt_nflank                                     25          4    89.1430
+    mean_plddt_cflank                                     95         16    88.9645
+    Total NaN — train: 360 (0.00%), test: 60 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31077 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31077 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31077 samples (pos=14393, neg=16684, ratio=1.159)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 564.3s
+    Inner fold 0 AUC: 0.7321 (572.0s)
+
+  ── Inner fold 2/5 (test bucket = 2) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       20          9     0.3511
+    mean_disorder_nflank                                  20          9     0.0104
+    mean_rsa_cflank                                       85         26     0.3617
+    mean_disorder_cflank                                  85         26     0.0117
+    mean_plddt_nflank                                     20          9    89.0860
+    mean_plddt_cflank                                     85         26    88.8820
+    Total NaN — train: 315 (0.00%), test: 105 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31077 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31077 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31077 samples (pos=14412, neg=16665, ratio=1.156)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 574.0s
+    Inner fold 2 AUC: 0.7417 (580.0s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       24          5     0.3511
+    mean_disorder_nflank                                  24          5     0.0103
+    mean_rsa_cflank                                       85         26     0.3615
+    mean_disorder_cflank                                  85         26     0.0116
+    mean_plddt_nflank                                     24          5    89.0045
+    mean_plddt_cflank                                     85         26    88.8260
+    Total NaN — train: 327 (0.00%), test: 93 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31078 samples (pos=14426, neg=16652, ratio=1.154)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 561.7s
+    Inner fold 3 AUC: 0.7335 (568.6s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       23          6     0.3519
+    mean_disorder_nflank                                  23          6     0.0105
+    mean_rsa_cflank                                       91         20     0.3626
+    mean_disorder_cflank                                  91         20     0.0117
+    mean_plddt_nflank                                     23          6    89.0810
+    mean_plddt_cflank                                     91         20    88.8870
+    Total NaN — train: 342 (0.00%), test: 78 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31078 samples (pos=14408, neg=16670, ratio=1.157)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 560.1s
+    Inner fold 4 AUC: 0.7440 (565.0s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       24          5     0.3505
+    mean_disorder_nflank                                  24          5     0.0103
+    mean_rsa_cflank                                       88         23     0.3614
+    mean_disorder_cflank                                  88         23     0.0114
+    mean_plddt_nflank                                     24          5    89.1300
+    mean_plddt_cflank                                     88         23    88.9190
+    Total NaN — train: 336 (0.00%), test: 84 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31078 samples (pos=14417, neg=16661, ratio=1.156)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 582.2s
+    Inner fold 5 AUC: 0.7430 (587.6s)
+
+  Averaging 5 inner models on validation bucket 1...
+  Outer fold 1 validation (n=7770, pos=3587, neg=4183):
+    AUC-ROC: 0.7323  |  AUC-PR: 0.6856  |  Acc: 0.6703  |  F1: 0.6540  |  MCC: 0.3403
+    Sens: 0.6749  |  Spec: 0.6663  |  PPV: 0.6343  |  NPV: 0.7050
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 2/5 (validation bucket = 2)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       24          4     0.3506
+    mean_disorder_nflank                                  24          4     0.0102
+    mean_rsa_cflank                                       81         16     0.3617
+    mean_disorder_cflank                                  81         16     0.0116
+    mean_plddt_nflank                                     24          4    89.1620
+    mean_plddt_cflank                                     81         16    88.9095
+    Total NaN — train: 315 (0.00%), test: 60 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31077 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31077 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31077 samples (pos=14378, neg=16699, ratio=1.161)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 562.8s
+    Inner fold 0 AUC: 0.7339 (567.3s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       20          8     0.3511
+    mean_disorder_nflank                                  20          8     0.0104
+    mean_rsa_cflank                                       85         12     0.3617
+    mean_disorder_cflank                                  85         12     0.0117
+    mean_plddt_nflank                                     20          8    89.0860
+    mean_plddt_cflank                                     85         12    88.8820
+    Total NaN — train: 315 (0.00%), test: 60 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31077 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31077 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31077 samples (pos=14412, neg=16665, ratio=1.156)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 599.6s
+    Inner fold 1 AUC: 0.7283 (606.4s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       23          5     0.3509
+    mean_disorder_nflank                                  23          5     0.0103
+    mean_rsa_cflank                                       71         26     0.3619
+    mean_disorder_cflank                                  71         26     0.0118
+    mean_plddt_nflank                                     23          5    89.0430
+    mean_plddt_cflank                                     71         26    88.7750
+    Total NaN — train: 282 (0.00%), test: 93 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31078 samples (pos=14411, neg=16667, ratio=1.157)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 573.9s
+    Inner fold 3 AUC: 0.7324 (579.8s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       22          6     0.3517
+    mean_disorder_nflank                                  22          6     0.0105
+    mean_rsa_cflank                                       77         20     0.3630
+    mean_disorder_cflank                                  77         20     0.0120
+    mean_plddt_nflank                                     22          6    89.0990
+    mean_plddt_cflank                                     77         20    88.8310
+    Total NaN — train: 297 (0.00%), test: 78 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31078 samples (pos=14393, neg=16685, ratio=1.159)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 611.1s
+    Inner fold 4 AUC: 0.7437 (617.3s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       23          5     0.3503
+    mean_disorder_nflank                                  23          5     0.0103
+    mean_rsa_cflank                                       74         23     0.3618
+    mean_disorder_cflank                                  74         23     0.0116
+    mean_plddt_nflank                                     23          5    89.1450
+    mean_plddt_cflank                                     74         23    88.8815
+    Total NaN — train: 291 (0.00%), test: 84 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31078 samples (pos=14402, neg=16676, ratio=1.158)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 610.3s
+    Inner fold 5 AUC: 0.7416 (616.9s)
+
+  Averaging 5 inner models on validation bucket 2...
+  Outer fold 2 validation (n=7770, pos=3602, neg=4168):
+    AUC-ROC: 0.7449  |  AUC-PR: 0.7021  |  Acc: 0.6779  |  F1: 0.6653  |  MCC: 0.3565
+    Sens: 0.6907  |  Spec: 0.6667  |  PPV: 0.6417  |  NPV: 0.7138
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 3/5 (validation bucket = 3)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       28          4     0.3505
+    mean_disorder_nflank                                  28          4     0.0101
+    mean_rsa_cflank                                       81         16     0.3615
+    mean_disorder_cflank                                  81         16     0.0115
+    mean_plddt_nflank                                     28          4    89.0965
+    mean_plddt_cflank                                     81         16    88.8560
+    Total NaN — train: 327 (0.00%), test: 60 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31078 samples (pos=14392, neg=16686, ratio=1.159)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 529.5s
+    Inner fold 0 AUC: 0.7335 (535.1s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       24          8     0.3511
+    mean_disorder_nflank                                  24          8     0.0103
+    mean_rsa_cflank                                       85         12     0.3615
+    mean_disorder_cflank                                  85         12     0.0116
+    mean_plddt_nflank                                     24          8    89.0045
+    mean_plddt_cflank                                     85         12    88.8260
+    Total NaN — train: 327 (0.00%), test: 60 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31078 samples (pos=14426, neg=16652, ratio=1.154)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 536.1s
+    Inner fold 1 AUC: 0.7307 (541.9s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       23          9     0.3509
+    mean_disorder_nflank                                  23          9     0.0103
+    mean_rsa_cflank                                       71         26     0.3619
+    mean_disorder_cflank                                  71         26     0.0118
+    mean_plddt_nflank                                     23          9    89.0430
+    mean_plddt_cflank                                     71         26    88.7750
+    Total NaN — train: 282 (0.00%), test: 105 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31078 samples (pos=14411, neg=16667, ratio=1.157)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 559.6s
+    Inner fold 2 AUC: 0.7414 (564.9s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       26          6     0.3515
+    mean_disorder_nflank                                  26          6     0.0105
+    mean_rsa_cflank                                       77         20     0.3627
+    mean_disorder_cflank                                  77         20     0.0119
+    mean_plddt_nflank                                     26          6    89.0260
+    mean_plddt_cflank                                     77         20    88.8000
+    Total NaN — train: 309 (0.00%), test: 78 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31079 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31079 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31079 samples (pos=14407, neg=16672, ratio=1.157)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 547.4s
+    Inner fold 4 AUC: 0.7403 (553.7s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       27          5     0.3503
+    mean_disorder_nflank                                  27          5     0.0102
+    mean_rsa_cflank                                       74         23     0.3616
+    mean_disorder_cflank                                  74         23     0.0115
+    mean_plddt_nflank                                     27          5    89.0860
+    mean_plddt_cflank                                     74         23    88.8300
+    Total NaN — train: 303 (0.00%), test: 84 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31079 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31079 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31079 samples (pos=14416, neg=16663, ratio=1.156)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 572.2s
+    Inner fold 5 AUC: 0.7434 (577.4s)
+
+  Averaging 5 inner models on validation bucket 3...
+  Outer fold 3 validation (n=7769, pos=3588, neg=4181):
+    AUC-ROC: 0.7352  |  AUC-PR: 0.6885  |  Acc: 0.6743  |  F1: 0.6564  |  MCC: 0.3477
+    Sens: 0.6736  |  Spec: 0.6750  |  PPV: 0.6401  |  NPV: 0.7067
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 4/5 (validation bucket = 4)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       27          4     0.3513
+    mean_disorder_nflank                                  27          4     0.0103
+    mean_rsa_cflank                                       87         16     0.3624
+    mean_disorder_cflank                                  87         16     0.0116
+    mean_plddt_nflank                                     27          4    89.1560
+    mean_plddt_cflank                                     87         16    88.9250
+    Total NaN — train: 342 (0.00%), test: 60 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31078 samples (pos=14374, neg=16704, ratio=1.162)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 561.4s
+    Inner fold 0 AUC: 0.7324 (568.9s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       23          8     0.3519
+    mean_disorder_nflank                                  23          8     0.0105
+    mean_rsa_cflank                                       91         12     0.3626
+    mean_disorder_cflank                                  91         12     0.0117
+    mean_plddt_nflank                                     23          8    89.0810
+    mean_plddt_cflank                                     91         12    88.8870
+    Total NaN — train: 342 (0.00%), test: 60 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31078 samples (pos=14408, neg=16670, ratio=1.157)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 575.1s
+    Inner fold 1 AUC: 0.7314 (580.1s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       22          9     0.3517
+    mean_disorder_nflank                                  22          9     0.0105
+    mean_rsa_cflank                                       77         26     0.3630
+    mean_disorder_cflank                                  77         26     0.0120
+    mean_plddt_nflank                                     22          9    89.0990
+    mean_plddt_cflank                                     77         26    88.8310
+    Total NaN — train: 297 (0.00%), test: 105 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31078 samples (pos=14393, neg=16685, ratio=1.159)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 602.7s
+    Inner fold 2 AUC: 0.7417 (607.6s)
+
+  ── Inner fold 4/5 (test bucket = 3) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       26          5     0.3515
+    mean_disorder_nflank                                  26          5     0.0105
+    mean_rsa_cflank                                       77         26     0.3627
+    mean_disorder_cflank                                  77         26     0.0119
+    mean_plddt_nflank                                     26          5    89.0260
+    mean_plddt_cflank                                     77         26    88.8000
+    Total NaN — train: 309 (0.00%), test: 93 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31079 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31079 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31079 samples (pos=14407, neg=16672, ratio=1.157)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 550.3s
+    Inner fold 3 AUC: 0.7301 (555.1s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       26          5     0.3510
+    mean_disorder_nflank                                  26          5     0.0104
+    mean_rsa_cflank                                       80         23     0.3628
+    mean_disorder_cflank                                  80         23     0.0117
+    mean_plddt_nflank                                     26          5    89.1380
+    mean_plddt_cflank                                     80         23    88.8870
+    Total NaN — train: 318 (0.00%), test: 84 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31079 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31079 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31079 samples (pos=14398, neg=16681, ratio=1.159)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 573.0s
+    Inner fold 5 AUC: 0.7431 (577.6s)
+
+  Averaging 5 inner models on validation bucket 4...
+  Outer fold 4 validation (n=7769, pos=3606, neg=4163):
+    AUC-ROC: 0.7457  |  AUC-PR: 0.7086  |  Acc: 0.6801  |  F1: 0.6665  |  MCC: 0.3605
+    Sens: 0.6886  |  Spec: 0.6728  |  PPV: 0.6458  |  NPV: 0.7138
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 5/5 (validation bucket = 5)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       28          4     0.3499
+    mean_disorder_nflank                                  28          4     0.0101
+    mean_rsa_cflank                                       84         16     0.3613
+    mean_disorder_cflank                                  84         16     0.0113
+    mean_plddt_nflank                                     28          4    89.2070
+    mean_plddt_cflank                                     84         16    88.9680
+    Total NaN — train: 336 (0.00%), test: 60 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31078 samples (pos=14383, neg=16695, ratio=1.161)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 565.7s
+    Inner fold 0 AUC: 0.7322 (570.2s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       24          8     0.3505
+    mean_disorder_nflank                                  24          8     0.0103
+    mean_rsa_cflank                                       88         12     0.3614
+    mean_disorder_cflank                                  88         12     0.0114
+    mean_plddt_nflank                                     24          8    89.1300
+    mean_plddt_cflank                                     88         12    88.9190
+    Total NaN — train: 336 (0.00%), test: 60 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31078 samples (pos=14417, neg=16661, ratio=1.156)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 584.0s
+    Inner fold 1 AUC: 0.7279 (588.5s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       23          9     0.3503
+    mean_disorder_nflank                                  23          9     0.0103
+    mean_rsa_cflank                                       74         26     0.3618
+    mean_disorder_cflank                                  74         26     0.0116
+    mean_plddt_nflank                                     23          9    89.1450
+    mean_plddt_cflank                                     74         26    88.8815
+    Total NaN — train: 291 (0.00%), test: 105 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31078 (0.0%), test=0/7770 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31078 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31078 samples (pos=14402, neg=16676, ratio=1.158)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 612.2s
+    Inner fold 2 AUC: 0.7411 (616.7s)
+
+  ── Inner fold 4/5 (test bucket = 3) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       27          5     0.3503
+    mean_disorder_nflank                                  27          5     0.0102
+    mean_rsa_cflank                                       74         26     0.3616
+    mean_disorder_cflank                                  74         26     0.0115
+    mean_plddt_nflank                                     27          5    89.0860
+    mean_plddt_cflank                                     74         26    88.8300
+    Total NaN — train: 303 (0.00%), test: 93 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31079 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31079 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31079 samples (pos=14416, neg=16663, ratio=1.156)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 573.1s
+    Inner fold 3 AUC: 0.7328 (577.6s)
+
+  ── Inner fold 5/5 (test bucket = 4) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       26          6     0.3510
+    mean_disorder_nflank                                  26          6     0.0104
+    mean_rsa_cflank                                       80         20     0.3628
+    mean_disorder_cflank                                  80         20     0.0117
+    mean_plddt_nflank                                     26          6    89.1380
+    mean_plddt_cflank                                     80         20    88.8870
+    Total NaN — train: 318 (0.00%), test: 78 (0.00%)
+    CSV features: 630 columns
+Embedding components loaded: dict_keys(['esmc'])
+    esmc: zero-vector samples: train=0/31079 (0.0%), test=0/7769 (0.0%)
+    esmc: PCA 1152 → 218 (95.0% variance, fitted on 31079 non-zero samples)
+    Total features after concatenation: 848
+    Train:  31079 samples (pos=14398, neg=16681, ratio=1.159)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 848
+    Training Logistic Regression (ElasticNet) ...
+    Training time: 574.6s
+    Inner fold 4 AUC: 0.7424 (579.1s)
+
+  Averaging 5 inner models on validation bucket 5...
+  Outer fold 5 validation (n=7769, pos=3597, neg=4172):
+    AUC-ROC: 0.7462  |  AUC-PR: 0.7093  |  Acc: 0.6768  |  F1: 0.6594  |  MCC: 0.3526
+    Sens: 0.6758  |  Spec: 0.6776  |  PPV: 0.6438  |  NPV: 0.7080
+
+================================================================================
+NESTED CV RESULTS (mean ± std across 6 outer iterations)
+================================================================================
+
+================================================================================
+CROSS-VALIDATION SUMMARY (mean +/- std)
+================================================================================
+  auc_roc         0.7400 +/- 0.0057    [0.7360  0.7323  0.7449  0.7352  0.7457  0.7462]
+  auc_pr          0.6987 +/- 0.0091    [0.6984  0.6856  0.7021  0.6885  0.7086  0.7093]
+  accuracy        0.6747 +/- 0.0040    [0.6690  0.6703  0.6779  0.6743  0.6801  0.6768]
+  f1              0.6594 +/- 0.0049    [0.6548  0.6540  0.6653  0.6564  0.6665  0.6594]
+  mcc             0.3492 +/- 0.0082    [0.3378  0.3403  0.3565  0.3477  0.3605  0.3526]
+  sensitivity     0.6795 +/- 0.0072    [0.6736  0.6749  0.6907  0.6736  0.6886  0.6758]
+  specificity     0.6706 +/- 0.0048    [0.6650  0.6663  0.6667  0.6750  0.6728  0.6776]
+  ppv             0.6404 +/- 0.0039    [0.6370  0.6343  0.6417  0.6401  0.6458  0.6438]
+  npv             0.7079 +/- 0.0048    [0.7001  0.7050  0.7138  0.7067  0.7138  0.7080]
+
+================================================================================
+PER-OUTER-FOLD VALIDATION METRICS
+================================================================================
+  Outer   auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
+  -----------------------------------------------------------------------------------------------------------------------------
+  0       0.7360       0.6984       0.6690       0.6548       0.3378       0.6736       0.6650       0.6370       0.7001       
+  1       0.7323       0.6856       0.6703       0.6540       0.3403       0.6749       0.6663       0.6343       0.7050       
+  2       0.7449       0.7021       0.6779       0.6653       0.3565       0.6907       0.6667       0.6417       0.7138       
+  3       0.7352       0.6885       0.6743       0.6564       0.3477       0.6736       0.6750       0.6401       0.7067       
+  4       0.7457       0.7086       0.6801       0.6665       0.3605       0.6886       0.6728       0.6458       0.7138       
+  5       0.7462       0.7093       0.6768       0.6594       0.3526       0.6758       0.6776       0.6438       0.7080       
+  -----------------------------------------------------------------------------------------------------------------------------
+  mean    0.7400       0.6987       0.6747       0.6594       0.3492       0.6795       0.6706       0.6404       0.7079       
+  std     0.0057       0.0091       0.0040       0.0049       0.0082       0.0072       0.0048       0.0039       0.0048       
+
+================================================================================
+AVERAGED COEFFICIENTS ACROSS ALL 30 INNER MODELS
+================================================================================
+  Rank   Feature                                          Mean Coef          Std
+  -----------------------------------------------------------------------------
+  1      C1_L                                             -0.535816     0.060769
+  2      C1_I                                             -0.421726     0.036775
+  3      C1_E                                             -0.392199     0.047072
+  4      C1_V                                             -0.388376     0.039218
+  5      C1_P                                             -0.383803     0.036469
+  6      C1_D                                             -0.378232     0.036243
+  7      C1_F                                             -0.338458     0.037987
+  8      C1_G                                             -0.313375     0.036062
+  9      C1_T                                             -0.298623     0.045773
+  10     C1_Q                                             -0.287467     0.042568
+  11     C1_Y                                             -0.271236     0.029060
+  12     C1_A                                             -0.260757     0.042704
+  13     C1_S                                             -0.254567     0.050786
+  14     C1_N                                             -0.246602     0.031051
+  15     C1_R                                             -0.242338     0.036169
+  16     C1_K                                             -0.236204     0.044971
+  17     N2_P                                             -0.220824     0.027054
+  18     C1_M                                             -0.205183     0.021838
+  19     C1_W                                             -0.203882     0.021015
+  20     N1_P                                             -0.201610     0.021994
+  21     esmc_PC010                                        0.198150     0.014135
+  22     esmc_PC013                                        0.180774     0.013229
+  23     esmc_PC001                                       -0.173038     0.023347
+  24     P5_P                                             -0.167661     0.006144
+  25     P7_H                                              0.164606     0.007121
+  26     C1_H                                             -0.164439     0.028345
+  27     C1_C                                             -0.159908     0.025801
+  28     P2_F                                              0.154622     0.011945
+  29     P9_M                                             -0.154039     0.008805
+  30     N2_I                                             -0.136713     0.021128
+
+Results saved: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/cv_results_lr_elasticnet_handcrafted_sparse_esmc_pca218_20260917_044235.json
+Feature names saved: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/lr_elasticnet_handcrafted_sparse_esmc_pca218_feature_names.json
+
+================================================================================
+RUN SUMMARY (NESTED CV)
+================================================================================
+  Total runtime:      17242.4s (287.4 min)
+  Nested CV time:     17239.1s (287.3 min)
+  Model:              Logistic Regression (ElasticNet) (lr_elasticnet)
+  Feature set:        Structural + one-hot + ESM-C (handcrafted_sparse_esmc)
+  Components:         ['handcrafted', 'sparse', 'esmc']
+  Scaling:            yes
+  Features (final):   848
+    CSV features:     630
+    esmc PCA:       218
+  Outer iterations:   6
+  Inner folds:        5
+  Total models:       30
+  Val AUC-ROC:        0.7400 ± 0.0057
+  Val MCC:            0.3492 ± 0.0082
+  Models dir:         /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/
+  Results file:       /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/cv_results_lr_elasticnet_handcrafted_sparse_esmc_pca218_20260917_044235.json
+  Feature names:      /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/lr_elasticnet_handcrafted_sparse_esmc_pca218_feature_names.json
+  Log file:           /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/logs/04_modelling_lr_elasticnet_handcrafted_sparse_esmc_pca218_log_20260917_044235.txt
+  Completed:          2026-09-17 09:29:57
+================================================================================
