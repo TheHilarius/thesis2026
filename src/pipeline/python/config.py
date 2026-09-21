@@ -58,6 +58,83 @@ EMBEDDING_SOURCES = {
         "has_row_indices": False,
         "has_start_end": False,
     },
+    # ── Fixed-29 per-residue window embeddings (B pipeline) ──
+    # kind=="windows": raw HDF5 holds window_if_struct (N,29,D) + pad_mask.
+    # pad_mask convention: True = PADDED slot, False = real residue slot.
+    # emb_dim is EXPECTED value; the authoritative dim is read from the H5
+    # attr at load time (so the same code path serves D=512 IF and D=1152 C).
+    "esmif_zero": {
+        "display_name": "ESM-IF1 windows (zero-pad)",
+        "kind": "windows",
+        "raw_path": EMBEDDING_DIR / "esm-if_test_zero.h5",
+        "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_zero_windows_prepared.h5",
+        "window_ds": "window_if_struct",
+        "pad_mask_ds": "pad_mask",
+        "n_pad_ds": "n_pad",
+        "c_pad_ds": "c_pad",
+        "status_ds": "status",
+        "emb_dim": 512,
+        "window": 29,
+        "pad_mode": "zero",
+        "peptide_id_col": "peptide_ids",
+        "uniprot_id_col": "uniprot_ids",
+        "has_row_indices": True,
+        "has_start_end": True,
+    },
+    "esmif_padtoken": {
+        "display_name": "ESM-IF1 windows (pad-token)",
+        "kind": "windows",
+        "raw_path": EMBEDDING_DIR / "esm-if_test_padtoken.h5",
+        "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_padtoken_windows_prepared.h5",
+        "window_ds": "window_if_struct",
+        "pad_mask_ds": "pad_mask",
+        "n_pad_ds": "n_pad",
+        "c_pad_ds": "c_pad",
+        "status_ds": "status",
+        "emb_dim": 512,
+        "window": 29,
+        "pad_mode": "padtoken",
+        "peptide_id_col": "peptide_ids",
+        "uniprot_id_col": "uniprot_ids",
+        "has_row_indices": True,
+        "has_start_end": True,
+    },
+    "esmif_eosrepeat": {
+        "display_name": "ESM-IF1 windows (eos-repeat)",
+        "kind": "windows",
+        "raw_path": EMBEDDING_DIR / "esm-if_test_eosrepeat.h5",
+        "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_eosrepeat_windows_prepared.h5",
+        "window_ds": "window_if_struct",
+        "pad_mask_ds": "pad_mask",
+        "n_pad_ds": "n_pad",
+        "c_pad_ds": "c_pad",
+        "status_ds": "status",
+        "emb_dim": 512,
+        "window": 29,
+        "pad_mode": "eosrepeat",
+        "peptide_id_col": "peptide_ids",
+        "uniprot_id_col": "uniprot_ids",
+        "has_row_indices": True,
+        "has_start_end": True,
+    },
+    "esmc_windows": {
+        "display_name": "ESM-C (600M) windows (TBD)",
+        "kind": "windows",
+        "raw_path": EMBEDDING_DIR / "esmc_windows.h5",
+        "prepared_path": PREPARED_EMBEDDING_DIR / "esmc_windows_prepared.h5",
+        "window_ds": "window_emb",
+        "pad_mask_ds": "pad_mask",
+        "n_pad_ds": "n_pad",
+        "c_pad_ds": "c_pad",
+        "status_ds": "status",
+        "emb_dim": 1152,
+        "window": 29,
+        "pad_mode": "zero",
+        "peptide_id_col": "peptide_seqs",
+        "uniprot_id_col": "uniprot_ids",
+        "has_row_indices": True,
+        "has_start_end": True,
+    },
 }
 
 EMBEDDING_REGIONS = ["context_emb"]
@@ -154,6 +231,12 @@ FEATURE_COMPONENTS = {
         "embedding_key": "esmif",
         "pca_components": PCA_COMPONENTS,
     },
+    "esmif_win": {
+        "display_name": "ESM-IF1 windows (zero-pad, 29x512)",
+        "type": "embedding_windows",
+        "embedding_key": "esmif_zero",
+        "pca_components": 64,
+    },
 }
 
 # ──────────────────────────────────────────────
@@ -198,6 +281,19 @@ FEATURE_SETS = {
     "handcrafted_sparse_esmif": {
         "display_name": "Structural + one-hot + ESM-IF",
         "components": ["handcrafted", "sparse", "esmif"],
+    },
+    # ── Window-embedding feature sets (B pipeline) ──
+    "handcrafted_esmif_win": {
+        "display_name": "Structural + ESM-IF windows",
+        "components": ["handcrafted", "esmif_win"],
+    },
+    "handcrafted_sparse_esmif_win": {
+        "display_name": "Structural + one-hot + ESM-IF windows",
+        "components": ["handcrafted", "sparse", "esmif_win"],
+    },
+    "handcrafted_blosum_esmif_win": {
+        "display_name": "Structural + BLOSUM50 + ESM-IF windows",
+        "components": ["handcrafted", "blosum", "esmif_win"],
     },
     "handcrafted_blosum_esmc": {
         "display_name": "Structural + BLOSUM50 + ESM-C",

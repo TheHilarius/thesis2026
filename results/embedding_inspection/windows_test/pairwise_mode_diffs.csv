@@ -1,0 +1,4 @@
+pair,frob_median,frob_mean,frob_max,real_cos_median,real_cos_min
+esm-if_test_zero vs esm-if_test_padtoken,0.0,0.52996952125977,24.27108598339505,1.0,0.9999999999999998
+esm-if_test_zero vs esm-if_test_eosrepeat,0.0,0.536329930275519,38.37288878642079,1.0,0.9999999999999998
+esm-if_test_padtoken vs esm-if_test_eosrepeat,0.0,0.7175047003187187,44.17467662405348,1.0,0.9999999999999998

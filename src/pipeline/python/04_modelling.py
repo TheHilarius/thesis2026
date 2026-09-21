@@ -24,7 +24,7 @@ import pandas as pd
 import numpy as np
 import h5py
 from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA, IncrementalPCA
 from sklearn.metrics import (
     roc_auc_score, average_precision_score,
     accuracy_score, f1_score, matthews_corrcoef,
@@ -126,11 +126,18 @@ def load_embedding_data(embedding_key):
     """
     Load a prepared embedding HDF5 into memory.
 
+    For kind=="windows" (B pipeline) this returns a LAZY descriptor: small
+    arrays (labels, folds, pad_counts) + metadata are loaded, but the (N,29,D)
+    tensor is NOT materialized — it is streamed at PCA fit/transform time.
+
     Returns dict with keys:
-        regions  -> dict of {region_name: np.array (N, D)}
+        regions  -> dict of {region_name: np.array (N, D)}   (legacy only)
+        kind     -> "legacy" or "windows"
         labels   -> np.array (N,)
         folds    -> np.array (N,)
         emb_dim  -> int
+        window   -> int (windows only)
+        pad_counts -> np.array (N, 2)  (windows only)
         n_samples -> int
     """
     emb_source = get_embedding_source(embedding_key)
@@ -144,7 +151,26 @@ def load_embedding_data(embedding_key):
 
     print(f"    Loading prepared embeddings: {prepared_path}")
 
-    data = {"regions": {}}
+    if emb_source.get("kind") == "windows":
+        with h5py.File(prepared_path, "r") as f:
+            data = {
+                "kind": "windows",
+                "regions": {},
+                "labels": f["labels"][:],
+                "folds": f["folds"][:],
+                "pad_counts": f["pad_counts"][:].astype(np.float32),
+                "emb_dim": int(f.attrs.get("emb_dim", 0)),
+                "window": int(f.attrs.get("window", 29)),
+                "n_samples": int(f.attrs.get("n_samples", len(f["labels"]))),
+                "prepared_path": str(prepared_path),
+                "embedding_key": embedding_key,
+            }
+        print(f"    Loaded (windows): {data['n_samples']} samples, "
+              f"window={data['window']}, dim={data['emb_dim']} "
+              f"(tensor streamed lazily)")
+        return data
+
+    data = {"regions": {}, "kind": "legacy"}
     with h5py.File(prepared_path, "r") as f:
         data["labels"] = f["labels"][:]
         data["folds"] = f["folds"][:]
@@ -223,7 +249,7 @@ def resolve_components(feat_cfg):
 
         if comp["type"] == "csv":
             csv_components.append(comp)
-        elif comp["type"] == "embedding":
+        elif comp["type"] in ("embedding", "embedding_windows"):
             emb_components.append(comp)
         else:
             raise ValueError(f"Unknown component type: {comp['type']}")
@@ -317,14 +343,24 @@ def load_all_components(df_split, feat_cfg):
         emb_data_dict[comp_key] = emb_data
 
         emb_dim = emb_data["emb_dim"]
+        if emb_data.get("kind") == "windows":
+            window = emb_data["window"]
+            pca_total = window * int(min(pca_components, emb_dim)) + 2
+            raw_dim_desc = f"{window}x{emb_dim}"
+        else:
+            window = None
+            pca_total = pca_components
+            raw_dim_desc = str(emb_dim)
         component_info["emb_components"].append({
             "key": comp_key,
             "display_name": comp["display_name"],
             "embedding_key": emb_key,
             "emb_dim": emb_dim,
             "raw_dim": emb_dim,
+            "raw_dim_desc": raw_dim_desc,
+            "window": window,
             "pca_components": pca_components,
-            "pca_total": pca_components,
+            "pca_total": pca_total,
         })
 
     return df, csv_feature_cols, emb_data_dict, component_info
@@ -393,6 +429,100 @@ def get_context_matrix(emb_data, indices):
     """
     region_name = EMBEDDING_REGIONS[0]
     return emb_data["regions"][region_name][indices].astype(np.float64)
+
+
+# ──────────────────────────────────────────────
+# 6b. WINDOW EMBEDDING STREAMING (kind == "windows")
+# ──────────────────────────────────────────────
+#
+# The (N, 29, D) window tensor is never fully materialized in RAM.  Reads are
+# chunked; h5py requires increasing index order, which is guaranteed here
+# because every indices array passed in is an increasing subset of 0..N-1.
+
+WINDOW_CHUNK_ROWS = 2048
+
+
+def _stream_window_slots(prepared_path, indices):
+    """
+    Generator over window rows for `indices`.  Yields
+    (slots (c*window, D) float32, mask_flat (c*window,) bool) per chunk.
+    mask convention: True = padded slot.
+    """
+    with h5py.File(prepared_path, "r") as f:
+        W = f["windows"]
+        M = f["pad_mask"]
+        for i0 in range(0, len(indices), WINDOW_CHUNK_ROWS):
+            idx = indices[i0:i0 + WINDOW_CHUNK_ROWS]
+            block = W[idx]                      # (c, window, D)
+            mblock = M[idx]                     # (c, window) bool
+            c = block.shape[0]
+            flat = block.reshape(c * block.shape[1], block.shape[-1])
+            flatm = mblock.reshape(-1)
+            yield flat, flatm
+
+
+def fit_window_pca(emb_data, indices, k):
+    """
+    Stream real (non-pad, non-zero-norm) training slots and fit an
+    IncrementalPCA.  Returns the fitted estimator (k components).
+    """
+    prepared_path = emb_data["prepared_path"]
+    D = emb_data["emb_dim"]
+    k = int(min(k, D))
+    ipca = IncrementalPCA(n_components=k, batch_size=32768)
+
+    n_slots = 0
+    n_kept = 0
+    for flat, flatm in _stream_window_slots(prepared_path, indices):
+        n_slots += flat.shape[0]
+        real = ~flatm
+        block = flat[real].astype(np.float64)
+        norms = np.linalg.norm(block, axis=1)
+        block = block[norms > 0.0]
+        if block.shape[0] > 0:
+            ipca.partial_fit(block)
+            n_kept += block.shape[0]
+
+    print(f"      window PCA fit: {n_slots} slots streamed, "
+          f"{n_kept} real non-zero slots kept (k={k})")
+    return ipca
+
+
+def transform_window_block(emb_data, indices, ipca, k):
+    """
+    Stream window rows for `indices`, zero out padded slots, project each slot
+    through the shared PCA, flatten to (n, window*k), and append the 2
+    pad-count features.  Returns (n, window*k + 2) float64.
+    """
+    prepared_path = emb_data["prepared_path"]
+    window = emb_data["window"]
+    n = len(indices)
+    out = np.empty((n, window * k + 2), dtype=np.float64)
+    cur = 0
+    with h5py.File(prepared_path, "r") as f:
+        W = f["windows"]
+        M = f["pad_mask"]
+        PC = f["pad_counts"]
+        for i0 in range(0, n, WINDOW_CHUNK_ROWS):
+            idx = indices[i0:i0 + WINDOW_CHUNK_ROWS]
+            block = W[idx].astype(np.float64)   # (c, window, D)
+            mblock = M[idx]
+            block[mblock] = 0.0
+            c = block.shape[0]
+            proj = ipca.transform(block.reshape(c * window, -1))
+            flat = proj.reshape(c, window * k)
+            pad = PC[idx].astype(np.float64)
+            out[cur:cur + c] = np.concatenate([flat, pad], axis=1)
+            cur += c
+    return out
+
+
+def window_feature_names(comp_key, window, k):
+    """Slot-indexed PC names + 2 pad-count names (order matches the block)."""
+    names = [f"{comp_key}_S{ss:02d}_PC{i + 1:03d}"
+             for ss in range(window) for i in range(k)]
+    names += [f"{comp_key}_n_pad", f"{comp_key}_c_pad"]
+    return names
 
 
 # ──────────────────────────────────────────────
@@ -472,6 +602,39 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
     for comp_key, emb_data in emb_data_dict.items():
         pca_components = emb_data["pca_components"]
 
+        # ── Window-embedding path (shared slot PCA) ──
+        if emb_data.get("kind") == "windows":
+            window = emb_data["window"]
+            D = emb_data["emb_dim"]
+            total_components = int(min(pca_components, D))
+
+            print(f"    {comp_key}: fitting shared slot PCA "
+                  f"(window={window}, D={D}, k={total_components}) ...")
+            ipca = fit_window_pca(emb_data, train_indices, total_components)
+
+            X_emb_train = transform_window_block(
+                emb_data, train_indices, ipca, total_components,
+            )
+            X_emb_test = transform_window_block(
+                emb_data, test_indices, ipca, total_components,
+            )
+
+            explained = (ipca.explained_variance_ratio_.sum() * 100
+                         if hasattr(ipca, "explained_variance_ratio_") else np.nan)
+            print(f"    {comp_key}: window PCA D={D} → k={total_components} "
+                  f"(slot features {window * total_components} + 2 pad) "
+                  f"({explained:.1f}% variance)")
+
+            fold_artifacts["pca_dict"][comp_key] = ipca
+            feature_names.extend(
+                window_feature_names(comp_key, window, total_components)
+            )
+
+            parts_train.append(X_emb_train)
+            parts_test.append(X_emb_test)
+            continue
+
+        # ── Legacy mean-pooled path ──
         # Single context matrix, clean inf/nan
         X_emb_train = get_context_matrix(emb_data, train_indices)
         X_emb_test = get_context_matrix(emb_data, test_indices)
@@ -625,8 +788,12 @@ def prepare_validation(df, csv_feature_cols, emb_data_dict, model_cfg,
 
 def _transform_embeddings(emb_data, indices, pca_obj):
     """
-    Transform the single context embedding through its fitted PCA.
+    Transform the single context embedding through its fitted PCA
+    (legacy), or stream window slots through the shared PCA (windows).
     """
+    if emb_data.get("kind") == "windows":
+        k = int(getattr(pca_obj, "n_components_", pca_obj.n_components))
+        return transform_window_block(emb_data, indices, pca_obj, k)
     X_emb = get_context_matrix(emb_data, indices)
     X_emb[np.isinf(X_emb)] = 0.0
     X_emb[np.isnan(X_emb)] = 0.0
@@ -894,12 +1061,14 @@ if __name__ == "__main__":
         for info in component_info["emb_components"]:
             if isinstance(pca_override, dict):
                 key = info.get("key", "")
-                if key in pca_override:
-                    info["pca_components"] = pca_override[key]
-                    info["pca_total"] = pca_override[key]
+                if key not in pca_override:
+                    continue
+                k = pca_override[key]
             else:
-                info["pca_components"] = pca_override
-                info["pca_total"] = pca_override
+                k = pca_override
+            info["pca_components"] = k
+            info["pca_total"] = (info["window"] * int(min(k, info["emb_dim"])) + 2
+                                 if info.get("window") else k)
 
     del df_split  # free the original copy
 
@@ -933,7 +1102,7 @@ if __name__ == "__main__":
         print(f"\n  Embedding components ({len(component_info['emb_components'])}):")
         for info in component_info["emb_components"]:
             print(f"    [{info['key']}] {info['display_name']}")
-            print(f"      Context dim:    {info['raw_dim']}")
+            print(f"      Context dim:    {info.get('raw_dim_desc', info['raw_dim'])}")
             print(f"      After PCA: {info['pca_total']}")
             total_emb_features += info["pca_total"]
 

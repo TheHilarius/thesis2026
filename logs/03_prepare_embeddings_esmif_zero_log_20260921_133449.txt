@@ -1,0 +1,76 @@
+================================================================================
+  03_PREPARE_EMBEDDINGS -- ESM-IF1 WINDOWS (ZERO-PAD)
+================================================================================
+  Timestamp:       2026-09-21 13:34:49
+  Embedding key:   esmif_zero
+  Raw HDF5:        /mnt/c/Users/olive/Documents/R/thesis2026/data/processed/embeddings/esm-if_test_zero.h5
+  Split data:      /mnt/c/Users/olive/Documents/R/thesis2026/data/processed/df_all_with_folds.csv
+  Output:          /mnt/c/Users/olive/Documents/R/thesis2026/data/processed/embeddings_prepared/esmif_zero_windows_prepared.h5
+  Log:             /mnt/c/Users/olive/Documents/R/thesis2026/logs/03_prepare_embeddings_esmif_zero_log_20260921_133449.txt
+
+  Source schema:
+    Kind:            windows
+    Embedding dim:   512
+    Window dataset:  window_if_struct
+    Pad mask dataset:pad_mask
+    Pad mode:        zero
+    Peptide ID col:  peptide_ids
+    UniProt ID col:  uniprot_ids
+    Has row_indices: True
+    Has start/end:   True
+================================================================================
+
+Loading split data: /mnt/c/Users/olive/Documents/R/thesis2026/data/processed/df_all_with_folds.csv
+  Shape: 46617 rows x 99 columns
+  Folds: [0, 1, 2, 3, 4, 5]
+  Positives: 21601  Negatives: 25016
+
+Loading raw window embeddings: /mnt/c/Users/olive/Documents/R/thesis2026/data/processed/embeddings/esm-if_test_zero.h5
+
+  HDF5 metadata:
+    device                    cuda
+    emb_dim                   512
+    eos_rep_norm              4.054024696350098
+    model                     esm_if1_gvp4_t16_142M_UR50
+    n_pad_sentinel            -1 means no structure/peptide found
+    n_samples                 46617
+    pad_mode                  zero
+    pad_rep_norm              7.675191402435303
+    status_legend             0=primary 1=af2_fallback 2=missing 3=notfound
+    window                    29
+
+  HDF5 datasets (raw):
+    c_pad
+    end
+    n_pad
+    pad_mask
+    peptide_ids
+    row_indices
+    start
+    status
+    uniprot_ids
+    window_if_struct
+
+  Window tensor: (46617, 29, 512) (float32)
+  pad_counts shape: (46617, 2)
+
+================================================================================
+ALIGNMENT (row_indices → df order)
+================================================================================
+    Aligned: 46617 / 46617 df rows
+    Unmatched embeddings: 0
+    Unmatched df rows:    0
+
+  Window coverage report:
+  Status      Count  Legend
+  0           46565  primary
+  3              52  notfound
+  Pad-count stats (mask-derived, aligned rows):
+    N-flank pad: mean=0.088 max=10
+    C-flank pad: mean=0.102 max=10
+    Fully-padded N-flank rows: 89
+
+================================================================================
+SAVING PREPARED WINDOW EMBEDDINGS
+================================================================================
+  Output: /mnt/c/Users/olive/Documents/R/thesis2026/data/processed/embeddings_prepared/esmif_zero_windows_prepared.h5
