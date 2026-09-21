@@ -454,6 +454,10 @@ def main():
                 except (RuntimeError, MemoryError) as exc:
                     emb_padded = None
                     print(f"  ⚠ padded fail {prot_id}: {exc}")
+            elif emb_full is not None:
+                # no padding needed for this protein — reuse full-protein embeddings
+                emb_padded = emb_full
+                n_left = 0
 
             if emb_padded is not None and emb_dim is None:
                 emb_dim = int(emb_padded.shape[1])
