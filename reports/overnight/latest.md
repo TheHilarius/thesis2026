@@ -1,103 +1,86 @@
 # Thesis Overnight — 2026-09-21
 
 ## Summary
-Three commits since the previous report (712c4f8), all housekeeping: (1) the initial overnight report was added (cd36382), (2) `extract_pca_results.py` and its TSV outputs were committed — resolving the "script not tracked" issue from last report (d9a9401), and (3) overnight reports were moved to a dedicated `reports` branch with `reports/overnight/` gitignored on the main branch (0c80aa3). No new modelling, no new bug fixes, no pipeline changes. The 2 pending LR-ElasticNet ESM-IF runs (PCA 248 and 420) remain incomplete locally — no JSON result files exist in `models/`.
+Four commits since the previous report (0c80aa3). The pipeline was extended to handle fixed-29 per-residue window embeddings (B pipeline): `03_prepare_embeddings.py` gained a window-specific loading/saving path, `04_modelling.py` now streams window slots through `IncrementalPCA` instead of materializing the full (N,29,D) tensor, and `config.py` was updated with 4 new embedding sources (3 ESM-IF pad modes + 1 placeholder ESM-C) plus 3 window feature sets. A batch preparation runner (`03b_run_matrix.py`), a window matrix SLURM script, and a 538-line inspection tool were also added. The previous pending LR-ElasticNet ESM-IF runs are now resolved (15 ElasticNet PCA logs committed, including 1 completed PCA=1 run with full results). One incomplete XGBoost window run log (PCA=9) is committed mid-execution.
 
 ## Changes
 
-### Non-Padding Peptide Embedding Fix (1401735)
-`src/tools/esm/embed_peptides_w_esm.py:457-460` — 4 lines added: when a protein requires no flank padding, the code now reuses `emb_full` as `emb_padded` with `n_left = 0` instead of leaving `emb_padded` as `None`. Without this fix, proteins fitting entirely within the context window had their embeddings silently dropped, producing incomplete HDF5 output. This is a data-correctness bug that would have affected downstream modelling.
+### Window Embedding Pipeline (e5e3e75)
 
-### Modelling TypeError Fix (0e7d2d8)
-`src/pipeline/python/04_modelling.py:291` — replaced `np.issubdtype(df[c].dtype, np.number)` with `pd.api.types.is_numeric_dtype(df[c])`. The old check fails when a column has pandas-backed nullable numeric types (e.g., `pd.Int64Dtype()`), which ESM-IF feature columns produce after certain preprocessing paths. This fix unblocked the 2 failing ESM-IF PCA 248/420 ElasticNet runs on the cluster. The old line is left as a commented-out comment on line 292.
+**`src/pipeline/python/03_prepare_embeddings.py`** — +262 lines added. New code path for `kind == "windows"`: loads the raw (N,29,D) window HDF5, validates pad counts against the mask, reorders by `row_indices` into df row order, and streams the tensor to a prepared HDF5. Functions added: `load_raw_window_embeddings()`, `align_window_by_row_indices()`, `report_window_coverage()`, `save_prepared_windows()`. The existing mean-pooled path is untouched.
 
-### Reports Branch Separation (0c80aa3)
-`.gitignore` — added `reports/overnight/` to ignore list on main branch.
-`reports/overnight/2026-09-21.md` and `latest.md` — deleted from `hilarius` branch. Overnight reports now live only on the `reports` branch (`remotes/origin/reports` exists).
+**`src/pipeline/python/04_modelling.py`** — +193 lines added. New streaming path for window embeddings in `prepare_fold()` and `prepare_validation()`. Uses `sklearn.decomposition.IncrementalPCA` (new import) to fit on real (non-pad, non-zero-norm) slots without loading the full tensor. Functions added: `_stream_window_slots()`, `fit_window_pca()`, `transform_window_block()`, `window_feature_names()`. The `load_embedding_data()` function now returns a lazy descriptor for windows (tensor not materialized).
 
-### SLURM Matrix Runner (0e7d2d8)
-`src/run/run_matrix_slurm.sh` — added `"$@"` passthrough so extra CLI arguments (e.g. `--model xgb`) can be forwarded to the matrix runner.
+**`src/pipeline/python/config.py`** — +96 lines added. 4 new entries in `EMBEDDING_SOURCES` (esmif_zero, esmif_padtoken, esmif_eosrepeat, esmc_windows placeholder), 1 new `FEATURE_COMPONENTS` entry (esmif_win), and 3 new `FEATURE_SETS` entries (handcrafted_esmif_win, handcrafted_sparse_esmif_win, handcrafted_blosum_esmif_win).
 
-### PCA Sweep Documentation (712c4f8)
-New files in `docs/`:
-- `pca_sweep_meanpool_results.md` — 184-line markdown report with per-model tables, best-per-model summary, and 5 key findings
-- `pca_sweep_clean.tsv` — 46 rows (all model × feature × PCA combos, minus the 2 pending ElasticNet runs)
-- `pca_sweep_best_by_model_feature.tsv` — 8 rows (best PCA per model + feature set)
+**`src/pipeline/python/03b_run_matrix.py`** — new 118-line batch runner for `03_prepare_embeddings.py`. Runs preparation across a list of embedding keys (defaults to the 3 ESM-IF window modes), prints a summary table.
 
-### Extract Script + Tracked TSVs (d9a9401)
-New `src/pipeline/python/extract_pca_results.py` — parses `cv_results_*.json` files to produce the TSV tables above. The script writes to `results/tables/`. A copy of the TSVs also lives in `docs/`.
+**`src/tools/esm/inspect_window_embeddings.py`** — new 538-line inspection tool. Handles both window-schema (29-slot) and legacy schema HDF5 files, performs cross-mode comparison (Frobenius diff, cosine similarity), generates PCA-lite plots and slot norm curves.
 
-### Oliver's ESM-IF Test Scripts (154fc68)
-Three new ESM-IF padding investigation scripts:
-- `src/tools/esm/embed_test_esmif.py` — basic probe: do NaN-coordinate gap residues produce finite embeddings?
-- `src/tools/esm/embed_test_esmif_pad.py` — 6 metrics: gapmask inertness, unmasked leak, pad norm, pad-real cosine similarity, EOS norm
-- `src/tools/esm/embed_windows_esmif.py` — 540-line production embedder: per-residue [29, 512] windows with 3 padding modes (zero, padtoken, eosrepeat), streaming HDF5 output
-- `run_embeddings_esmif_windows.sh` — SLURM wrapper (24h, 64G, GPU)
+**Logs committed** — 8 `03_prepare_embeddings` logs (all successful, 46617 samples aligned) plus `results/embedding_inspection/windows_test/` outputs (comparison CSV, pairwise diff, PCA plot, slot norm curve, status breakdown).
 
-### Oliver's ESM-C Padding Tests (cc77064)
-- `src/tools/esm/embed_test_esmc.py` — probes ESM-C tokenizer pad token behavior
-- `src/tools/esm/embed_test_esmc_pad.py` — 100-protein test of attention masking with explicit `sequence_id`
+### ElasticNet PCA Logs (f3cc3c4)
+15 `04_modelling` logs committed to `logs/`. 13 contain headers only (41 lines each, no results — these appear to be stale logs from Sep 18 that were submitted but never completed). 1 is a complete run: `lr_elasticnet_handcrafted_sparse_esmc_pca1` (PCA=1, completed Sep 21 12:33, AUC=0.7120±0.0058, MCC=0.3034±0.0140, 149 min). 2 are empty files (0 bytes): `esmc_pca13_log_20260921_123346.txt` and `esmc_pca26_log_20260921_150454.txt`.
+
+### Window Matrix SLURM Script (14dd7cc, d94733c)
+**`src/run/run_matrix_windows_slurm.sh`** — new SLURM wrapper (48h, 64G, GPU) that runs `04b_run_matrix.py` with `--pca-sweep` for rf/xgb/lr_elasticnet on `handcrafted_sparse_esmif_win` (PCA=9,64,148,420) and `--combos` for handcrafted/handcrafted_sparse baselines. Commit d94733c fixed the initial version (removed unused `${MODEL}` variable, added `set -euo pipefail`, venv activation guard, all-model matrix).
+
+**`logs/04_modelling_xgb_handcrafted_sparse_esmif_win_pca9_log_20260921_150449.txt`** — partial XGBoost log committed mid-execution (1 inner fold completed: AUC=0.7010). 893 features (630 CSV + 261 slot PCA + 2 pad).
 
 ## Experiments / Results
 
-### PCA Sweep — Mean-Pooled Context Window Embeddings (46,617 HLA-A*02:01 peptides, nested CV 5 inner × 6 outer)
+### Window Embedding XGBoost (partial, from d94733c log)
 
-| Best Model | Embedding | Best PCA | CV AUC-ROC | ± std | MCC | F1 | Accuracy |
-|------------|-----------|----------|-----------|-------|-----|-----|----------|
-| xgb | esmc | 66 | 0.7584 | ±0.0059 | 0.3783 | 0.6629 | 0.6913 |
-| xgb | esmif | 9 | 0.7465 | ±0.0050 | 0.3645 | 0.6583 | 0.6841 |
-| lr_l2 | esmc | 218 | 0.7401 | ±0.0056 | 0.3492 | 0.6593 | 0.6747 |
-| lr_elasticnet | esmc | 218 | 0.7400 | ±0.0057 | 0.3492 | 0.6594 | 0.6747 |
-| lr_l2 | esmif | 248 | 0.7258 | ±0.0068 | 0.3268 | 0.6475 | 0.6636 |
-| lr_elasticnet | esmif | 148 | 0.7249 | ±0.0066 | 0.3241 | 0.6468 | 0.6621 |
-| rf | esmc | 1 | 0.7122 | ±0.0050 | 0.3057 | 0.6151 | 0.6561 |
-| rf | esmif | 9 | 0.7090 | ±0.0041 | 0.3012 | 0.6123 | 0.6539 |
+One inner fold result available for XGBoost + handcrafted_sparse_esmif_win + PCA=9:
+- Features: 893 (630 CSV + 261 slot PCA + 2 pad)
+- Inner fold 1 AUC-ROC: 0.7010 (training 49.5s, total 204.3s per fold)
+- The run is incomplete — only 1 of 30 inner folds completed before log ends
 
-**Observations (from repo documentation, not interpretation):**
-- XGBoost + ESM-C PCA=66 is the top performer (AUC 0.7584)
-- ESM-C outperforms ESM-IF across every model (1.2–1.5% AUC gap)
-- LR-L2 and LR-ElasticNet are nearly identical (ΔAUC < 0.001)
-- RF degrades monotonically with more PCA components; peaks at PCA=1 for ESM-C
-- XGBoost performance plateaus between PCA 13–218, drops at 718
+The 29-slot window PCA with k=9 explains 22.1% variance per slot.
 
-### Pending Results
-2 runs still missing locally: LR-ElasticNet × ESM-IF × PCA 248 and PCA 420. No JSON result files exist in `models/`. Commit message on 712c4f8 says "running on server" — server job 36983 status unknown.
+### Pending / Incomplete
+- XGBoost window matrix run: log incomplete at inner fold 2. Whether the run continued on the server or was killed is unknown from this repo alone.
+- No window-embedding modelling results exist yet for lr_elasticnet or rf.
+
+## Code Review — Shortcomings & Issues
+
+1. **`inspect_window_embeddings.py` overlaps existing `inspect_embeddings.py`** — 538 new lines vs 630 existing. The new script reimplements schema detection, streaming stats, PCA-lite, comparison table, and plotting. A shared core with a window-specific branch would be smaller. Severity: maintainability. Commit e5e3e75.
+
+2. **Copy-paste config entries** — `esmif_zero`, `esmif_padtoken`, `esmif_eosrepeat` in `config.py` are 3 near-identical 25-line dicts differing only in `display_name`, `raw_path`, and `pad_mode`. Same pattern for the 3 window feature sets. These could be generated. Severity: maintainability. Commit e5e3e75.
+
+3. **Empty log files committed** — `logs/04_modelling_lr_elasticnet_handcrafted_sparse_esmc_pca13_log_20260921_123346.txt` and `esmc_pca26_log_20260921_150454.txt` are 0 bytes. These serve no purpose and clutter the repo. Severity: style. Commit f3cc3c4.
+
+4. **Incomplete run log committed** — `logs/04_modelling_xgb_handcrafted_sparse_esmif_win_pca9_log_20260921_150449.txt` ends mid-execution (inner fold 2, training step). This is a partial result with no final summary. Severity: style. Commit d94733c.
+
+5. **SLURM scripts at root** — `run_embeddings_esmif_windows.sh` is still in the repo root (from commit 154fc68, prior range), while the new `run_matrix_windows_slurm.sh` correctly lives in `src/run/`. Severity: style. Prior range, noted for continuity.
+
+6. **Hardcoded PCA values in SLURM** — `run_matrix_windows_slurm.sh` hardcodes `9,64,148,420` for the ESM-IF window sweep. Any sweep change requires editing the SLURM script. This is acceptable for a thesis but flagged for awareness. Severity: maintainability. Commit d94733c.
 
 ## Potential Issues
 
-1. **Pending LR-ElasticNet ESM-IF runs.** The 2 missing result JSONs (PCA 248 and 420) are not in `models/` and not in the clean TSV. The SLURM job status is unknown from this repo alone. If those results are needed for the thesis comparison table, they should be checked on the server.
+1. **Incomplete window matrix run.** The XGBoost window log (d94733c) is incomplete — only 1 inner fold completed. Whether the SLURM job continued running, was killed, or completed server-side is unknown from this repo. If the job is still running, the final results should be checked on the server.
 
-2. **Duplicate TSVs.** `docs/pca_sweep_clean.tsv` and `results/tables/pca_sweep_clean.tsv` contain the same data (46 rows). Same for `pca_sweep_best_by_model_feature.tsv`. One should be the canonical source; the extraction script writes to `results/tables/` while the docs copies were manually placed. Both are tracked in git (712c4f8 added docs copies, d9a9401 added results/tables copies).
+2. **13 ElasticNet logs are headers-only.** The Sep 18 ElasticNet logs (f3cc3c4) contain only the first 41 lines (header + loading) with no results. These may be stale entries from jobs that were submitted but never completed. If so, they add no value and could be removed.
 
-3. **Old line left as comment.** `04_modelling.py:292` has `#if np.issubdtype(df[c].dtype, np.number)` commented out. Minor, but should be cleaned before final submission.
+3. **ESM-C windows placeholder.** `config.py` defines `esmc_windows` with `raw_path` pointing to `esmc_windows.h5`, described as "(TBD)". The raw file does not exist yet. This will cause `03_prepare_embeddings.py` to `sys.exit(1)` if the key is used. Not a bug if never invoked, but worth noting.
 
-4. **Embedding files are old.** `data/processed/embeddings/esmc_context_embeddings.h5` (209M, dated Sep 10) and `esmif_context_embeddings.h5` (93M, dated Sep 10) predate the Sep 18 ESM-C 29-mer rewrite (commit a2e50c0) which added 4 pad-handling modes. The SLURM scripts (`run_esmc_embeddings.sh`, `run_embeddings_esmif_windows.sh`) reference new output paths/directories. The modelling pipeline's `config.py` still points to these old single-file HDF5 paths. Question for authors: do the current PCA sweep results use the old mean-pooled embeddings (per the report title), and is this intentional vs the new multi-mode embeddings?
+4. **Pending LR-ElasticNet ESM-IF runs from previous report.** The 2 missing result JSONs (PCA 248 and PCA 420 for handcrafted_sparse_esmif + lr_elasticnet) are still not in `models/`. The logs from f3cc3c4 show the submission-time headers but no completion logs. These remain unresolved.
 
-5. **Oliver's ESM-IF test scripts live in root.** `run_embeddings_esmif_windows.sh` and `run_embeddings_h100.sh` are in the repo root rather than `src/run/`. Minor inconsistency with the codebase layout.
-
-6. **SLURM script path inconsistency.** `run_embeddings_esmif_windows.sh` references `PROJECT_DIR="/home/projects1/thesis_s204692_s204581/thesis2026"` (note `projects1`) while `run_matrix_slurm.sh` uses `/home/projects/thesis_s204692_s204581/thesis2026` (no `1`). May just be two different cluster mounts, but worth verifying both work.
-
-7. **SLURM matrix runner hardcodes ESM-C and ESM-IF PCA sweep values.** `run_matrix_slurm.sh` always passes `1,13,26,66,218,718` for ESM-C and `9,64,95,148,248,420` for ESM-IF regardless of the model. These match the documented sweep in `pca_sweep_meanpool_results.md`, but any future sweep change requires editing the SLURM script directly.
-
-8. **XGBoost `scale_pos_weight` set to string `"auto"`.** `config.py:291` has `"scale_pos_weight": "auto"` but XGBClassifier expects a numeric value or `"auto"` only since xgboost >=2.0. If the cluster runs an older xgboost, this may silently default to 1.0 instead of the intended class-ratio weight. Worth verifying the xgboost version on the server.
-
-9. **`src/README.md` is stale.** It lists `embed_structures_w_esm_if.py` and `embed_structures_esmif_gpu.py` in the directory tree, but the first was deleted in cc77064 and the new `embed_windows_esmif.py` / `embed_test_*.py` scripts are not mentioned. Also lists deleted scripts (`run_all_models.sh`, `run_all_models_and_analyze.sh`).
+5. **Duplicate TSVs unresolved.** `docs/pca_sweep_clean.tsv` and `results/tables/pca_sweep_clean.tsv` still contain the same data. The previous report flagged this; no change in this range.
 
 ## GitHub
 - **PRs:** None open, none closed.
 - **Issues:** None open, none closed.
 - **CI:** No workflows configured.
-- **Branches:** `hilarius` (active, default), `reports` (local + origin, holds overnight reports).
+- **Branches:** `hilarius` (active, default), `reports` (holds overnight reports).
 - **Repo:** TheHilarius/thesis2026, default branch `hilarius`.
 
-## Worth Looking At Today
-1. Check server job status for the 2 pending LR-ElasticNet ESM-IF runs (PCA 248, 420) — they're needed for the complete 48-combo sweep table.
-2. Resolve the duplicate TSVs: either `docs/` or `results/tables/` should be canonical. The extraction script writes to `results/tables/` but the initial docs were placed in `docs/`.
-3. Verify whether the current modelling results use the old mean-pooled embeddings or the new 4-mode 29-mer embeddings — the report title says "mean pooling version (old)" which implies awareness, but confirm this is intentional.
-4. Check xgboost version on the cluster (`pip show xgboost`) to confirm `"auto"` for `scale_pos_weight` works.
-5. Update `src/README.md` to reflect the current file layout (new ESM scripts, deleted scripts).
-
-**Resolved since last report:** extract_pca_results.py is now tracked (d9a9401). Reports branch separation done (0c80aa3).
+## Recommended Next Steps
+1. Check SLURM job status for the window matrix run (`squeue` or check `logs/winmatrix_all_*.out`) — the committed XGBoost log is incomplete.
+2. Collect the 2 missing LR-ElasticNet ESM-IF results (PCA 248, 420) from the server — they're needed for the complete 48-combo mean-pool sweep table.
+3. Remove the 2 empty log files and the 13 header-only logs (f3cc3c4) before they drift further from the pipeline state.
+4. Verify the `inspect_window_embeddings.py` duplication with `inspect_embeddings.py` — decide whether to keep both, merge into one, or accept the overlap.
+5. Resolve the duplicate TSVs (`docs/` vs `results/tables/`).
 
 ## Reviewed Through
-0c80aa3 — reports branch separation, extract script committed.
+d94733c — window matrix SLURM script with all-model sweep configuration.
