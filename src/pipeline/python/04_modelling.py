@@ -288,7 +288,8 @@ def load_all_components(df_split, feat_cfg):
         all_feature_cols = get_feature_cols(df.columns)
         csv_feature_cols = [
             c for c in all_feature_cols
-            if np.issubdtype(df[c].dtype, np.number)
+            if pd.api.types.is_numeric_dtype(df[c])
+            #if np.issubdtype(df[c].dtype, np.number)
         ]
         non_numeric_dropped = len(all_feature_cols) - len(csv_feature_cols)
         if non_numeric_dropped > 0:

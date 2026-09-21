@@ -12,6 +12,7 @@ export PYTHONUNBUFFERED=1
 
 python src/pipeline/python/04b_run_matrix.py --pca-sweep \
   ${MODEL}:handcrafted_sparse_esmc:1,13,26,66,218,718 \
-  ${MODEL}:handcrafted_sparse_esmif:9,64,95,148,248,420
+  ${MODEL}:handcrafted_sparse_esmif:9,64,95,148,248,420 \
+  "$@"
 
 echo "Matrix run for ${MODEL} completed."
