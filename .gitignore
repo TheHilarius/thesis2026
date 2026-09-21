@@ -109,3 +109,6 @@ data/processed/nsp3_backup_20260907/
 docs/environment_setup_SOP.md
 models/
 results/tables/model*
+
+# Overnight reports — published only to the `reports` branch
+reports/overnight/
