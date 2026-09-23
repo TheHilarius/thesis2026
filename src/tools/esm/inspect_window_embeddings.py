@@ -4,7 +4,7 @@ inspect_window_embeddings.py — inspect + compare embedding HDF5 files.
 
 Handles, in ONE run and WITHOUT assuming identical schemas:
   * new  ESM-IF fixed-29 windows : window_if_struct [N,29,512] + pad_mask
-    (esm-if_test_{zero,padtoken,eosrepeat}.h5)
+    (esm-if_test_{zero,pad,boundary,eos_bos_repeat}.h5)
   * new  ESM-C fixed-29 windows  : window_embeddings [N,29,1152] + pad_mask
     (esmc_context_embeddings_{impute_bos_eos,impute_boundary,padtoken,zeropad}.h5)
   * old  ESM-C legacy 3-region   : peptide_emb/n_flank_emb/c_flank_emb [N,1152]
@@ -18,8 +18,9 @@ they have different N / row orders (53072 / 53198 vs 46617).
 Usage:
     python src/tools/esm/inspect_window_embeddings.py \
         data/processed/embeddings/esm-if_test_zero.h5 \
-        data/processed/embeddings/esm-if_test_padtoken.h5 \
-        data/processed/embeddings/esm-if_test_eosrepeat.h5 \
+        data/processed/embeddings/esm-if_test_pad.h5 \
+        data/processed/embeddings/esm-if_test_boundary.h5 \
+        data/processed/embeddings/esm-if_test_eos_bos_repeat.h5 \
         data/processed/embeddings/esmc_protein_embeddings.h5 \
         data/processed/embeddings/esmif_structure_embeddings.h5 \
         data/processed/df_all.csv \
@@ -85,7 +86,7 @@ def pad_group(attrs):
     pm = str(attrs.get("pad_mode", "") or "")
     if pm == "zero":
         return "zero"
-    if pm in ("padtoken", "pad_token", "pad-token"):
+    if pm in ("padtoken", "pad_token", "pad-token", "pad"):
         return "padtoken"
     if pm.startswith("impute"):
         return "impute"

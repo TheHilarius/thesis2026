@@ -7,7 +7,7 @@ the prepared-artifact summary into one table.
 Usage:
     python 03b_run_matrix.py                          # default window keys
     python 03b_run_matrix.py --dry-run                # print only
-    python 03b_run_matrix.py --keys esmif_zero esmif_padtoken esmif_eosrepeat
+    python 03b_run_matrix.py --keys esmif_zero esmif_pad esmif_boundary esmif_eos_bos_repeat
 """
 
 import subprocess
@@ -27,7 +27,7 @@ from config import get_embedding_source
 
 # Default window keys (all esmif + esmc fixed-29 window modes).
 DEFAULT_KEYS = [
-    "esmif_zero", "esmif_padtoken", "esmif_eosrepeat",
+    "esmif_zero", "esmif_pad", "esmif_boundary", "esmif_eos_bos_repeat",
     "esmc_win_zeropad", "esmc_win_padtoken",
     "esmc_win_impute_bos_eos", "esmc_win_impute_boundary",
 ]
@@ -88,7 +88,7 @@ def main():
     )
     parser.add_argument(
         "--keys", nargs="*", default=None,
-        help="Embedding keys to prepare (default: esmif_zero/padtoken/eosrepeat).",
+        help="Embedding keys to prepare (default: esmif_zero/pad/boundary/eos_bos_repeat + all esmc_win_*).",
     )
     parser.add_argument(
         "--dry-run", action="store_true",
