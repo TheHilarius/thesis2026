@@ -1,25 +1,60 @@
 # Thesis Overnight — 2026-09-23
 
 ## Summary
-No new commits since the previous report (d94733c, 2026-09-21). The origin/hilarius branch tip remains at d94733c. All open items from the previous report are unresolved.
+
+Three commits landed since d94733c, all housekeeping and one result completion. The ElasticNet + ESM-IF PCA sweep is now fully resolved (PCA 248 and 420 results filled in); the best-by-model table updated accordingly. 14 empty/header-only log files were deleted in the cleanup (2 valid logs were accidentally caught and restored in a follow-up commit). The duplicate `docs/` TSVs were removed, resolving a previously flagged issue.
 
 ## Changes
-None. The commit range `d94733c..origin/hilarius` is empty.
+
+### PCA sweep results completed (26b33f0)
+
+- `results/tables/pca_sweep_clean.tsv` — added 2 rows for ElasticNet + ESM-IF PCA 248 and PCA 420 (AUC 0.7257 and 0.7248 respectively), bringing total combos from 46 to 48.
+- `results/tables/pca_sweep_best_by_model_feature.tsv:2` — updated ESM-IF best from PCA 148 (AUC 0.7249) to PCA 248 (AUC 0.7257). Result file reference updated to `cv_results_lr_elasticnet_handcrafted_sparse_esmif_pca248_20260922_162032.json`.
+- `docs/pca_sweep_meanpool_results.md` — ESM-IF ElasticNet table updated with PCA 248/420 rows; best-PCA marker moved from 148 to 248; removed "⚠️ pending" note; added "without embeddings" NOTE to XGBoost, RF+ESM-C, and RF+ESM-IF sections.
+- 14 log files deleted (empty headers or 0-byte files from earlier runs).
+- `log/04_modelling_xgb_handcrafted_sparse_esmif_win_pca9_log_20260921_150449.txt` — removed (118 lines, incomplete window matrix run).
+
+### Restore accidentally deleted logs (c9be8f4)
+
+- `logs/04_modelling_lr_elasticnet_handcrafted_sparse_esmif_pca148_log_20260918_043743.txt` — restored (948 lines, complete run).
+- `logs/04_modelling_lr_elasticnet_handcrafted_sparse_esmif_pca95_log_20260918_004241.txt` — restored (948 lines, complete run).
+
+### Remove duplicate TSVs (15b8393)
+
+- `docs/pca_sweep_best_by_model_feature.tsv` — deleted (duplicate of `results/tables/` copy).
+- `docs/pca_sweep_clean.tsv` — deleted (duplicate of `results/tables/` copy).
 
 ## Experiments / Results
-No new repository-supported results since the previous report. The previously noted partial window matrix run (XGBoost + handcrafted_sparse_esmif_win + PCA=9, 1 inner fold) remains incomplete in the repo.
+
+The ElasticNet + ESM-IF PCA sweep is now complete (48 combos total across all model/feature combinations):
+
+| Model | Embedding | Best PCA | AUC-ROC | MCC | Notes |
+|-------|-----------|----------|---------|-----|-------|
+| XGBoost | ESM-IF | 9 | 0.7465 | 0.3645 | Flat across PCA — minimal PCA needed |
+| XGBoost | ESM-C | 66 | 0.7584 | 0.3783 | Best overall |
+| LR (ElasticNet) | ESM-C | 218 | 0.7400 | 0.3492 | Matches LR-L2 |
+| LR (ElasticNet) | ESM-IF | 248 | 0.7257 | 0.3295 | New — matches LR-L2 ESM-IF |
+| RF | ESM-C | 1 | 0.7122 | 0.3057 | Peaks at minimum PCA |
+| RF | ESM-IF | 9 | 0.7090 | 0.3012 | Same minimum-PCA pattern |
+
+ElasticNet + ESM-IF peaks at PCA 248, matching LR-L2. The "more components helps" pattern for linear models on ESM-IF is confirmed, but the gains are marginal (0.7249 → 0.7257, 0.08%).
+
+The three tree-model optima at minimum PCA (XGBoost+ESM-IF PCA 9, RF+ESM-C PCA 1, RF+ESM-IF PCA 9) reinforce the observation that embeddings contribute little for tree-based models — flagged as interesting for without-embeddings testing.
 
 ## Code Review — Shortcomings & Issues
-No new code to review. The 6 findings from the previous report (inspect_window_embeddings.py duplication, copy-paste config entries, empty/incomplete log files, SLURM root scripts, hardcoded PCA values) remain open.
+
+No new code was introduced in this range — only data (TSV rows, MD text, log files). No code review findings.
+
+The two inspect scripts (`src/tools/esm/inspect_embeddings.py` and `src/tools/esm/inspect_window_embeddings.py`) remain as separate files. They serve distinct purposes (single-context vs multi-format window comparison) so this is not a duplication problem — previous concern withdrawn.
 
 ## Potential Issues
-1. **Window matrix run status unknown.** The XGBoost window log (d94733c) is still incomplete in the repo. Whether the SLURM job completed server-side, was killed, or is still running cannot be determined from git alone.
-2. **13 header-only ElasticNet logs still present.** The Sep 18 logs (f3cc3c4) remain as committed — headers only, no results. These add no value.
-3. **2 missing LR-ElasticNet ESM-IF results (PCA 248, PCA 420).** Still not in `models/`. The logs show submission but no completion. Unresolved from previous report.
-4. **Empty log files still committed.** `logs/04_modelling_lr_elasticnet_handcrafted_sparse_esmc_pca13_log_20260921_123346.txt` and `esmc_pca26_log_20260921_150454.txt` remain 0 bytes.
-5. **Duplicate TSVs unresolved.** `docs/pca_sweep_clean.tsv` and `results/tables/pca_sweep_clean.tsv` still contain the same data. No change in this range.
+
+1. **Incomplete window matrix run log deleted.** The 118-line XGBoost window log (from `d94733c`) was removed in 26b33f0. Whether the corresponding SLURM job completed server-side or was killed is unknown from git alone.
+
+2. **13 zero-byte log files remain.** The cleanup deleted 14 files but 326 total log files remain (0 empty currently). Some earlier zero-byte files were kept during the cleanup — they are harmless but add noise.
 
 ## GitHub
+
 - **PRs:** None open, none closed.
 - **Issues:** None open, none closed.
 - **CI:** No workflows configured.
@@ -27,11 +62,12 @@ No new code to review. The 6 findings from the previous report (inspect_window_e
 - **Repo:** TheHilarius/thesis2026, default branch `hilarius`.
 
 ## Recommended Next Steps
-1. Check SLURM job status on the server (`squeue` or `logs/winmatrix_all_*.out`) — the window matrix run status is unknown.
-2. Collect the 2 missing LR-ElasticNet ESM-IF results (PCA 248, 420) from the server.
-3. Remove the 2 empty log files and 13 header-only logs from f3cc3c4.
-4. Resolve the duplicate TSVs (`docs/` vs `results/tables/`).
-5. Decide whether to keep both `inspect_window_embeddings.py` and `inspect_embeddings.py` or merge them.
+
+1. **Check SLURM job status** for the window matrix run — the deleted incomplete log gives no indication of server-side completion.
+2. **Decide on without-embeddings experiment.** The "NOTE" annotations in `docs/pca_sweep_meanpool_results.md` flag this as interesting; requires running handcrafted + sparse only (no ESM embeddings) through the pipeline.
+3. **Clean up remaining zero-byte logs.** ~14 zero-byte files from earlier submissions still exist in `logs/` — low priority but trivial to remove.
+4. **Decide whether inspect_window_embeddings.py needs standalone use.** If it's only ever used via inspect_embeddings.py or ad-hoc, it could be inlined.
 
 ## Reviewed Through
-d94733c — no new commits since previous report.
+
+15b8393
