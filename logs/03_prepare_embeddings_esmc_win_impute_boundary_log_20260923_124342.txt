@@ -1,0 +1,95 @@
+================================================================================
+  03_PREPARE_EMBEDDINGS -- ESM-C (600M) WINDOWS (IMPUTE-BOUNDARY)
+================================================================================
+  Timestamp:       2026-09-23 12:43:42
+  Embedding key:   esmc_win_impute_boundary
+  Raw HDF5:        /mnt/c/Users/olive/Documents/R/thesis2026/data/processed/embeddings/esmc_context_embeddings_impute_boundary.h5
+  Split data:      /mnt/c/Users/olive/Documents/R/thesis2026/data/processed/df_all_with_folds.csv
+  Output:          /mnt/c/Users/olive/Documents/R/thesis2026/data/processed/embeddings_prepared/esmc_win_impute_boundary_prepared.h5
+  Log:             /mnt/c/Users/olive/Documents/R/thesis2026/logs/03_prepare_embeddings_esmc_win_impute_boundary_log_20260923_124342.txt
+
+  Source schema:
+    Kind:            windows
+    Embedding dim:   1152
+    Window dataset:  window_embeddings
+    Pad mask dataset:pad_mask
+    Pad mode:        impute_boundary
+    Peptide ID col:  peptide
+    UniProt ID col:  uniprot_id
+    Has row_indices: True
+    Has start/end:   False
+================================================================================
+
+Loading split data: /mnt/c/Users/olive/Documents/R/thesis2026/data/processed/df_all_with_folds.csv
+  Shape: 46617 rows x 99 columns
+  Folds: [0, 1, 2, 3, 4, 5]
+  Positives: 21601  Negatives: 25016
+
+Loading raw window embeddings: /mnt/c/Users/olive/Documents/R/thesis2026/data/processed/embeddings/esmc_context_embeddings_impute_boundary.h5
+
+  HDF5 metadata:
+    csv_source                data/processed/df_all.csv
+    device                    cuda
+    emb_dim                   1152
+    fallback_rows             0
+    model                     esmc_600m
+    n_rows                    46617
+    pad_mode                  impute_boundary
+    pad_slots_total           7849
+    padded_rows               1443
+    total_time_sec            31229.329397201538
+    window_len                29
+
+  HDF5 datasets (raw):
+    fallback_flag
+    pad_mask
+    peptide
+    row_indices
+    uniprot_id
+    window_embeddings
+
+  Window tensor: (46617, 29, 1152) (float32)
+  pad_counts shape: (46617, 2)
+
+================================================================================
+ALIGNMENT (row_indices → df order)
+================================================================================
+    Aligned: 46617 / 46617 df rows
+    Unmatched embeddings: 0
+    Unmatched df rows:    0
+
+  Window coverage report:
+  (no status dataset)
+  Pad-count stats (mask-derived, aligned rows):
+    N-flank pad: mean=0.077 max=10
+    C-flank pad: mean=0.091 max=10
+    Fully-padded N-flank rows: 37
+
+================================================================================
+SAVING PREPARED WINDOW EMBEDDINGS
+================================================================================
+  Output: /mnt/c/Users/olive/Documents/R/thesis2026/data/processed/embeddings_prepared/esmc_win_impute_boundary_prepared.h5
+  [OK] Saved successfully
+
+  Label distribution per fold:
+  Fold        Total      Pos      Neg    Pos %
+  ------------------------------------------
+  0            7770     3621     4149    46.6%
+  1            7770     3587     4183    46.2%
+  2            7770     3602     4168    46.4%
+  3            7769     3588     4181    46.2%
+  4            7769     3606     4163    46.4%
+  5            7769     3597     4172    46.3% (held-out)
+
+================================================================================
+RUN SUMMARY (WINDOWS)
+================================================================================
+  Runtime:          181.6s
+  Embedding:        ESM-C (600M) windows (impute-boundary)
+  Pad mode:         impute_boundary
+  Window dim:       (46617, 29, 1152)
+  Aligned samples:  46617
+  Output:           /mnt/c/Users/olive/Documents/R/thesis2026/data/processed/embeddings_prepared/esmc_win_impute_boundary_prepared.h5
+  Output size:      5949.3 MB
+  Log:              /mnt/c/Users/olive/Documents/R/thesis2026/logs/03_prepare_embeddings_esmc_win_impute_boundary_log_20260923_124342.txt
+================================================================================

@@ -25,8 +25,12 @@ PREPARE_SCRIPT = SRC_DIR / "03_prepare_embeddings.py"
 sys.path.insert(0, str(SRC_DIR))
 from config import get_embedding_source
 
-# Default window keys (esmc_windows excluded until its raw file exists).
-DEFAULT_KEYS = ["esmif_zero", "esmif_padtoken", "esmif_eosrepeat"]
+# Default window keys (all esmif + esmc fixed-29 window modes).
+DEFAULT_KEYS = [
+    "esmif_zero", "esmif_padtoken", "esmif_eosrepeat",
+    "esmc_win_zeropad", "esmc_win_padtoken",
+    "esmc_win_impute_bos_eos", "esmc_win_impute_boundary",
+]
 
 
 def run_key(key, dry_run=False):

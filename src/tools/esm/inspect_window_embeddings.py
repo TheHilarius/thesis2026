@@ -5,6 +5,8 @@ inspect_window_embeddings.py — inspect + compare embedding HDF5 files.
 Handles, in ONE run and WITHOUT assuming identical schemas:
   * new  ESM-IF fixed-29 windows : window_if_struct [N,29,512] + pad_mask
     (esm-if_test_{zero,padtoken,eosrepeat}.h5)
+  * new  ESM-C fixed-29 windows  : window_embeddings [N,29,1152] + pad_mask
+    (esmc_context_embeddings_{impute_bos_eos,impute_boundary,padtoken,zeropad}.h5)
   * old  ESM-C legacy 3-region   : peptide_emb/n_flank_emb/c_flank_emb [N,1152]
   * old  ESM-IF legacy 3-region  : peptide_if_struct/... [N,512]
   * (future) single-context 2D   : context_emb / context_if_struct [N,D]
@@ -59,7 +61,7 @@ out_dir.mkdir(parents=True, exist_ok=True)
 # --------------------------------------------------------------------------
 def detect_schema(f):
     keys = set(f.keys())
-    if "window_if_struct" in keys:
+    if "window_if_struct" in keys or "window_embeddings" in keys:
         return "window29"
     if "peptide_emb" in keys:
         return "legacy_esmc"
@@ -68,6 +70,26 @@ def detect_schema(f):
     if "context_emb" in keys or "context_if_struct" in keys:
         return "context2d"
     raise ValueError(f"Unknown schema, keys={sorted(keys)}")
+
+
+def window_key(f):
+    keys = set(f.keys())
+    if "window_if_struct" in keys:
+        return "window_if_struct", "pad_mask" if "pad_mask" in keys else None
+    if "window_embeddings" in keys:
+        return "window_embeddings", "pad_mask" if "pad_mask" in keys else None
+    raise ValueError(f"No window dataset, keys={sorted(keys)}")
+
+
+def pad_group(attrs):
+    pm = str(attrs.get("pad_mode", "") or "")
+    if pm == "zero":
+        return "zero"
+    if pm in ("padtoken", "pad_token", "pad-token"):
+        return "padtoken"
+    if pm.startswith("impute"):
+        return "impute"
+    return pm or None
 
 
 def region_datasets(kind):
@@ -118,6 +140,9 @@ for p in args.h5_paths:
         for k, v in f.attrs.items():
             info["attrs"][k] = v
             print(f"    {k:<18}: {v}")
+        info["pad_group"] = pad_group(info["attrs"])
+        if info["pad_group"]:
+            print(f"  pad_group: {info['pad_group']}")
         print("  datasets:")
         for k in sorted(f.keys()):
             d = f[k]
@@ -134,8 +159,12 @@ for p in args.h5_paths:
             info["pep"] = f["peptide_ids"][:]
         elif "peptide_seqs" in f:
             info["pep"] = f["peptide_seqs"][:]
+        elif "peptide" in f:
+            info["pep"] = f["peptide"][:]
         if "uniprot_ids" in f:
             info["uid"] = f["uniprot_ids"][:]
+        elif "uniprot_id" in f:
+            info["uid"] = f["uniprot_id"][:]
         print(f"  id sample pep={decode_bytes(info.get('pep', ['?']))} "
               f"uid={decode_bytes(info.get('uid', ['?']))}")
 
@@ -144,6 +173,10 @@ for p in args.h5_paths:
             info["status_counts"] = dict(zip(u.tolist(), c.tolist()))
             print(f"  status: {info['status_counts']} "
                   f"(0=primary 1=af2 2=missing 3=notfound)")
+        if "fallback_flag" in info and "status" not in info:
+            fb = info["fallback_flag"]
+            n_fb = int((fb != 0).sum())
+            print(f"  fallback_flag: {n_fb}/{len(fb)} rows flagged")
 
         # -- row_indices validity vs CSV --
         if "row_indices" in info:
@@ -170,8 +203,11 @@ for p in args.h5_paths:
         # -- streaming embedding stats --
         n_chunk = args.chunk
         if kind == "window29":
-            W = f["window_if_struct"]
-            M = f["pad_mask"] if "pad_mask" in f else None
+            wkey, mkey = window_key(f)
+            info["window_key"] = wkey
+            info["mask_key"] = mkey
+            W = f[wkey]
+            M = f[mkey] if mkey is not None else None
             n_nan = n_inf = n_zero_win = 0
             frob = []  # per-chunk sample of whole-window Frobenius norms
             slot_sum = np.zeros(29)
@@ -191,7 +227,7 @@ for p in args.h5_paths:
                 slot_sum += sn.sum(axis=0)
                 slot_cnt += (sn > 0).sum(axis=0)
                 if M is not None:
-                    m = M[s:e][:]
+                    m = M[s:e][:].astype(bool)
                     pad_norms.extend(sn[m].tolist())
                     real_norms.extend(sn[~m].tolist())
             info.update({
@@ -284,8 +320,9 @@ if len(wins) >= 2:
         statuses = []
         for h in handles:
             if "status" in h:
-                st = h["status"][:]
-                statuses.append(st)
+                statuses.append(h["status"][:])
+            elif "fallback_flag" in h:
+                statuses.append(h["fallback_flag"][:])
             else:
                 statuses.append(None)
         n = len(common) if common is not None else wins[0]["n_rows"]
@@ -301,17 +338,17 @@ if len(wins) >= 2:
             e = s + min(n_cmp, n - s)
             if maps is not None:
                 idx = [m[s:e] for m in maps]
-                arrs = [handles[i]["window_if_struct"][idx[i]][:].astype(np.float64)
+                arrs = [handles[i][wins[i]["window_key"]][idx[i]][:].astype(np.float64)
                         for i in range(len(wins))]
-                mk = [handles[i]["pad_mask"][idx[i]][:]
+                mk = [handles[i][wins[i]["mask_key"]][idx[i]][:]
                       for i in range(len(wins))]
             else:
-                arrs = [h["window_if_struct"][s:e].astype(np.float64)
-                        for h in handles]
-                mk = [h["pad_mask"][s:e][:] for h in handles]
+                arrs = [h[w["window_key"]][s:e].astype(np.float64)
+                        for h, w in zip(handles, wins)]
+                mk = [h[w["mask_key"]][s:e][:] for h, w in zip(handles, wins)]
             if not all((mk[0] == m).all() for m in mk[1:]):
                 masks_equal = False
-            mask = mk[0]
+            mask = mk[0].astype(bool)
             real = ~mask
             # real-slot identity: max abs diff on real positions
             for i in range(len(arrs)):
@@ -345,10 +382,10 @@ if len(wins) >= 2:
                         chunk_ok &= st[s:e] == 0
             for wi, (w, a) in enumerate(zip(wins, arrs)):
                 use = mask if chunk_ok is None else (mask & chunk_ok[:, None])
-                if w["attrs"].get("pad_mode") == "zero" and use.any():
+                if w.get("pad_group") == "zero" and use.any():
                     pad_zero_max = max(
                         pad_zero_max, float(np.abs(a[use]).max(initial=0.0)))
-                if w["attrs"].get("pad_mode") == "padtoken" and use.any():
+                if w.get("pad_group") == "padtoken" and use.any():
                     # padded slots within/across rows should all equal pad_rep:
                     # per-dim std across all padded slots should be ~0
                     prow = a[use].reshape(-1, a.shape[-1])
@@ -357,13 +394,16 @@ if len(wins) >= 2:
         print(f"  pad_mask identical across modes: {masks_equal}")
         print(f"  max abs diff on REAL slots: {max_real_diff:.6f} "
               f"(~0 ⇒ modes differ ONLY in padding ⇒ correct)")
-        if any(w["attrs"].get("pad_mode") == "zero" for w in wins):
+        if any(w.get("pad_group") == "zero" for w in wins):
             print(f"  zero-mode padded slots max|.| = {pad_zero_max:.6f} "
                   f"(expect 0.0)")
-        if any(w["attrs"].get("pad_mode") == "padtoken" for w in wins):
+        if any(w.get("pad_group") == "padtoken" for w in wins):
             print(f"  padtoken padded-slot per-dim std = "
-                  f"{padtoken_std_max:.6f} (status==0 rows; ~0 ⇒ "
+                  f"{padtoken_std_max:.6f} (valid rows; ~0 ⇒ "
                   f"single pad vector)")
+        if any(w.get("pad_group") == "impute" for w in wins):
+            print("  impute modes: no zero/constant pad assertion — rely on "
+                  "real-slot identity (max abs diff ~0 above)")
         pair_rows = []
         for k, v in diff_acc.items():
             v = np.array(v)
@@ -450,7 +490,8 @@ if any("status_counts" in w for w in files):
 if wins:
     print("\n  PCA-lite on mean-pooled real slots...")
     with h5py.File(wins[0]["path"], "r") as h:
-        Wd, Md = h["window_if_struct"], h["pad_mask"]
+        Wd = h[wins[0]["window_key"]]
+        Md = h[wins[0]["mask_key"]]
         lab = wins[0].get("labels")
         n_all = wins[0]["n_rows"]
         take = rng.choice(n_all, size=min(args.pca_n, n_all), replace=False)
@@ -460,7 +501,7 @@ if wins:
         for s in range(0, len(take), args.chunk):
             idx = take[s:s + args.chunk]
             w = Wd[idx].astype(np.float64)
-            m = Md[idx][:]
+            m = Md[idx][:].astype(bool)
             real = ~m
             pooled.append((w * real[..., None]).sum(1) /
                           np.maximum(real.sum(1, keepdims=True), 1))

@@ -1,0 +1,4 @@
+pair,frob_median,frob_mean,frob_max,real_cos_median,real_cos_min
+esmc_context_embeddings_impute_bos_eos vs esmc_context_embeddings_impute_boundary,0.0,0.11035284914562606,6.253634312592985,1.0,0.9999999999999998
+esmc_context_embeddings_impute_bos_eos vs esmc_context_embeddings_padtoken,0.013901451664125992,0.15213999869373937,7.5360983329556435,0.9999999149226358,0.5940930624142816
+esmc_context_embeddings_impute_boundary vs esmc_context_embeddings_padtoken,0.013901451664125992,0.14689020613875017,8.107190326633829,0.9999999149226358,0.5940930624142816

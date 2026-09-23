@@ -490,9 +490,11 @@ def fit_window_pca(emb_data, indices, k):
 
 def transform_window_block(emb_data, indices, ipca, k):
     """
-    Stream window rows for `indices`, zero out padded slots, project each slot
-    through the shared PCA, flatten to (n, window*k), and append the 2
-    pad-count features.  Returns (n, window*k + 2) float64.
+    Stream window rows for `indices`, project each slot through the shared
+    PCA, flatten to (n, window*k), and append the 2 pad-count features.
+    Padded slots keep their raw token values (zero-pad/pad-token are ~0;
+    impute modes carry meaningful imputed vectors).  Returns (n, window*k + 2)
+    float64.
     """
     prepared_path = emb_data["prepared_path"]
     window = emb_data["window"]
@@ -501,13 +503,10 @@ def transform_window_block(emb_data, indices, ipca, k):
     cur = 0
     with h5py.File(prepared_path, "r") as f:
         W = f["windows"]
-        M = f["pad_mask"]
         PC = f["pad_counts"]
         for i0 in range(0, n, WINDOW_CHUNK_ROWS):
             idx = indices[i0:i0 + WINDOW_CHUNK_ROWS]
             block = W[idx].astype(np.float64)   # (c, window, D)
-            mblock = M[idx]
-            block[mblock] = 0.0
             c = block.shape[0]
             proj = ipca.transform(block.reshape(c * window, -1))
             flat = proj.reshape(c, window * k)
