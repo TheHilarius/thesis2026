@@ -24,7 +24,7 @@
 | lr_l2 | esmc | 218 | 0.7401 | ±0.0056 | 0.3492 | 0.6593 | 0.6747 |
 | lr_elasticnet | esmc | 218 | 0.7400 | ±0.0057 | 0.3492 | 0.6594 | 0.6747 |
 | lr_l2 | esmif | 248 | 0.7258 | ±0.0068 | 0.3268 | 0.6475 | 0.6636 |
-| lr_elasticnet | esmif | 148 | 0.7249 | ±0.0066 | 0.3241 | 0.6468 | 0.6621 |
+| lr_elasticnet | esmif | 248 | 0.7257 | ±0.0068 | 0.3295 | 0.6494 | 0.6648 |
 | rf | esmc | 1 | 0.7122 | ±0.0050 | 0.3057 | 0.6151 | 0.6561 |
 | rf | esmif | 9 | 0.7090 | ±0.0041 | 0.3012 | 0.6123 | 0.6539 |
 
@@ -61,6 +61,8 @@
 | 420 | 0.7412 | ±0.0056 | 0.3542 | 0.6463 | 0.6797 |
 
 > XGBoost + ESM-IF peaks at PCA=9 (AUC 0.7465). Performance essentially flat across all PCA values — minimal PCA needed.
+>
+> NOTE: Interesting to test without embeddings and compare.
 
 ---
 
@@ -116,11 +118,11 @@
 | 9 | 0.7154 | ±0.0060 | 0.3070 | 0.6386 | 0.6534 |
 | 64 | 0.7221 | ±0.0062 | 0.3183 | 0.6443 | 0.6591 |
 | 95 | 0.7234 | ±0.0061 | 0.3199 | 0.6450 | 0.6599 |
-| **148** | **0.7249** | **±0.0066** | **0.3241** | **0.6468** | **0.6621** |
-| 248 | — | — | — | — | — |
-| 420 | — | — | — | — | — |
+| 148 | 0.7249 | ±0.0066 | 0.3241 | 0.6468 | 0.6621 |
+| **248** | **0.7257** | **±0.0068** | **0.3295** | **0.6494** | **0.6648** |
+| 420 | 0.7248 | ±0.0058 | 0.3254 | 0.6469 | 0.6629 |
 
-> ⚠️ PCA=248 and PCA=420 pending (job 36983 running).
+> ElasticNet + ESM-IF peaks at PCA=248 — matches LR-L2. Same "more components helps" pattern.
 
 ---
 
@@ -138,6 +140,8 @@
 | 718 | 0.6886 | ±0.0061 | 0.2714 | 0.5651 | 0.6402 |
 
 > RF + ESM-C peaks at PCA=1. Performance degrades monotonically with more PCA — tree models prefer raw, untransformed features.
+>
+> NOTE: Interesting to test without embeddings and compare.
 
 #### ESM-IF
 
@@ -151,6 +155,8 @@
 | 420 | 0.6864 | ±0.0045 | 0.2644 | 0.5704 | 0.6367 |
 
 > RF + ESM-IF peaks at PCA=9. Same monotonic degradation pattern.
+>
+> NOTE: Interesting to test without embeddings and compare.
 
 ---
 
@@ -169,13 +175,15 @@
 
 5. **Low PCA is surprisingly competitive.** PCA=1 (50% variance) already captures most of the signal. The gap between PCA=1 and best PCA is only 1.2% for XGBoost and 2.8% for LR. This suggests the embedding space is highly low-dimensional for the binding prediction task.
 
+6. **Three optima sit at minimum PCA (≈50% variance).** XGBoost+ESM-IF (PCA 9), RF+ESM-C (PCA 1), and RF+ESM-IF (PCA 9) all peak at their smallest sweep value. The embeddings add little here — **interesting to test without embeddings and compare** (handcrafted + sparse only).
+
 ---
 
 ## Files
 
 | File | Description |
 |------|-------------|
-| `results/tables/pca_sweep_clean.tsv` | All 46 combos (46 rows) |
+| `results/tables/pca_sweep_clean.tsv` | All 48 combos (48 rows) |
 | `results/tables/pca_sweep_best_by_model_feature.tsv` | Best PCA per model + feature set (8 rows) |
 | `src/pipeline/python/extract_pca_results.py` | Script that extracts results from `cv_results_*.json` |
 
