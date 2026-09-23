@@ -1,16 +1,23 @@
 #!/usr/bin/env python3
 """
 08_pca_variance_analysis.py
-Fit PCA on full context window embeddings and plot cumulative explained
-variance vs number of components. Informs how many PCs to use for modelling.
+PCA variance analysis for per-residue window embeddings (fixed 29-mer).
 
-Input:
-    data/processed/embeddings/{esmc,esmif}_context_embeddings.h5
-    (expects 'context_emb' / 'context_if_struct' dataset — mean-pooled vector per sample)
+Fits IncrementalPCA on pooled real residue slots (N×29_real, D) — matching
+the PCA fit in 04_modelling.fit_window_pca — and plots cumulative explained
+variance vs number of components.
 
-Output:
-    results/figures/models/pca_variance_analysis.png
-    results/figures/models/pca_variance_components_{esmc,esmif}.csv
+Inputs:
+    data/processed/embeddings/esmc_context_embeddings_{zeropad,impute_boundary,
+        impute_bos_eos,padtoken}.h5   — window_embeddings [N,29,1152]
+    data/processed/embeddings/esm-if_test_{zero,pad,boundary,eos_bos_repeat}.h5
+                                        — window_if_struct [N,29,512]
+
+Outputs (results/figures/models/pca_optimization/):
+    pca_variance_windows_{key}.png       — individual plot with threshold annotations
+    pca_variance_windows_{key}.csv       — per-component explained variance
+    pca_variance_windows_esmc_combined.png   — 4 ESM-C curves overlaid
+    pca_variance_windows_esmif_combined.png  — 3 ESM-IF curves overlaid
 """
 
 import sys
@@ -26,24 +33,57 @@ import h5py
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from sklearn.decomposition import PCA
+from sklearn.decomposition import IncrementalPCA
 from pathlib import Path
 from datetime import datetime
 
 from config import EMBEDDING_DIR, FIGURES_DIR
 
-# ── Config ────────────────────────────────────────────────────────────────────
-FEATURE_SETS = {
-    "esmc": {
-        "display_name": "ESM-C (600M)",
-        "emb_key": "context_emb",
-        "emb_dim": 1152,
-    },
-    "esmif": {
-        "display_name": "ESM-IF1",
-        "emb_key": "context_if_struct",
-        "emb_dim": 512,
-    },
+# ── Window embedding sources ──────────────────────────────────────────────────
+# Each entry: (filename, window_dataset_name, emb_dim, display_name, color, group)
+WINDOW_SETS = {
+    # ── ESM-C (D=1152) ──
+    "esmc_zeropad": (
+        "esmc_context_embeddings_zeropad.h5",
+        "window_embeddings", 1152,
+        "ESM-C zero", "#e74c3c", "esmc",
+    ),
+    "esmc_impute_boundary": (
+        "esmc_context_embeddings_impute_boundary.h5",
+        "window_embeddings", 1152,
+        "ESM-C boundary", "#e67e22", "esmc",
+    ),
+    "esmc_impute_bos_eos": (
+        "esmc_context_embeddings_impute_bos_eos.h5",
+        "window_embeddings", 1152,
+        "ESM-C EOS/BOS-repeat", "#c0392b", "esmc",
+    ),
+    "esmc_padtoken": (
+        "esmc_context_embeddings_padtoken.h5",
+        "window_embeddings", 1152,
+        "ESM-C pad", "#8e44ad", "esmc",
+    ),
+    # ── ESM-IF (D=512) ──
+    "esmif_zero": (
+        "esm-if_test_zero.h5",
+        "window_if_struct", 512,
+        "ESM-IF zero", "#3498db", "esmif",
+    ),
+    "esmif_pad": (
+        "esm-if_test_pad.h5",
+        "window_if_struct", 512,
+        "ESM-IF pad", "#2980b9", "esmif",
+    ),
+    "esmif_boundary": (
+        "esm-if_test_boundary.h5",
+        "window_if_struct", 512,
+        "ESM-IF boundary", "#1abc9c", "esmif",
+    ),
+    "esmif_eos_bos_repeat": (
+        "esm-if_test_eos_bos_repeat.h5",
+        "window_if_struct", 512,
+        "ESM-IF EOS/BOS-repeat", "#16a085", "esmif",
+    ),
 }
 
 THRESHOLDS = [0.50, 0.80, 0.85, 0.90, 0.95, 0.99]
@@ -51,67 +91,66 @@ THRESHOLDS = [0.50, 0.80, 0.85, 0.90, 0.95, 0.99]
 OUT_DIR = FIGURES_DIR / "pca_optimization"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# ── Load data ─────────────────────────────────────────────────────────────────
-def load_embeddings(feature_key):
-    """Load full context embeddings from raw HDF5."""
-    cfg = FEATURE_SETS[feature_key]
-    h5_path = EMBEDDING_DIR / f"{feature_key}_context_embeddings.h5"
-
-    print(f"\n  Loading {h5_path}...")
-    with h5py.File(h5_path, "r") as f:
-        emb_key = cfg["emb_key"]
-
-        if emb_key not in f:
-            available = [k for k in f.keys() if k not in
-                        ("fallback_flag", "peptide_seqs", "uniprot_ids",
-                         "row_indices", "start", "end")]
-            raise KeyError(
-                f"'{emb_key}' not found in {h5_path}.\n"
-                f"  Available datasets: {available}\n"
-                f"  Run extraction scripts first to produce "
-                f"'{emb_key}'."
-            )
-
-        X = f[emb_key][:]
-
-        labels = f["labels"][:] if "labels" in f else None
-        folds = f["folds"][:] if "folds" in f else None
-
-    print(f"  Shape: {X.shape}")
-    return X, labels, folds
+CHUNK = 2048
+PCA_BATCH = 32768
 
 
-# ── Remove zero vectors ──────────────────────────────────────────────────────
-def remove_zeros(X):
-    """Remove rows where norm == 0."""
-    norms = np.linalg.norm(X, axis=1)
-    mask = norms > 0.0
-    n_removed = (~mask).sum()
-    if n_removed > 0:
-        print(f"  Removed {n_removed} zero-vector rows "
-              f"({n_removed / len(X) * 100:.1f}%)")
-    return X[mask], mask
+# ── Stream real (non-pad, non-zero-norm) residue slots ────────────────────────
+def stream_real_slots(raw_path: Path, ds_name: str, chunk: int = CHUNK):
+    """
+    Yield blocks of real residue slot vectors [m, D] from the raw window HDF5.
+
+    Matches 04_modelling._stream_window_slots: reshape (N,29,D) -> (N*29, D),
+    exclude pad_mask=True and zero-norm rows.
+    """
+    with h5py.File(raw_path, "r") as f:
+        W = f[ds_name]
+        M = f["pad_mask"]
+        n = W.shape[0]
+
+        for i0 in range(0, n, chunk):
+            block = W[i0 : i0 + chunk]          # (c, 29, D)
+            mblock = M[i0 : i0 + chunk]         # (c, 29) bool/uint8
+            c = block.shape[0]
+
+            flat = block.reshape(c * 29, block.shape[-1]).astype(np.float32)
+            flat_mask = mblock.reshape(-1)
+
+            # convert uint8 mask to bool if needed
+            if flat_mask.dtype != bool:
+                flat_mask = flat_mask.astype(bool)
+
+            real = ~flat_mask
+            slots = flat[real]
+
+            # exclude zero-norm rows
+            norms = np.linalg.norm(slots, axis=1)
+            nonzero = norms > 0.0
+            yield slots[nonzero]
 
 
-# ── Fit PCA and compute variance ─────────────────────────────────────────────
-def fit_pca_full(X, feature_key):
-    """Fit PCA with all components, return explained variance ratios."""
-    cfg = FEATURE_SETS[feature_key]
-    n_components = min(cfg["emb_dim"], X.shape[0])
+# ── Fit PCA streaming ─────────────────────────────────────────────────────────
+def fit_pca_streaming(raw_path: Path, ds_name: str, emb_dim: int):
+    """
+    Fit IncrementalPCA with n_components=emb_dim on streamed real slots.
+    Returns (explained, cumulative) numpy arrays.
+    """
+    ipca = IncrementalPCA(n_components=emb_dim, batch_size=PCA_BATCH)
 
-    print(f"  Fitting PCA with {n_components} components "
-          f"(data: {X.shape[0]} samples × {X.shape[1]} features)...")
+    n_slots = 0
+    n_kept = 0
+    for block in stream_real_slots(raw_path, ds_name):
+        n_slots += block.shape[0]
+        n_kept += block.shape[0]
+        ipca.partial_fit(block.astype(np.float64))
 
-    pca = PCA(n_components=n_components, random_state=42)
-    pca.fit(X)
-
-    explained = pca.explained_variance_ratio_
+    explained = ipca.explained_variance_ratio_
     cumulative = np.cumsum(explained)
 
-    print(f"  Done. Top 10 components explain "
-          f"{cumulative[9] * 100:.1f}% variance.")
+    print(f"    slots streamed: {n_slots}, kept (real+nonzero): {n_kept}")
+    print(f"    top-10 PCs explain: {cumulative[min(9, len(cumulative)-1)] * 100:.1f}%")
 
-    return explained, cumulative, pca
+    return explained, cumulative
 
 
 # ── Find n_components for thresholds ──────────────────────────────────────────
@@ -119,7 +158,7 @@ def find_threshold_components(cumulative, thresholds):
     """Find n_components needed for each variance threshold."""
     results = []
     for t in thresholds:
-        n = np.searchsorted(cumulative, t) + 1  # +1 because 1-indexed
+        n = np.searchsorted(cumulative, t) + 1
         n = min(n, len(cumulative))
         actual_var = cumulative[n - 1]
         results.append({
@@ -130,141 +169,158 @@ def find_threshold_components(cumulative, thresholds):
     return results
 
 
-# ── Plot ──────────────────────────────────────────────────────────────────────
-def plot_variance_analysis(results_all, out_path):
-    """Create combined 2-panel plot."""
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+# ── Individual plot (with threshold annotations) ─────────────────────────────
+def plot_individual(cumulative, thresholds_info, display_name, color, out_path):
+    """Single-curve plot with threshold arrows."""
+    fig, ax = plt.subplots(figsize=(8, 5))
 
-    colors = {"esmc": "#e74c3c", "esmif": "#3498db"}
+    x = np.arange(1, len(cumulative) + 1)
 
-    for ax, (feature_key, data) in zip(axes, results_all.items()):
-        cumulative = data["cumulative"]
-        thresholds_info = data["thresholds"]
-        cfg = FEATURE_SETS[feature_key]
+    ax.plot(x, cumulative, color=color, linewidth=1.5, alpha=0.9)
+    ax.fill_between(x, cumulative, alpha=0.1, color=color)
 
-        x = np.arange(1, len(cumulative) + 1)
+    for info in thresholds_info:
+        t = info["threshold"]
+        n = info["n_components"]
+        actual = info["actual_variance"]
 
-        # Main line
-        ax.plot(x, cumulative, color=colors[feature_key],
-                linewidth=1.5, alpha=0.9)
+        ax.axhline(y=t, color="grey", linestyle="--", linewidth=0.7, alpha=0.5)
+        ax.axvline(x=n, color=color, linestyle=":", linewidth=0.8, alpha=0.6)
 
-        # Fill under curve
-        ax.fill_between(x, cumulative, alpha=0.1, color=colors[feature_key])
+        label = f"{t*100:.0f}% -> {n} PCs"
+        ax.annotate(
+            label,
+            xy=(n, actual),
+            xytext=(n + 15, actual - 0.03),
+            fontsize=7, color="grey",
+            arrowprops=dict(arrowstyle="-", color="grey", lw=0.5),
+        )
 
-        # Threshold lines
-        for info in thresholds_info:
-            t = info["threshold"]
-            n = info["n_components"]
-            actual = info["actual_variance"]
+    ax.set_xlabel("Number of PCA Components")
+    ax.set_ylabel("Cumulative Explained Variance")
+    ax.set_title(f"PCA Variance — {display_name}")
+    ax.set_xlim(0, len(cumulative) + 10)
+    ax.set_ylim(0, 1.05)
 
-            ax.axhline(y=t, color="grey", linestyle="--",
-                       linewidth=0.7, alpha=0.5)
-            ax.axvline(x=n, color=colors[feature_key],
-                       linestyle=":", linewidth=0.8, alpha=0.6)
+    max_pc = len(cumulative)
+    tick_step = 100 if max_pc > 500 else (50 if max_pc > 200 else 25)
+    ax.set_xticks(range(0, max_pc + 1, tick_step))
+    ax.tick_params(axis="x", rotation=45)
+    ax.grid(True, alpha=0.3)
 
-            # Annotate
-            label = f"{t*100:.0f}% → {n} PCs"
-            ax.annotate(
-                label,
-                xy=(n, actual),
-                xytext=(n + 15, actual - 0.03),
-                fontsize=7,
-                color="grey",
-                arrowprops=dict(arrowstyle="-", color="grey", lw=0.5),
-            )
-
-        ax.set_xlabel("Number of PCA Components")
-        ax.set_ylabel("Cumulative Explained Variance")
-        ax.set_title(f"{cfg['display_name']}")
-        ax.set_xlim(0, len(cumulative) + 10)
-        ax.set_ylim(0, 1.05)
-
-        # Smart tick spacing
-        max_pc = len(cumulative)
-        if max_pc > 500:
-            tick_step = 100
-        elif max_pc > 200:
-            tick_step = 50
-        else:
-            tick_step = 25
-        ax.set_xticks(range(0, max_pc + 1, tick_step))
-        ax.tick_params(axis='x', rotation=45)
-
-        ax.grid(True, alpha=0.3)
-
-    fig.suptitle("PCA Variance Analysis — Full Context Window Embeddings",
-                 fontsize=13, fontweight="bold", y=1.02)
     fig.tight_layout()
-
     fig.savefig(out_path, dpi=200, bbox_inches="tight", facecolor="white")
     plt.close(fig)
-    print(f"\n  Saved: {out_path}")
+    print(f"    Saved: {out_path}")
+
+
+# ── Combined plot (overlay curves + legend only) ─────────────────────────────
+def plot_combined(curves, title, out_path):
+    """Overlay multiple curves with legend. No threshold annotations."""
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    for key, (cumulative, display_name, color) in curves.items():
+        x = np.arange(1, len(cumulative) + 1)
+        ax.plot(x, cumulative, label=display_name, color=color,
+                linewidth=1.5, alpha=0.9)
+
+    ax.set_xlabel("Number of PCA Components")
+    ax.set_ylabel("Cumulative Explained Variance")
+    ax.set_title(title)
+    ax.set_ylim(0, 1.05)
+    ax.legend(fontsize=8, loc="lower right")
+    ax.grid(True, alpha=0.3)
+
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=200, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    print(f"    Saved: {out_path}")
 
 
 # ── Save CSV ──────────────────────────────────────────────────────────────────
-def save_csv(explained, cumulative, feature_key, out_dir):
+def save_csv(explained, cumulative, key, out_dir):
     """Save per-component variance to CSV."""
-    csv_path = out_dir / f"pca_variance_components_{feature_key}.csv"
-
+    csv_path = out_dir / f"pca_variance_windows_{key}.csv"
     with open(csv_path, "w") as f:
         f.write("component_idx,explained_variance_ratio,cumulative_variance\n")
         for i, (e, c) in enumerate(zip(explained, cumulative)):
             f.write(f"{i + 1},{e:.8f},{c:.8f}\n")
-
-    print(f"  Saved: {csv_path}")
+    print(f"    Saved: {csv_path}")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    print("=" * 60)
-    print("  PCA VARIANCE ANALYSIS — Full Context Window")
-    print("=" * 60)
+    print("=" * 65)
+    print("  PCA VARIANCE ANALYSIS — Per-Residue Window Embeddings")
+    print("=" * 65)
     print(f"  Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"  Feature sets: {list(FEATURE_SETS.keys())}")
     print(f"  Thresholds: {THRESHOLDS}")
     print(f"  Output: {OUT_DIR}")
-    print("=" * 60)
+    print(f"  Modes: {list(WINDOW_SETS.keys())}")
+    print("=" * 65)
 
-    results_all = {}
+    # ── Check all files exist before starting ──
+    missing = []
+    for key, (fname, *_) in WINDOW_SETS.items():
+        p = EMBEDDING_DIR / fname
+        if not p.exists():
+            missing.append(f"  {key}: {p}")
+    if missing:
+        print("\n  ERROR — missing input files:")
+        print("\n".join(missing))
+        print("\n  Transfer these files before running.")
+        sys.exit(1)
 
-    for feature_key in FEATURE_SETS:
-        print(f"\n{'─' * 60}")
-        print(f"  {FEATURE_SETS[feature_key]['display_name']}")
-        print(f"{'─' * 60}")
+    # ── Fit PCA for each version ──
+    results = {}  # key -> (explained, cumulative)
+    group_curves = {"esmc": {}, "esmif": {}}
 
-        # Load
-        X, labels, folds = load_embeddings(feature_key)
+    for key, (fname, ds_name, emb_dim, display_name, color, group) in WINDOW_SETS.items():
+        print(f"\n{'-' * 65}")
+        print(f"  {display_name}")
+        print(f"{'-' * 65}")
 
-        # Remove zeros
-        X_clean, zero_mask = remove_zeros(X)
+        raw_path = EMBEDDING_DIR / fname
+        print(f"  File: {raw_path}")
 
-        # Fit PCA
-        explained, cumulative, pca = fit_pca_full(X_clean, feature_key)
+        explained, cumulative = fit_pca_streaming(raw_path, ds_name, emb_dim)
 
-        # Find thresholds
         thresholds_info = find_threshold_components(cumulative, THRESHOLDS)
 
-        print(f"\n  Threshold results:")
-        print(f"  {'Threshold':>10} {'Components':>12} {'Actual Var':>12}")
-        print(f"  {'─' * 36}")
+        print(f"\n    {'Threshold':>10} {'Components':>12} {'Actual Var':>12}")
+        print(f"    {'-' * 36}")
         for info in thresholds_info:
-            print(f"  {info['threshold']*100:>9.0f}% "
+            print(f"    {info['threshold']*100:>9.0f}% "
                   f"{info['n_components']:>10} "
                   f"{info['actual_variance']*100:>10.2f}%")
 
-        # Save CSV
-        save_csv(explained, cumulative, feature_key, OUT_DIR)
+        # Save individual CSV
+        save_csv(explained, cumulative, key, OUT_DIR)
 
-        results_all[feature_key] = {
-            "explained": explained,
-            "cumulative": cumulative,
-            "thresholds": thresholds_info,
-        }
+        # Save individual plot
+        plot_individual(
+            cumulative, thresholds_info, display_name, color,
+            OUT_DIR / f"pca_variance_windows_{key}.png",
+        )
 
-    # Combined plot
-    out_png = OUT_DIR / "pca_variance_analysis.png"
-    plot_variance_analysis(results_all, out_png)
+        results[key] = (explained, cumulative, thresholds_info)
+        group_curves[group][key] = (cumulative, display_name, color)
 
-    print(f"\n{'=' * 60}")
+    # ── Combined plots ──
+    print(f"\n{'=' * 65}")
+    print("  COMBINED PLOTS")
+    print(f"{'=' * 65}")
+
+    for group, label in [("esmc", "ESM-C"), ("esmif", "ESM-IF")]:
+        if not group_curves[group]:
+            continue
+        out_path = OUT_DIR / f"pca_variance_windows_{group}_combined.png"
+        plot_combined(
+            group_curves[group],
+            f"PCA Variance — {label} Window Embeddings (pad-mode comparison)",
+            out_path,
+        )
+
+    print(f"\n{'=' * 65}")
     print("  DONE")
-    print(f"{'=' * 60}")
+    print(f"{'=' * 65}")
