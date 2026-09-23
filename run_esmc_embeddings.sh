@@ -28,11 +28,14 @@ mkdir -p data/processed/embeddings
 
 export PYTHONUNBUFFERED=1
 
-echo "Starting ESM-C 4-mode embedding ($(date))..."
+MODES="${MODES:-zero,impute_boundary,impute_bos_eos,pad_token}"
+
+echo "Starting ESM-C embedding ($(date))..."
 echo "  Output: data/processed/embeddings/"
-echo "  Modes: zero, impute_boundary, impute_bos_eos, pad_token"
+echo "  Modes: $MODES"
 
 python src/tools/esm/embed_peptides_w_esm.py \
-    --out-dir data/processed/embeddings/
+    --out-dir data/processed/embeddings/ \
+    --modes "$MODES"
 
 echo "ESM-C embedding completed ($(date))."

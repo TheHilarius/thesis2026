@@ -6,7 +6,9 @@ Four pad-handling modes produce four separate HDF5 files:
   zero              - zero-fill pad positions
   impute_boundary   - repeat nearest boundary residue (leftmost/rightmost real)
   impute_bos_eos    - repeat BOS/<cls> for left pads, EOS/<eos> for right pads
-  pad_token         - replace X pads with <pad> token id, use sequence_id mask
+  pad_token         - embed the X-padded protein with <pad> tokens + sequence_id
+                      mask, then KEEP the model's <pad> vectors at the pad slots
+                      (they are NOT zeroed out)
 
 Default pad-mode = impute_boundary.
 Default padded FASTA = data/processed/positives_clean_padded.fasta.
@@ -23,8 +25,11 @@ Usage:
     # small debug run
     python src/tools/esm/embed_peptides_w_esm.py --n-debug 200
 
-    # full run
+    # full run (all 4 modes)
     python src/tools/esm/embed_peptides_w_esm.py
+
+    # single-mode rerun (e.g. padtoken only)
+    python src/tools/esm/embed_peptides_w_esm.py --modes pad_token
 """
 
 from __future__ import annotations
@@ -254,9 +259,13 @@ def extract_pad_window(
     for i in range(WINDOW_LEN):
         j_orig = win_start + i
         j_padded = j_orig + n_left
-        if 0 <= j_padded < L_padded and 0 <= j_orig < L_orig:
-            w[i] = emb_padded[j_padded + 1]  # +1 for BOS
-        else:
+        # Read the padded-protein embedding for BOTH real residues and <pad>
+        # positions, so pad slots keep their model-derived <pad> vectors instead
+        # of being left at 0.0.
+        if 0 <= j_padded < L_padded:
+            w[i] = emb_padded[j_padded + 1]  # +1 for BOS (real OR <pad>)
+        # Flag slots that fall outside the original protein as pads.
+        if not (0 <= j_orig < L_orig):
             pm[i] = True
     return w, pm
 
@@ -307,10 +316,11 @@ def main():
         "pad_token": outdir / "esmc_context_embeddings_padtoken.h5",
     }
 
-    # ── check no overwrite ──
-    for m in modes:
-        if out_paths[m].exists():
-            raise SystemExit(f"{out_paths[m]} exists; will not overwrite.")
+    # ── check no overwrite (skipped for dry-run validation) ──
+    if not args.dry_run:
+        for m in modes:
+            if out_paths[m].exists():
+                raise SystemExit(f"{out_paths[m]} exists; will not overwrite.")
 
     # ── load CSV ──
     df = pd.read_csv(args.csv)
