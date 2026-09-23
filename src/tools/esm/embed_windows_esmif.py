@@ -74,7 +74,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--csv', default="data/processed/df_all.csv")
 parser.add_argument('--pdb',
                     default="data/processed/structures/alphafold/")
-parser.add_argument('--af2', default="data/processed/structures/alphafold_supplement/")
 parser.add_argument('--out-prefix',
                     default="data/processed/embeddings/esm-if_test")
 parser.add_argument('--force-cpu', action='store_true')
@@ -95,12 +94,11 @@ EMB_DIM = 512
 CHUNK_ROWS = 64
 PROBE_K = 8
 
-# AF2 fallback only when the --af2 dir exists
-AF2_FALLBACK = os.path.isdir(args.af2)
+# No AF2-supplement fallback any more: proteins without an AlphaFold model in
+# --pdb are recorded as status=2 (missing).
 os.makedirs(os.path.dirname(args.out_prefix), exist_ok=True)
 
 print(f"Device        : {DEVICE}")
-print(f"AF2 fallback  : {'ENABLED' if AF2_FALLBACK else 'DISABLED'}")
 
 # ── Load ESM-IF1 ──────────────────────────────────────────────────────────────
 print("Loading ESM-IF1 (142M)...")
@@ -161,10 +159,9 @@ def probe_constants():
     eos_rep = np.zeros(EMB_DIM, dtype=np.float32)
     bos_rep = np.zeros(EMB_DIM, dtype=np.float32)
 
-    cands = (glob.glob(os.path.join(args.pdb, "*.pdb"))
-             + glob.glob(os.path.join(args.af2, "*.pdb")))
+    cands = glob.glob(os.path.join(args.pdb, "*.pdb"))
     if not cands:
-        print("WARN: no AF2 pdb for probe; pad/eos/bos constants = zero vector")
+        print("WARN: no pdb for probe; pad/eos/bos constants = zero vector")
         return pad_rep, eos_rep, bos_rep
 
     pdb = min(cands, key=os.path.getsize)
@@ -294,17 +291,6 @@ def load_structure_best_chain(struct_path, uid, peptide_set):
     if chain_a_result is not None:
         return chain_a_result[0], chain_a_result[1], "A"
     return None, None, None
-
-
-def load_af2_fallback(uid, af2_dir):
-    af2_path = find_structure_file(uid, af2_dir)
-    if af2_path is None:
-        return None, None
-    try:
-        coords, seq = load_coords_safe(af2_path, chain="A")
-        return encode_structure(coords), seq
-    except Exception:
-        return None, None
 
 
 def _get_flank(value):
@@ -455,15 +441,15 @@ starts = np.zeros(n_rows, dtype=np.int32)
 ends = np.zeros(n_rows, dtype=np.int32)
 n_pads = np.zeros(n_rows, dtype=np.int8)
 c_pads = np.zeros(n_rows, dtype=np.int8)
-statuses = np.zeros(n_rows, dtype=np.int8)  # 0 primary,1 af2,2 missing,3 notfound
+statuses = np.zeros(n_rows, dtype=np.int8)  # 0 primary, 1 unused (was af2), 2 missing, 3 notfound
 
 ZERO_WINDOW = np.zeros((29, EMB_DIM), dtype=np.float32)
 FULL_MASK = np.ones(29, dtype=bool)
 
-stats = {"primary": 0, "af2_fallback": 0, "missing": 0, "notfound": 0}
+stats = {"primary": 0, "missing": 0, "notfound": 0}
 
 # ── Main loop: one protein group at a time ────────────────────────────────────
-print(f"\nEmbedding {df['uniprot_id'].nunique()} proteins -> 3 window files ...")
+print(f"\nEmbedding {df['uniprot_id'].nunique()} proteins -> 4 window files ...")
 
 for gi, (uid, group) in enumerate(df.groupby('uniprot_id', sort=True)):
     if gi % 200 == 0:
@@ -484,11 +470,6 @@ for gi, (uid, group) in enumerate(df.groupby('uniprot_id', sort=True)):
         if rep_raw is not None:
             rep = strip_special(rep_raw, len(seq))
             source = 0
-    if rep is None and AF2_FALLBACK:
-        rep_raw, seq = load_af2_fallback(uid, args.af2)
-        if rep_raw is not None:
-            rep = strip_special(rep_raw, len(seq))
-            source = 1
 
     # Build windows for every peptide in this protein
     W_blocks = {m: np.zeros((len(group), 29, EMB_DIM), dtype=np.float32)
@@ -530,9 +511,9 @@ for gi, (uid, group) in enumerate(df.groupby('uniprot_id', sort=True)):
         n_pads[oi] = npad
         c_pads[oi] = cpad
         statuses[oi] = source
-        stats["primary" if source == 0 else "af2_fallback"] += 1
+        stats["primary"] += 1
 
-    # Write this protein's block to the 3 files, then free the rep
+    # Write this protein's block to the 4 files, then free the rep
     for m in MODES:
         files[m]["window_if_struct"][orig_indices] = W_blocks[m]
         files[m]["pad_mask"][orig_indices] = mask_blocks
@@ -561,7 +542,7 @@ for m, f in files.items():
     f.attrs["eos_rep_norm"] = float(np.linalg.norm(eos_rep))
     f.attrs["n_samples"] = n_rows
     f.attrs["device"] = DEVICE
-    f.attrs["status_legend"] = "0=primary 1=af2_fallback 2=missing 3=notfound"
+    f.attrs["status_legend"] = "0=primary 1=unused 2=missing 3=notfound"
     f.attrs["n_pad_sentinel"] = "-1 means no structure/peptide found"
     f.close()
 
