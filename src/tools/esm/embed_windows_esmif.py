@@ -1,21 +1,26 @@
 #!/usr/bin/env python3
 """
-embed_windows_esmif.py — ESM-IF fixed-29 per-residue windows, 3 padding modes.
+embed_windows_esmif.py — ESM-IF fixed-29 per-residue windows, 4 padding modes.
 
 Embeds each protein structure ONCE with ESM-IF1, then for every peptide builds a
 fixed 29-slot window (10 N-flank + 9 peptide + 10 C-flank) of per-residue
 encoder reps [29, 512].  Peptides near a protein terminus have missing flank
-slots; those slots are filled with ONE of three strategies, each written to its
-own HDF5 file so the three can be ablated later:
+slots; those slots are filled with ONE of four strategies, each written to its
+own HDF5 file so the four can be ablated later:
 
-  *zero*      — missing slots are filled with the zero vector.
-  *padtoken*  — missing slots are filled with a single "<pad>"-analog vector
-                (the encoder output at a NaN-coordinate gap position, the
-                ESM-IF / AntiFold convention for "no structure here").
-  *eosrepeat* — the slot ADJACENT to the real chain is filled with a single
-                "<eos>"-analog vector (mirrored on both sides), and the
-                remaining missing slots repeat the last/first real value
-                (i.e. ...R,EOS,J,J,J  on the C side,  J,J,J,EOS,R... on N).
+  *zero*           — every missing slot = the zero vector.
+  *pad*            — every missing slot = a single "<pad>"-analog vector
+                     (the encoder output at a NaN-coordinate gap position, the
+                     ESM-IF / AntiFold convention for "no structure here").
+  *boundary*       — every missing slot = the nearest real residue at that
+                     boundary, repeated (terminus fallback: the peptide's own
+                     boundary residue).  No EOS/BOS marker anywhere.
+  *eos_bos_repeat* — every missing slot = the "<eos>"-analog vector on the C
+                     side / "<bos>"-analog vector on the N side.
+
+All four are uniform in structure (k pad slots, all identical fill); none
+reserves a slot for a boundary marker.  This keeps the ablation a pure
+fill-value comparison.
 
 No mean-pooling is done: every row is a full 29 x 512 tensor for a downstream
 model that consumes the (29, 512) sequence.
@@ -29,7 +34,7 @@ CLI (kept minimal on purpose).  Additional knobs can be added here later if
 needed — the likely candidates are:
   --chunk-rows N   HDF5 chunk size along the row axis (currently 64)
   --compress       enable gzip on the window dataset (currently off for speed)
-  --modes LIST     subset of {zero,padtoken,eosrepeat} (currently always all 3)
+  --modes LIST     subset of {zero,pad,boundary,eos_bos_repeat}
   --probe-k K      number of NaN rows used to derive the pad vector (currently 8)
 
 Usage:
@@ -143,9 +148,10 @@ def strip_special(rep, seq_len):
 
 # ── Probe: derive the pad-token and eos-token constant vectors ────────────────
 def probe_constants():
-    """Return (pad_rep, eos_rep) as [512] float32 constants.
+    """Return (pad_rep, eos_rep, bos_rep) as [512] float32 constants.
 
     eos_rep = encoder output at the final (end-token) position of a real chain.
+    bos_rep = encoder output at the leading (start-token) position of a real chain.
     pad_rep = encoder output at the first NaN-coordinate gap position of a
               chain with PROBE_K NaN rows appended (ESM-IF "no structure" gap).
     Falls back to zeros if no structure is available or the outputs are
@@ -153,19 +159,20 @@ def probe_constants():
     """
     pad_rep = np.zeros(EMB_DIM, dtype=np.float32)
     eos_rep = np.zeros(EMB_DIM, dtype=np.float32)
+    bos_rep = np.zeros(EMB_DIM, dtype=np.float32)
 
     cands = (glob.glob(os.path.join(args.pdb, "*.pdb"))
              + glob.glob(os.path.join(args.af2, "*.pdb")))
     if not cands:
-        print("WARN: no AF2 pdb for probe; pad/eos constants = zero vector")
-        return pad_rep, eos_rep
+        print("WARN: no AF2 pdb for probe; pad/eos/bos constants = zero vector")
+        return pad_rep, eos_rep, bos_rep
 
     pdb = min(cands, key=os.path.getsize)
     try:
         coords, seq = load_coords_safe(pdb, chain="A")
     except Exception as e:
-        print(f"WARN: probe structure failed ({e}); pad/eos constants = zero")
-        return pad_rep, eos_rep
+        print(f"WARN: probe structure failed ({e}); pad/eos/bos constants = zero")
+        return pad_rep, eos_rep, bos_rep
 
     L = len(seq)
     rep = encode_structure(coords)
@@ -176,6 +183,13 @@ def probe_constants():
     else:
         print("WARN: no special tokens detected; eos constant = zero")
 
+    if offset >= 2:
+        # leading special position (BOS / <cls>); verified against fair-esm's
+        # get_encoder_output, which strips [1:-1] as "bos and eos tokens".
+        bos_rep = rep[0].astype(np.float32)
+    else:
+        print("WARN: no leading BOS detected; bos constant = zero")
+
     nan_rows = np.full((PROBE_K,) + coords.shape[1:], np.nan, dtype=coords.dtype)
     coords_pad = np.concatenate([coords, nan_rows], axis=0)
     rep_pad = encode_structure(coords_pad)
@@ -183,17 +197,20 @@ def probe_constants():
     if pad_idx < rep_pad.shape[0]:
         pad_rep = rep_pad[pad_idx].astype(np.float32)
 
-    for name, v in [("pad_rep", pad_rep), ("eos_rep", eos_rep)]:
+    for name, v in [("pad_rep", pad_rep), ("eos_rep", eos_rep), ("bos_rep", bos_rep)]:
         if not np.isfinite(v).all():
             print(f"WARN: {name} non-finite -> zero vector")
             if name == "pad_rep":
                 pad_rep = np.zeros(EMB_DIM, dtype=np.float32)
-            else:
+            elif name == "eos_rep":
                 eos_rep = np.zeros(EMB_DIM, dtype=np.float32)
+            else:
+                bos_rep = np.zeros(EMB_DIM, dtype=np.float32)
 
     print(f"probe pad_rep norm = {np.linalg.norm(pad_rep):.3f}  "
-          f"eos_rep norm = {np.linalg.norm(eos_rep):.3f}")
-    return pad_rep, eos_rep
+          f"eos_rep norm = {np.linalg.norm(eos_rep):.3f}  "
+          f"bos_rep norm = {np.linalg.norm(bos_rep):.3f}")
+    return pad_rep, eos_rep, bos_rep
 
 
 # ── Structure file helpers (copied from embed_structures_esmif_gpu.py) ───────
@@ -346,11 +363,17 @@ def find_peptide_in_structure(pdb_seq, rep_len, row):
 
 
 # ── Fixed-29 window builder ───────────────────────────────────────────────────
-def build_windows(rep, n_start, pep_start, pep_end, c_end, pad_rep, eos_rep):
-    """Build (W_zero, W_pad, W_eos, pad_mask, n_pad, c_pad) for one peptide.
+def build_windows(rep, n_start, pep_start, pep_end, c_end, pad_rep, eos_rep, bos_rep):
+    """Build (W_zero, W_pad, W_boundary, W_eosbos, pad_mask, n_pad, c_pad).
 
     rep is the [L, D] residue-aligned encoder output.
     Slot layout: 0-9 N (right-aligned), 10-18 peptide (9), 19-28 C (left-aligned).
+
+    Every mode fills EVERY pad slot with one uniform value (no reserved marker
+    slot): zero -> 0, pad -> pad_rep, boundary -> nearest real residue,
+    eos_bos_repeat -> eos_rep on the C side / bos_rep on the N side.
+    Terminus fallback (n_real==0 / c_real==0): the boundary copy is the
+    peptide's own boundary residue, matching ESM-C's impute_boundary.
     """
     D = rep.shape[1]
     n_real = pep_start - n_start
@@ -367,30 +390,35 @@ def build_windows(rep, n_start, pep_start, pep_end, c_end, pad_rep, eos_rep):
     pad_mask[0:n_pad] = True
     pad_mask[29 - c_pad:] = True
 
+    # nearest real residue at each boundary (terminus fallback -> peptide residue)
+    first_real_idx = 10 if n_real == 0 else (10 - n_real)
+    last_real_idx = 18 if c_real == 0 else (19 + c_real - 1)
+
     # zero
     W_zero = base.copy()
 
-    # pad-token
+    # pad
     W_pad = base.copy()
     if n_pad > 0:
         W_pad[0:n_pad] = pad_rep
     if c_pad > 0:
         W_pad[29 - c_pad:] = pad_rep
 
-    # eos-repeat (mirrored, EOS adjacent to the real chain on both sides)
-    W_eos = base.copy()
-    if c_pad > 0:
-        last_real_idx = 18 if c_real == 0 else (19 + c_real - 1)
-        W_eos[19 + c_real] = eos_rep
-        if c_pad > 1:
-            W_eos[20 + c_real:] = base[last_real_idx]
+    # boundary: every pad slot = nearest real residue
+    W_boundary = base.copy()
     if n_pad > 0:
-        first_real_idx = 10 if n_real == 0 else (10 - n_real)
-        W_eos[10 - n_real - 1] = eos_rep
-        if n_pad > 1:
-            W_eos[0:10 - n_real - 1] = base[first_real_idx]
+        W_boundary[0:n_pad] = base[first_real_idx]
+    if c_pad > 0:
+        W_boundary[29 - c_pad:] = base[last_real_idx]
 
-    return W_zero, W_pad, W_eos, pad_mask, n_pad, c_pad
+    # eos/bos-repeat: every pad slot = EOS (C side) / BOS (N side)
+    W_eosbos = base.copy()
+    if n_pad > 0:
+        W_eosbos[0:n_pad] = bos_rep
+    if c_pad > 0:
+        W_eosbos[29 - c_pad:] = eos_rep
+
+    return W_zero, W_pad, W_boundary, W_eosbos, pad_mask, n_pad, c_pad
 
 
 # ── Load CSV ──────────────────────────────────────────────────────────────────
@@ -407,10 +435,10 @@ n_rows = len(df)
 uid_peptides = df.groupby('uniprot_id')['peptide'].apply(set).to_dict()
 
 # ── Probe constants ───────────────────────────────────────────────────────────
-pad_rep, eos_rep = probe_constants()
+pad_rep, eos_rep, bos_rep = probe_constants()
 
 # ── Preallocate 3 HDF5 files ──────────────────────────────────────────────────
-MODES = ["zero", "padtoken", "eosrepeat"]
+MODES = ["zero", "pad", "boundary", "eos_bos_repeat"]
 files = {}
 for m in MODES:
     f = h5py.File(f"{args.out_prefix}_{m}.h5", "w")
@@ -491,12 +519,13 @@ for gi, (uid, group) in enumerate(df.groupby('uniprot_id', sort=True)):
             continue
 
         ps, pe, ns, ce, match = result
-        Wz, Wp, We, pm, npad, cpad = build_windows(
-            rep, ns, ps, pe, ce, pad_rep, eos_rep)
+        Wz, Wp, Wb, We, pm, npad, cpad = build_windows(
+            rep, ns, ps, pe, ce, pad_rep, eos_rep, bos_rep)
 
         W_blocks["zero"][j] = Wz
-        W_blocks["padtoken"][j] = Wp
-        W_blocks["eosrepeat"][j] = We
+        W_blocks["pad"][j] = Wp
+        W_blocks["boundary"][j] = Wb
+        W_blocks["eos_bos_repeat"][j] = We
         mask_blocks[j] = pm
         n_pads[oi] = npad
         c_pads[oi] = cpad
@@ -537,4 +566,4 @@ for m, f in files.items():
     f.close()
 
 print("\nDone. Source breakdown:", stats)
-print(f"Files: {args.out_prefix}_{{zero,padtoken,eosrepeat}}.h5")
+print(f"Files: {args.out_prefix}_{{zero,pad,boundary,eos_bos_repeat}}.h5")
