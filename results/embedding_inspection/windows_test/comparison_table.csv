@@ -1,6 +1,0 @@
-file,schema,n_rows,dim,zero_windows,zero_pct,nan,inf,frob_median,real_slot_med,pad_slot_med,status_0,status_1,status_2,status_3
-esm-if_test_zero,window29,46617,512,52,0.11154728961537637,0,0,49.705,9.177,0.0,46565.0,,,52.0
-esm-if_test_padtoken,window29,46617,512,52,0.11154728961537637,0,0,49.723,9.177,7.675,46565.0,,,52.0
-esm-if_test_eosrepeat,window29,46617,512,52,0.11154728961537637,0,0,49.739,9.177,8.034,46565.0,,,52.0
-esmc_protein_embeddings,legacy_esmc,53072,peptide:1152;n_flank:1152;c_flank:1152,179,0.11242588684554317,0,0,,,,,,,
-esmif_structure_embeddings,legacy_esmif,53198,peptide:512;n_flank:512;c_flank:512,19131,11.987292755366743,0,0,,,,,,,

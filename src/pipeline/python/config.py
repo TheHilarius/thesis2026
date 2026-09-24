@@ -312,6 +312,24 @@ FEATURE_COMPONENTS = {
         "embedding_key": "esmif_zero",
         "pca_components": 64,
     },
+    "esmif_pad": {
+        "display_name": "ESM-IF1 windows (pad, 29x512)",
+        "type": "embedding_windows",
+        "embedding_key": "esmif_pad",
+        "pca_components": 64,
+    },
+    "esmif_boundary": {
+        "display_name": "ESM-IF1 windows (boundary, 29x512)",
+        "type": "embedding_windows",
+        "embedding_key": "esmif_boundary",
+        "pca_components": 64,
+    },
+    "esmif_eos_bos_repeat": {
+        "display_name": "ESM-IF1 windows (eos/bos-repeat, 29x512)",
+        "type": "embedding_windows",
+        "embedding_key": "esmif_eos_bos_repeat",
+        "pca_components": 64,
+    },
     "esmc_win_zeropad": {
         "display_name": "ESM-C windows (zero-pad, 29x1152)",
         "type": "embedding_windows",
@@ -393,6 +411,18 @@ FEATURE_SETS = {
     "handcrafted_blosum_esmif_win": {
         "display_name": "Structural + BLOSUM50 + ESM-IF windows",
         "components": ["handcrafted", "blosum", "esmif_win"],
+    },
+    "handcrafted_sparse_esmif_pad": {
+        "display_name": "Structural + one-hot + ESM-IF windows (pad)",
+        "components": ["handcrafted", "sparse", "esmif_pad"],
+    },
+    "handcrafted_sparse_esmif_boundary": {
+        "display_name": "Structural + one-hot + ESM-IF windows (boundary)",
+        "components": ["handcrafted", "sparse", "esmif_boundary"],
+    },
+    "handcrafted_sparse_esmif_eos_bos_repeat": {
+        "display_name": "Structural + one-hot + ESM-IF windows (eos/bos-repeat)",
+        "components": ["handcrafted", "sparse", "esmif_eos_bos_repeat"],
     },
     # ── ESM-C window-embedding feature sets ──
     "handcrafted_sparse_esmc_win_zeropad": {
