@@ -1,0 +1,7 @@
+pair,frob_median,frob_mean,frob_max,real_cos_median,real_cos_min
+esmc_context_embeddings_zeropad vs esmc_context_embeddings_impute_boundary,0.0,0.09950598219136257,6.257996676024214,1.0,0.9999999999999998
+esmc_context_embeddings_zeropad vs esmc_context_embeddings_impute_bos_eos,0.0,0.10490465168685234,5.711353472452114,1.0,0.9999999999999998
+esmc_context_embeddings_zeropad vs esmc_context_embeddings_padtoken,0.013901451664125992,0.1463393630112396,7.5803646471995005,0.9999999149226358,0.5940930624142816
+esmc_context_embeddings_impute_boundary vs esmc_context_embeddings_impute_bos_eos,0.0,0.11035284914562606,6.253634312592985,1.0,0.9999999999999998
+esmc_context_embeddings_impute_boundary vs esmc_context_embeddings_padtoken,0.013901451664125992,0.12243312606294353,8.756440912973744,0.9999999149226358,0.5940930624142816
+esmc_context_embeddings_impute_bos_eos vs esmc_context_embeddings_padtoken,0.013901451664125992,0.15735019851487134,8.21198756287804,0.9999999149226358,0.5940930624142816

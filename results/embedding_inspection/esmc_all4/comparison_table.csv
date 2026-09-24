@@ -1,0 +1,5 @@
+file,schema,n_rows,dim,zero_windows,zero_pct,nan,inf,frob_median,real_slot_med,pad_slot_med,status_0,status_1,status_2,status_3
+esmc_context_embeddings_zeropad,window29,46617,1152,0,0.0,0,0,8.329,1.53,0.0,,,,
+esmc_context_embeddings_impute_boundary,window29,46617,1152,0,0.0,0,0,8.333,1.53,1.424,,,,
+esmc_context_embeddings_impute_bos_eos,window29,46617,1152,0,0.0,0,0,8.335,1.53,1.561,,,,
+esmc_context_embeddings_padtoken,window29,46617,1152,0,0.0,0,0,8.333,1.529,1.415,,,,
