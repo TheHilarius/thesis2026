@@ -1,0 +1,7 @@
+pair,frob_median,frob_mean,frob_max,real_cos_median,real_cos_min
+esm-if_test_zero vs esm-if_test_pad,0.0,0.5299697983143498,24.271098671701186,1.0,0.9999999999999998
+esm-if_test_zero vs esm-if_test_boundary,0.0,0.5947412502773479,40.222206824159684,1.0,0.9999999999999998
+esm-if_test_zero vs esm-if_test_eos_bos_repeat,0.0,0.39941502280288027,24.49420135308629,1.0,0.9999999999999998
+esm-if_test_pad vs esm-if_test_boundary,0.0,0.7798482192040376,46.02781110807877,1.0,0.9999999999999998
+esm-if_test_pad vs esm-if_test_eos_bos_repeat,0.0,0.5404734845150224,28.843748698866403,1.0,0.9999999999999998
+esm-if_test_boundary vs esm-if_test_eos_bos_repeat,0.0,0.6800496590932055,43.08488196965934,1.0,0.9999999999999998

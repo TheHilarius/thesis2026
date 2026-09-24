@@ -1,0 +1,5 @@
+file,schema,n_rows,dim,zero_windows,zero_pct,nan,inf,frob_median,real_slot_med,pad_slot_med,status_0,status_1,status_2,status_3
+esm-if_test_zero,window29,46617,512,52,0.11154728961537637,0,0,49.705,9.177,0.0,46565,,,52
+esm-if_test_pad,window29,46617,512,52,0.11154728961537637,0,0,49.723,9.177,7.675,46565,,,52
+esm-if_test_boundary,window29,46617,512,52,0.11154728961537637,0,0,49.755,9.177,8.317,46565,,,52
+esm-if_test_eos_bos_repeat,window29,46617,512,52,0.11154728961537637,0,0,49.711,9.177,4.054,46565,,,52
