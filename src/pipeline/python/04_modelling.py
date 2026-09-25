@@ -1109,9 +1109,14 @@ if __name__ == "__main__":
         run_tag += "_flat"
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    LOG_PATH = LOG_DIR / f"04_modelling_{run_tag}_log_{timestamp}.txt"
-    os.makedirs(LOG_DIR, exist_ok=True)
-    os.makedirs(MODEL_DIR, exist_ok=True)
+    # Namespace all run outputs by PCA experiment so slot/flat batches
+    # never mix (logs, cv_results, pickles). Baselines run with the
+    # default pca_mode=slot, so they live under slot/ as well.
+    log_dir = LOG_DIR / pca_mode
+    model_dir = MODEL_DIR / pca_mode
+    LOG_PATH = log_dir / f"04_modelling_{run_tag}_log_{timestamp}.txt"
+    os.makedirs(log_dir, exist_ok=True)
+    os.makedirs(model_dir, exist_ok=True)
     logger = Logger(str(LOG_PATH))
     sys.stdout = logger
 
@@ -1125,6 +1130,7 @@ if __name__ == "__main__":
     print(f"  Model key:       {model_key}")
     print(f"  Model class:     {model_cfg['model_class']}")
     print(f"  Feature set:     {features_key} ({feat_display})")
+    print(f"  PCA mode:        {pca_mode}")
     print(f"  Components:      {feat_cfg['components']}")
     print(f"  Data path:       {SPLIT_DATA_PATH}")
     print(f"  Log path:        {LOG_PATH}")
@@ -1331,7 +1337,7 @@ if __name__ == "__main__":
             }
 
             # Save inner model
-            inner_model_path = (MODEL_DIR /
+            inner_model_path = (model_dir /
                                 f"{run_tag}_outer{outer_fold}_inner{inner_idx}.pkl")
             with open(inner_model_path, "wb") as f:
                 pickle.dump(model, f)
@@ -1446,12 +1452,12 @@ if __name__ == "__main__":
             for i in sorted_indices[:min(50, len(feature_names))]
         }
 
-    results_path = MODEL_DIR / f"cv_results_{run_tag}_{timestamp}.json"
+    results_path = model_dir / f"cv_results_{run_tag}_{timestamp}.json"
     with open(results_path, "w") as f:
         json.dump(results, f, indent=2, default=str)
     print(f"\nResults saved: {results_path}")
 
-    feat_names_path = MODEL_DIR / f"{run_tag}_feature_names.json"
+    feat_names_path = model_dir / f"{run_tag}_feature_names.json"
     with open(feat_names_path, "w") as f:
         json.dump(feature_names, f, indent=2)
     print(f"Feature names saved: {feat_names_path}")
@@ -1482,7 +1488,7 @@ if __name__ == "__main__":
           f"{summary['auc_roc']['std']:.4f}")
     print(f"  Val MCC:            {summary['mcc']['mean']:.4f} ± "
           f"{summary['mcc']['std']:.4f}")
-    print(f"  Models dir:         {MODEL_DIR}/")
+    print(f"  Models dir:         {model_dir}/")
     print(f"  Results file:       {results_path}")
     print(f"  Feature names:      {feat_names_path}")
     print(f"  Log file:           {LOG_PATH}")

@@ -120,18 +120,19 @@ def expand_pca_sweep(spec):
     return combos
 
 
-def aggregate_results(start_time, combos, dry_run=False):
+def aggregate_results(start_time, combos, pca_mode="slot", dry_run=False):
     """Run extract_model_metrics.py to build performance table."""
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    out_dir = RESULTS_DIR / pca_mode
+    out_dir.mkdir(parents=True, exist_ok=True)
     ts_str = start_time.strftime("%Y-%m-%d %H:%M:%S")
     models = sorted({m for m, _, _ in combos})
     model_tag = "_".join(models) if models else "all"
     ts_file = start_time.strftime("%Y%m%d_%H%M%S")
-    out_path = RESULTS_DIR / f"model_matrix_{model_tag}_{ts_file}.tsv"
+    out_path = out_dir / f"model_matrix_{model_tag}_{ts_file}.tsv"
 
     cmd = [
         sys.executable, str(EXTRACT_SCRIPT),
-        "--results", "models/cv_results_*.json",
+        "--results", f"models/{pca_mode}/cv_results_*.json",
         "--since", ts_str,
         "--out", str(out_path),
     ]
@@ -269,7 +270,7 @@ def main():
     print(f"  Runtime:  {t_end - t_start:.1f}s ({total_minutes:.1f} min)")
 
     if not args.dry_run:
-        aggregate_results(start_time, combos)
+        aggregate_results(start_time, combos, pca_mode=args.pca_mode)
 
 
 if __name__ == "__main__":

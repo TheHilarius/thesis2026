@@ -4,8 +4,8 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem=64G
 #SBATCH --time=24:00:00
-#SBATCH --output=logs/winbase_%j.out
-#SBATCH --error=logs/winbase_%j.err
+#SBATCH --output=logs/slot/winbase_%j.out
+#SBATCH --error=logs/slot/winbase_%j.err
 
 set -euo pipefail
 
@@ -19,10 +19,12 @@ else
     exit 1
 fi
 
-mkdir -p logs results/tables
+mkdir -p logs/slot results/tables
 export PYTHONUNBUFFERED=1
 
 # Mode-independent baselines (handcrafted + one-hot), run once.
+# They run with the default pca_mode=slot, so their outputs land under
+# logs/slot/, models/slot/, results/tables/slot/ alongside the slot batch.
 python src/pipeline/python/04b_run_matrix.py \
   --combos \
     rf,handcrafted,None rf,handcrafted_sparse,None \
