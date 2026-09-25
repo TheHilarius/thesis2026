@@ -1,13 +1,13 @@
 ================================================================================
-  04_MODELLING -- RANDOM FOREST + STRUCTURAL + ONE-HOT + ESM-C WINDOWS (ZERO-PAD)
+  04_MODELLING -- RANDOM FOREST + STRUCTURAL + ONE-HOT + ESM-C WINDOWS (IMPUTE-BOS-EOS)
 ================================================================================
-  Timestamp:       2026-09-24 05:15:42
+  Timestamp:       2026-09-25 02:14:39
   Model key:       rf
   Model class:     sklearn.ensemble.RandomForestClassifier
-  Feature set:     handcrafted_sparse_esmc_win_zeropad (Structural + one-hot + ESM-C windows (zero-pad))
-  Components:      ['handcrafted', 'sparse', 'esmc_win_zeropad']
+  Feature set:     handcrafted_sparse_esmc_win_impute_bos_eos (Structural + one-hot + ESM-C windows (impute-bos-eos))
+  Components:      ['handcrafted', 'sparse', 'esmc_win_impute_bos_eos']
   Data path:       /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_with_folds.csv
-  Log path:        /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/logs/04_modelling_rf_handcrafted_sparse_esmc_win_zeropad_pca148_log_20260924_051542.txt
+  Log path:        /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/logs/04_modelling_rf_handcrafted_sparse_esmc_win_impute_bos_eos_pca64_log_20260925_021439.txt
   CV folds (k):    5
   Held-out bucket: 5
   Random state:    42
@@ -42,8 +42,8 @@ LOADING FEATURE COMPONENTS
   Merged 633 new columns → 46617 rows x 732 columns
   Excluded 2 non-numeric feature column(s)
 
-  Loading embedding component: ESM-C windows (zero-pad, 29x1152)
-    Loading prepared embeddings: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/embeddings_prepared/esmc_win_zeropad_prepared.h5
+  Loading embedding component: ESM-C windows (impute-bos-eos, 29x1152)
+    Loading prepared embeddings: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/embeddings_prepared/esmc_win_impute_bos_eos_prepared.h5
     Loaded (windows): 46617 samples, window=29, dim=1152 (tensor streamed lazily)
 
 ================================================================================
@@ -61,16 +61,16 @@ COMPONENT SUMMARY
     AA-encoded: 609
 
   Embedding components (1):
-    [esmc_win_zeropad] ESM-C windows (zero-pad, 29x1152)
+    [esmc_win_impute_bos_eos] ESM-C windows (impute-bos-eos, 29x1152)
       Context dim:    29x1152
-      After PCA: 4294
+      After PCA: 1858
 
-  Estimated total features: ~4975
+  Estimated total features: ~2539
     CSV:        681
-    Embeddings: 4294 (after PCA)
+    Embeddings: 1858 (after PCA)
 
 ================================================================================
-PIPELINE READY: ~4975 features, 5 folds, Random Forest
+PIPELINE READY: ~2539 features, 5 folds, Random Forest
 ================================================================================
 
 ================================================================================
@@ -97,17 +97,17 @@ NESTED CROSS-VALIDATION
     mean_plddt_cflank                                     95         12    88.9645
     Total NaN — train: 360 (0.00%), test: 60 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901233 slots streamed, 895969 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901233 slots streamed, 895969 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31077 samples (pos=14393, neg=16684, ratio=1.159)
     Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1466.2s
-    Inner fold 1 AUC: 0.6495 (1783.0s)
+    Training time: 912.2s
+    Inner fold 1 AUC: 0.6453 (1179.2s)
 
   ── Inner fold 2/5 (test bucket = 2) ──
 
@@ -122,17 +122,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     81         26    88.9095
     Total NaN — train: 315 (0.00%), test: 105 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901233 slots streamed, 896121 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901233 slots streamed, 896121 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31077 samples (pos=14378, neg=16699, ratio=1.161)
     Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1462.5s
-    Inner fold 2 AUC: 0.6381 (1773.5s)
+    Training time: 911.0s
+    Inner fold 2 AUC: 0.6420 (1162.1s)
 
   ── Inner fold 3/5 (test bucket = 3) ──
 
@@ -147,17 +147,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     81         26    88.8560
     Total NaN — train: 327 (0.00%), test: 93 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901262 slots streamed, 896075 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901262 slots streamed, 896075 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31078 samples (pos=14392, neg=16686, ratio=1.159)
     Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1466.2s
-    Inner fold 3 AUC: 0.6581 (1756.7s)
+    Training time: 917.4s
+    Inner fold 3 AUC: 0.6532 (1167.4s)
 
   ── Inner fold 4/5 (test bucket = 4) ──
 
@@ -172,17 +172,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     87         20    88.9250
     Total NaN — train: 342 (0.00%), test: 78 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901262 slots streamed, 895979 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901262 slots streamed, 895979 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31078 samples (pos=14374, neg=16704, ratio=1.162)
     Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1537.1s
-    Inner fold 4 AUC: 0.6605 (1829.1s)
+    Training time: 902.3s
+    Inner fold 4 AUC: 0.6609 (1152.5s)
 
   ── Inner fold 5/5 (test bucket = 5) ──
 
@@ -197,22 +197,22 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     84         23    88.9680
     Total NaN — train: 336 (0.00%), test: 84 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901262 slots streamed, 896152 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901262 slots streamed, 896152 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31078 samples (pos=14383, neg=16695, ratio=1.161)
     Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1530.1s
-    Inner fold 5 AUC: 0.6537 (1843.1s)
+    Training time: 884.3s
+    Inner fold 5 AUC: 0.6501 (1128.4s)
 
   Averaging 5 inner models on validation bucket 0...
   Outer fold 0 validation (n=7770, pos=3621, neg=4149):
-    AUC-ROC: 0.6581  |  AUC-PR: 0.6158  |  Acc: 0.6180  |  F1: 0.5458  |  MCC: 0.2268
-    Sens: 0.4924  |  Spec: 0.7276  |  PPV: 0.6121  |  NPV: 0.6216
+    AUC-ROC: 0.6555  |  AUC-PR: 0.6140  |  Acc: 0.6160  |  F1: 0.5567  |  MCC: 0.2234
+    Sens: 0.5175  |  Spec: 0.7019  |  PPV: 0.6024  |  NPV: 0.6250
 
 ════════════════════════════════════════════════════════════════════════════════
   OUTER FOLD 1/5 (validation bucket = 1)
@@ -231,17 +231,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     95         16    88.9645
     Total NaN — train: 360 (0.00%), test: 60 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901233 slots streamed, 895969 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901233 slots streamed, 895969 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31077 samples (pos=14393, neg=16684, ratio=1.159)
     Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1465.5s
-    Inner fold 0 AUC: 0.6516 (1726.0s)
+    Training time: 880.5s
+    Inner fold 0 AUC: 0.6510 (1119.7s)
 
   ── Inner fold 2/5 (test bucket = 2) ──
 
@@ -256,17 +256,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     85         26    88.8820
     Total NaN — train: 315 (0.00%), test: 105 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901233 slots streamed, 895986 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901233 slots streamed, 895986 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31077 samples (pos=14412, neg=16665, ratio=1.156)
     Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1393.6s
-    Inner fold 2 AUC: 0.6356 (1679.2s)
+    Training time: 875.5s
+    Inner fold 2 AUC: 0.6374 (1113.7s)
 
   ── Inner fold 3/5 (test bucket = 3) ──
 
@@ -281,17 +281,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     85         26    88.8260
     Total NaN — train: 327 (0.00%), test: 93 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901262 slots streamed, 895940 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901262 slots streamed, 895940 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31078 samples (pos=14426, neg=16652, ratio=1.154)
     Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1435.9s
-    Inner fold 3 AUC: 0.6509 (1698.7s)
+    Training time: 880.3s
+    Inner fold 3 AUC: 0.6526 (1120.6s)
 
   ── Inner fold 4/5 (test bucket = 4) ──
 
@@ -306,17 +306,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     91         20    88.8870
     Total NaN — train: 342 (0.00%), test: 78 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901262 slots streamed, 895844 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901262 slots streamed, 895844 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31078 samples (pos=14408, neg=16670, ratio=1.157)
     Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1526.1s
-    Inner fold 4 AUC: 0.6570 (1832.2s)
+    Training time: 883.6s
+    Inner fold 4 AUC: 0.6617 (1124.6s)
 
   ── Inner fold 5/5 (test bucket = 5) ──
 
@@ -331,22 +331,22 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     88         23    88.9190
     Total NaN — train: 336 (0.00%), test: 84 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901262 slots streamed, 896017 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901262 slots streamed, 896017 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31078 samples (pos=14417, neg=16661, ratio=1.156)
     Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1452.0s
-    Inner fold 5 AUC: 0.6513 (1746.6s)
+    Training time: 880.5s
+    Inner fold 5 AUC: 0.6517 (1121.4s)
 
   Averaging 5 inner models on validation bucket 1...
   Outer fold 1 validation (n=7770, pos=3587, neg=4183):
-    AUC-ROC: 0.6554  |  AUC-PR: 0.6116  |  Acc: 0.6176  |  F1: 0.5427  |  MCC: 0.2238
-    Sens: 0.4915  |  Spec: 0.7258  |  PPV: 0.6058  |  NPV: 0.6247
+    AUC-ROC: 0.6533  |  AUC-PR: 0.6090  |  Acc: 0.6163  |  F1: 0.5521  |  MCC: 0.2222
+    Sens: 0.5121  |  Spec: 0.7057  |  PPV: 0.5988  |  NPV: 0.6278
 
 ════════════════════════════════════════════════════════════════════════════════
   OUTER FOLD 2/5 (validation bucket = 2)
@@ -365,17 +365,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     81         16    88.9095
     Total NaN — train: 315 (0.00%), test: 60 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901233 slots streamed, 896121 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901233 slots streamed, 896121 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31077 samples (pos=14378, neg=16699, ratio=1.161)
     Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1388.3s
-    Inner fold 0 AUC: 0.6469 (1649.4s)
+    Training time: 872.8s
+    Inner fold 0 AUC: 0.6484 (1113.9s)
 
   ── Inner fold 2/5 (test bucket = 1) ──
 
@@ -390,17 +390,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     85         12    88.8820
     Total NaN — train: 315 (0.00%), test: 60 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901233 slots streamed, 895986 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901233 slots streamed, 895986 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31077 samples (pos=14412, neg=16665, ratio=1.156)
     Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1520.6s
-    Inner fold 1 AUC: 0.6422 (1776.2s)
+    Training time: 873.2s
+    Inner fold 1 AUC: 0.6453 (1111.8s)
 
   ── Inner fold 3/5 (test bucket = 3) ──
 
@@ -415,17 +415,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     71         26    88.7750
     Total NaN — train: 282 (0.00%), test: 93 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901262 slots streamed, 896092 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901262 slots streamed, 896092 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31078 samples (pos=14411, neg=16667, ratio=1.157)
     Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1488.8s
-    Inner fold 3 AUC: 0.6558 (1779.9s)
+    Training time: 873.1s
+    Inner fold 3 AUC: 0.6472 (1114.0s)
 
   ── Inner fold 4/5 (test bucket = 4) ──
 
@@ -440,17 +440,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     77         20    88.8310
     Total NaN — train: 297 (0.00%), test: 78 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901262 slots streamed, 895996 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901262 slots streamed, 895996 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31078 samples (pos=14393, neg=16685, ratio=1.159)
     Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1549.2s
-    Inner fold 4 AUC: 0.6611 (1847.8s)
+    Training time: 872.4s
+    Inner fold 4 AUC: 0.6621 (1112.4s)
 
   ── Inner fold 5/5 (test bucket = 5) ──
 
@@ -465,22 +465,22 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     74         23    88.8815
     Total NaN — train: 291 (0.00%), test: 84 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901262 slots streamed, 896169 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901262 slots streamed, 896169 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31078 samples (pos=14402, neg=16676, ratio=1.158)
     Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1538.0s
-    Inner fold 5 AUC: 0.6498 (1836.7s)
+    Training time: 873.4s
+    Inner fold 5 AUC: 0.6487 (1114.4s)
 
   Averaging 5 inner models on validation bucket 2...
   Outer fold 2 validation (n=7770, pos=3602, neg=4168):
-    AUC-ROC: 0.6471  |  AUC-PR: 0.6037  |  Acc: 0.6097  |  F1: 0.5367  |  MCC: 0.2084
-    Sens: 0.4878  |  Spec: 0.7150  |  PPV: 0.5966  |  NPV: 0.6176
+    AUC-ROC: 0.6451  |  AUC-PR: 0.6031  |  Acc: 0.6084  |  F1: 0.5515  |  MCC: 0.2075
+    Sens: 0.5194  |  Spec: 0.6852  |  PPV: 0.5878  |  NPV: 0.6226
 
 ════════════════════════════════════════════════════════════════════════════════
   OUTER FOLD 3/5 (validation bucket = 3)
@@ -499,17 +499,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     81         16    88.8560
     Total NaN — train: 327 (0.00%), test: 60 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901262 slots streamed, 896075 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901262 slots streamed, 896075 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31078 samples (pos=14392, neg=16686, ratio=1.159)
     Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1540.2s
-    Inner fold 0 AUC: 0.6517 (1837.5s)
+    Training time: 882.0s
+    Inner fold 0 AUC: 0.6521 (1123.2s)
 
   ── Inner fold 2/5 (test bucket = 1) ──
 
@@ -524,17 +524,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     85         12    88.8260
     Total NaN — train: 327 (0.00%), test: 60 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901262 slots streamed, 895940 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901262 slots streamed, 895940 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31078 samples (pos=14426, neg=16652, ratio=1.154)
     Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1571.8s
-    Inner fold 1 AUC: 0.6455 (1888.5s)
+    Training time: 879.6s
+    Inner fold 1 AUC: 0.6475 (1120.3s)
 
   ── Inner fold 3/5 (test bucket = 2) ──
 
@@ -549,17 +549,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     71         26    88.7750
     Total NaN — train: 282 (0.00%), test: 105 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901262 slots streamed, 896092 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901262 slots streamed, 896092 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31078 samples (pos=14411, neg=16667, ratio=1.157)
     Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1583.9s
-    Inner fold 2 AUC: 0.6397 (1889.2s)
+    Training time: 874.6s
+    Inner fold 2 AUC: 0.6393 (1115.5s)
 
   ── Inner fold 4/5 (test bucket = 4) ──
 
@@ -574,17 +574,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     77         20    88.8000
     Total NaN — train: 309 (0.00%), test: 78 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901291 slots streamed, 895950 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901291 slots streamed, 895950 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31079 samples (pos=14407, neg=16672, ratio=1.157)
     Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1582.1s
-    Inner fold 4 AUC: 0.6604 (1888.1s)
+    Training time: 881.9s
+    Inner fold 4 AUC: 0.6593 (1122.2s)
 
   ── Inner fold 5/5 (test bucket = 5) ──
 
@@ -599,22 +599,22 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     74         23    88.8300
     Total NaN — train: 303 (0.00%), test: 84 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901291 slots streamed, 896123 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901291 slots streamed, 896123 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31079 samples (pos=14416, neg=16663, ratio=1.156)
     Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1572.4s
-    Inner fold 5 AUC: 0.6583 (1877.0s)
+    Training time: 879.1s
+    Inner fold 5 AUC: 0.6528 (1120.3s)
 
   Averaging 5 inner models on validation bucket 3...
   Outer fold 3 validation (n=7769, pos=3588, neg=4181):
-    AUC-ROC: 0.6642  |  AUC-PR: 0.6234  |  Acc: 0.6198  |  F1: 0.5450  |  MCC: 0.2283
-    Sens: 0.4930  |  Spec: 0.7285  |  PPV: 0.6092  |  NPV: 0.6261
+    AUC-ROC: 0.6586  |  AUC-PR: 0.6162  |  Acc: 0.6177  |  F1: 0.5559  |  MCC: 0.2253
+    Sens: 0.5181  |  Spec: 0.7032  |  PPV: 0.5997  |  NPV: 0.6297
 
 ════════════════════════════════════════════════════════════════════════════════
   OUTER FOLD 4/5 (validation bucket = 4)
@@ -633,17 +633,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     87         16    88.9250
     Total NaN — train: 342 (0.00%), test: 60 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901262 slots streamed, 895979 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901262 slots streamed, 895979 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31078 samples (pos=14374, neg=16704, ratio=1.162)
     Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1582.7s
-    Inner fold 0 AUC: 0.6504 (1863.0s)
+    Training time: 883.5s
+    Inner fold 0 AUC: 0.6450 (1124.7s)
 
   ── Inner fold 2/5 (test bucket = 1) ──
 
@@ -658,17 +658,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     91         12    88.8870
     Total NaN — train: 342 (0.00%), test: 60 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901262 slots streamed, 895844 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901262 slots streamed, 895844 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31078 samples (pos=14408, neg=16670, ratio=1.157)
     Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1581.1s
-    Inner fold 1 AUC: 0.6521 (1857.8s)
+    Training time: 882.2s
+    Inner fold 1 AUC: 0.6472 (1122.6s)
 
   ── Inner fold 3/5 (test bucket = 2) ──
 
@@ -683,17 +683,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     77         26    88.8310
     Total NaN — train: 297 (0.00%), test: 105 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901262 slots streamed, 895996 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901262 slots streamed, 895996 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31078 samples (pos=14393, neg=16685, ratio=1.159)
     Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1681.7s
-    Inner fold 2 AUC: 0.6419 (1970.9s)
+    Training time: 873.1s
+    Inner fold 2 AUC: 0.6388 (1113.9s)
 
   ── Inner fold 4/5 (test bucket = 3) ──
 
@@ -708,17 +708,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     77         26    88.8000
     Total NaN — train: 309 (0.00%), test: 93 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901291 slots streamed, 895950 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901291 slots streamed, 895950 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31079 samples (pos=14407, neg=16672, ratio=1.157)
     Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1749.9s
-    Inner fold 3 AUC: 0.6564 (2068.5s)
+    Training time: 877.2s
+    Inner fold 3 AUC: 0.6535 (1117.5s)
 
   ── Inner fold 5/5 (test bucket = 5) ──
 
@@ -733,22 +733,22 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     80         23    88.8870
     Total NaN — train: 318 (0.00%), test: 84 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901291 slots streamed, 896027 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901291 slots streamed, 896027 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31079 samples (pos=14398, neg=16681, ratio=1.159)
     Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1742.8s
-    Inner fold 5 AUC: 0.6497 (2060.6s)
+    Training time: 880.2s
+    Inner fold 5 AUC: 0.6495 (1118.0s)
 
   Averaging 5 inner models on validation bucket 4...
   Outer fold 4 validation (n=7769, pos=3606, neg=4163):
-    AUC-ROC: 0.6705  |  AUC-PR: 0.6270  |  Acc: 0.6311  |  F1: 0.5551  |  MCC: 0.2529
-    Sens: 0.4958  |  Spec: 0.7483  |  PPV: 0.6305  |  NPV: 0.6315
+    AUC-ROC: 0.6680  |  AUC-PR: 0.6269  |  Acc: 0.6324  |  F1: 0.5721  |  MCC: 0.2561
+    Sens: 0.5294  |  Spec: 0.7216  |  PPV: 0.6222  |  NPV: 0.6390
 
 ════════════════════════════════════════════════════════════════════════════════
   OUTER FOLD 5/5 (validation bucket = 5)
@@ -767,17 +767,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     84         16    88.9680
     Total NaN — train: 336 (0.00%), test: 60 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901262 slots streamed, 896152 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901262 slots streamed, 896152 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31078 samples (pos=14383, neg=16695, ratio=1.161)
     Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1718.4s
-    Inner fold 0 AUC: 0.6451 (2019.0s)
+    Training time: 930.7s
+    Inner fold 0 AUC: 0.6460 (1194.1s)
 
   ── Inner fold 2/5 (test bucket = 1) ──
 
@@ -792,17 +792,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     88         12    88.9190
     Total NaN — train: 336 (0.00%), test: 60 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901262 slots streamed, 896017 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901262 slots streamed, 896017 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31078 samples (pos=14417, neg=16661, ratio=1.156)
     Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1806.5s
-    Inner fold 1 AUC: 0.6447 (2112.3s)
+    Training time: 903.0s
+    Inner fold 1 AUC: 0.6472 (1162.6s)
 
   ── Inner fold 3/5 (test bucket = 2) ──
 
@@ -817,17 +817,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     74         26    88.8815
     Total NaN — train: 291 (0.00%), test: 105 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901262 slots streamed, 896169 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901262 slots streamed, 896169 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31078 samples (pos=14402, neg=16676, ratio=1.158)
     Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1798.2s
-    Inner fold 2 AUC: 0.6396 (2109.7s)
+    Training time: 962.5s
+    Inner fold 2 AUC: 0.6379 (1204.6s)
 
   ── Inner fold 4/5 (test bucket = 3) ──
 
@@ -842,17 +842,17 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     74         26    88.8300
     Total NaN — train: 303 (0.00%), test: 93 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901291 slots streamed, 896123 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901291 slots streamed, 896123 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31079 samples (pos=14416, neg=16663, ratio=1.156)
     Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1683.7s
-    Inner fold 3 AUC: 0.6532 (2013.6s)
+    Training time: 988.7s
+    Inner fold 3 AUC: 0.6514 (1262.4s)
 
   ── Inner fold 5/5 (test bucket = 4) ──
 
@@ -867,22 +867,22 @@ Embedding components loaded: dict_keys(['esmc_win_zeropad'])
     mean_plddt_cflank                                     80         20    88.8870
     Total NaN — train: 318 (0.00%), test: 78 (0.00%)
     CSV features: 681 columns
-Embedding components loaded: dict_keys(['esmc_win_zeropad'])
-    esmc_win_zeropad: fitting shared slot PCA (window=29, D=1152, k=148) ...
-      window PCA fit: 901291 slots streamed, 896027 real non-zero slots kept (k=148)
-    esmc_win_zeropad: window PCA D=1152 → k=148 (slot features 4292 + 2 pad) (76.1% variance)
-    Total features after concatenation: 4975
+Embedding components loaded: dict_keys(['esmc_win_impute_bos_eos'])
+    esmc_win_impute_bos_eos: fitting shared slot PCA (window=29, D=1152, k=64) ...
+      window PCA fit: 901291 slots streamed, 896027 real non-zero slots kept (k=64)
+    esmc_win_impute_bos_eos: window PCA D=1152 → k=64 (slot features 1856 + 2 pad) (68.4% variance)
+    Total features after concatenation: 2539
     Train:  31079 samples (pos=14398, neg=16681, ratio=1.159)
     Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
-    Features: 4975
+    Features: 2539
     Training Random Forest ...
-    Training time: 1633.1s
-    Inner fold 4 AUC: 0.6603 (1931.5s)
+    Training time: 1036.0s
+    Inner fold 4 AUC: 0.6575 (1312.9s)
 
   Averaging 5 inner models on validation bucket 5...
   Outer fold 5 validation (n=7769, pos=3597, neg=4172):
-    AUC-ROC: 0.6617  |  AUC-PR: 0.6291  |  Acc: 0.6238  |  F1: 0.5472  |  MCC: 0.2370
-    Sens: 0.4910  |  Spec: 0.7383  |  PPV: 0.6179  |  NPV: 0.6272
+    AUC-ROC: 0.6575  |  AUC-PR: 0.6248  |  Acc: 0.6184  |  F1: 0.5545  |  MCC: 0.2268
+    Sens: 0.5129  |  Spec: 0.7093  |  PPV: 0.6033  |  NPV: 0.6281
 
 ================================================================================
 NESTED CV RESULTS (mean ± std across 6 outer iterations)
@@ -891,90 +891,90 @@ NESTED CV RESULTS (mean ± std across 6 outer iterations)
 ================================================================================
 CROSS-VALIDATION SUMMARY (mean +/- std)
 ================================================================================
-  auc_roc         0.6595 +/- 0.0073    [0.6581  0.6554  0.6471  0.6642  0.6705  0.6617]
-  auc_pr          0.6185 +/- 0.0090    [0.6158  0.6116  0.6037  0.6234  0.6270  0.6291]
-  accuracy        0.6200 +/- 0.0065    [0.6180  0.6176  0.6097  0.6198  0.6311  0.6238]
-  f1              0.5454 +/- 0.0055    [0.5458  0.5427  0.5367  0.5450  0.5551  0.5472]
-  mcc             0.2295 +/- 0.0135    [0.2268  0.2238  0.2084  0.2283  0.2529  0.2370]
-  sensitivity     0.4919 +/- 0.0024    [0.4924  0.4915  0.4878  0.4930  0.4958  0.4910]
-  specificity     0.7306 +/- 0.0104    [0.7276  0.7258  0.7150  0.7285  0.7483  0.7383]
-  ppv             0.6120 +/- 0.0105    [0.6121  0.6058  0.5966  0.6092  0.6305  0.6179]
-  npv             0.6248 +/- 0.0044    [0.6216  0.6247  0.6176  0.6261  0.6315  0.6272]
+  auc_roc         0.6563 +/- 0.0068    [0.6555  0.6533  0.6451  0.6586  0.6680  0.6575]
+  auc_pr          0.6157 +/- 0.0083    [0.6140  0.6090  0.6031  0.6162  0.6269  0.6248]
+  accuracy        0.6182 +/- 0.0071    [0.6160  0.6163  0.6084  0.6177  0.6324  0.6184]
+  f1              0.5571 +/- 0.0069    [0.5567  0.5521  0.5515  0.5559  0.5721  0.5545]
+  mcc             0.2269 +/- 0.0145    [0.2234  0.2222  0.2075  0.2253  0.2561  0.2268]
+  sensitivity     0.5183 +/- 0.0057    [0.5175  0.5121  0.5194  0.5181  0.5294  0.5129]
+  specificity     0.7045 +/- 0.0108    [0.7019  0.7057  0.6852  0.7032  0.7216  0.7093]
+  ppv             0.6024 +/- 0.0102    [0.6024  0.5988  0.5878  0.5997  0.6222  0.6033]
+  npv             0.6287 +/- 0.0051    [0.6250  0.6278  0.6226  0.6297  0.6390  0.6281]
 
 ================================================================================
 PER-OUTER-FOLD VALIDATION METRICS
 ================================================================================
   Outer   auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
   -----------------------------------------------------------------------------------------------------------------------------
-  0       0.6581       0.6158       0.6180       0.5458       0.2268       0.4924       0.7276       0.6121       0.6216       
-  1       0.6554       0.6116       0.6176       0.5427       0.2238       0.4915       0.7258       0.6058       0.6247       
-  2       0.6471       0.6037       0.6097       0.5367       0.2084       0.4878       0.7150       0.5966       0.6176       
-  3       0.6642       0.6234       0.6198       0.5450       0.2283       0.4930       0.7285       0.6092       0.6261       
-  4       0.6705       0.6270       0.6311       0.5551       0.2529       0.4958       0.7483       0.6305       0.6315       
-  5       0.6617       0.6291       0.6238       0.5472       0.2370       0.4910       0.7383       0.6179       0.6272       
+  0       0.6555       0.6140       0.6160       0.5567       0.2234       0.5175       0.7019       0.6024       0.6250       
+  1       0.6533       0.6090       0.6163       0.5521       0.2222       0.5121       0.7057       0.5988       0.6278       
+  2       0.6451       0.6031       0.6084       0.5515       0.2075       0.5194       0.6852       0.5878       0.6226       
+  3       0.6586       0.6162       0.6177       0.5559       0.2253       0.5181       0.7032       0.5997       0.6297       
+  4       0.6680       0.6269       0.6324       0.5721       0.2561       0.5294       0.7216       0.6222       0.6390       
+  5       0.6575       0.6248       0.6184       0.5545       0.2268       0.5129       0.7093       0.6033       0.6281       
   -----------------------------------------------------------------------------------------------------------------------------
-  mean    0.6595       0.6185       0.6200       0.5454       0.2295       0.4919       0.7306       0.6120       0.6248       
-  std     0.0073       0.0090       0.0065       0.0055       0.0135       0.0024       0.0104       0.0105       0.0044       
+  mean    0.6563       0.6157       0.6182       0.5571       0.2269       0.5183       0.7045       0.6024       0.6287       
+  std     0.0068       0.0083       0.0071       0.0069       0.0145       0.0057       0.0108       0.0102       0.0051       
 
 ================================================================================
 AVERAGED FEATURE IMPORTANCE ACROSS ALL 30 INNER MODELS
 ================================================================================
   Rank   Feature                                           Mean Imp          Std
   -----------------------------------------------------------------------------
-  1      esmc_win_zeropad_S19_PC002                        0.000882     0.000069
-  2      esmc_win_zeropad_S18_PC019                        0.000695     0.000073
-  3      N1_P                                              0.000634     0.000107
-  4      esmc_win_zeropad_S14_PC009                        0.000578     0.000074
-  5      esmc_win_zeropad_S15_PC019                        0.000569     0.000054
-  6      esmc_win_zeropad_S09_PC009                        0.000538     0.000060
-  7      esmc_win_zeropad_S15_PC001                        0.000531     0.000048
-  8      P5_P                                              0.000507     0.000051
-  9      esmc_win_zeropad_S19_PC009                        0.000484     0.000047
-  10     esmc_win_zeropad_S14_PC002                        0.000484     0.000067
-  11     esmc_win_zeropad_S08_PC009                        0.000467     0.000051
-  12     esmc_win_zeropad_S19_PC023                        0.000457     0.000028
-  13     min_plddt_nflank                                  0.000449     0.000021
-  14     mean_plddt_nflank                                 0.000448     0.000027
-  15     esmc_win_zeropad_S12_PC047                        0.000444     0.000049
-  16     esmc_win_zeropad_S15_PC005                        0.000443     0.000052
-  17     esmc_win_zeropad_S11_PC001                        0.000436     0.000036
-  18     min_plddt_peptide                                 0.000435     0.000024
-  19     mean_plddt_peptide                                0.000434     0.000041
-  20     esmc_win_zeropad_S17_PC009                        0.000432     0.000041
-  21     esmc_win_zeropad_S08_PC001                        0.000426     0.000029
-  22     esmc_win_zeropad_S14_PC003                        0.000426     0.000064
-  23     esmc_win_zeropad_S13_PC009                        0.000426     0.000038
-  24     esmc_win_zeropad_S14_PC023                        0.000413     0.000046
-  25     esmc_win_zeropad_S06_PC001                        0.000411     0.000028
-  26     esmc_win_zeropad_S14_PC004                        0.000409     0.000038
-  27     esmc_win_zeropad_S07_PC001                        0.000409     0.000026
-  28     esmc_win_zeropad_S05_PC001                        0.000403     0.000025
-  29     esmc_win_zeropad_S22_PC019                        0.000401     0.000070
-  30     esmc_win_zeropad_S07_PC009                        0.000398     0.000040
+  1      esmc_win_impute_bos_eos_S19_PC002                 0.001528     0.000077
+  2      esmc_win_impute_bos_eos_S18_PC019                 0.001140     0.000105
+  3      esmc_win_impute_bos_eos_S15_PC019                 0.001000     0.000079
+  4      esmc_win_impute_bos_eos_S14_PC009                 0.000996     0.000097
+  5      esmc_win_impute_bos_eos_S09_PC009                 0.000927     0.000076
+  6      N1_P                                              0.000890     0.000141
+  7      esmc_win_impute_bos_eos_S14_PC002                 0.000886     0.000090
+  8      esmc_win_impute_bos_eos_S15_PC001                 0.000882     0.000052
+  9      esmc_win_impute_bos_eos_S08_PC009                 0.000853     0.000059
+  10     esmc_win_impute_bos_eos_S12_PC047                 0.000836     0.000059
+  11     esmc_win_impute_bos_eos_S19_PC023                 0.000828     0.000040
+  12     esmc_win_impute_bos_eos_S14_PC023                 0.000811     0.000083
+  13     esmc_win_impute_bos_eos_S15_PC005                 0.000805     0.000080
+  14     esmc_win_impute_bos_eos_S17_PC009                 0.000805     0.000055
+  15     esmc_win_impute_bos_eos_S14_PC003                 0.000787     0.000089
+  16     P5_P                                              0.000786     0.000068
+  17     esmc_win_impute_bos_eos_S13_PC009                 0.000785     0.000056
+  18     esmc_win_impute_bos_eos_S19_PC009                 0.000770     0.000057
+  19     esmc_win_impute_bos_eos_S14_PC004                 0.000769     0.000055
+  20     mean_plddt_nflank                                 0.000767     0.000036
+  21     esmc_win_impute_bos_eos_S28_PC023                 0.000757     0.000094
+  22     mean_plddt_peptide                                0.000755     0.000052
+  23     min_plddt_peptide                                 0.000750     0.000045
+  24     esmc_win_impute_bos_eos_S13_PC023                 0.000744     0.000044
+  25     esmc_win_impute_bos_eos_S19_PC006                 0.000742     0.000096
+  26     min_plddt_nflank                                  0.000742     0.000030
+  27     esmc_win_impute_bos_eos_S11_PC019                 0.000737     0.000068
+  28     esmc_win_impute_bos_eos_S07_PC009                 0.000735     0.000054
+  29     esmc_win_impute_bos_eos_S19_PC007                 0.000726     0.000081
+  30     esmc_win_impute_bos_eos_S18_PC027                 0.000720     0.000046
 
-Results saved: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/cv_results_rf_handcrafted_sparse_esmc_win_zeropad_pca148_20260924_051542.json
-Feature names saved: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/rf_handcrafted_sparse_esmc_win_zeropad_pca148_feature_names.json
+Results saved: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/cv_results_rf_handcrafted_sparse_esmc_win_impute_bos_eos_pca64_20260925_021439.json
+Feature names saved: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/rf_handcrafted_sparse_esmc_win_impute_bos_eos_pca64_feature_names.json
 
 ================================================================================
 RUN SUMMARY (NESTED CV)
 ================================================================================
-  Total runtime:      56531.2s (942.2 min)
-  Nested CV time:     56527.9s (942.1 min)
+  Total runtime:      34776.6s (579.6 min)
+  Nested CV time:     34773.4s (579.6 min)
   Model:              Random Forest (rf)
-  Feature set:        Structural + one-hot + ESM-C windows (zero-pad) (handcrafted_sparse_esmc_win_zeropad)
-  Components:         ['handcrafted', 'sparse', 'esmc_win_zeropad']
+  Feature set:        Structural + one-hot + ESM-C windows (impute-bos-eos) (handcrafted_sparse_esmc_win_impute_bos_eos)
+  Components:         ['handcrafted', 'sparse', 'esmc_win_impute_bos_eos']
   Scaling:            no
-  Features (final):   4975
+  Features (final):   2539
     CSV features:     681
-    esmc_win_zeropad PCA:       4294
+    esmc_win_impute_bos_eos PCA:       1858
   Outer iterations:   6
   Inner folds:        5
   Total models:       30
-  Val AUC-ROC:        0.6595 ± 0.0073
-  Val MCC:            0.2295 ± 0.0135
+  Val AUC-ROC:        0.6563 ± 0.0068
+  Val MCC:            0.2269 ± 0.0145
   Models dir:         /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/
-  Results file:       /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/cv_results_rf_handcrafted_sparse_esmc_win_zeropad_pca148_20260924_051542.json
-  Feature names:      /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/rf_handcrafted_sparse_esmc_win_zeropad_pca148_feature_names.json
-  Log file:           /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/logs/04_modelling_rf_handcrafted_sparse_esmc_win_zeropad_pca148_log_20260924_051542.txt
-  Completed:          2026-09-24 20:57:53
+  Results file:       /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/cv_results_rf_handcrafted_sparse_esmc_win_impute_bos_eos_pca64_20260925_021439.json
+  Feature names:      /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/rf_handcrafted_sparse_esmc_win_impute_bos_eos_pca64_feature_names.json
+  Log file:           /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/logs/04_modelling_rf_handcrafted_sparse_esmc_win_impute_bos_eos_pca64_log_20260925_021439.txt
+  Completed:          2026-09-25 11:54:16
 ================================================================================
