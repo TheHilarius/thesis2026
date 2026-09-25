@@ -69,12 +69,13 @@ DEFAULT_COMBOS = [
 ]
 
 
-def run_combo(model, features, pca, dry_run=False):
+def run_combo(model, features, pca, pca_mode="slot", dry_run=False):
     """Run one 04_modelling.py invocation."""
     cmd = [
         sys.executable, str(MODELING_SCRIPT),
         "--model", model,
         "--features", features,
+        "--pca-mode", pca_mode,
     ]
     if pca is not None:
         cmd += ["--pca", str(pca)]
@@ -82,6 +83,8 @@ def run_combo(model, features, pca, dry_run=False):
     label = f"{model} x {features}"
     if pca is not None:
         label += f" (pca={pca})"
+    if pca_mode != "slot":
+        label += f" [{pca_mode}]"
 
     print(f"\n{'_' * 60}")
     print(f"  RUNNING: {label}")
@@ -207,6 +210,10 @@ def main():
         help="PCA sweep: model:feature_set:pca1,pca2,... (repeatable). "
              "E.g. rf:handcrafted_sparse_esmc:1,13,26,66,218,718",
     )
+    parser.add_argument(
+        "--pca-mode", type=str, default="slot", choices=["slot", "flat"],
+        help="Window PCA scheme passed to 04_modelling (default: slot)",
+    )
     args = parser.parse_args()
 
     combos = []
@@ -243,7 +250,8 @@ def main():
     successes = 0
     failures = 0
     for model, features, pca in combos:
-        ok = run_combo(model, features, pca, dry_run=args.dry_run)
+        ok = run_combo(model, features, pca, pca_mode=args.pca_mode,
+                       dry_run=args.dry_run)
         if ok:
             successes += 1
         else:

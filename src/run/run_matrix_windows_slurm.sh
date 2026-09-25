@@ -23,19 +23,31 @@ fi
 mkdir -p logs results/tables
 export PYTHONUNBUFFERED=1
 
+# PCA scheme: 'slot' (default) or 'flat'. Override via PCA_MODE=flat.
+PCA_MODE="${PCA_MODE:-slot}"
+
+# PCA sweep values per toolkit. Slot values are the 1st/3rd/5th entries of the
+# explained-variance reference (esmc: 1,13,26,66,218,718 -> 1,26,218 ;
+# esmif: 9,64,95,148,248,420 -> 9,95,248). Flat values must be re-derived from
+# 08_pca_variance_analysis.py --pca-mode flat before running the flat pass.
+if [ "$PCA_MODE" = "flat" ]; then
+    ESMC_PCA="${ESMC_PCA:-1,26,218}"
+    ESMIF_PCA="${ESMIF_PCA:-9,95,248}"
+else
+    ESMC_PCA="1,26,218"
+    ESMIF_PCA="9,95,248"
+fi
+
 # ── 8 embeddings: feature_set|pca1,pca2,pca3 ────────────────────────────────
-# PCA values are the 1st, 3rd and 5th entries of the explained-variance
-# reference (esmc: 1,13,26,66,218,718 -> 1,26,218 ;
-#           esmif: 9,64,95,148,248,420 -> 9,95,248).
 CONFIGS=(
-  "handcrafted_sparse_esmc_win_zeropad|1,26,218"
-  "handcrafted_sparse_esmc_win_padtoken|1,26,218"
-  "handcrafted_sparse_esmc_win_impute_bos_eos|1,26,218"
-  "handcrafted_sparse_esmc_win_impute_boundary|1,26,218"
-  "handcrafted_sparse_esmif_win|9,95,248"
-  "handcrafted_sparse_esmif_pad|9,95,248"
-  "handcrafted_sparse_esmif_boundary|9,95,248"
-  "handcrafted_sparse_esmif_eos_bos_repeat|9,95,248"
+  "handcrafted_sparse_esmc_win_zeropad|${ESMC_PCA}"
+  "handcrafted_sparse_esmc_win_padtoken|${ESMC_PCA}"
+  "handcrafted_sparse_esmc_win_impute_bos_eos|${ESMC_PCA}"
+  "handcrafted_sparse_esmc_win_impute_boundary|${ESMC_PCA}"
+  "handcrafted_sparse_esmif_win|${ESMIF_PCA}"
+  "handcrafted_sparse_esmif_pad|${ESMIF_PCA}"
+  "handcrafted_sparse_esmif_boundary|${ESMIF_PCA}"
+  "handcrafted_sparse_esmif_eos_bos_repeat|${ESMIF_PCA}"
 )
 
 IDX="${SLURM_ARRAY_TASK_ID}"
@@ -43,9 +55,10 @@ CFG="${CONFIGS[$IDX]}"
 FEAT="${CFG%%|*}"
 PCA="${CFG##*|}"
 
-echo "Matrix run: features=${FEAT}  pca=${PCA}  (array task ${IDX})"
+echo "Matrix run: features=${FEAT}  pca=${PCA}  pca_mode=${PCA_MODE}  (array task ${IDX})"
 
 python src/pipeline/python/04b_run_matrix.py \
+  --pca-mode "${PCA_MODE}" \
   --pca-sweep \
     "rf:${FEAT}:${PCA}" \
     "xgb:${FEAT}:${PCA}" \

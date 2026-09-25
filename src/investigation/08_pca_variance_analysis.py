@@ -22,6 +22,7 @@ Outputs (results/figures/models/pca_optimization/):
 
 import sys
 import os
+import argparse
 
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 PIPELINE_DIR = os.path.join(SRC_DIR, "..", "pipeline", "python")
@@ -30,10 +31,14 @@ if PIPELINE_DIR not in sys.path:
 
 import numpy as np
 import h5py
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from sklearn.decomposition import IncrementalPCA
+try:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    HAS_MPL = True
+except ImportError:
+    HAS_MPL = False
+from sklearn.decomposition import IncrementalPCA, PCA
 from pathlib import Path
 from datetime import datetime
 
@@ -94,6 +99,24 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 CHUNK = 2048
 PCA_BATCH = 32768
 
+# Flat-mode representative sources. The flattened PCA fits on fully-real rows
+# (no pad slot anywhere), which are identical across zero/boundary/eos_bos_repeat,
+# so one curve per embedding type suffices (the zero mode is used as the
+# representative). padtoken is excluded because its real slots are RoPE-shifted.
+FLAT_SETS = {
+    "esmc_flat": (
+        "esmc_context_embeddings_zeropad.h5",
+        "window_embeddings", 1152,
+        "ESM-C flat", "#e74c3c", "esmc",
+    ),
+    "esmif_flat": (
+        "esm-if_test_zero.h5",
+        "window_if_struct", 512,
+        "ESM-IF flat", "#3498db", "esmif",
+    ),
+}
+FLAT_N_COMPONENTS = 1024
+
 
 # ── Stream real (non-pad, non-zero-norm) residue slots ────────────────────────
 def stream_real_slots(raw_path: Path, ds_name: str, chunk: int = CHUNK):
@@ -153,6 +176,65 @@ def fit_pca_streaming(raw_path: Path, ds_name: str, emb_dim: int):
     return explained, cumulative
 
 
+# ── Flat (flattened-window) streaming + PCA fit ───────────────────────────────
+def stream_real_rows_flat(raw_path: Path, ds_name: str, chunk: int = CHUNK):
+    """
+    Yield fully-real flattened row vectors [m, 29*D] from the raw window HDF5.
+
+    A row is kept only if it has no pad slot anywhere and no zero-norm slot —
+    the same mode-invariant subset 04_modelling.fit_window_pca_flat fits on.
+    """
+    with h5py.File(raw_path, "r") as f:
+        W = f[ds_name]
+        M = f["pad_mask"]
+        n = W.shape[0]
+
+        for i0 in range(0, n, chunk):
+            block = W[i0 : i0 + chunk].astype(np.float32)   # (c, 29, D)
+            mblock = M[i0 : i0 + chunk]                     # (c, 29)
+            c = block.shape[0]
+
+            if mblock.dtype != bool:
+                mblock = mblock.astype(bool)
+
+            flat = block.reshape(c, -1)                     # (c, 29*D)
+            fully_real = ~mblock.any(axis=1)
+            norms = np.linalg.norm(flat, axis=1)
+            keep = fully_real & (norms > 0.0)
+            if keep.any():
+                yield flat[keep]
+
+
+def fit_pca_streaming_flat(raw_path: Path, ds_name: str, n_components: int):
+    """
+    Fit PCA (randomized SVD) over flattened (29*D,) fully-real rows.
+    Returns (explained, cumulative) numpy arrays.
+
+    Uses full-memory randomized PCA: IncrementalPCA is O(n_batch^2 * n_features)
+    per batch and is intractable for n_features (29*D) >> n_batch.
+    """
+    rows = []
+    n_rows = 0
+    for block in stream_real_rows_flat(raw_path, ds_name):
+        n_rows += block.shape[0]
+        rows.append(block.astype(np.float64))
+
+    X = np.concatenate(rows, axis=0)
+    del rows
+    n_components = int(min(n_components, X.shape[1], X.shape[0]))
+    pca = PCA(n_components=n_components, svd_solver="randomized",
+              random_state=42)
+    pca.fit(X)
+
+    explained = pca.explained_variance_ratio_
+    cumulative = np.cumsum(explained)
+
+    print(f"    flat rows kept (fully-real): {n_rows}")
+    print(f"    top-10 PCs explain: {cumulative[min(9, len(cumulative)-1)] * 100:.1f}%")
+
+    return explained, cumulative
+
+
 # ── Find n_components for thresholds ──────────────────────────────────────────
 def find_threshold_components(cumulative, thresholds):
     """Find n_components needed for each variance threshold."""
@@ -172,6 +254,9 @@ def find_threshold_components(cumulative, thresholds):
 # ── Individual plot (with threshold annotations) ─────────────────────────────
 def plot_individual(cumulative, thresholds_info, display_name, color, out_path):
     """Single-curve plot with threshold arrows."""
+    if not HAS_MPL:
+        print(f"    [skip plot] matplotlib unavailable: {out_path.name}")
+        return
     fig, ax = plt.subplots(figsize=(8, 5))
 
     x = np.arange(1, len(cumulative) + 1)
@@ -217,6 +302,9 @@ def plot_individual(cumulative, thresholds_info, display_name, color, out_path):
 # ── Combined plot (overlay curves + legend only) ─────────────────────────────
 def plot_combined(curves, title, out_path):
     """Overlay multiple curves with legend. No threshold annotations."""
+    if not HAS_MPL:
+        print(f"    [skip plot] matplotlib unavailable: {out_path.name}")
+        return
     fig, ax = plt.subplots(figsize=(8, 5))
 
     for key, (cumulative, display_name, color) in curves.items():
@@ -250,18 +338,37 @@ def save_csv(explained, cumulative, key, out_dir):
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
+    ap = argparse.ArgumentParser(
+        description="PCA variance analysis for window embeddings",
+    )
+    ap.add_argument(
+        "--pca-mode", type=str, default="slot", choices=["slot", "flat"],
+        help="'slot' (per-position PCA, default) or 'flat' (flattened-window PCA)",
+    )
+    ap.add_argument(
+        "--flat-n-components", type=int, default=FLAT_N_COMPONENTS,
+        help="Max components for the flat variance curve",
+    )
+    args = ap.parse_args()
+
+    if args.pca_mode == "flat":
+        sets = FLAT_SETS
+    else:
+        sets = WINDOW_SETS
+
     print("=" * 65)
     print("  PCA VARIANCE ANALYSIS — Per-Residue Window Embeddings")
     print("=" * 65)
     print(f"  Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"  PCA mode:  {args.pca_mode}")
     print(f"  Thresholds: {THRESHOLDS}")
     print(f"  Output: {OUT_DIR}")
-    print(f"  Modes: {list(WINDOW_SETS.keys())}")
+    print(f"  Modes: {list(sets.keys())}")
     print("=" * 65)
 
     # ── Check all files exist before starting ──
     missing = []
-    for key, (fname, *_) in WINDOW_SETS.items():
+    for key, (fname, *_) in sets.items():
         p = EMBEDDING_DIR / fname
         if not p.exists():
             missing.append(f"  {key}: {p}")
@@ -275,7 +382,7 @@ if __name__ == "__main__":
     results = {}  # key -> (explained, cumulative)
     group_curves = {"esmc": {}, "esmif": {}}
 
-    for key, (fname, ds_name, emb_dim, display_name, color, group) in WINDOW_SETS.items():
+    for key, (fname, ds_name, emb_dim, display_name, color, group) in sets.items():
         print(f"\n{'-' * 65}")
         print(f"  {display_name}")
         print(f"{'-' * 65}")
@@ -283,7 +390,14 @@ if __name__ == "__main__":
         raw_path = EMBEDDING_DIR / fname
         print(f"  File: {raw_path}")
 
-        explained, cumulative = fit_pca_streaming(raw_path, ds_name, emb_dim)
+        if args.pca_mode == "flat":
+            n_feat = 29 * emb_dim
+            n_comp = int(min(args.flat_n_components, n_feat))
+            print(f"  flat dims: {n_feat}, fitting n_components={n_comp}")
+            explained, cumulative = fit_pca_streaming_flat(
+                raw_path, ds_name, n_comp)
+        else:
+            explained, cumulative = fit_pca_streaming(raw_path, ds_name, emb_dim)
 
         thresholds_info = find_threshold_components(cumulative, THRESHOLDS)
 
@@ -314,10 +428,11 @@ if __name__ == "__main__":
     for group, label in [("esmc", "ESM-C"), ("esmif", "ESM-IF")]:
         if not group_curves[group]:
             continue
-        out_path = OUT_DIR / f"pca_variance_windows_{group}_combined.png"
+        out_path = OUT_DIR / f"pca_variance_windows_{group}_{args.pca_mode}_combined.png"
         plot_combined(
             group_curves[group],
-            f"PCA Variance — {label} Window Embeddings (pad-mode comparison)",
+            f"PCA Variance — {label} Window Embeddings "
+            f"({args.pca_mode} pad-mode comparison)",
             out_path,
         )
 
