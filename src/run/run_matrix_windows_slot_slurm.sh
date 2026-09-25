@@ -3,7 +3,7 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --mem=64G
-#SBATCH --time=72:00:00
+#SBATCH --time=96:00:00
 #SBATCH --array=0-7
 #SBATCH --output=logs/winmat_slot_%A_%a.out
 #SBATCH --error=logs/winmat_slot_%A_%a.err
