@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=winbase
-#SBATCH --partition=gpu
-#SBATCH --gres=gpu:1
+#SBATCH --partition=cpu
+#SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --time=24:00:00
 #SBATCH --output=logs/slot/winbase_%j.out
@@ -26,6 +26,7 @@ export PYTHONUNBUFFERED=1
 # They run with the default pca_mode=slot, so their outputs land under
 # logs/slot/, models/slot/, results/tables/slot/ alongside the slot batch.
 python src/pipeline/python/04b_run_matrix.py \
+  --no-aggregate \
   --combos \
     rf,handcrafted,None rf,handcrafted_sparse,None \
     xgb,handcrafted,None xgb,handcrafted_sparse,None \

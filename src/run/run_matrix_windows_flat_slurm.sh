@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=winmat_flat
-#SBATCH --partition=gpu
-#SBATCH --gres=gpu:1
+#SBATCH --partition=cpu
+#SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --time=96:00:00
-#SBATCH --array=0-7
+#SBATCH --array=0-7%4
 #SBATCH --output=logs/winmat_flat_%A_%a.out
 #SBATCH --error=logs/winmat_flat_%A_%a.err
 
@@ -53,6 +53,7 @@ echo "Matrix run (flat): features=${FEAT}  pca=${PCA}  (array task ${IDX})"
 
 python src/pipeline/python/04b_run_matrix.py \
   --pca-mode flat \
+  --no-aggregate \
   --pca-sweep \
     "rf:${FEAT}:${PCA}" \
     "xgb:${FEAT}:${PCA}" \

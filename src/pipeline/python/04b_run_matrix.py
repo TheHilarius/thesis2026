@@ -215,6 +215,11 @@ def main():
         "--pca-mode", type=str, default="slot", choices=["slot", "flat"],
         help="Window PCA scheme passed to 04_modelling (default: slot)",
     )
+    parser.add_argument(
+        "--no-aggregate", action="store_true",
+        help="Skip the end-of-run aggregate table. Use for parallel array jobs; "
+             "run a single manual extract_model_metrics.py aggregation afterwards.",
+    )
     args = parser.parse_args()
 
     combos = []
@@ -269,8 +274,11 @@ def main():
     print(f"  Failed:   {failures}")
     print(f"  Runtime:  {t_end - t_start:.1f}s ({total_minutes:.1f} min)")
 
-    if not args.dry_run:
+    if not args.dry_run and not args.no_aggregate:
         aggregate_results(start_time, combos, pca_mode=args.pca_mode)
+    elif args.no_aggregate:
+        print("\n  (aggregate skipped via --no-aggregate; run a single manual "
+              "extract_model_metrics.py aggregation after all jobs finish)")
 
 
 if __name__ == "__main__":

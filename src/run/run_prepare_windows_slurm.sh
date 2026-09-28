@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=prepwin
-#SBATCH --partition=gpu
-#SBATCH --gres=gpu:1
+#SBATCH --partition=cpu
+#SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --time=12:00:00
 #SBATCH --output=logs/prepwin_%j.out

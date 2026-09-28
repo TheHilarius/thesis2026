@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=esmcwin_all
-#SBATCH --partition=gpu
-#SBATCH --gres=gpu:1
+#SBATCH --partition=cpu
+#SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --time=72:00:00
 #SBATCH --output=logs/esmcwin_all_%j.out
