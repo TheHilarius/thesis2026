@@ -24,6 +24,10 @@ PCA modes:
                zero/boundary/eos_bos_repeat (padtoken/pad exempt — shifted
                reals).
 
+Caching: finished curves (validated CSV: exact row count, monotonic
+cumulative) are reused on rerun — only missing/aborted modes recompute.
+--force recomputes everything.
+
 Outputs (results/figures/models/pca_optimization/):
     pca_variance_windows_{key}.png       — individual plot with threshold annotations
     pca_variance_windows_{key}.csv       — per-component explained variance
@@ -413,6 +417,29 @@ def save_csv(explained, cumulative, key, out_dir, suffix=""):
     print(f"    Saved: {csv_path}")
 
 
+def load_existing_curve(csv_path: Path, expected_n: int):
+    """Return (explained, cumulative) from a finished CSV, else None.
+
+    'Finished' = exactly expected_n rows, cumulative non-decreasing,
+    first > 0, last <= 1 + 1e-6. A partial/aborted write fails these
+    and the curve is recomputed (and overwritten).
+    """
+    if not csv_path.exists():
+        return None
+    try:
+        data = np.loadtxt(csv_path, delimiter=",", skiprows=1, usecols=(1, 2))
+    except Exception:
+        return None
+    if data.ndim != 2 or data.shape[0] != expected_n:
+        return None
+    explained, cumulative = data[:, 0], data[:, 1]
+    if not np.all(np.diff(cumulative) >= -1e-9):
+        return None
+    if explained[0] <= 0 or cumulative[-1] > 1.0 + 1e-6:
+        return None
+    return explained, cumulative
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(
@@ -429,6 +456,12 @@ if __name__ == "__main__":
     ap.add_argument(
         "--flat-n-components", type=int, default=FLAT_N_COMPONENTS,
         help="Max components for the flat variance curve",
+    )
+    ap.add_argument(
+        "--force", action="store_true",
+        help="Recompute every curve even if a finished *_full/CSV output "
+             "already exists (default: skip finished curves, recompute "
+             "only missing/aborted ones)",
     )
     args = ap.parse_args()
 
@@ -473,7 +506,20 @@ if __name__ == "__main__":
         raw_path = EMBEDDING_DIR / fname
         print(f"  File: {raw_path}")
 
+        # ── Skip-if-exists guard: reuse finished curves, recompute the rest ──
+        out_csv = OUT_DIR / f"pca_variance_windows_{key}{suffix}.csv"
         if args.pca_mode == "flat-full":
+            expected_n = 29 * emb_dim
+        elif args.pca_mode == "flat":
+            expected_n = int(min(args.flat_n_components, 29 * emb_dim))
+        else:
+            expected_n = int(emb_dim)
+        cached = None if args.force else load_existing_curve(out_csv, expected_n)
+        if cached is not None:
+            explained, cumulative = cached
+            print(f"  SKIP (cached, {len(cumulative)} components): "
+                  f"{out_csv.name}")
+        elif args.pca_mode == "flat-full":
             n_feat = 29 * emb_dim
             print(f"  flat dims: {n_feat}, fitting FULL spectrum "
                   f"({n_feat} components)")
@@ -528,8 +574,11 @@ if __name__ == "__main__":
             for k in keys[1:]:
                 diff = float(np.max(np.abs(results[k][1] - ref_cum)))
                 print(f"  {label}: {keys[0]} vs {k}: max |Δcum| = {diff:.2e}")
-                if diff > 1e-12:
-                    print(f"    ERROR: identical-mode spectra diverged > 1e-12 "
+                # 1e-6 tolerates eigvalsh thread-order noise (observed up to
+                # ~4e-08 on the 14848-dim ESM-IF fit); real inconsistencies
+                # (wrong file/mask) differ at ≥1e-3 scale.
+                if diff > 1e-6:
+                    print(f"    ERROR: identical-mode spectra diverged > 1e-6 "
                           f"— embeddings or run inconsistent")
                     sys.exit(1)
         print("  padtoken/pad exempt from identity check (shifted reals)")
