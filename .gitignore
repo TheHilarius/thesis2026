@@ -112,3 +112,4 @@ results/tables/model*
 
 # Overnight reports — published only to the `reports` branch
 reports/overnight/
+logs/08_*.log
