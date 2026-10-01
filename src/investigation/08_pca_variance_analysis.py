@@ -13,11 +13,23 @@ Inputs:
     data/processed/embeddings/esm-if_test_{zero,pad,boundary,eos_bos_repeat}.h5
                                         — window_if_struct [N,29,512]
 
+PCA modes:
+    slot     — per-position IncrementalPCA (default, matches 04_modelling slot path)
+    flat     — flattened-window randomized SVD, capped at --flat-n-components;
+               representative set only (FLAT_SETS: zeropad/zero)
+    flat-full — EXACT full spectrum via streaming Gram + eigvalsh over ALL 8
+               files (4 pad modes × 2 toolkits, WINDOW_SETS — parity with
+               slot). Peak RAM ≈ 18 GB per ESM-C fit (D=1152), ≈4 GB ESM-IF.
+               Outputs get `_full` suffix; cross-mode identity asserted on
+               zero/boundary/eos_bos_repeat (padtoken/pad exempt — shifted
+               reals).
+
 Outputs (results/figures/models/pca_optimization/):
     pca_variance_windows_{key}.png       — individual plot with threshold annotations
     pca_variance_windows_{key}.csv       — per-component explained variance
-    pca_variance_windows_esmc_combined.png   — 4 ESM-C curves overlaid
-    pca_variance_windows_esmif_combined.png  — 3 ESM-IF curves overlaid
+    pca_variance_windows_{key}_full.*    — flat-full only, complete spectrum
+    pca_variance_windows_esmc_{mode}_combined.png — ESM-C curves overlaid
+    pca_variance_windows_esmif_{mode}_combined.png — ESM-IF curves overlaid
 """
 
 import sys
@@ -99,20 +111,20 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 CHUNK = 2048
 PCA_BATCH = 32768
 
-# Flat-mode representative sources. The flattened PCA fits on fully-real rows
-# (no pad slot anywhere), which are identical across zero/boundary/eos_bos_repeat,
-# so one curve per embedding type suffices (the zero mode is used as the
-# representative). padtoken is excluded because its real slots are RoPE-shifted.
+# Representative sources for capped `flat` mode only (--pca-mode flat).
+# flat-full iterates WINDOW_SETS (all 8 files) for parity with slot;
+# slot/flat-full do not consult this dict.
 FLAT_SETS = {
-    "esmc_flat": (
-        "esmc_context_embeddings_zeropad.h5",
-        "window_embeddings", 1152,
-        "ESM-C flat", "#e74c3c", "esmc",
-    ),
+    # ESM-IF first: cheap (~4 GB), validates numerics before ESM-C.
     "esmif_flat": (
         "esm-if_test_zero.h5",
         "window_if_struct", 512,
         "ESM-IF flat", "#3498db", "esmif",
+    ),
+    "esmc_flat": (
+        "esmc_context_embeddings_zeropad.h5",
+        "window_embeddings", 1152,
+        "ESM-C flat", "#e74c3c", "esmc",
     ),
 }
 FLAT_N_COMPONENTS = 1024
@@ -235,6 +247,69 @@ def fit_pca_streaming_flat(raw_path: Path, ds_name: str, n_components: int):
     return explained, cumulative
 
 
+# ── Flat-full: exact complete spectrum via Gram matrix + eigvalsh ─────────────
+def fit_pca_full_spectrum(raw_path: Path, ds_name: str):
+    """
+    Exact full variance spectrum over flattened (29*D,) fully-real rows.
+
+    Unlike fit_pca_streaming_flat (randomized SVD, capped at n_components),
+    this computes ALL eigenvalues: stream fully-real rows while accumulating
+    the Gram matrix G = sum x x^T and column sums, center-correct
+    C = G - n mu mu^T, then symmetric eigendecomposition. No random_state,
+    deterministic. Peak RAM ≈ 2x the Gram matrix (~18 GB for ESM-C D=1152,
+    ~4 GB for ESM-IF D=512). Requires the same inputs as flat mode.
+
+    Returns (explained, cumulative, n_rows).
+    """
+    import gc
+
+    G = None  # (d, d) float64 accumulator
+    s = None  # (d,) float64 column sums
+    n_rows = 0
+
+    for block in stream_real_rows_flat(raw_path, ds_name):
+        b = block.astype(np.float64)
+        n = b.shape[0]
+        if G is None:
+            d = b.shape[1]
+            G = np.zeros((d, d), dtype=np.float64)
+            s = np.zeros(d, dtype=np.float64)
+        s += b.sum(axis=0)
+        G += b.T @ b
+        n_rows += n
+
+    if G is None or n_rows == 0:
+        raise RuntimeError(f"No fully-real rows in {raw_path}")
+
+    # center-correct: C = G - n * outer(mu, mu)
+    mu = s / n_rows
+    G -= n_rows * np.outer(mu, mu)
+    trace_c = float(np.trace(G))
+    del s, mu
+    gc.collect()
+
+    evals = np.linalg.eigvalsh(G)  # ascending
+    evals = np.clip(evals, 0.0, None)
+    del G
+    gc.collect()
+    evals = evals[::-1]  # descending
+
+    total = float(evals.sum())
+    if total <= 0:
+        raise RuntimeError(f"Non-positive total variance in {raw_path}")
+
+    explained = evals / total
+    cumulative = np.cumsum(explained)
+
+    print(f"    flat rows kept (fully-real): {n_rows}")
+    print(f"    full spectrum: {len(explained)} components (all dims)")
+    print(f"    sum(eigenvalues)={total:.6g}  trace(C)={trace_c:.6g}  "
+          f"rel_diff={abs(total - trace_c) / max(trace_c, 1e-12):.2e}")
+    print(f"    top-10 PCs explain: {cumulative[min(9, len(cumulative)-1)] * 100:.1f}%")
+
+    return explained, cumulative, n_rows
+
+
 # ── Find n_components for thresholds ──────────────────────────────────────────
 def find_threshold_components(cumulative, thresholds):
     """Find n_components needed for each variance threshold."""
@@ -288,7 +363,9 @@ def plot_individual(cumulative, thresholds_info, display_name, color, out_path):
     ax.set_ylim(0, 1.05)
 
     max_pc = len(cumulative)
-    tick_step = 100 if max_pc > 500 else (50 if max_pc > 200 else 25)
+    tick_step = (5000 if max_pc > 5000 else
+                 1000 if max_pc > 2000 else
+                 100 if max_pc > 500 else (50 if max_pc > 200 else 25))
     ax.set_xticks(range(0, max_pc + 1, tick_step))
     ax.tick_params(axis="x", rotation=45)
     ax.grid(True, alpha=0.3)
@@ -326,9 +403,9 @@ def plot_combined(curves, title, out_path):
 
 
 # ── Save CSV ──────────────────────────────────────────────────────────────────
-def save_csv(explained, cumulative, key, out_dir):
+def save_csv(explained, cumulative, key, out_dir, suffix=""):
     """Save per-component variance to CSV."""
-    csv_path = out_dir / f"pca_variance_windows_{key}.csv"
+    csv_path = out_dir / f"pca_variance_windows_{key}{suffix}.csv"
     with open(csv_path, "w") as f:
         f.write("component_idx,explained_variance_ratio,cumulative_variance\n")
         for i, (e, c) in enumerate(zip(explained, cumulative)):
@@ -342,8 +419,12 @@ if __name__ == "__main__":
         description="PCA variance analysis for window embeddings",
     )
     ap.add_argument(
-        "--pca-mode", type=str, default="slot", choices=["slot", "flat"],
-        help="'slot' (per-position PCA, default) or 'flat' (flattened-window PCA)",
+        "--pca-mode", type=str, default="slot",
+        choices=["slot", "flat", "flat-full"],
+        help="'slot' (per-position PCA, default), 'flat' (flattened-window, "
+             "capped at --flat-n-components, representative set), or "
+             "'flat-full' (exact full spectrum via Gram + eigvalsh over all "
+             "8 files; ~18 GB RAM per ESM-C fit)",
     )
     ap.add_argument(
         "--flat-n-components", type=int, default=FLAT_N_COMPONENTS,
@@ -354,6 +435,7 @@ if __name__ == "__main__":
     if args.pca_mode == "flat":
         sets = FLAT_SETS
     else:
+        # slot AND flat-full: all 8 (4 modes × 2 toolkits) for parity
         sets = WINDOW_SETS
 
     print("=" * 65)
@@ -382,6 +464,7 @@ if __name__ == "__main__":
     results = {}  # key -> (explained, cumulative)
     group_curves = {"esmc": {}, "esmif": {}}
 
+    suffix = "_full" if args.pca_mode == "flat-full" else ""
     for key, (fname, ds_name, emb_dim, display_name, color, group) in sets.items():
         print(f"\n{'-' * 65}")
         print(f"  {display_name}")
@@ -390,7 +473,13 @@ if __name__ == "__main__":
         raw_path = EMBEDDING_DIR / fname
         print(f"  File: {raw_path}")
 
-        if args.pca_mode == "flat":
+        if args.pca_mode == "flat-full":
+            n_feat = 29 * emb_dim
+            print(f"  flat dims: {n_feat}, fitting FULL spectrum "
+                  f"({n_feat} components)")
+            explained, cumulative, _n_rows = fit_pca_full_spectrum(
+                raw_path, ds_name)
+        elif args.pca_mode == "flat":
             n_feat = 29 * emb_dim
             n_comp = int(min(args.flat_n_components, n_feat))
             print(f"  flat dims: {n_feat}, fitting n_components={n_comp}")
@@ -409,16 +498,41 @@ if __name__ == "__main__":
                   f"{info['actual_variance']*100:>10.2f}%")
 
         # Save individual CSV
-        save_csv(explained, cumulative, key, OUT_DIR)
+        save_csv(explained, cumulative, key, OUT_DIR, suffix=suffix)
 
         # Save individual plot
         plot_individual(
-            cumulative, thresholds_info, display_name, color,
-            OUT_DIR / f"pca_variance_windows_{key}.png",
+            cumulative, thresholds_info,
+            f"{display_name} ({args.pca_mode})", color,
+            OUT_DIR / f"pca_variance_windows_{key}{suffix}.png",
         )
 
         results[key] = (explained, cumulative, thresholds_info)
         group_curves[group][key] = (cumulative, display_name, color)
+
+    # ── flat-full cross-mode validation ──
+    # zero/boundary/eos_bos_repeat embed identical real rows → identical
+    # spectra; padtoken/pad exempt (RoPE-shifted reals, different input).
+    if args.pca_mode == "flat-full":
+        print(f"\n{'=' * 65}")
+        print("  CROSS-MODE VALIDATION (flat-full)")
+        print(f"{'=' * 65}")
+        identical_sets = {
+            "ESM-C": ["esmc_zeropad", "esmc_impute_boundary",
+                      "esmc_impute_bos_eos"],
+            "ESM-IF": ["esmif_zero", "esmif_boundary",
+                       "esmif_eos_bos_repeat"],
+        }
+        for label, keys in identical_sets.items():
+            ref_cum = results[keys[0]][1]
+            for k in keys[1:]:
+                diff = float(np.max(np.abs(results[k][1] - ref_cum)))
+                print(f"  {label}: {keys[0]} vs {k}: max |Δcum| = {diff:.2e}")
+                if diff > 1e-12:
+                    print(f"    ERROR: identical-mode spectra diverged > 1e-12 "
+                          f"— embeddings or run inconsistent")
+                    sys.exit(1)
+        print("  padtoken/pad exempt from identity check (shifted reals)")
 
     # ── Combined plots ──
     print(f"\n{'=' * 65}")

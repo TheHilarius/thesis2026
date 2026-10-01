@@ -346,7 +346,10 @@ def load_all_components(df_split, feat_cfg, pca_mode="slot"):
         emb_dim = emb_data["emb_dim"]
         if emb_data.get("kind") == "windows":
             window = emb_data["window"]
-            if pca_mode == "flat":
+            if pca_mode == "flat_raw":
+                pca_total = window * emb_dim          # no PCA — all raw dims
+                raw_dim_desc = f"{window}x{emb_dim} (flat_raw {window * emb_dim})"
+            elif pca_mode == "flat":
                 pca_total = int(pca_components)
                 raw_dim_desc = f"{window}x{emb_dim} (flat {window * emb_dim})"
             else:
@@ -465,6 +468,25 @@ def _stream_window_slots(prepared_path, indices):
             flat = block.reshape(c * block.shape[1], block.shape[-1])
             flatm = mblock.reshape(-1)
             yield flat, flatm
+
+
+def concat_window_slots(emb_data, indices):
+    """
+    Full flattened (n, window*D) float32 block for `indices` — flat_raw mode.
+    Reuses the slot streamer; ALL slots kept (pads carry their raw fill),
+    which is exactly what flat PCA would feed minus the rotation.
+    """
+    prepared_path = emb_data["prepared_path"]
+    window = emb_data["window"]
+    D = emb_data["emb_dim"]
+    n = len(indices)
+    out = np.empty((n, window * D), dtype=np.float32)
+    cur = 0
+    for flat, _flatm in _stream_window_slots(prepared_path, indices):
+        c = flat.shape[0] // window
+        out[cur:cur + c] = flat.reshape(c, window * D)
+        cur += c
+    return out
 
 
 def fit_window_pca(emb_data, indices, k):
@@ -692,6 +714,8 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
 
             if pca_mode == "flat":
                 total_components = int(min(pca_components, window * D))
+            elif pca_mode == "flat_raw":
+                total_components = int(window * D)   # no PCA — all raw dims
             else:
                 total_components = int(min(pca_components, D))
 
@@ -705,6 +729,12 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
                 X_emb_test = transform_window_block_flat(
                     emb_data, test_indices, ipca, total_components,
                 )
+            elif pca_mode == "flat_raw":
+                print(f"    {comp_key}: flat-raw (no PCA) "
+                      f"(window={window}, D={D} → {total_components} features)")
+                X_emb_train = concat_window_slots(emb_data, train_indices)
+                X_emb_test = concat_window_slots(emb_data, test_indices)
+                ipca = None  # raw features — nothing to transform at predict time
             else:
                 print(f"    {comp_key}: fitting shared slot PCA "
                       f"(window={window}, D={D}, k={total_components}) ...")
@@ -717,11 +747,17 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
                 )
 
             explained = (ipca.explained_variance_ratio_.sum() * 100
-                         if hasattr(ipca, "explained_variance_ratio_") else np.nan)
+                         if hasattr(ipca, "explained_variance_ratio_") else 100.0)
             if pca_mode == "flat":
                 print(f"    {comp_key}: window PCA {window * D} → k={total_components} "
                       f"({total_components} features) "
                       f"({explained:.1f}% variance)")
+                feature_names.extend(
+                    window_feature_names_flat(comp_key, total_components)
+                )
+            elif pca_mode == "flat_raw":
+                print(f"    {comp_key}: flat-raw features "
+                      f"{window}x{D} → {total_components} (no PCA, 100% by definition)")
                 feature_names.extend(
                     window_feature_names_flat(comp_key, total_components)
                 )
@@ -896,6 +932,9 @@ def _transform_embeddings(emb_data, indices, pca_obj):
     (legacy), or stream window slots through the shared PCA (windows).
     """
     if emb_data.get("kind") == "windows":
+        if pca_obj is None:
+            # flat_raw — features were raw at fit time; identical at predict time
+            return concat_window_slots(emb_data, indices)
         k = int(getattr(pca_obj, "n_components_", pca_obj.n_components))
         if emb_data.get("pca_mode", "slot") == "flat":
             return transform_window_block_flat(emb_data, indices, pca_obj, k)
@@ -1057,9 +1096,10 @@ def parse_args():
     )
     parser.add_argument(
         "--pca-mode", type=str, default="slot",
-        choices=["slot", "flat"],
-        help="Window PCA scheme: 'slot' (per-position shared PCA, default) or "
-             "'flat' (flatten window*D, PCA across the full window)",
+        choices=["slot", "flat", "flat_raw"],
+        help="Window PCA scheme: 'slot' (per-position shared PCA, default), "
+             "'flat' (flatten window*D, PCA across the full window), or "
+             "'flat_raw' (flatten window*D, NO PCA — all raw dims; low mem)",
     )
     parser.add_argument(
         "--C", type=float, default=None,
@@ -1105,8 +1145,8 @@ if __name__ == "__main__":
             run_tag = f"{model_key}_{features_key}_pca{pca_override}"
     else:
         run_tag = f"{model_key}_{features_key}"
-    if pca_mode == "flat":
-        run_tag += "_flat"
+    if pca_mode in ("flat", "flat_raw"):
+        run_tag += f"_{pca_mode}"
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     # Namespace all run outputs by PCA experiment so slot/flat batches
@@ -1201,7 +1241,10 @@ if __name__ == "__main__":
             else:
                 k = pca_override
             info["pca_components"] = k
-            if info.get("pca_mode") == "flat":
+            if info.get("pca_mode") == "flat_raw":
+                info["pca_total"] = (info["window"] * info["emb_dim"]
+                                     if info.get("window") else int(k))
+            elif info.get("pca_mode") == "flat":
                 info["pca_total"] = int(k)
             else:
                 info["pca_total"] = (info["window"] * int(min(k, info["emb_dim"]))

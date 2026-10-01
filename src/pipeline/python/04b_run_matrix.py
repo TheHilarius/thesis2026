@@ -77,7 +77,9 @@ def run_combo(model, features, pca, pca_mode="slot", dry_run=False):
         "--features", features,
         "--pca-mode", pca_mode,
     ]
-    if pca is not None:
+    if (pca is not None and pca_mode != "flat_raw"
+            and str(pca).lower() not in ("none", "")):
+        # flat_raw ignores --pca (all raw dims); "none" = no PCA at all
         cmd += ["--pca", str(pca)]
 
     label = f"{model} x {features}"
@@ -116,7 +118,9 @@ def expand_pca_sweep(spec):
         if "=" in p:
             combos.append((model, features, p))
         else:
-            combos.append((model, features, int(p)))
+            # int if numeric, else keep string ("none" = no PCA)
+            combos.append((model, features,
+                           int(p) if p.lstrip("-").isdigit() else p))
     return combos
 
 
@@ -212,8 +216,9 @@ def main():
              "E.g. rf:handcrafted_sparse_esmc:1,13,26,66,218,718",
     )
     parser.add_argument(
-        "--pca-mode", type=str, default="slot", choices=["slot", "flat"],
-        help="Window PCA scheme passed to 04_modelling (default: slot)",
+        "--pca-mode", type=str, default="slot", choices=["slot", "flat", "flat_raw"],
+        help="Window PCA scheme passed to 04_modelling (default: slot). "
+             "'flat_raw' = no PCA, all raw dims (ignores --pca).",
     )
     parser.add_argument(
         "--no-aggregate", action="store_true",
