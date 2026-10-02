@@ -221,6 +221,17 @@ def main():
     df_sum.to_csv(sum_path, index=False)
     print(f"\nSaved summary: {sum_path}")
 
+    # Padmode x PC decision table: pca parsed from filenames (flat_raw has
+    # none, so coerce — those rows simply drop out of the pivot).
+    df_sum["pca"] = pd.to_numeric(
+        df_sum["result_file"].str.extract(r"_pca(\d+)_")[0], errors="coerce")
+    piv = df_sum.pivot_table(index="pca", columns="mode", values="pad_auc_roc")
+    print("\nPadmode x PC subset AUC (pad_auc_roc):")
+    print(piv.round(4).to_string())
+    piv_path = out_dir / f"{args.out_tag}_pivot.csv"
+    piv.to_csv(piv_path)
+    print(f"Saved pivot table: {piv_path}")
+
     # Pairwise |Δprob| on padded rows
     modes = sorted(prob_rows.keys())
     rows = []
