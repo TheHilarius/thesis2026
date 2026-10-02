@@ -116,3 +116,6 @@ reports/overnight/
 logs/08_*.log
 
 docs/latex/
+
+# Run-folder model artifacts stay untracked (pickles too big; JSONs server-side)
+runs/*/models/
