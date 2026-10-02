@@ -2,86 +2,60 @@
 
 ## Summary
 
-Five commits since the previous report (5b1a215..0e4dd9e), all code: a padded-subset AUC investigation script, an exact full-spectrum PCA variance mode, a no-PCA `flat_raw` modelling mode, a rewritten 25-task SLURM pad-mode × PC grid, curve caching with a documented tolerance fix, deletion of stale PCA outputs, and a gitignore addition. No new result artifacts were committed in the range — the variance curves that justify the grid's PC counts and the padded-subset AUC CSV exist only as gitignored local files (verified on disk; the AUC CSV cross-checks against the committed flat aggregate TSV). Still open from last report: pad/flank feature provenance, the stale `windows_test/` directory, zero-byte logs, and no slot-run output from the now-committed padded-subset script.
+No commits exist in the reviewed range: `origin/hilarius` is still 0e4dd9e (full SHA `0e4dd9e5fdd7aed1d4e19a17482ee34debea0778`, verified via `git ls-remote`), the exact tip already covered by the previous 2026-10-02 report; the working tree is clean with no untracked files. Since that report only two local, gitignored changes appeared: `models/flat/` was deleted outright (previously empty) and new variance-curve PNG renders exist under `results/figures/models/pca_optimization/`. No issue reported earlier has been resolved in git; all carry forward.
 
 ## Changes
 
-### Padded-subset AUC script (f67b1e5)
-- `src/investigation/10_pad_subset_auc.py` — new, 258 lines. Reconstructs full out-of-fold probability vectors from `outer_val_predictions` in the saved nested-CV JSONs, aligns rows to the prepared-window HDF5 (`pad_mask`/`folds`/`labels`), and computes AUC on padded rows only; default pattern targets the four committed slot k=9 JSONs. Outputs `results/tables/pad_subset_auc_<tag>.csv`, optional `--save-rows` per-row table, and a pairwise |Δprob| table. Subset definition: any-pad rows.
-
-### Flat-full variance mode, flat_raw modelling mode, grid rewrite (60baff3)
-- `src/investigation/08_pca_variance_analysis.py:255-318` — new `flat-full` mode: exact complete spectrum over flattened fully-real rows via streaming Gram matrix (`G = Σxxᵀ`) + `eigvalsh`, all 8 pad-mode files (4 modes × 2 toolkits), `*_full` output suffix, cross-mode identity validation (zero/boundary/eos_bos compared; padtoken/pad exempt). Plot tick steps extended for 14–33k-component axes.
-- `src/pipeline/python/04_modelling.py:349,473-490,717-760,936-937,1148,1244-1247` — new `flat_raw` PCA mode: flattened 29×D window fed to the model with no PCA; `concat_window_slots` reuses the existing `_stream_window_slots`; run-tag gains `_flat_raw`.
-- `src/pipeline/python/04b_run_matrix.py:80-82,123` — `--pca-mode flat_raw` accepted; the string `"none"` also accepted in `--pca-sweep` (no `--pca` passed through).
-- `src/run/run_matrix_windows_flat_slurm.sh` — rewritten as a 25-task ordered array (xgboost only, 12 CPUs / 96 GB): ESM-C main (k=97/2346/3888/6389/10895 at 50–95 % flat variance), ESM-IF main (345/2125/2974/4308/6700), baseline, 99 % arms (20142/11243), then `flat_raw` 100 % arms (33408/14848 raw dims). The previous `ESMC_PCA`/`ESMIF_PCA` env-var overrides were removed; k values are now hard-coded.
-- `src/investigation/09_padmode_subset_auc.py` — new, 239 lines. Same padded-subset AUC job for the flat modelling grid: reads `models/flat/cv_results_*.json`, mask = ≥1 pad AND ≥1 real slot per toolkit (handles ESM-IF `row_indices` permutation), writes `results/padmode_subset_auc.csv`. Subset definition: informative padded rows.
-
-### Variance-curve caching and identity-tolerance fix (269d85b)
-- `src/investigation/08_pca_variance_analysis.py:420-438,509-521` — reruns skip any curve whose CSV validates (expected row count, monotonic cumulative, positive first value, final ≤ 1); `--force` recomputes all. `:577-584` — cross-mode identity bound relaxed 1e-12 → 1e-6, with the observed eigvalsh thread-order drift (~4e-08 on the 14848-dim ESM-IF fit) and the ≥1e-3 scale of real inconsistencies documented in the comment.
-
-### Stale output cleanup and ignore addition (1f7a274, 0e4dd9e)
-- `1f7a274` — deletes 10 files / 5,746 lines under `results/figures/models/pca_optimization/`: old `joint_pca_results_*.json`, sweep CSVs, variance-component CSVs, one PNG, and two previously committed matplotlib `*.png~RF*.TMP` temp files.
-- `0e4dd9e` — `.gitignore:115` adds `logs/08_*.log`.
+None. The range `0e4dd9e..origin/hilarius` is empty — `git log --oneline` returns nothing and local HEAD == origin/hilarius == 0e4dd9e. Everything committed in f67b1e5..0e4dd9e was already covered by the previous 2026-10-02 report and is not repeated here.
 
 ## Experiments / Results
 
-Nothing new under `results/` was committed in the range; no aggregate table references the new grid. The following measured results come from local working-tree artifacts that are gitignored (verified on disk, not in git):
+No new committed results, and no new result artifacts on disk. The latest measured results remain those reported on 2026-10-02 (flat-full variance spectra; padded-subset AUC from `results/padmode_subset_auc.csv`, gitignored, mtime unchanged at 2026-10-01 14:24). Evidence state at 0e4dd9e:
 
-**Flat-full variance spectra** (`results/figures/models/pca_optimization/pca_variance_windows_*_full.csv`, 8 files): 33408 components (ESM-C, 29×1152) and 14848 (ESM-IF, 29×512); cumulative variance reaches 1.000000 in every file. Threshold crossings recomputed from the CSVs are identical across all four pad modes within each toolkit and match the grid constants exactly — ESM-C: 50 % = 97, 80 % = 2346, 85 % = 3888, 90 % = 6389, 95 % = 10895, 99 % = 20142; ESM-IF: 50 % = 345, 80 % = 2125, 85 % = 2974, 90 % = 4308, 95 % = 6700, 99 % = 11243 (`run_matrix_windows_flat_slurm.sh:36-47`).
-
-**Padded-subset AUC, flat grid, xgb** (`results/padmode_subset_auc.csv`, output of `09_padmode_subset_auc.py` on the flat runs recorded in `results/tables/flat/model_matrix_lr_l2_rf_xgb_20260927_160038.tsv`):
-- ESM-C, n_padded = 1443 — @pca10: zero 0.7544, boundary 0.7550, eos_bos_repeat 0.7521, pad_token 0.7562; @pca97: zero 0.7456, boundary 0.7422, eos_bos_repeat 0.7412, pad_token 0.7419; @pca469: 0.7352–0.7385.
-- ESM-IF, n_padded = 1442 — @pca76: zero 0.7414, boundary 0.7388, eos_bos_repeat 0.7444, pad 0.7440; @pca345: 0.7368–0.7413; @pca851: 0.7293–0.7377.
-- Per-fold padded-AUC std: 0.019–0.033. Observation: at every PC count the pad-mode spread on padded rows (≤ 0.008 ESM-C @10, ≤ 0.006 ESM-IF @76) sits within fold-to-fold std — consistent with, but not proof of, the earlier finding that pad-mode differences are within noise.
-- Cross-check (observation): the file's `auc_overall` values match the committed flat aggregate TSV rows for the same runs to ~4 decimals (e.g. ESM-C pad_token pca97 flat: TSV `cv_mean_auc_roc` 0.75266 vs CSV 0.75264), so the CSV derives from runs already recorded at origin. Caveat: `models/flat/` is empty locally, so the CSV cannot be re-derived without re-rsyncing the cluster tree (the script's error message carries the rsync hint).
-
-The committed slot k=9 JSONs (previous report) still have no padded-subset numbers anywhere: `10_pad_subset_auc.py` is committed but has produced no output on disk. The new 25-task grid appears unrun — no `flat_raw` or new-PC results exist in git or the working tree.
+- `results/tables/flat/` — 3 tracked aggregate TSVs (`…20260926_133654`, `…20260927_114333`, `…20260927_160038`); no `flat_raw` or new-PC aggregates exist.
+- `results/tables/slot/` — still baselines-only (1 TSV, `…20260926_004934`); the 4 committed slot k=9 JSONs in `models/slot/` have no aggregate.
+- `10_pad_subset_auc.py` (committed f67b1e5) has produced no `results/tables/pad_subset_auc_*.csv` anywhere on disk.
+- The 25-task `run_matrix_windows_flat_slurm.sh` grid still shows no outputs; no `flat_raw` results found under `results/` or `models/`.
 
 ## Code Review — Shortcomings & Issues
 
-**1. Two near-duplicate padded-subset AUC scripts, disagreeing on the subset definition**
-`src/investigation/10_pad_subset_auc.py:92-127` (f67b1e5) and `src/investigation/09_padmode_subset_auc.py:83-170` (60baff3, committed ~80 minutes later) implement the same job: scatter `outer_val_predictions` onto fold order, guard alignment, compute AUC on padded rows. One parameterized script (json-dir / pattern / mask source) covers both. Worse, they define "padded subset" differently: 09 uses informative rows = ≥1 pad AND ≥1 real slot, explicitly excluding all-pad notfound rows (09:83-100); 10 uses any-pad (`pad_row = pad_mask.any(axis=1)`, 10:~162). If thesis text cites "padded-subset AUC", the two scripts will produce different numbers for the same runs. Also, 09 parses filenames through a hardcoded regex + map (09:57-80) while 10 reads the mode from the JSON config (10:80-90) — the regex cannot match `flat_raw` run-tags (no `_pca<N>_` in the tag, `04_modelling.py:1140-1149`), so the grid's 100 % arms would be silently skipped.
-Severity: maintainability. Commits: f67b1e5, 60baff3.
+No new code entered the range, so there are no new findings. Previously reported issues are unchanged at origin (re-verified live where noted):
 
-**2. The grid's justification data can never reach git (`.gitignore` `models/` swallows results figures)**
-`.gitignore:110` `models/` matches any path segment named `models` — verified via `git check-ignore`, which attributes the `*_full` CSV under `results/figures/models/pca_optimization/` to that line. Commit 1f7a274 deleted the last tracked variance outputs (including two committed `*.png~RF*.TMP` junk files — good), leaving the eight exact-spectrum CSVs that justify the grid's hard-coded k values (`run_matrix_windows_flat_slurm.sh:36-47`) present only on this machine. The rewrite also removed the previous `ESMC_PCA="${ESMC_PCA:-...}"` env-var escape hatch, so any curve change now requires editing the script blind. Lazy fix: anchor the ignore to `/models/`, then commit the KB-scale `*_full` CSVs — the repo's own convention is aggregate tables under `results/`, not raw model artifacts.
-Severity: risk (evidence for the experiment design absent from the repo). Commits: 1f7a274, 60baff3, 0e4dd9e.
+1. **Two near-duplicate padded-subset AUC scripts with divergent subset definitions** — `src/investigation/09_padmode_subset_auc.py` (informative rows: ≥1 pad AND ≥1 real slot) vs `src/investigation/10_pad_subset_auc.py` (any-pad); `09`'s filename regex also cannot match `flat_raw` run-tags, so the grid's 100 % arms would be silently skipped. Severity: maintainability. Commits 60baff3, f67b1e5. [carried]
+2. **`.gitignore:110` `models/` still unanchored** — re-verified: `git check-ignore -v` attributes both `*_full.csv` and the new `*_full.png` renders to that line. The variance evidence justifying the grid's hard-coded k values, and every plot render, cannot reach git. Severity: risk. [carried]
+3. **Three spellings of "no PCA" in the modelling CLI** — `flat_raw` mode (`04_modelling.py`), `"none"` in `--pca-sweep` (`04b_run_matrix.py:123`), and the dead `PCA_ARG="0"` placeholder in the SLURM script. Severity: maintainability. Commit 60baff3. [carried]
+4. **Unreachable `explained = … else 100.0`** — `04_modelling.py:750`, dead branch. Severity: style. Commit 60baff3. [carried]
 
-**3. Two overlapping "no PCA" mechanisms in the modelling CLI**
-`flat_raw` mode (`04_modelling.py:349,473-490,717-760,936-937,1148,1244-1247` + `04b_run_matrix.py:80-82`) and the `"none"` string in `--pca-sweep` (`04b_run_matrix.py:123`) both express "run without PCA"; the SLURM script then feeds `flat_raw` a dummy `PCA_ARG="0"` that `run_combo` discards anyway (`run_matrix_windows_flat_slurm.sh:63-70` vs `04b:80-82`). A no-PCA path itself is justified — fitting flat PCA at full dimension is an SVD rotation at higher memory cost, not the same operation — but three spellings of the same idea is two too many. One mechanism would do; the dead `"0"` placeholder goes with it.
-Severity: maintainability. Commit: 60baff3.
-
-**4. Style: unreachable `explained = ... else 100.0`**
-`04_modelling.py:750` (changed from `np.nan` in 60baff3) is never read with `ipca = None`: the `flat_raw` branch prints its own "(no PCA, 100% by definition)" string and the fitted-PCA branches always have the attribute. Dead branch, harmless.
-Severity: style. Commit: 60baff3.
-
-No issues found in `fit_pca_full_spectrum` (08:255-318 — stdlib Gram + center-correct + eigvalsh, with a trace cross-check), `load_existing_curve` (08:420-438 — validates truncated writes), or the 1e-6 tolerance change (08:577-584 — bound calibrated to observed noise with the upgrade path stated in the comment).
+No additional over-engineering or stdlib-reinvention findings: nothing was added in the range to review.
 
 ## Potential Issues
 
-1. **Carried, unchanged at origin:** `results/embedding_inspection/windows_test/` still present (6 files); 3 zero-byte logs still tracked (`logs/04_modelling_rf_*_2026092*.txt`); `results/tables/slot/` still baselines-only — no aggregate covers the committed slot-window JSONs; the pad/flank feature provenance question (previous review 3) is untouched by this range.
-2. **Orphaned analysis outputs:** `results/padmode_subset_auc.csv` and the 8 `*_full` CSVs are gitignored; `models/flat/` is empty locally while the CSV cites 24 flat JSONs. Reproducibility of every number in this report's results section depends on re-rsyncing cluster artifacts.
-3. **Subset-definition divergence (review 1)** — question for the authors: which row set is "the padded subset" for the thesis — any-pad, or informative (any-pad AND any-real)?
-4. **Grid appears unrun:** no `flat_raw` or new-PC results in git or working tree; the script's own runtime estimates are 23–80 h per 100 % arm. The committed flat aggregate TSV covers only the old 10/97/469 (ESM-C) and 76/345/851 (ESM-IF) sweep.
-5. **Ignore policy still partial:** `0e4dd9e` covers only `logs/08_*.log`; other sweep logs can recur as tracked junk, and the unanchored `models/` pattern (review 2) silently hides result figures. One anchored line per rule ends both.
-6. **Working tree now matches origin** (HEAD = 0e4dd9e, clean) — the previous report's divergence warning is resolved; nothing in flight locally outside the gitignored artifacts above.
+All carried from the previous report, verified still true on disk:
+
+1. `results/embedding_inspection/windows_test/` still present (6 files, mtime Sep 23).
+2. 3 zero-byte `logs/04_modelling_rf_*_2026092*.txt` files still tracked.
+3. `results/tables/slot/` baselines-only; pad/flank feature provenance for the 20260929 runs still undocumented.
+4. Subset-definition divergence unresolved — question for the authors, not for automation: is "the padded subset" any-pad, or any-pad AND any-real? Thesis text must pick one before citing padded-subset AUC.
+5. New local risk: `models/flat/` is now deleted outright (previous report: empty). Every flat-grid number in `results/padmode_subset_auc.csv` depends on re-rsyncing the cluster tree; nothing local remains to re-derive from.
+6. The 25-task SLURM grid still appears unrun (script estimates 23–80 h per 100 % arm).
+7. Ignore policy still partial: only `logs/08_*.log` is covered; the unanchored `models/` pattern keeps swallowing results figures (finding 2).
 
 ## GitHub
 
-- **PRs:** none open (gh pr list returned []).
-- **Issues:** none open (gh issue list returned []).
-- **CI:** no workflow runs (gh run list returned []); no workflows configured.
-- **Branch/state:** `hilarius` is the default branch (gh repo view: `TheHilarius/thesis2026`, defaultBranchRef `hilarius`), reviewed through 0e4dd9e (2026-10-01).
+- **PRs:** none open (`gh pr list` returned []).
+- **Issues:** none open (`gh issue list` returned []).
+- **CI:** no workflow runs (`gh run list` returned []); no workflows configured.
+- **Branch/state:** `hilarius` is the default branch (`TheHilarius/thesis2026`). Remote tip = 0e4dd9e — nothing pushed since the previous report; nothing missing locally.
 
 ## Recommended Next Steps
 
-1. **Make the grid's evidence committable** — change `.gitignore:110` `models/` to `/models/`, then `git add results/figures/models/pca_optimization/*_full.csv` (8 files, KB-scale). [new — closes review 2]
-2. **Produce and commit padded-subset results for the committed slot runs** — `python src/investigation/10_pad_subset_auc.py --save-rows`, commit the `results/tables/` CSVs. [carried from "record the padding-subset check"; now actionable — script exists at origin]
-3. **Collapse the two padded-subset scripts into one parameterized script** (or retire one) and fix the authoritative subset definition before any thesis text cites padded-subset AUC. [new — closes review 1]
-4. **Aggregate the slot-window JSONs and close the provenance question** — run `extract_model_metrics.py` on `models/slot/cv_results_*.json` into a TSV, and document which data/code version produced the pad/flank features in the 20260929 runs. [carried, unresolved]
-5. **Delete `results/embedding_inspection/windows_test/` and finish the ignore policy** — anchor `models/`, widen the log rule to all sweep logs; one commit. [carried, extended]
+1. Anchor `.gitignore:110` to `/models/`, then commit the 8 `*_full.csv` variance spectra plus their PNG renders — the grid's design evidence. [carried]
+2. Produce padded-subset AUC for the committed slot runs: `python src/investigation/10_pad_subset_auc.py`, commit the CSVs; decide the authoritative subset definition first. [carried]
+3. Collapse the two padded-subset scripts into one parameterized script or retire one; fix or retire `09`'s filename regex before any `flat_raw` padded-subset claim. [carried]
+4. Aggregate `models/slot/cv_results_*.json` into a TSV under `results/tables/slot/`; document the pad/flank feature provenance. [carried]
+5. Delete `results/embedding_inspection/windows_test/`, the 3 zero-byte logs, and widen the log ignore rule to all sweep logs — one commit. [carried]
 
-Resolved since last report: working-tree divergence (HEAD == origin, clean); committed matplotlib `*.TMP` junk removed (1f7a274); flat-full identity-check abort fixed with a documented, calibrated tolerance (269d85b); the padded-subset analysis script now exists at origin (f67b1e5, 60baff3) — output for the slot runs still pending (step 2).
+Resolved since the previous 2026-10-02 report: none — no commits landed in the range.
 
 ## Reviewed Through
 
