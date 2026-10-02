@@ -463,12 +463,18 @@ if __name__ == "__main__":
              "already exists (default: skip finished curves, recompute "
              "only missing/aborted ones)",
     )
+    ap.add_argument(
+        "--out-dir", type=str, default=None,
+        help="Override the output directory (e.g. a run folder's "
+             "plots/pca_variance/). Default: pca_optimization/<slot|flat>.",
+    )
     args = ap.parse_args()
 
     # Outputs live in per-mode subfolders: slot/, flat/ (flat + flat-full
-    # share flat/ — filenames differ by the _full suffix)
+    # share flat/ — filenames differ by the _full suffix). --out-dir
+    # overrides (e.g. a run folder's plots/pca_variance/).
     mode_dir = "slot" if args.pca_mode == "slot" else "flat"
-    OUT_DIR = OUT_DIR / mode_dir
+    OUT_DIR = Path(args.out_dir) if args.out_dir else OUT_DIR / mode_dir
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     if args.pca_mode == "flat":

@@ -69,7 +69,8 @@ DEFAULT_COMBOS = [
 ]
 
 
-def run_combo(model, features, pca, pca_mode="slot", dry_run=False):
+def run_combo(model, features, pca, pca_mode="slot", dry_run=False,
+              out_root=None):
     """Run one 04_modelling.py invocation."""
     cmd = [
         sys.executable, str(MODELING_SCRIPT),
@@ -81,6 +82,8 @@ def run_combo(model, features, pca, pca_mode="slot", dry_run=False):
             and str(pca).lower() not in ("none", "")):
         # flat_raw ignores --pca (all raw dims); "none" = no PCA at all
         cmd += ["--pca", str(pca)]
+    if out_root and out_root != ".":
+        cmd += ["--out-root", out_root]
 
     label = f"{model} x {features}"
     if pca is not None:
@@ -124,9 +127,19 @@ def expand_pca_sweep(spec):
     return combos
 
 
-def aggregate_results(start_time, combos, pca_mode="slot", dry_run=False):
+def aggregate_results(start_time, combos, pca_mode="slot", dry_run=False,
+                      out_root=None):
     """Run extract_model_metrics.py to build performance table."""
-    out_dir = RESULTS_DIR / pca_mode
+    if out_root and out_root != ".":
+        # Shared campaign folder: read and write under it.
+        out_dir = Path(out_root) / "results"
+        results_args = [f"{out_root}/models/{pca_mode}/cv_results_*.json"]
+    else:
+        # Default: auto per-run folders. The legacy glob plus the runs-wide
+        # glob cover both; --since scopes to this matrix's own runs.
+        out_dir = RESULTS_DIR / pca_mode
+        results_args = [f"models/{pca_mode}/cv_results_*.json",
+                        f"runs/*/models/{pca_mode}/cv_results_*.json"]
     out_dir.mkdir(parents=True, exist_ok=True)
     ts_str = start_time.strftime("%Y-%m-%d %H:%M:%S")
     models = sorted({m for m, _, _ in combos})
@@ -136,7 +149,7 @@ def aggregate_results(start_time, combos, pca_mode="slot", dry_run=False):
 
     cmd = [
         sys.executable, str(EXTRACT_SCRIPT),
-        "--results", f"models/{pca_mode}/cv_results_*.json",
+        "--results", *results_args,
         "--since", ts_str,
         "--out", str(out_path),
     ]
@@ -225,6 +238,14 @@ def main():
         help="Skip the end-of-run aggregate table. Use for parallel array jobs; "
              "run a single manual extract_model_metrics.py aggregation afterwards.",
     )
+    parser.add_argument(
+        "--out-root", type=str, default=None,
+        help="Run-folder root shared by a whole submission "
+             "(e.g. runs/padfull_flat_20261001_1645), forwarded to each "
+             "04_modelling.py call; aggregate table goes under it. Default: "
+             "each run auto-creates runs/<run_tag>_<timestamp>/; aggregate "
+             "reads legacy + runs-wide globs into results/tables/.",
+    )
     args = parser.parse_args()
 
     combos = []
@@ -262,7 +283,7 @@ def main():
     failures = 0
     for model, features, pca in combos:
         ok = run_combo(model, features, pca, pca_mode=args.pca_mode,
-                       dry_run=args.dry_run)
+                       dry_run=args.dry_run, out_root=args.out_root)
         if ok:
             successes += 1
         else:
@@ -280,7 +301,8 @@ def main():
     print(f"  Runtime:  {t_end - t_start:.1f}s ({total_minutes:.1f} min)")
 
     if not args.dry_run and not args.no_aggregate:
-        aggregate_results(start_time, combos, pca_mode=args.pca_mode)
+        aggregate_results(start_time, combos, pca_mode=args.pca_mode,
+                          out_root=args.out_root)
     elif args.no_aggregate:
         print("\n  (aggregate skipped via --no-aggregate; run a single manual "
               "extract_model_metrics.py aggregation after all jobs finish)")

@@ -23,6 +23,24 @@ fi
 mkdir -p logs results/tables
 export PYTHONUNBUFFERED=1
 
+# Run-folder root, exported by the submit one-liner below. Unset = each run
+# auto-creates runs/<run_tag>_<timestamp>/ (no flags needed); set = shared
+# campaign folder. Queued jobs unaffected (Slurm snapshotted them at submit).
+OUT="${RUN:-.}"
+
+# Link campaign inputs (run-folder submissions only; skip existing).
+if [ -n "${RUN:-}" ]; then
+  [ -e "$OUT/data/df_all_with_folds.csv" ] || ln -s ../../../data/processed/df_all_with_folds.csv "$OUT/data/"
+  for h in esmc_win_zeropad esmc_win_padtoken esmc_win_impute_bos_eos esmc_win_impute_boundary \
+           esmif_zero_windows esmif_pad_windows esmif_boundary_windows esmif_eos_bos_repeat_windows; do
+    [ -e "$OUT/data/${h}_prepared.h5" ] || ln -s "../../../data/processed/embeddings_prepared/${h}_prepared.h5" "$OUT/data/"
+  done
+  [ -e "$OUT/data/structures" ] || ln -s ../../../data/processed/structures "$OUT/data/structures"
+fi
+
+# Submit future grids with a timestamped run folder (paste, no new files needed):
+#   RUN="runs/padfull_flat_$(date +%Y%m%d_%H%M)"; mkdir -p "$RUN"/{models,logs/slurm,results,plots,data} && sbatch --job-name=padfull_flat --output="$RUN/logs/slurm/%A_%a.out" --error="$RUN/logs/slurm/%A_%a.err" --export=RUN="$RUN",ALL src/run/run_matrix_windows_flat_slurm.sh
+
 # ════════════════════════════════════════════════════════════════════════════
 # Ordered padmode × PC grid — XGBOOST ONLY.
 #
@@ -105,6 +123,7 @@ echo "Array task ${IDX}: model=${MODEL} features=${FEAT} pca=${PCA_ARG} mode=${P
 python src/pipeline/python/04b_run_matrix.py \
   --pca-mode "$PCAMODE" \
   --no-aggregate \
+  --out-root "$OUT" \
   --pca-sweep "${MODEL}:${FEAT}:${PCA_ARG}"
 
 echo "Array task ${IDX} completed."

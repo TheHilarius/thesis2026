@@ -1106,6 +1106,12 @@ def parse_args():
         help="Override inverse regularization strength C (default: config.py value, "
              "smaller = stronger reg)",
     )
+    parser.add_argument(
+        "--out-root", type=str, default=None,
+        help="Run-folder root shared by a whole submission "
+             "(e.g. runs/padfull_flat_20261001_1645). Default: automatic "
+             "runs/<run_tag>_<timestamp>/ folder per run (no flags needed).",
+    )
     return parser.parse_args()
 
 # ──────────────────────────────────────────────
@@ -1152,8 +1158,16 @@ if __name__ == "__main__":
     # Namespace all run outputs by PCA experiment so slot/flat batches
     # never mix (logs, cv_results, pickles). Baselines run with the
     # default pca_mode=slot, so they live under slot/ as well.
-    log_dir = LOG_DIR / pca_mode
-    model_dir = MODEL_DIR / pca_mode
+    # --out-root redirects the base (campaign folder shared by a whole
+    # submission). Default = automatic per-run folder
+    # runs/<run_tag>_<timestamp>/ — no flags needed. Legacy repo-root
+    # paths receive no new files ("." also means automatic).
+    if args.out_root and args.out_root != ".":
+        out_base = Path(args.out_root)
+    else:
+        out_base = LOG_DIR.parent / "runs" / f"{run_tag}_{timestamp}"
+    log_dir = out_base / "logs" / pca_mode
+    model_dir = out_base / "models" / pca_mode
     LOG_PATH = log_dir / f"04_modelling_{run_tag}_log_{timestamp}.txt"
     os.makedirs(log_dir, exist_ok=True)
     os.makedirs(model_dir, exist_ok=True)
@@ -1315,6 +1329,7 @@ if __name__ == "__main__":
     outer_val_metrics = []
     outer_val_predictions = {}
     all_outer_inner_weights = []
+    fold_times = []
 
     t_nested_start = time.time()
 
@@ -1363,6 +1378,7 @@ if __name__ == "__main__":
             )
 
             t_fold_end = time.time()
+            fold_times.append(round(t_fold_end - t_fold_start, 1))
             print(f"    Inner fold {inner_fold} AUC: "
                   f"{test_metrics['auc_roc']:.4f} ({t_fold_end - t_fold_start:.1f}s)")
 
@@ -1460,9 +1476,13 @@ if __name__ == "__main__":
 
     # ── Save Results ──
     n_features_final = feature_names is not None and len(feature_names)
+    t_results = time.time()
 
     results = {
         "timestamp": timestamp,
+        "runtime_seconds": round(t_results - t_start, 1),
+        "nested_cv_seconds": round(t_nested_end - t_nested_start, 1),
+        "fold_seconds": fold_times,
         "mode": "nested_cv",
         "model_key": model_key,
         "model_type": display_name,
