@@ -28,7 +28,9 @@ export PYTHONUNBUFFERED=1
 #
 # PC dims = flat-full variance thresholds (08_pca_variance_analysis.py
 # --pca-mode flat-full; zero-mode representatives — spectra are mode-
-# invariant for zero/boundary/eos_bos; padtoken shifts ~1-2 PCs).
+# invariant BY CONSTRUCTION: fit uses fully-real rows only, so pad fill
+# never enters the fitted matrix. padtoken residual ~1e-05; threshold
+# counts identical for all four modes).
 #   ESM-C : 50%=97  80%=2346 85%=3888 90%=6389 95%=10895 99%=20142  100%=33408
 #   ESM-IF: 50%=345 80%=2125 85%=2974 90%=4308 95%=6700  99%=11243  100%=14848
 #

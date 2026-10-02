@@ -465,6 +465,12 @@ if __name__ == "__main__":
     )
     args = ap.parse_args()
 
+    # Outputs live in per-mode subfolders: slot/, flat/ (flat + flat-full
+    # share flat/ — filenames differ by the _full suffix)
+    mode_dir = "slot" if args.pca_mode == "slot" else "flat"
+    OUT_DIR = OUT_DIR / mode_dir
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+
     if args.pca_mode == "flat":
         sets = FLAT_SETS
     else:
@@ -558,7 +564,14 @@ if __name__ == "__main__":
 
     # ── flat-full cross-mode validation ──
     # zero/boundary/eos_bos_repeat embed identical real rows → identical
-    # spectra; padtoken/pad exempt (RoPE-shifted reals, different input).
+    # spectra. The fit streams fully-real rows only (stream_real_rows_flat),
+    # so the pad fill never enters the fitted matrix — that is why spectra
+    # are padmode-invariant by construction. padtoken/pad are exempt from
+    # the byte-identity check: real <pad> tokens change the model input
+    # (RoPE-shifted reals), so their real-slot embeddings differ slightly.
+    # The residual on fully-real fit rows is tiny (~1e-05 cumulative,
+    # max ~1.5e-05) — far below between-PC spacing — so threshold counts
+    # stay identical for all four modes.
     if args.pca_mode == "flat-full":
         print(f"\n{'=' * 65}")
         print("  CROSS-MODE VALIDATION (flat-full)")

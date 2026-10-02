@@ -61,11 +61,12 @@ data/processed/structures_hybrid_v2_80/
 logs/fetch_hybrid_v2_60.log
 logs/fetch_hybrid_v2_80.log
 
-# Model files (large binary)
+# Model files (large binary) — anchor to repo root: results/figures/models/
+# must stay trackable
 models/*.pkl
 models/*.pt
 models/*json
-models
+/models/
 # VS Code local settings
 .vscode/
 
@@ -107,9 +108,11 @@ data/processed/nsp3_backup_20260907/
 *.out
 *.err
 docs/environment_setup_SOP.md
-models/
+/models/
 results/tables/model*
 
 # Overnight reports — published only to the `reports` branch
 reports/overnight/
 logs/08_*.log
+
+docs/latex/
