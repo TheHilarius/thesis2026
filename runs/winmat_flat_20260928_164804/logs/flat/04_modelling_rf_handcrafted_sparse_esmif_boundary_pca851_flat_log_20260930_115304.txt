@@ -1,0 +1,981 @@
+================================================================================
+  04_MODELLING -- RANDOM FOREST + STRUCTURAL + ONE-HOT + ESM-IF WINDOWS (BOUNDARY)
+================================================================================
+  Timestamp:       2026-09-30 11:53:04
+  Model key:       rf
+  Model class:     sklearn.ensemble.RandomForestClassifier
+  Feature set:     handcrafted_sparse_esmif_boundary (Structural + one-hot + ESM-IF windows (boundary))
+  PCA mode:        flat
+  Components:      ['handcrafted', 'sparse', 'esmif_boundary']
+  Data path:       /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_with_folds.csv
+  Log path:        /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/logs/flat/04_modelling_rf_handcrafted_sparse_esmif_boundary_pca851_flat_log_20260930_115304.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   False
+
+  Model hyperparameters:
+    n_estimators              1000
+    max_depth                 None
+    min_samples_split         2
+    min_samples_leaf          1
+    max_features              sqrt
+    class_weight              balanced
+    n_jobs                    -1
+    random_state              42
+    verbose                   0
+================================================================================
+
+Loading split data: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_with_folds.csv
+  Shape: 46617 rows x 99 columns
+  [OK] Fold column validated: [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5)]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+  Loading CSV component: One-hot AA encoding
+    Loading: df_all_sparse.csv
+    Shape: 46617 rows x 702 columns
+    [OK] Alignment verified
+    New columns: 633
+
+  Merged 633 new columns → 46617 rows x 734 columns
+  Excluded 2 non-numeric feature column(s)
+
+  Loading embedding component: ESM-IF1 windows (boundary, 29x512)
+    Loading prepared embeddings: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/embeddings_prepared/esmif_boundary_windows_prepared.h5
+    Loaded (windows): 46617 samples, window=29, dim=512 (tensor streamed lazily)
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  CSV components (2):
+    [handcrafted] Structural features
+      Source: split_data (built-in)
+    [sparse] One-hot AA encoding
+      Source: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_sparse.csv
+      New columns added: 633
+  Total CSV features: 683
+    Structural: 74
+    AA-encoded: 609
+
+  Embedding components (1):
+    [esmif_boundary] ESM-IF1 windows (boundary, 29x512)
+      Context dim:    29x512 (flat 14848)
+      After PCA: 851
+
+  Estimated total features: ~1534
+    CSV:        683
+    Embeddings: 851 (after PCA)
+
+================================================================================
+PIPELINE READY: ~1534 features, 5 folds, Random Forest
+================================================================================
+
+================================================================================
+NESTED CROSS-VALIDATION
+  Outer iterations: 6 (rotate validation bucket)
+  Inner folds:      5 (per outer iteration)
+  Total models:     30
+================================================================================
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 0/5 (validation bucket = 0)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 1) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       25          8     0.3509
+    mean_disorder_nflank                                  25          8     0.0102
+    mean_rsa_cflank                                       95         12     0.3612
+    mean_disorder_cflank                                  95         12     0.0114
+    mean_plddt_nflank                                     25          8    89.1430
+    mean_plddt_cflank                                     95         12    88.9645
+    Total NaN — train: 360 (0.00%), test: 60 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31077 rows streamed, 30074 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.4% variance)
+    Total features after concatenation: 1534
+    Train:  31077 samples (pos=14393, neg=16684, ratio=1.159)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 127.2s
+    Inner fold 1 AUC: 0.6569 (356.9s)
+
+  ── Inner fold 2/5 (test bucket = 2) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       24          9     0.3506
+    mean_disorder_nflank                                  24          9     0.0102
+    mean_rsa_cflank                                       81         26     0.3617
+    mean_disorder_cflank                                  81         26     0.0116
+    mean_plddt_nflank                                     24          9    89.1620
+    mean_plddt_cflank                                     81         26    88.9095
+    Total NaN — train: 315 (0.00%), test: 105 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31077 rows streamed, 30107 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31077 samples (pos=14378, neg=16699, ratio=1.161)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 126.0s
+    Inner fold 2 AUC: 0.6529 (357.8s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       28          5     0.3505
+    mean_disorder_nflank                                  28          5     0.0101
+    mean_rsa_cflank                                       81         26     0.3615
+    mean_disorder_cflank                                  81         26     0.0115
+    mean_plddt_nflank                                     28          5    89.0965
+    mean_plddt_cflank                                     81         26    88.8560
+    Total NaN — train: 327 (0.00%), test: 93 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30078 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.4% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14392, neg=16686, ratio=1.159)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 126.9s
+    Inner fold 3 AUC: 0.6583 (358.2s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       27          6     0.3513
+    mean_disorder_nflank                                  27          6     0.0103
+    mean_rsa_cflank                                       87         20     0.3624
+    mean_disorder_cflank                                  87         20     0.0116
+    mean_plddt_nflank                                     27          6    89.1560
+    mean_plddt_cflank                                     87         20    88.9250
+    Total NaN — train: 342 (0.00%), test: 78 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30067 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14374, neg=16704, ratio=1.162)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 126.7s
+    Inner fold 4 AUC: 0.6562 (347.9s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       28          5     0.3499
+    mean_disorder_nflank                                  28          5     0.0101
+    mean_rsa_cflank                                       84         23     0.3613
+    mean_disorder_cflank                                  84         23     0.0113
+    mean_plddt_nflank                                     28          5    89.2070
+    mean_plddt_cflank                                     84         23    88.9680
+    Total NaN — train: 336 (0.00%), test: 84 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30106 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.4% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14383, neg=16695, ratio=1.161)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 127.4s
+    Inner fold 5 AUC: 0.6588 (349.6s)
+
+  Averaging 5 inner models on validation bucket 0...
+  Outer fold 0 validation (n=7770, pos=3621, neg=4149):
+    AUC-ROC: 0.6615  |  AUC-PR: 0.6013  |  Acc: 0.6138  |  F1: 0.5408  |  MCC: 0.2180
+    Sens: 0.4880  |  Spec: 0.7235  |  PPV: 0.6064  |  NPV: 0.6182
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 1/5 (validation bucket = 1)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       25          4     0.3509
+    mean_disorder_nflank                                  25          4     0.0102
+    mean_rsa_cflank                                       95         16     0.3612
+    mean_disorder_cflank                                  95         16     0.0114
+    mean_plddt_nflank                                     25          4    89.1430
+    mean_plddt_cflank                                     95         16    88.9645
+    Total NaN — train: 360 (0.00%), test: 60 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31077 rows streamed, 30074 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.4% variance)
+    Total features after concatenation: 1534
+    Train:  31077 samples (pos=14393, neg=16684, ratio=1.159)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 127.2s
+    Inner fold 0 AUC: 0.6547 (358.2s)
+
+  ── Inner fold 2/5 (test bucket = 2) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       20          9     0.3511
+    mean_disorder_nflank                                  20          9     0.0104
+    mean_rsa_cflank                                       85         26     0.3617
+    mean_disorder_cflank                                  85         26     0.0117
+    mean_plddt_nflank                                     20          9    89.0860
+    mean_plddt_cflank                                     85         26    88.8820
+    Total NaN — train: 315 (0.00%), test: 105 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31077 rows streamed, 30088 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31077 samples (pos=14412, neg=16665, ratio=1.156)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 128.1s
+    Inner fold 2 AUC: 0.6478 (360.0s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       24          5     0.3511
+    mean_disorder_nflank                                  24          5     0.0103
+    mean_rsa_cflank                                       85         26     0.3615
+    mean_disorder_cflank                                  85         26     0.0116
+    mean_plddt_nflank                                     24          5    89.0045
+    mean_plddt_cflank                                     85         26    88.8260
+    Total NaN — train: 327 (0.00%), test: 93 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30059 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14426, neg=16652, ratio=1.154)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 129.7s
+    Inner fold 3 AUC: 0.6676 (361.5s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       23          6     0.3519
+    mean_disorder_nflank                                  23          6     0.0105
+    mean_rsa_cflank                                       91         20     0.3626
+    mean_disorder_cflank                                  91         20     0.0117
+    mean_plddt_nflank                                     23          6    89.0810
+    mean_plddt_cflank                                     91         20    88.8870
+    Total NaN — train: 342 (0.00%), test: 78 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30048 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14408, neg=16670, ratio=1.157)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 130.6s
+    Inner fold 4 AUC: 0.6649 (349.9s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       24          5     0.3505
+    mean_disorder_nflank                                  24          5     0.0103
+    mean_rsa_cflank                                       88         23     0.3614
+    mean_disorder_cflank                                  88         23     0.0114
+    mean_plddt_nflank                                     24          5    89.1300
+    mean_plddt_cflank                                     88         23    88.9190
+    Total NaN — train: 336 (0.00%), test: 84 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30087 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14417, neg=16661, ratio=1.156)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 130.9s
+    Inner fold 5 AUC: 0.6604 (350.5s)
+
+  Averaging 5 inner models on validation bucket 1...
+  Outer fold 1 validation (n=7770, pos=3587, neg=4183):
+    AUC-ROC: 0.6678  |  AUC-PR: 0.6214  |  Acc: 0.6247  |  F1: 0.5547  |  MCC: 0.2387
+    Sens: 0.5063  |  Spec: 0.7263  |  PPV: 0.6133  |  NPV: 0.6317
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 2/5 (validation bucket = 2)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       24          4     0.3506
+    mean_disorder_nflank                                  24          4     0.0102
+    mean_rsa_cflank                                       81         16     0.3617
+    mean_disorder_cflank                                  81         16     0.0116
+    mean_plddt_nflank                                     24          4    89.1620
+    mean_plddt_cflank                                     81         16    88.9095
+    Total NaN — train: 315 (0.00%), test: 60 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31077 rows streamed, 30107 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31077 samples (pos=14378, neg=16699, ratio=1.161)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 125.8s
+    Inner fold 0 AUC: 0.6475 (358.6s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       20          8     0.3511
+    mean_disorder_nflank                                  20          8     0.0104
+    mean_rsa_cflank                                       85         12     0.3617
+    mean_disorder_cflank                                  85         12     0.0117
+    mean_plddt_nflank                                     20          8    89.0860
+    mean_plddt_cflank                                     85         12    88.8820
+    Total NaN — train: 315 (0.00%), test: 60 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31077 rows streamed, 30088 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31077 samples (pos=14412, neg=16665, ratio=1.156)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 128.1s
+    Inner fold 1 AUC: 0.6504 (359.1s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       23          5     0.3509
+    mean_disorder_nflank                                  23          5     0.0103
+    mean_rsa_cflank                                       71         26     0.3619
+    mean_disorder_cflank                                  71         26     0.0118
+    mean_plddt_nflank                                     23          5    89.0430
+    mean_plddt_cflank                                     71         26    88.7750
+    Total NaN — train: 282 (0.00%), test: 93 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30092 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14411, neg=16667, ratio=1.157)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 127.3s
+    Inner fold 3 AUC: 0.6645 (357.8s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       22          6     0.3517
+    mean_disorder_nflank                                  22          6     0.0105
+    mean_rsa_cflank                                       77         20     0.3630
+    mean_disorder_cflank                                  77         20     0.0120
+    mean_plddt_nflank                                     22          6    89.0990
+    mean_plddt_cflank                                     77         20    88.8310
+    Total NaN — train: 297 (0.00%), test: 78 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30081 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.6% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14393, neg=16685, ratio=1.159)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 128.3s
+    Inner fold 4 AUC: 0.6577 (350.7s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       23          5     0.3503
+    mean_disorder_nflank                                  23          5     0.0103
+    mean_rsa_cflank                                       74         23     0.3618
+    mean_disorder_cflank                                  74         23     0.0116
+    mean_plddt_nflank                                     23          5    89.1450
+    mean_plddt_cflank                                     74         23    88.8815
+    Total NaN — train: 291 (0.00%), test: 84 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30120 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14402, neg=16676, ratio=1.158)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 130.1s
+    Inner fold 5 AUC: 0.6570 (352.5s)
+
+  Averaging 5 inner models on validation bucket 2...
+  Outer fold 2 validation (n=7770, pos=3602, neg=4168):
+    AUC-ROC: 0.6607  |  AUC-PR: 0.6096  |  Acc: 0.6248  |  F1: 0.5642  |  MCC: 0.2405
+    Sens: 0.5239  |  Spec: 0.7121  |  PPV: 0.6113  |  NPV: 0.6338
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 3/5 (validation bucket = 3)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       28          4     0.3505
+    mean_disorder_nflank                                  28          4     0.0101
+    mean_rsa_cflank                                       81         16     0.3615
+    mean_disorder_cflank                                  81         16     0.0115
+    mean_plddt_nflank                                     28          4    89.0965
+    mean_plddt_cflank                                     81         16    88.8560
+    Total NaN — train: 327 (0.00%), test: 60 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30078 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.4% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14392, neg=16686, ratio=1.159)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 127.0s
+    Inner fold 0 AUC: 0.6537 (357.0s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       24          8     0.3511
+    mean_disorder_nflank                                  24          8     0.0103
+    mean_rsa_cflank                                       85         12     0.3615
+    mean_disorder_cflank                                  85         12     0.0116
+    mean_plddt_nflank                                     24          8    89.0045
+    mean_plddt_cflank                                     85         12    88.8260
+    Total NaN — train: 327 (0.00%), test: 60 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30059 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14426, neg=16652, ratio=1.154)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 130.7s
+    Inner fold 1 AUC: 0.6569 (359.9s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       23          9     0.3509
+    mean_disorder_nflank                                  23          9     0.0103
+    mean_rsa_cflank                                       71         26     0.3619
+    mean_disorder_cflank                                  71         26     0.0118
+    mean_plddt_nflank                                     23          9    89.0430
+    mean_plddt_cflank                                     71         26    88.7750
+    Total NaN — train: 282 (0.00%), test: 105 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30092 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14411, neg=16667, ratio=1.157)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 126.4s
+    Inner fold 2 AUC: 0.6519 (354.7s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       26          6     0.3515
+    mean_disorder_nflank                                  26          6     0.0105
+    mean_rsa_cflank                                       77         20     0.3627
+    mean_disorder_cflank                                  77         20     0.0119
+    mean_plddt_nflank                                     26          6    89.0260
+    mean_plddt_cflank                                     77         20    88.8000
+    Total NaN — train: 309 (0.00%), test: 78 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31079 rows streamed, 30052 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31079 samples (pos=14407, neg=16672, ratio=1.157)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 130.1s
+    Inner fold 4 AUC: 0.6559 (355.2s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       27          5     0.3503
+    mean_disorder_nflank                                  27          5     0.0102
+    mean_rsa_cflank                                       74         23     0.3616
+    mean_disorder_cflank                                  74         23     0.0115
+    mean_plddt_nflank                                     27          5    89.0860
+    mean_plddt_cflank                                     74         23    88.8300
+    Total NaN — train: 303 (0.00%), test: 84 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31079 rows streamed, 30091 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31079 samples (pos=14416, neg=16663, ratio=1.156)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 128.1s
+    Inner fold 5 AUC: 0.6636 (355.6s)
+
+  Averaging 5 inner models on validation bucket 3...
+  Outer fold 3 validation (n=7769, pos=3588, neg=4181):
+    AUC-ROC: 0.6743  |  AUC-PR: 0.6245  |  Acc: 0.6253  |  F1: 0.5551  |  MCC: 0.2400
+    Sens: 0.5061  |  Spec: 0.7276  |  PPV: 0.6146  |  NPV: 0.6319
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 4/5 (validation bucket = 4)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       27          4     0.3513
+    mean_disorder_nflank                                  27          4     0.0103
+    mean_rsa_cflank                                       87         16     0.3624
+    mean_disorder_cflank                                  87         16     0.0116
+    mean_plddt_nflank                                     27          4    89.1560
+    mean_plddt_cflank                                     87         16    88.9250
+    Total NaN — train: 342 (0.00%), test: 60 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30067 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14374, neg=16704, ratio=1.162)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 127.6s
+    Inner fold 0 AUC: 0.6496 (354.3s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       23          8     0.3519
+    mean_disorder_nflank                                  23          8     0.0105
+    mean_rsa_cflank                                       91         12     0.3626
+    mean_disorder_cflank                                  91         12     0.0117
+    mean_plddt_nflank                                     23          8    89.0810
+    mean_plddt_cflank                                     91         12    88.8870
+    Total NaN — train: 342 (0.00%), test: 60 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30048 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14408, neg=16670, ratio=1.157)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 130.1s
+    Inner fold 1 AUC: 0.6618 (359.1s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       22          9     0.3517
+    mean_disorder_nflank                                  22          9     0.0105
+    mean_rsa_cflank                                       77         26     0.3630
+    mean_disorder_cflank                                  77         26     0.0120
+    mean_plddt_nflank                                     22          9    89.0990
+    mean_plddt_cflank                                     77         26    88.8310
+    Total NaN — train: 297 (0.00%), test: 105 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30081 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.6% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14393, neg=16685, ratio=1.159)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 126.9s
+    Inner fold 2 AUC: 0.6480 (353.9s)
+
+  ── Inner fold 4/5 (test bucket = 3) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       26          5     0.3515
+    mean_disorder_nflank                                  26          5     0.0105
+    mean_rsa_cflank                                       77         26     0.3627
+    mean_disorder_cflank                                  77         26     0.0119
+    mean_plddt_nflank                                     26          5    89.0260
+    mean_plddt_cflank                                     77         26    88.8000
+    Total NaN — train: 309 (0.00%), test: 93 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31079 rows streamed, 30052 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31079 samples (pos=14407, neg=16672, ratio=1.157)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 129.9s
+    Inner fold 3 AUC: 0.6599 (357.5s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       26          5     0.3510
+    mean_disorder_nflank                                  26          5     0.0104
+    mean_rsa_cflank                                       80         23     0.3628
+    mean_disorder_cflank                                  80         23     0.0117
+    mean_plddt_nflank                                     26          5    89.1380
+    mean_plddt_cflank                                     80         23    88.8870
+    Total NaN — train: 318 (0.00%), test: 84 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31079 rows streamed, 30080 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31079 samples (pos=14398, neg=16681, ratio=1.159)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 128.4s
+    Inner fold 5 AUC: 0.6635 (358.5s)
+
+  Averaging 5 inner models on validation bucket 4...
+  Outer fold 4 validation (n=7769, pos=3606, neg=4163):
+    AUC-ROC: 0.6697  |  AUC-PR: 0.6217  |  Acc: 0.6238  |  F1: 0.5537  |  MCC: 0.2378
+    Sens: 0.5028  |  Spec: 0.7286  |  PPV: 0.6160  |  NPV: 0.6285
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 5/5 (validation bucket = 5)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       28          4     0.3499
+    mean_disorder_nflank                                  28          4     0.0101
+    mean_rsa_cflank                                       84         16     0.3613
+    mean_disorder_cflank                                  84         16     0.0113
+    mean_plddt_nflank                                     28          4    89.2070
+    mean_plddt_cflank                                     84         16    88.9680
+    Total NaN — train: 336 (0.00%), test: 60 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30106 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.4% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14383, neg=16695, ratio=1.161)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 126.3s
+    Inner fold 0 AUC: 0.6487 (351.7s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       24          8     0.3505
+    mean_disorder_nflank                                  24          8     0.0103
+    mean_rsa_cflank                                       88         12     0.3614
+    mean_disorder_cflank                                  88         12     0.0114
+    mean_plddt_nflank                                     24          8    89.1300
+    mean_plddt_cflank                                     88         12    88.9190
+    Total NaN — train: 336 (0.00%), test: 60 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30087 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14417, neg=16661, ratio=1.156)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 129.4s
+    Inner fold 1 AUC: 0.6541 (354.7s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       23          9     0.3503
+    mean_disorder_nflank                                  23          9     0.0103
+    mean_rsa_cflank                                       74         26     0.3618
+    mean_disorder_cflank                                  74         26     0.0116
+    mean_plddt_nflank                                     23          9    89.1450
+    mean_plddt_cflank                                     74         26    88.8815
+    Total NaN — train: 291 (0.00%), test: 105 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30120 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14402, neg=16676, ratio=1.158)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 126.0s
+    Inner fold 2 AUC: 0.6468 (352.1s)
+
+  ── Inner fold 4/5 (test bucket = 3) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       27          5     0.3503
+    mean_disorder_nflank                                  27          5     0.0102
+    mean_rsa_cflank                                       74         26     0.3616
+    mean_disorder_cflank                                  74         26     0.0115
+    mean_plddt_nflank                                     27          5    89.0860
+    mean_plddt_cflank                                     74         26    88.8300
+    Total NaN — train: 303 (0.00%), test: 93 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31079 rows streamed, 30091 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31079 samples (pos=14416, neg=16663, ratio=1.156)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 128.3s
+    Inner fold 3 AUC: 0.6634 (348.0s)
+
+  ── Inner fold 5/5 (test bucket = 4) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       26          6     0.3510
+    mean_disorder_nflank                                  26          6     0.0104
+    mean_rsa_cflank                                       80         20     0.3628
+    mean_disorder_cflank                                  80         20     0.0117
+    mean_plddt_nflank                                     26          6    89.1380
+    mean_plddt_cflank                                     80         20    88.8870
+    Total NaN — train: 318 (0.00%), test: 78 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_boundary'])
+    esmif_boundary: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31079 rows streamed, 30080 fully-real rows kept (k=851 over 14848 dims)
+    esmif_boundary: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31079 samples (pos=14398, neg=16681, ratio=1.159)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1534
+    Training Random Forest ...
+    Training time: 127.6s
+    Inner fold 4 AUC: 0.6547 (348.2s)
+
+  Averaging 5 inner models on validation bucket 5...
+  Outer fold 5 validation (n=7769, pos=3597, neg=4172):
+    AUC-ROC: 0.6722  |  AUC-PR: 0.6265  |  Acc: 0.6241  |  F1: 0.5443  |  MCC: 0.2377
+    Sens: 0.4848  |  Spec: 0.7442  |  PPV: 0.6204  |  NPV: 0.6263
+
+================================================================================
+NESTED CV RESULTS (mean ± std across 6 outer iterations)
+================================================================================
+
+================================================================================
+CROSS-VALIDATION SUMMARY (mean +/- std)
+================================================================================
+  auc_roc         0.6677 +/- 0.0051    [0.6615  0.6678  0.6607  0.6743  0.6697  0.6722]
+  auc_pr          0.6175 +/- 0.0090    [0.6013  0.6214  0.6096  0.6245  0.6217  0.6265]
+  accuracy        0.6228 +/- 0.0040    [0.6138  0.6247  0.6248  0.6253  0.6238  0.6241]
+  f1              0.5521 +/- 0.0077    [0.5408  0.5547  0.5642  0.5551  0.5537  0.5443]
+  mcc             0.2354 +/- 0.0079    [0.2180  0.2387  0.2405  0.2400  0.2378  0.2377]
+  sensitivity     0.5020 +/- 0.0129    [0.4880  0.5063  0.5239  0.5061  0.5028  0.4848]
+  specificity     0.7270 +/- 0.0094    [0.7235  0.7263  0.7121  0.7276  0.7286  0.7442]
+  ppv             0.6137 +/- 0.0043    [0.6064  0.6133  0.6113  0.6146  0.6160  0.6204]
+  npv             0.6284 +/- 0.0052    [0.6182  0.6317  0.6338  0.6319  0.6285  0.6263]
+
+================================================================================
+PER-OUTER-FOLD VALIDATION METRICS
+================================================================================
+  Outer   auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
+  -----------------------------------------------------------------------------------------------------------------------------
+  0       0.6615       0.6013       0.6138       0.5408       0.2180       0.4880       0.7235       0.6064       0.6182       
+  1       0.6678       0.6214       0.6247       0.5547       0.2387       0.5063       0.7263       0.6133       0.6317       
+  2       0.6607       0.6096       0.6248       0.5642       0.2405       0.5239       0.7121       0.6113       0.6338       
+  3       0.6743       0.6245       0.6253       0.5551       0.2400       0.5061       0.7276       0.6146       0.6319       
+  4       0.6697       0.6217       0.6238       0.5537       0.2378       0.5028       0.7286       0.6160       0.6285       
+  5       0.6722       0.6265       0.6241       0.5443       0.2377       0.4848       0.7442       0.6204       0.6263       
+  -----------------------------------------------------------------------------------------------------------------------------
+  mean    0.6677       0.6175       0.6228       0.5521       0.2354       0.5020       0.7270       0.6137       0.6284       
+  std     0.0051       0.0090       0.0040       0.0077       0.0079       0.0129       0.0094       0.0043       0.0052       
+
+================================================================================
+AVERAGED FEATURE IMPORTANCE ACROSS ALL 30 INNER MODELS
+================================================================================
+  Rank   Feature                                           Mean Imp          Std
+  -----------------------------------------------------------------------------
+  1      esmif_boundary_PC003                              0.003386     0.000117
+  2      mean_plddt_peptide                                0.001782     0.000064
+  3      mean_plddt_nflank                                 0.001779     0.000038
+  4      min_plddt_peptide                                 0.001695     0.000044
+  5      min_plddt_nflank                                  0.001694     0.000062
+  6      N1_P                                              0.001692     0.000250
+  7      esmif_boundary_PC008                              0.001586     0.000126
+  8      max_plddt_nflank                                  0.001562     0.000043
+  9      P5_P                                              0.001549     0.000128
+  10     min_plddt_cflank                                  0.001546     0.000055
+  11     mean_rsa_cflank                                   0.001526     0.000072
+  12     max_plddt_peptide                                 0.001488     0.000064
+  13     mean_plddt_cflank                                 0.001485     0.000054
+  14     max_rsa_cflank                                    0.001468     0.000085
+  15     esmif_boundary_PC038                              0.001466     0.000203
+  16     esmif_boundary_PC002                              0.001377     0.000022
+  17     esmif_boundary_PC037                              0.001366     0.000163
+  18     esmif_boundary_PC025                              0.001365     0.000072
+  19     min_rsa_cflank                                    0.001343     0.000043
+  20     max_plddt_cflank                                  0.001340     0.000042
+  21     esmif_boundary_PC004                              0.001327     0.000062
+  22     esmif_boundary_PC001                              0.001295     0.000033
+  23     min_rsa_peptide                                   0.001282     0.000039
+  24     esmif_boundary_PC005                              0.001275     0.000023
+  25     mean_disorder_cflank                              0.001269     0.000034
+  26     esmif_boundary_PC052                              0.001268     0.000196
+  27     min_disorder_cflank                               0.001258     0.000026
+  28     esmif_boundary_PC036                              0.001251     0.000086
+  29     mean_rsa_peptide                                  0.001249     0.000043
+  30     esmif_boundary_PC051                              0.001248     0.000127
+
+Results saved: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/flat/cv_results_rf_handcrafted_sparse_esmif_boundary_pca851_flat_20260930_115304.json
+Feature names saved: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/flat/rf_handcrafted_sparse_esmif_boundary_pca851_flat_feature_names.json
+
+================================================================================
+RUN SUMMARY (NESTED CV)
+================================================================================
+  Total runtime:      11461.4s (191.0 min)
+  Nested CV time:     11457.6s (191.0 min)
+  Model:              Random Forest (rf)
+  Feature set:        Structural + one-hot + ESM-IF windows (boundary) (handcrafted_sparse_esmif_boundary)
+  Components:         ['handcrafted', 'sparse', 'esmif_boundary']
+  Scaling:            no
+  Features (final):   1534
+    CSV features:     683
+    esmif_boundary PCA:       851
+  Outer iterations:   6
+  Inner folds:        5
+  Total models:       30
+  Val AUC-ROC:        0.6677 ± 0.0051
+  Val MCC:            0.2354 ± 0.0079
+  Models dir:         /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/flat/
+  Results file:       /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/flat/cv_results_rf_handcrafted_sparse_esmif_boundary_pca851_flat_20260930_115304.json
+  Feature names:      /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/flat/rf_handcrafted_sparse_esmif_boundary_pca851_flat_feature_names.json
+  Log file:           /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/logs/flat/04_modelling_rf_handcrafted_sparse_esmif_boundary_pca851_flat_log_20260930_115304.txt
+  Completed:          2026-09-30 15:04:05
+================================================================================

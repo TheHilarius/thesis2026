@@ -1,0 +1,715 @@
+================================================================================
+  04_MODELLING -- XGBOOST + STRUCTURAL + ONE-HOT + ESM-C WINDOWS (IMPUTE-BOUNDARY)
+================================================================================
+  Timestamp:       2026-09-29 15:11:32
+  Model key:       xgb
+  Model class:     xgboost.XGBClassifier
+  Feature set:     handcrafted_sparse_esmc_win_impute_boundary (Structural + one-hot + ESM-C windows (impute-boundary))
+  PCA mode:        flat
+  Components:      ['handcrafted', 'sparse', 'esmc_win_impute_boundary']
+  Data path:       /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_with_folds.csv
+  Log path:        /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/logs/flat/04_modelling_xgb_handcrafted_sparse_esmc_win_impute_boundary_pca469_flat_log_20260929_151131.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   False
+
+  Model hyperparameters:
+    n_estimators              1000
+    max_depth                 6
+    learning_rate             0.1
+    subsample                 1.0
+    colsample_bytree          1.0
+    min_child_weight          1
+    reg_lambda                1.0
+    reg_alpha                 0.0
+    gamma                     0.0
+    eval_metric               logloss
+    n_jobs                    -1
+    verbosity                 0
+    random_state              42
+================================================================================
+
+Loading split data: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_with_folds.csv
+  Shape: 46617 rows x 99 columns
+  [OK] Fold column validated: [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5)]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+  Loading CSV component: One-hot AA encoding
+    Loading: df_all_sparse.csv
+    Shape: 46617 rows x 702 columns
+    [OK] Alignment verified
+    New columns: 633
+
+  Merged 633 new columns → 46617 rows x 734 columns
+  Excluded 2 non-numeric feature column(s)
+
+  Loading embedding component: ESM-C windows (impute-boundary, 29x1152)
+    Loading prepared embeddings: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/embeddings_prepared/esmc_win_impute_boundary_prepared.h5
+    Loaded (windows): 46617 samples, window=29, dim=1152 (tensor streamed lazily)
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  CSV components (2):
+    [handcrafted] Structural features
+      Source: split_data (built-in)
+    [sparse] One-hot AA encoding
+      Source: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_sparse.csv
+      New columns added: 633
+  Total CSV features: 683
+    Structural: 74
+    AA-encoded: 609
+
+  Embedding components (1):
+    [esmc_win_impute_boundary] ESM-C windows (impute-boundary, 29x1152)
+      Context dim:    29x1152 (flat 33408)
+      After PCA: 469
+
+  Estimated total features: ~1152
+    CSV:        683
+    Embeddings: 469 (after PCA)
+
+================================================================================
+PIPELINE READY: ~1152 features, 5 folds, XGBoost
+================================================================================
+
+================================================================================
+NESTED CROSS-VALIDATION
+  Outer iterations: 6 (rotate validation bucket)
+  Inner folds:      5 (per outer iteration)
+  Total models:     30
+================================================================================
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 0/5 (validation bucket = 0)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 1) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31077 rows streamed, 30107 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.2% variance)
+    Total features after concatenation: 1152
+    Train:  31077 samples (pos=14393, neg=16684, ratio=1.159)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1592 (neg=16684, pos=14393)
+    Training XGBoost ...
+    Training time: 77.0s
+    Inner fold 1 AUC: 0.7237 (546.7s)
+
+  ── Inner fold 2/5 (test bucket = 2) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31077 rows streamed, 30140 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.2% variance)
+    Total features after concatenation: 1152
+    Train:  31077 samples (pos=14378, neg=16699, ratio=1.161)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1614 (neg=16699, pos=14378)
+    Training XGBoost ...
+    Training time: 74.4s
+    Inner fold 2 AUC: 0.7235 (545.2s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31078 rows streamed, 30106 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.2% variance)
+    Total features after concatenation: 1152
+    Train:  31078 samples (pos=14392, neg=16686, ratio=1.159)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1594 (neg=16686, pos=14392)
+    Training XGBoost ...
+    Training time: 79.5s
+    Inner fold 3 AUC: 0.7203 (545.3s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31078 rows streamed, 30100 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.2% variance)
+    Total features after concatenation: 1152
+    Train:  31078 samples (pos=14374, neg=16704, ratio=1.162)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1621 (neg=16704, pos=14374)
+    Training XGBoost ...
+    Training time: 77.7s
+    Inner fold 4 AUC: 0.7220 (545.8s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31078 rows streamed, 30131 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.2% variance)
+    Total features after concatenation: 1152
+    Train:  31078 samples (pos=14383, neg=16695, ratio=1.161)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1607 (neg=16695, pos=14383)
+    Training XGBoost ...
+    Training time: 77.4s
+    Inner fold 5 AUC: 0.7263 (554.4s)
+
+  Averaging 5 inner models on validation bucket 0...
+  Outer fold 0 validation (n=7770, pos=3621, neg=4149):
+    AUC-ROC: 0.7394  |  AUC-PR: 0.7012  |  Acc: 0.6794  |  F1: 0.6479  |  MCC: 0.3543
+    Sens: 0.6330  |  Spec: 0.7199  |  PPV: 0.6636  |  NPV: 0.6921
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 1/5 (validation bucket = 1)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31077 rows streamed, 30107 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.2% variance)
+    Total features after concatenation: 1152
+    Train:  31077 samples (pos=14393, neg=16684, ratio=1.159)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1592 (neg=16684, pos=14393)
+    Training XGBoost ...
+    Training time: 100.0s
+    Inner fold 0 AUC: 0.7179 (571.4s)
+
+  ── Inner fold 2/5 (test bucket = 2) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31077 rows streamed, 30129 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.3% variance)
+    Total features after concatenation: 1152
+    Train:  31077 samples (pos=14412, neg=16665, ratio=1.156)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1563 (neg=16665, pos=14412)
+    Training XGBoost ...
+    Training time: 82.5s
+    Inner fold 2 AUC: 0.7209 (581.8s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31078 rows streamed, 30095 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.3% variance)
+    Total features after concatenation: 1152
+    Train:  31078 samples (pos=14426, neg=16652, ratio=1.154)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1543 (neg=16652, pos=14426)
+    Training XGBoost ...
+    Training time: 72.8s
+    Inner fold 3 AUC: 0.7187 (559.4s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31078 rows streamed, 30089 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.3% variance)
+    Total features after concatenation: 1152
+    Train:  31078 samples (pos=14408, neg=16670, ratio=1.157)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1570 (neg=16670, pos=14408)
+    Training XGBoost ...
+    Training time: 75.0s
+    Inner fold 4 AUC: 0.7325 (554.9s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31078 rows streamed, 30120 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.3% variance)
+    Total features after concatenation: 1152
+    Train:  31078 samples (pos=14417, neg=16661, ratio=1.156)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1556 (neg=16661, pos=14417)
+    Training XGBoost ...
+    Training time: 74.8s
+    Inner fold 5 AUC: 0.7254 (558.9s)
+
+  Averaging 5 inner models on validation bucket 1...
+  Outer fold 1 validation (n=7770, pos=3587, neg=4183):
+    AUC-ROC: 0.7456  |  AUC-PR: 0.6989  |  Acc: 0.6811  |  F1: 0.6450  |  MCC: 0.3564
+    Sens: 0.6275  |  Spec: 0.7270  |  PPV: 0.6634  |  NPV: 0.6948
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 2/5 (validation bucket = 2)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31077 rows streamed, 30140 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.2% variance)
+    Total features after concatenation: 1152
+    Train:  31077 samples (pos=14378, neg=16699, ratio=1.161)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1614 (neg=16699, pos=14378)
+    Training XGBoost ...
+    Training time: 78.2s
+    Inner fold 0 AUC: 0.7140 (541.7s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31077 rows streamed, 30129 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.3% variance)
+    Total features after concatenation: 1152
+    Train:  31077 samples (pos=14412, neg=16665, ratio=1.156)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1563 (neg=16665, pos=14412)
+    Training XGBoost ...
+    Training time: 75.6s
+    Inner fold 1 AUC: 0.7160 (555.3s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31078 rows streamed, 30128 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.3% variance)
+    Total features after concatenation: 1152
+    Train:  31078 samples (pos=14411, neg=16667, ratio=1.157)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1565 (neg=16667, pos=14411)
+    Training XGBoost ...
+    Training time: 72.6s
+    Inner fold 3 AUC: 0.7224 (547.8s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31078 rows streamed, 30122 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.3% variance)
+    Total features after concatenation: 1152
+    Train:  31078 samples (pos=14393, neg=16685, ratio=1.159)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1592 (neg=16685, pos=14393)
+    Training XGBoost ...
+    Training time: 71.5s
+    Inner fold 4 AUC: 0.7294 (539.0s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31078 rows streamed, 30153 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.3% variance)
+    Total features after concatenation: 1152
+    Train:  31078 samples (pos=14402, neg=16676, ratio=1.158)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1579 (neg=16676, pos=14402)
+    Training XGBoost ...
+    Training time: 75.8s
+    Inner fold 5 AUC: 0.7251 (542.5s)
+
+  Averaging 5 inner models on validation bucket 2...
+  Outer fold 2 validation (n=7770, pos=3602, neg=4168):
+    AUC-ROC: 0.7508  |  AUC-PR: 0.7121  |  Acc: 0.6843  |  F1: 0.6521  |  MCC: 0.3637
+    Sens: 0.6383  |  Spec: 0.7241  |  PPV: 0.6666  |  NPV: 0.6984
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 3/5 (validation bucket = 3)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31078 rows streamed, 30106 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.2% variance)
+    Total features after concatenation: 1152
+    Train:  31078 samples (pos=14392, neg=16686, ratio=1.159)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1594 (neg=16686, pos=14392)
+    Training XGBoost ...
+    Training time: 72.3s
+    Inner fold 0 AUC: 0.7117 (542.5s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31078 rows streamed, 30095 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.3% variance)
+    Total features after concatenation: 1152
+    Train:  31078 samples (pos=14426, neg=16652, ratio=1.154)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1543 (neg=16652, pos=14426)
+    Training XGBoost ...
+    Training time: 72.9s
+    Inner fold 1 AUC: 0.7216 (539.0s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31078 rows streamed, 30128 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.3% variance)
+    Total features after concatenation: 1152
+    Train:  31078 samples (pos=14411, neg=16667, ratio=1.157)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1565 (neg=16667, pos=14411)
+    Training XGBoost ...
+    Training time: 72.8s
+    Inner fold 2 AUC: 0.7199 (538.0s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31079 rows streamed, 30088 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.3% variance)
+    Total features after concatenation: 1152
+    Train:  31079 samples (pos=14407, neg=16672, ratio=1.157)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1572 (neg=16672, pos=14407)
+    Training XGBoost ...
+    Training time: 71.4s
+    Inner fold 4 AUC: 0.7249 (536.4s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31079 rows streamed, 30119 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.3% variance)
+    Total features after concatenation: 1152
+    Train:  31079 samples (pos=14416, neg=16663, ratio=1.156)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1559 (neg=16663, pos=14416)
+    Training XGBoost ...
+    Training time: 74.1s
+    Inner fold 5 AUC: 0.7329 (545.2s)
+
+  Averaging 5 inner models on validation bucket 3...
+  Outer fold 3 validation (n=7769, pos=3588, neg=4181):
+    AUC-ROC: 0.7449  |  AUC-PR: 0.7022  |  Acc: 0.6816  |  F1: 0.6459  |  MCC: 0.3574
+    Sens: 0.6288  |  Spec: 0.7269  |  PPV: 0.6639  |  NPV: 0.6953
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 4/5 (validation bucket = 4)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31078 rows streamed, 30100 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.2% variance)
+    Total features after concatenation: 1152
+    Train:  31078 samples (pos=14374, neg=16704, ratio=1.162)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1621 (neg=16704, pos=14374)
+    Training XGBoost ...
+    Training time: 74.6s
+    Inner fold 0 AUC: 0.7122 (540.8s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31078 rows streamed, 30089 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.3% variance)
+    Total features after concatenation: 1152
+    Train:  31078 samples (pos=14408, neg=16670, ratio=1.157)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1570 (neg=16670, pos=14408)
+    Training XGBoost ...
+    Training time: 73.9s
+    Inner fold 1 AUC: 0.7197 (543.8s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31078 rows streamed, 30122 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.3% variance)
+    Total features after concatenation: 1152
+    Train:  31078 samples (pos=14393, neg=16685, ratio=1.159)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1592 (neg=16685, pos=14393)
+    Training XGBoost ...
+    Training time: 70.6s
+    Inner fold 2 AUC: 0.7281 (537.0s)
+
+  ── Inner fold 4/5 (test bucket = 3) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31079 rows streamed, 30088 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.3% variance)
+    Total features after concatenation: 1152
+    Train:  31079 samples (pos=14407, neg=16672, ratio=1.157)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1572 (neg=16672, pos=14407)
+    Training XGBoost ...
+    Training time: 70.8s
+    Inner fold 3 AUC: 0.7143 (543.4s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31079 rows streamed, 30113 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.3% variance)
+    Total features after concatenation: 1152
+    Train:  31079 samples (pos=14398, neg=16681, ratio=1.159)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1586 (neg=16681, pos=14398)
+    Training XGBoost ...
+    Training time: 74.4s
+    Inner fold 5 AUC: 0.7272 (537.3s)
+
+  Averaging 5 inner models on validation bucket 4...
+  Outer fold 4 validation (n=7769, pos=3606, neg=4163):
+    AUC-ROC: 0.7541  |  AUC-PR: 0.7149  |  Acc: 0.6862  |  F1: 0.6559  |  MCC: 0.3679
+    Sens: 0.6445  |  Spec: 0.7223  |  PPV: 0.6678  |  NPV: 0.7011
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 5/5 (validation bucket = 5)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31078 rows streamed, 30131 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.2% variance)
+    Total features after concatenation: 1152
+    Train:  31078 samples (pos=14383, neg=16695, ratio=1.161)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1607 (neg=16695, pos=14383)
+    Training XGBoost ...
+    Training time: 74.4s
+    Inner fold 0 AUC: 0.7139 (534.4s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31078 rows streamed, 30120 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.3% variance)
+    Total features after concatenation: 1152
+    Train:  31078 samples (pos=14417, neg=16661, ratio=1.156)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1556 (neg=16661, pos=14417)
+    Training XGBoost ...
+    Training time: 72.7s
+    Inner fold 1 AUC: 0.7149 (533.9s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31078 rows streamed, 30153 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.3% variance)
+    Total features after concatenation: 1152
+    Train:  31078 samples (pos=14402, neg=16676, ratio=1.158)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1579 (neg=16676, pos=14402)
+    Training XGBoost ...
+    Training time: 72.6s
+    Inner fold 2 AUC: 0.7254 (534.6s)
+
+  ── Inner fold 4/5 (test bucket = 3) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31079 rows streamed, 30119 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.3% variance)
+    Total features after concatenation: 1152
+    Train:  31079 samples (pos=14416, neg=16663, ratio=1.156)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1559 (neg=16663, pos=14416)
+    Training XGBoost ...
+    Training time: 71.8s
+    Inner fold 3 AUC: 0.7228 (529.8s)
+
+  ── Inner fold 5/5 (test bucket = 4) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmc_win_impute_boundary'])
+    esmc_win_impute_boundary: fitting flattened-window PCA (window=29, D=1152, k=469) ...
+      window PCA (flat) fit: 31079 rows streamed, 30113 fully-real rows kept (k=469 over 33408 dims)
+    esmc_win_impute_boundary: window PCA 33408 → k=469 (469 features) (65.3% variance)
+    Total features after concatenation: 1152
+    Train:  31079 samples (pos=14398, neg=16681, ratio=1.159)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1152
+    scale_pos_weight (auto) = 1.1586 (neg=16681, pos=14398)
+    Training XGBoost ...
+    Training time: 72.3s
+    Inner fold 4 AUC: 0.7243 (522.8s)
+
+  Averaging 5 inner models on validation bucket 5...
+  Outer fold 5 validation (n=7769, pos=3597, neg=4172):
+    AUC-ROC: 0.7535  |  AUC-PR: 0.7163  |  Acc: 0.6828  |  F1: 0.6465  |  MCC: 0.3601
+    Sens: 0.6264  |  Spec: 0.7315  |  PPV: 0.6680  |  NPV: 0.6943
+
+================================================================================
+NESTED CV RESULTS (mean ± std across 6 outer iterations)
+================================================================================
+
+================================================================================
+CROSS-VALIDATION SUMMARY (mean +/- std)
+================================================================================
+  auc_roc         0.7480 +/- 0.0052    [0.7394  0.7456  0.7508  0.7449  0.7541  0.7535]
+  auc_pr          0.7076 +/- 0.0070    [0.7012  0.6989  0.7121  0.7022  0.7149  0.7163]
+  accuracy        0.6826 +/- 0.0022    [0.6794  0.6811  0.6843  0.6816  0.6862  0.6828]
+  f1              0.6489 +/- 0.0039    [0.6479  0.6450  0.6521  0.6459  0.6559  0.6465]
+  mcc             0.3599 +/- 0.0046    [0.3543  0.3564  0.3637  0.3574  0.3679  0.3601]
+  sensitivity     0.6331 +/- 0.0065    [0.6330  0.6275  0.6383  0.6288  0.6445  0.6264]
+  specificity     0.7253 +/- 0.0037    [0.7199  0.7270  0.7241  0.7269  0.7223  0.7315]
+  ppv             0.6655 +/- 0.0020    [0.6636  0.6634  0.6666  0.6639  0.6678  0.6680]
+  npv             0.6960 +/- 0.0030    [0.6921  0.6948  0.6984  0.6953  0.7011  0.6943]
+
+================================================================================
+PER-OUTER-FOLD VALIDATION METRICS
+================================================================================
+  Outer   auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
+  -----------------------------------------------------------------------------------------------------------------------------
+  0       0.7394       0.7012       0.6794       0.6479       0.3543       0.6330       0.7199       0.6636       0.6921       
+  1       0.7456       0.6989       0.6811       0.6450       0.3564       0.6275       0.7270       0.6634       0.6948       
+  2       0.7508       0.7121       0.6843       0.6521       0.3637       0.6383       0.7241       0.6666       0.6984       
+  3       0.7449       0.7022       0.6816       0.6459       0.3574       0.6288       0.7269       0.6639       0.6953       
+  4       0.7541       0.7149       0.6862       0.6559       0.3679       0.6445       0.7223       0.6678       0.7011       
+  5       0.7535       0.7163       0.6828       0.6465       0.3601       0.6264       0.7315       0.6680       0.6943       
+  -----------------------------------------------------------------------------------------------------------------------------
+  mean    0.7480       0.7076       0.6826       0.6489       0.3599       0.6331       0.7253       0.6655       0.6960       
+  std     0.0052       0.0070       0.0022       0.0039       0.0046       0.0065       0.0037       0.0020       0.0030       
+
+================================================================================
+AVERAGED FEATURE IMPORTANCE ACROSS ALL 30 INNER MODELS
+================================================================================
+  Rank   Feature                                           Mean Imp          Std
+  -----------------------------------------------------------------------------
+  1      N1_P                                              0.005677     0.000530
+  2      N2_P                                              0.005313     0.000409
+  3      P5_P                                              0.005305     0.000394
+  4      C1_I                                              0.003878     0.000267
+  5      P5_K                                              0.003627     0.000394
+  6      N3_P                                              0.003583     0.000279
+  7      P5_R                                              0.003367     0.000399
+  8      C1_K                                              0.003296     0.000279
+  9      C1_R                                              0.003207     0.000786
+  10     P3_P                                              0.003154     0.000420
+  11     P8_P                                              0.003153     0.000208
+  12     P9_M                                              0.003056     0.000322
+  13     P2_M                                              0.002996     0.000465
+  14     P4_P                                              0.002901     0.000496
+  15     P6_I                                              0.002897     0.000467
+  16     P7_D                                              0.002890     0.000201
+  17     P8_L                                              0.002858     0.000325
+  18     P7_H                                              0.002839     0.000271
+  19     C1_A                                              0.002820     0.000337
+  20     P5_H                                              0.002709     0.000247
+  21     P6_F                                              0.002689     0.000327
+  22     P8_K                                              0.002685     0.000348
+  23     P2_F                                              0.002669     0.000205
+  24     C1_S                                              0.002599     0.000506
+  25     P6_G                                              0.002508     0.000422
+  26     C2_P                                              0.002462     0.000335
+  27     C1_P                                              0.002397     0.000423
+  28     C1_L                                              0.002364     0.000621
+  29     N2_I                                              0.002327     0.000324
+  30     P6_V                                              0.002316     0.000224
+
+Results saved: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/flat/cv_results_xgb_handcrafted_sparse_esmc_win_impute_boundary_pca469_flat_20260929_151131.json
+Feature names saved: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/flat/xgb_handcrafted_sparse_esmc_win_impute_boundary_pca469_flat_feature_names.json
+
+================================================================================
+RUN SUMMARY (NESTED CV)
+================================================================================
+  Total runtime:      17515.8s (291.9 min)
+  Nested CV time:     17511.3s (291.9 min)
+  Model:              XGBoost (xgb)
+  Feature set:        Structural + one-hot + ESM-C windows (impute-boundary) (handcrafted_sparse_esmc_win_impute_boundary)
+  Components:         ['handcrafted', 'sparse', 'esmc_win_impute_boundary']
+  Scaling:            no
+  Features (final):   1152
+    CSV features:     683
+    esmc_win_impute_boundary PCA:       469
+  Outer iterations:   6
+  Inner folds:        5
+  Total models:       30
+  Val AUC-ROC:        0.7480 ± 0.0052
+  Val MCC:            0.3599 ± 0.0046
+  Models dir:         /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/flat/
+  Results file:       /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/flat/cv_results_xgb_handcrafted_sparse_esmc_win_impute_boundary_pca469_flat_20260929_151131.json
+  Feature names:      /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/flat/xgb_handcrafted_sparse_esmc_win_impute_boundary_pca469_flat_feature_names.json
+  Log file:           /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/logs/flat/04_modelling_xgb_handcrafted_sparse_esmc_win_impute_boundary_pca469_flat_log_20260929_151131.txt
+  Completed:          2026-09-29 20:03:27
+================================================================================

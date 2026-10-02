@@ -1,0 +1,715 @@
+================================================================================
+  04_MODELLING -- XGBOOST + STRUCTURAL + ONE-HOT + ESM-IF WINDOWS (PAD)
+================================================================================
+  Timestamp:       2026-09-30 15:29:22
+  Model key:       xgb
+  Model class:     xgboost.XGBClassifier
+  Feature set:     handcrafted_sparse_esmif_pad (Structural + one-hot + ESM-IF windows (pad))
+  PCA mode:        flat
+  Components:      ['handcrafted', 'sparse', 'esmif_pad']
+  Data path:       /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_with_folds.csv
+  Log path:        /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/logs/flat/04_modelling_xgb_handcrafted_sparse_esmif_pad_pca76_flat_log_20260930_152922.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   False
+
+  Model hyperparameters:
+    n_estimators              1000
+    max_depth                 6
+    learning_rate             0.1
+    subsample                 1.0
+    colsample_bytree          1.0
+    min_child_weight          1
+    reg_lambda                1.0
+    reg_alpha                 0.0
+    gamma                     0.0
+    eval_metric               logloss
+    n_jobs                    -1
+    verbosity                 0
+    random_state              42
+================================================================================
+
+Loading split data: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_with_folds.csv
+  Shape: 46617 rows x 99 columns
+  [OK] Fold column validated: [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5)]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+  Loading CSV component: One-hot AA encoding
+    Loading: df_all_sparse.csv
+    Shape: 46617 rows x 702 columns
+    [OK] Alignment verified
+    New columns: 633
+
+  Merged 633 new columns → 46617 rows x 734 columns
+  Excluded 2 non-numeric feature column(s)
+
+  Loading embedding component: ESM-IF1 windows (pad, 29x512)
+    Loading prepared embeddings: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/embeddings_prepared/esmif_pad_windows_prepared.h5
+    Loaded (windows): 46617 samples, window=29, dim=512 (tensor streamed lazily)
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  CSV components (2):
+    [handcrafted] Structural features
+      Source: split_data (built-in)
+    [sparse] One-hot AA encoding
+      Source: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_sparse.csv
+      New columns added: 633
+  Total CSV features: 683
+    Structural: 74
+    AA-encoded: 609
+
+  Embedding components (1):
+    [esmif_pad] ESM-IF1 windows (pad, 29x512)
+      Context dim:    29x512 (flat 14848)
+      After PCA: 76
+
+  Estimated total features: ~759
+    CSV:        683
+    Embeddings: 76 (after PCA)
+
+================================================================================
+PIPELINE READY: ~759 features, 5 folds, XGBoost
+================================================================================
+
+================================================================================
+NESTED CROSS-VALIDATION
+  Outer iterations: 6 (rotate validation bucket)
+  Inner folds:      5 (per outer iteration)
+  Total models:     30
+================================================================================
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 0/5 (validation bucket = 0)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 1) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31077 rows streamed, 30074 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.0% variance)
+    Total features after concatenation: 759
+    Train:  31077 samples (pos=14393, neg=16684, ratio=1.159)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 759
+    scale_pos_weight (auto) = 1.1592 (neg=16684, pos=14393)
+    Training XGBoost ...
+    Training time: 19.9s
+    Inner fold 1 AUC: 0.7142 (187.1s)
+
+  ── Inner fold 2/5 (test bucket = 2) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31077 rows streamed, 30107 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.1% variance)
+    Total features after concatenation: 759
+    Train:  31077 samples (pos=14378, neg=16699, ratio=1.161)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 759
+    scale_pos_weight (auto) = 1.1614 (neg=16699, pos=14378)
+    Training XGBoost ...
+    Training time: 22.3s
+    Inner fold 2 AUC: 0.7174 (195.5s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31078 rows streamed, 30078 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.0% variance)
+    Total features after concatenation: 759
+    Train:  31078 samples (pos=14392, neg=16686, ratio=1.159)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 759
+    scale_pos_weight (auto) = 1.1594 (neg=16686, pos=14392)
+    Training XGBoost ...
+    Training time: 22.4s
+    Inner fold 3 AUC: 0.7223 (196.2s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31078 rows streamed, 30067 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.1% variance)
+    Total features after concatenation: 759
+    Train:  31078 samples (pos=14374, neg=16704, ratio=1.162)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 759
+    scale_pos_weight (auto) = 1.1621 (neg=16704, pos=14374)
+    Training XGBoost ...
+    Training time: 27.3s
+    Inner fold 4 AUC: 0.7184 (203.6s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31078 rows streamed, 30106 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.0% variance)
+    Total features after concatenation: 759
+    Train:  31078 samples (pos=14383, neg=16695, ratio=1.161)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 759
+    scale_pos_weight (auto) = 1.1607 (neg=16695, pos=14383)
+    Training XGBoost ...
+    Training time: 23.1s
+    Inner fold 5 AUC: 0.7244 (198.3s)
+
+  Averaging 5 inner models on validation bucket 0...
+  Outer fold 0 validation (n=7770, pos=3621, neg=4149):
+    AUC-ROC: 0.7324  |  AUC-PR: 0.6920  |  Acc: 0.6780  |  F1: 0.6511  |  MCC: 0.3523
+    Sens: 0.6448  |  Spec: 0.7069  |  PPV: 0.6576  |  NPV: 0.6952
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 1/5 (validation bucket = 1)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31077 rows streamed, 30074 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.0% variance)
+    Total features after concatenation: 759
+    Train:  31077 samples (pos=14393, neg=16684, ratio=1.159)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 759
+    scale_pos_weight (auto) = 1.1592 (neg=16684, pos=14393)
+    Training XGBoost ...
+    Training time: 24.0s
+    Inner fold 0 AUC: 0.7085 (199.2s)
+
+  ── Inner fold 2/5 (test bucket = 2) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31077 rows streamed, 30088 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.1% variance)
+    Total features after concatenation: 759
+    Train:  31077 samples (pos=14412, neg=16665, ratio=1.156)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 759
+    scale_pos_weight (auto) = 1.1563 (neg=16665, pos=14412)
+    Training XGBoost ...
+    Training time: 20.9s
+    Inner fold 2 AUC: 0.7135 (191.9s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31078 rows streamed, 30059 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.1% variance)
+    Total features after concatenation: 759
+    Train:  31078 samples (pos=14426, neg=16652, ratio=1.154)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 759
+    scale_pos_weight (auto) = 1.1543 (neg=16652, pos=14426)
+    Training XGBoost ...
+    Training time: 21.0s
+    Inner fold 3 AUC: 0.7218 (196.5s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31078 rows streamed, 30048 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.1% variance)
+    Total features after concatenation: 759
+    Train:  31078 samples (pos=14408, neg=16670, ratio=1.157)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 759
+    scale_pos_weight (auto) = 1.1570 (neg=16670, pos=14408)
+    Training XGBoost ...
+    Training time: 20.9s
+    Inner fold 4 AUC: 0.7162 (194.2s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31078 rows streamed, 30087 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.1% variance)
+    Total features after concatenation: 759
+    Train:  31078 samples (pos=14417, neg=16661, ratio=1.156)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 759
+    scale_pos_weight (auto) = 1.1556 (neg=16661, pos=14417)
+    Training XGBoost ...
+    Training time: 20.1s
+    Inner fold 5 AUC: 0.7254 (199.3s)
+
+  Averaging 5 inner models on validation bucket 1...
+  Outer fold 1 validation (n=7770, pos=3587, neg=4183):
+    AUC-ROC: 0.7369  |  AUC-PR: 0.6963  |  Acc: 0.6802  |  F1: 0.6494  |  MCC: 0.3556
+    Sens: 0.6415  |  Spec: 0.7134  |  PPV: 0.6574  |  NPV: 0.6988
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 2/5 (validation bucket = 2)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31077 rows streamed, 30107 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.1% variance)
+    Total features after concatenation: 759
+    Train:  31077 samples (pos=14378, neg=16699, ratio=1.161)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 759
+    scale_pos_weight (auto) = 1.1614 (neg=16699, pos=14378)
+    Training XGBoost ...
+    Training time: 20.1s
+    Inner fold 0 AUC: 0.7135 (192.2s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31077 rows streamed, 30088 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.1% variance)
+    Total features after concatenation: 759
+    Train:  31077 samples (pos=14412, neg=16665, ratio=1.156)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 759
+    scale_pos_weight (auto) = 1.1563 (neg=16665, pos=14412)
+    Training XGBoost ...
+    Training time: 22.2s
+    Inner fold 1 AUC: 0.7128 (194.1s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31078 rows streamed, 30092 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.2% variance)
+    Total features after concatenation: 759
+    Train:  31078 samples (pos=14411, neg=16667, ratio=1.157)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 759
+    scale_pos_weight (auto) = 1.1565 (neg=16667, pos=14411)
+    Training XGBoost ...
+    Training time: 19.7s
+    Inner fold 3 AUC: 0.7186 (190.8s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31078 rows streamed, 30081 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.2% variance)
+    Total features after concatenation: 759
+    Train:  31078 samples (pos=14393, neg=16685, ratio=1.159)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 759
+    scale_pos_weight (auto) = 1.1592 (neg=16685, pos=14393)
+    Training XGBoost ...
+    Training time: 20.0s
+    Inner fold 4 AUC: 0.7297 (195.5s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31078 rows streamed, 30120 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.2% variance)
+    Total features after concatenation: 759
+    Train:  31078 samples (pos=14402, neg=16676, ratio=1.158)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 759
+    scale_pos_weight (auto) = 1.1579 (neg=16676, pos=14402)
+    Training XGBoost ...
+    Training time: 23.7s
+    Inner fold 5 AUC: 0.7225 (212.5s)
+
+  Averaging 5 inner models on validation bucket 2...
+  Outer fold 2 validation (n=7770, pos=3602, neg=4168):
+    AUC-ROC: 0.7380  |  AUC-PR: 0.6970  |  Acc: 0.6750  |  F1: 0.6472  |  MCC: 0.3460
+    Sens: 0.6430  |  Spec: 0.7027  |  PPV: 0.6515  |  NPV: 0.6949
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 3/5 (validation bucket = 3)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31078 rows streamed, 30078 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.0% variance)
+    Total features after concatenation: 759
+    Train:  31078 samples (pos=14392, neg=16686, ratio=1.159)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 759
+    scale_pos_weight (auto) = 1.1594 (neg=16686, pos=14392)
+    Training XGBoost ...
+    Training time: 19.6s
+    Inner fold 0 AUC: 0.7140 (194.7s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31078 rows streamed, 30059 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.1% variance)
+    Total features after concatenation: 759
+    Train:  31078 samples (pos=14426, neg=16652, ratio=1.154)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 759
+    scale_pos_weight (auto) = 1.1543 (neg=16652, pos=14426)
+    Training XGBoost ...
+    Training time: 19.2s
+    Inner fold 1 AUC: 0.7137 (195.6s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31078 rows streamed, 30092 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.2% variance)
+    Total features after concatenation: 759
+    Train:  31078 samples (pos=14411, neg=16667, ratio=1.157)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 759
+    scale_pos_weight (auto) = 1.1565 (neg=16667, pos=14411)
+    Training XGBoost ...
+    Training time: 20.9s
+    Inner fold 2 AUC: 0.7142 (193.2s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31079 rows streamed, 30052 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.2% variance)
+    Total features after concatenation: 759
+    Train:  31079 samples (pos=14407, neg=16672, ratio=1.157)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 759
+    scale_pos_weight (auto) = 1.1572 (neg=16672, pos=14407)
+    Training XGBoost ...
+    Training time: 20.1s
+    Inner fold 4 AUC: 0.7176 (192.3s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31079 rows streamed, 30091 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.1% variance)
+    Total features after concatenation: 759
+    Train:  31079 samples (pos=14416, neg=16663, ratio=1.156)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 759
+    scale_pos_weight (auto) = 1.1559 (neg=16663, pos=14416)
+    Training XGBoost ...
+    Training time: 19.9s
+    Inner fold 5 AUC: 0.7210 (193.2s)
+
+  Averaging 5 inner models on validation bucket 3...
+  Outer fold 3 validation (n=7769, pos=3588, neg=4181):
+    AUC-ROC: 0.7438  |  AUC-PR: 0.6950  |  Acc: 0.6787  |  F1: 0.6465  |  MCC: 0.3524
+    Sens: 0.6360  |  Spec: 0.7154  |  PPV: 0.6573  |  NPV: 0.6961
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 4/5 (validation bucket = 4)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31078 rows streamed, 30067 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.1% variance)
+    Total features after concatenation: 759
+    Train:  31078 samples (pos=14374, neg=16704, ratio=1.162)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 759
+    scale_pos_weight (auto) = 1.1621 (neg=16704, pos=14374)
+    Training XGBoost ...
+    Training time: 21.8s
+    Inner fold 0 AUC: 0.7066 (195.8s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31078 rows streamed, 30048 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.1% variance)
+    Total features after concatenation: 759
+    Train:  31078 samples (pos=14408, neg=16670, ratio=1.157)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 759
+    scale_pos_weight (auto) = 1.1570 (neg=16670, pos=14408)
+    Training XGBoost ...
+    Training time: 21.7s
+    Inner fold 1 AUC: 0.7122 (197.1s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31078 rows streamed, 30081 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.2% variance)
+    Total features after concatenation: 759
+    Train:  31078 samples (pos=14393, neg=16685, ratio=1.159)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 759
+    scale_pos_weight (auto) = 1.1592 (neg=16685, pos=14393)
+    Training XGBoost ...
+    Training time: 22.2s
+    Inner fold 2 AUC: 0.7112 (202.4s)
+
+  ── Inner fold 4/5 (test bucket = 3) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31079 rows streamed, 30052 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.2% variance)
+    Total features after concatenation: 759
+    Train:  31079 samples (pos=14407, neg=16672, ratio=1.157)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 759
+    scale_pos_weight (auto) = 1.1572 (neg=16672, pos=14407)
+    Training XGBoost ...
+    Training time: 24.0s
+    Inner fold 3 AUC: 0.7196 (199.7s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31079 rows streamed, 30080 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.2% variance)
+    Total features after concatenation: 759
+    Train:  31079 samples (pos=14398, neg=16681, ratio=1.159)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 759
+    scale_pos_weight (auto) = 1.1586 (neg=16681, pos=14398)
+    Training XGBoost ...
+    Training time: 26.4s
+    Inner fold 5 AUC: 0.7233 (202.8s)
+
+  Averaging 5 inner models on validation bucket 4...
+  Outer fold 4 validation (n=7769, pos=3606, neg=4163):
+    AUC-ROC: 0.7468  |  AUC-PR: 0.7061  |  Acc: 0.6831  |  F1: 0.6564  |  MCC: 0.3624
+    Sens: 0.6522  |  Spec: 0.7098  |  PPV: 0.6607  |  NPV: 0.7021
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 5/5 (validation bucket = 5)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31078 rows streamed, 30106 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.0% variance)
+    Total features after concatenation: 759
+    Train:  31078 samples (pos=14383, neg=16695, ratio=1.161)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 759
+    scale_pos_weight (auto) = 1.1607 (neg=16695, pos=14383)
+    Training XGBoost ...
+    Training time: 24.2s
+    Inner fold 0 AUC: 0.7067 (202.1s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31078 rows streamed, 30087 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.1% variance)
+    Total features after concatenation: 759
+    Train:  31078 samples (pos=14417, neg=16661, ratio=1.156)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 759
+    scale_pos_weight (auto) = 1.1556 (neg=16661, pos=14417)
+    Training XGBoost ...
+    Training time: 22.1s
+    Inner fold 1 AUC: 0.7104 (193.5s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31078 rows streamed, 30120 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.2% variance)
+    Total features after concatenation: 759
+    Train:  31078 samples (pos=14402, neg=16676, ratio=1.158)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 759
+    scale_pos_weight (auto) = 1.1579 (neg=16676, pos=14402)
+    Training XGBoost ...
+    Training time: 25.0s
+    Inner fold 2 AUC: 0.7111 (198.0s)
+
+  ── Inner fold 4/5 (test bucket = 3) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31079 rows streamed, 30091 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.1% variance)
+    Total features after concatenation: 759
+    Train:  31079 samples (pos=14416, neg=16663, ratio=1.156)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 759
+    scale_pos_weight (auto) = 1.1559 (neg=16663, pos=14416)
+    Training XGBoost ...
+    Training time: 23.8s
+    Inner fold 3 AUC: 0.7155 (196.7s)
+
+  ── Inner fold 5/5 (test bucket = 4) ──
+    CSV features: 683 columns (imputation skipped — NaN passed natively)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_pad'])
+    esmif_pad: fitting flattened-window PCA (window=29, D=512, k=76) ...
+      window PCA (flat) fit: 31079 rows streamed, 30080 fully-real rows kept (k=76 over 14848 dims)
+    esmif_pad: window PCA 14848 → k=76 (76 features) (30.2% variance)
+    Total features after concatenation: 759
+    Train:  31079 samples (pos=14398, neg=16681, ratio=1.159)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 759
+    scale_pos_weight (auto) = 1.1586 (neg=16681, pos=14398)
+    Training XGBoost ...
+    Training time: 24.4s
+    Inner fold 4 AUC: 0.7208 (195.7s)
+
+  Averaging 5 inner models on validation bucket 5...
+  Outer fold 5 validation (n=7769, pos=3597, neg=4172):
+    AUC-ROC: 0.7484  |  AUC-PR: 0.7053  |  Acc: 0.6819  |  F1: 0.6500  |  MCC: 0.3589
+    Sens: 0.6378  |  Spec: 0.7200  |  PPV: 0.6626  |  NPV: 0.6975
+
+================================================================================
+NESTED CV RESULTS (mean ± std across 6 outer iterations)
+================================================================================
+
+================================================================================
+CROSS-VALIDATION SUMMARY (mean +/- std)
+================================================================================
+  auc_roc         0.7411 +/- 0.0057    [0.7324  0.7369  0.7380  0.7438  0.7468  0.7484]
+  auc_pr          0.6986 +/- 0.0052    [0.6920  0.6963  0.6970  0.6950  0.7061  0.7053]
+  accuracy        0.6795 +/- 0.0027    [0.6780  0.6802  0.6750  0.6787  0.6831  0.6819]
+  f1              0.6501 +/- 0.0033    [0.6511  0.6494  0.6472  0.6465  0.6564  0.6500]
+  mcc             0.3546 +/- 0.0052    [0.3523  0.3556  0.3460  0.3524  0.3624  0.3589]
+  sensitivity     0.6426 +/- 0.0053    [0.6448  0.6415  0.6430  0.6360  0.6522  0.6378]
+  specificity     0.7114 +/- 0.0057    [0.7069  0.7134  0.7027  0.7154  0.7098  0.7200]
+  ppv             0.6578 +/- 0.0035    [0.6576  0.6574  0.6515  0.6573  0.6607  0.6626]
+  npv             0.6974 +/- 0.0025    [0.6952  0.6988  0.6949  0.6961  0.7021  0.6975]
+
+================================================================================
+PER-OUTER-FOLD VALIDATION METRICS
+================================================================================
+  Outer   auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
+  -----------------------------------------------------------------------------------------------------------------------------
+  0       0.7324       0.6920       0.6780       0.6511       0.3523       0.6448       0.7069       0.6576       0.6952       
+  1       0.7369       0.6963       0.6802       0.6494       0.3556       0.6415       0.7134       0.6574       0.6988       
+  2       0.7380       0.6970       0.6750       0.6472       0.3460       0.6430       0.7027       0.6515       0.6949       
+  3       0.7438       0.6950       0.6787       0.6465       0.3524       0.6360       0.7154       0.6573       0.6961       
+  4       0.7468       0.7061       0.6831       0.6564       0.3624       0.6522       0.7098       0.6607       0.7021       
+  5       0.7484       0.7053       0.6819       0.6500       0.3589       0.6378       0.7200       0.6626       0.6975       
+  -----------------------------------------------------------------------------------------------------------------------------
+  mean    0.7411       0.6986       0.6795       0.6501       0.3546       0.6426       0.7114       0.6578       0.6974       
+  std     0.0057       0.0052       0.0027       0.0033       0.0052       0.0053       0.0057       0.0035       0.0025       
+
+================================================================================
+AVERAGED FEATURE IMPORTANCE ACROSS ALL 30 INNER MODELS
+================================================================================
+  Rank   Feature                                           Mean Imp          Std
+  -----------------------------------------------------------------------------
+  1      N1_P                                              0.007506     0.000736
+  2      P5_P                                              0.006292     0.000491
+  3      N2_P                                              0.006098     0.000388
+  4      C1_I                                              0.004471     0.000358
+  5      P8_P                                              0.004447     0.000441
+  6      N3_P                                              0.004195     0.000239
+  7      P9_M                                              0.003992     0.000423
+  8      P3_P                                              0.003946     0.000356
+  9      C1_A                                              0.003756     0.000327
+  10     P7_H                                              0.003546     0.000305
+  11     P2_F                                              0.003530     0.000385
+  12     C1_P                                              0.003409     0.000430
+  13     P2_M                                              0.003374     0.000353
+  14     P5_H                                              0.003355     0.000163
+  15     P4_P                                              0.003337     0.000622
+  16     P6_F                                              0.003334     0.000448
+  17     C1_K                                              0.003287     0.000372
+  18     P7_D                                              0.003283     0.000287
+  19     P5_R                                              0.003184     0.000344
+  20     P6_G                                              0.003170     0.000315
+  21     P5_K                                              0.003148     0.000351
+  22     P3_H                                              0.003074     0.000245
+  23     P3_R                                              0.003058     0.000356
+  24     P8_K                                              0.003044     0.000254
+  25     P4_H                                              0.002967     0.000427
+  26     C2_P                                              0.002838     0.000324
+  27     C1_R                                              0.002825     0.000412
+  28     P7_G                                              0.002819     0.000194
+  29     P6_M                                              0.002804     0.000339
+  30     P8_L                                              0.002801     0.000252
+
+Results saved: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/flat/cv_results_xgb_handcrafted_sparse_esmif_pad_pca76_flat_20260930_152922.json
+Feature names saved: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/flat/xgb_handcrafted_sparse_esmif_pad_pca76_flat_feature_names.json
+
+================================================================================
+RUN SUMMARY (NESTED CV)
+================================================================================
+  Total runtime:      6427.6s (107.1 min)
+  Nested CV time:     6423.1s (107.1 min)
+  Model:              XGBoost (xgb)
+  Feature set:        Structural + one-hot + ESM-IF windows (pad) (handcrafted_sparse_esmif_pad)
+  Components:         ['handcrafted', 'sparse', 'esmif_pad']
+  Scaling:            no
+  Features (final):   759
+    CSV features:     683
+    esmif_pad PCA:       76
+  Outer iterations:   6
+  Inner folds:        5
+  Total models:       30
+  Val AUC-ROC:        0.7411 ± 0.0057
+  Val MCC:            0.3546 ± 0.0052
+  Models dir:         /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/flat/
+  Results file:       /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/flat/cv_results_xgb_handcrafted_sparse_esmif_pad_pca76_flat_20260930_152922.json
+  Feature names:      /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/flat/xgb_handcrafted_sparse_esmif_pad_pca76_flat_feature_names.json
+  Log file:           /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/logs/flat/04_modelling_xgb_handcrafted_sparse_esmif_pad_pca76_flat_log_20260930_152922.txt
+  Completed:          2026-09-30 17:16:29
+================================================================================

@@ -1,0 +1,979 @@
+================================================================================
+  04_MODELLING -- LOGISTIC REGRESSION (L2) + STRUCTURAL + ONE-HOT + ESM-IF WINDOWS (EOS/BOS-REPEAT)
+================================================================================
+  Timestamp:       2026-10-01 10:06:12
+  Model key:       lr_l2
+  Model class:     sklearn.linear_model.LogisticRegression
+  Feature set:     handcrafted_sparse_esmif_eos_bos_repeat (Structural + one-hot + ESM-IF windows (eos/bos-repeat))
+  PCA mode:        flat
+  Components:      ['handcrafted', 'sparse', 'esmif_eos_bos_repeat']
+  Data path:       /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_with_folds.csv
+  Log path:        /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/logs/flat/04_modelling_lr_l2_handcrafted_sparse_esmif_eos_bos_repeat_pca851_flat_log_20261001_100612.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   True
+
+  Model hyperparameters:
+    penalty                   l2
+    C                         1.0
+    solver                    lbfgs
+    max_iter                  5000
+    class_weight              balanced
+    random_state              42
+    verbose                   0
+================================================================================
+
+Loading split data: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_with_folds.csv
+  Shape: 46617 rows x 99 columns
+  [OK] Fold column validated: [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5)]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+  Loading CSV component: One-hot AA encoding
+    Loading: df_all_sparse.csv
+    Shape: 46617 rows x 702 columns
+    [OK] Alignment verified
+    New columns: 633
+
+  Merged 633 new columns → 46617 rows x 734 columns
+  Excluded 2 non-numeric feature column(s)
+
+  Loading embedding component: ESM-IF1 windows (eos/bos-repeat, 29x512)
+    Loading prepared embeddings: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/embeddings_prepared/esmif_eos_bos_repeat_windows_prepared.h5
+    Loaded (windows): 46617 samples, window=29, dim=512 (tensor streamed lazily)
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  CSV components (2):
+    [handcrafted] Structural features
+      Source: split_data (built-in)
+    [sparse] One-hot AA encoding
+      Source: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_sparse.csv
+      New columns added: 633
+  Total CSV features: 683
+    Structural: 74
+    AA-encoded: 609
+
+  Embedding components (1):
+    [esmif_eos_bos_repeat] ESM-IF1 windows (eos/bos-repeat, 29x512)
+      Context dim:    29x512 (flat 14848)
+      After PCA: 851
+
+  Estimated total features: ~1534
+    CSV:        683
+    Embeddings: 851 (after PCA)
+
+================================================================================
+PIPELINE READY: ~1534 features, 5 folds, Logistic Regression (L2)
+================================================================================
+
+================================================================================
+NESTED CROSS-VALIDATION
+  Outer iterations: 6 (rotate validation bucket)
+  Inner folds:      5 (per outer iteration)
+  Total models:     30
+================================================================================
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 0/5 (validation bucket = 0)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 1) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       25          8     0.3509
+    mean_disorder_nflank                                  25          8     0.0102
+    mean_rsa_cflank                                       95         12     0.3612
+    mean_disorder_cflank                                  95         12     0.0114
+    mean_plddt_nflank                                     25          8    89.1430
+    mean_plddt_cflank                                     95         12    88.9645
+    Total NaN — train: 360 (0.00%), test: 60 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31077 rows streamed, 30074 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.4% variance)
+    Total features after concatenation: 1534
+    Train:  31077 samples (pos=14393, neg=16684, ratio=1.159)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 4.1s
+    Inner fold 1 AUC: 0.7079 (255.6s)
+
+  ── Inner fold 2/5 (test bucket = 2) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       24          9     0.3506
+    mean_disorder_nflank                                  24          9     0.0102
+    mean_rsa_cflank                                       81         26     0.3617
+    mean_disorder_cflank                                  81         26     0.0116
+    mean_plddt_nflank                                     24          9    89.1620
+    mean_plddt_cflank                                     81         26    88.9095
+    Total NaN — train: 315 (0.00%), test: 105 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31077 rows streamed, 30107 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31077 samples (pos=14378, neg=16699, ratio=1.161)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 6.7s
+    Inner fold 2 AUC: 0.7195 (253.9s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       28          5     0.3505
+    mean_disorder_nflank                                  28          5     0.0101
+    mean_rsa_cflank                                       81         26     0.3615
+    mean_disorder_cflank                                  81         26     0.0115
+    mean_plddt_nflank                                     28          5    89.0965
+    mean_plddt_cflank                                     81         26    88.8560
+    Total NaN — train: 327 (0.00%), test: 93 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30078 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.4% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14392, neg=16686, ratio=1.159)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 6.5s
+    Inner fold 3 AUC: 0.7081 (259.4s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       27          6     0.3513
+    mean_disorder_nflank                                  27          6     0.0103
+    mean_rsa_cflank                                       87         20     0.3624
+    mean_disorder_cflank                                  87         20     0.0116
+    mean_plddt_nflank                                     27          6    89.1560
+    mean_plddt_cflank                                     87         20    88.9250
+    Total NaN — train: 342 (0.00%), test: 78 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30067 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14374, neg=16704, ratio=1.162)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 5.7s
+    Inner fold 4 AUC: 0.7151 (257.9s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       28          5     0.3499
+    mean_disorder_nflank                                  28          5     0.0101
+    mean_rsa_cflank                                       84         23     0.3613
+    mean_disorder_cflank                                  84         23     0.0113
+    mean_plddt_nflank                                     28          5    89.2070
+    mean_plddt_cflank                                     84         23    88.9680
+    Total NaN — train: 336 (0.00%), test: 84 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30106 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.4% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14383, neg=16695, ratio=1.161)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 3.6s
+    Inner fold 5 AUC: 0.7193 (273.6s)
+
+  Averaging 5 inner models on validation bucket 0...
+  Outer fold 0 validation (n=7770, pos=3621, neg=4149):
+    AUC-ROC: 0.7086  |  AUC-PR: 0.6650  |  Acc: 0.6494  |  F1: 0.6332  |  MCC: 0.2982
+    Sens: 0.6493  |  Spec: 0.6496  |  PPV: 0.6179  |  NPV: 0.6797
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 1/5 (validation bucket = 1)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       25          4     0.3509
+    mean_disorder_nflank                                  25          4     0.0102
+    mean_rsa_cflank                                       95         16     0.3612
+    mean_disorder_cflank                                  95         16     0.0114
+    mean_plddt_nflank                                     25          4    89.1430
+    mean_plddt_cflank                                     95         16    88.9645
+    Total NaN — train: 360 (0.00%), test: 60 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31077 rows streamed, 30074 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.4% variance)
+    Total features after concatenation: 1534
+    Train:  31077 samples (pos=14393, neg=16684, ratio=1.159)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 4.7s
+    Inner fold 0 AUC: 0.7037 (258.7s)
+
+  ── Inner fold 2/5 (test bucket = 2) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       20          9     0.3511
+    mean_disorder_nflank                                  20          9     0.0104
+    mean_rsa_cflank                                       85         26     0.3617
+    mean_disorder_cflank                                  85         26     0.0117
+    mean_plddt_nflank                                     20          9    89.0860
+    mean_plddt_cflank                                     85         26    88.8820
+    Total NaN — train: 315 (0.00%), test: 105 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31077 rows streamed, 30088 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31077 samples (pos=14412, neg=16665, ratio=1.156)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 3.5s
+    Inner fold 2 AUC: 0.7170 (296.7s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       24          5     0.3511
+    mean_disorder_nflank                                  24          5     0.0103
+    mean_rsa_cflank                                       85         26     0.3615
+    mean_disorder_cflank                                  85         26     0.0116
+    mean_plddt_nflank                                     24          5    89.0045
+    mean_plddt_cflank                                     85         26    88.8260
+    Total NaN — train: 327 (0.00%), test: 93 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30059 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14426, neg=16652, ratio=1.154)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 6.8s
+    Inner fold 3 AUC: 0.7087 (256.0s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       23          6     0.3519
+    mean_disorder_nflank                                  23          6     0.0105
+    mean_rsa_cflank                                       91         20     0.3626
+    mean_disorder_cflank                                  91         20     0.0117
+    mean_plddt_nflank                                     23          6    89.0810
+    mean_plddt_cflank                                     91         20    88.8870
+    Total NaN — train: 342 (0.00%), test: 78 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30048 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14408, neg=16670, ratio=1.157)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 7.8s
+    Inner fold 4 AUC: 0.7160 (258.7s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       24          5     0.3505
+    mean_disorder_nflank                                  24          5     0.0103
+    mean_rsa_cflank                                       88         23     0.3614
+    mean_disorder_cflank                                  88         23     0.0114
+    mean_plddt_nflank                                     24          5    89.1300
+    mean_plddt_cflank                                     88         23    88.9190
+    Total NaN — train: 336 (0.00%), test: 84 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30087 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14417, neg=16661, ratio=1.156)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 6.0s
+    Inner fold 5 AUC: 0.7154 (259.8s)
+
+  Averaging 5 inner models on validation bucket 1...
+  Outer fold 1 validation (n=7770, pos=3587, neg=4183):
+    AUC-ROC: 0.7119  |  AUC-PR: 0.6738  |  Acc: 0.6526  |  F1: 0.6344  |  MCC: 0.3045
+    Sens: 0.6529  |  Spec: 0.6524  |  PPV: 0.6170  |  NPV: 0.6867
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 2/5 (validation bucket = 2)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       24          4     0.3506
+    mean_disorder_nflank                                  24          4     0.0102
+    mean_rsa_cflank                                       81         16     0.3617
+    mean_disorder_cflank                                  81         16     0.0116
+    mean_plddt_nflank                                     24          4    89.1620
+    mean_plddt_cflank                                     81         16    88.9095
+    Total NaN — train: 315 (0.00%), test: 60 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31077 rows streamed, 30107 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31077 samples (pos=14378, neg=16699, ratio=1.161)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 6.7s
+    Inner fold 0 AUC: 0.7057 (260.6s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       20          8     0.3511
+    mean_disorder_nflank                                  20          8     0.0104
+    mean_rsa_cflank                                       85         12     0.3617
+    mean_disorder_cflank                                  85         12     0.0117
+    mean_plddt_nflank                                     20          8    89.0860
+    mean_plddt_cflank                                     85         12    88.8820
+    Total NaN — train: 315 (0.00%), test: 60 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31077 rows streamed, 30088 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31077 samples (pos=14412, neg=16665, ratio=1.156)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 3.3s
+    Inner fold 1 AUC: 0.7054 (257.4s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       23          5     0.3509
+    mean_disorder_nflank                                  23          5     0.0103
+    mean_rsa_cflank                                       71         26     0.3619
+    mean_disorder_cflank                                  71         26     0.0118
+    mean_plddt_nflank                                     23          5    89.0430
+    mean_plddt_cflank                                     71         26    88.7750
+    Total NaN — train: 282 (0.00%), test: 93 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30092 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14411, neg=16667, ratio=1.157)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 7.4s
+    Inner fold 3 AUC: 0.7126 (261.0s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       22          6     0.3517
+    mean_disorder_nflank                                  22          6     0.0105
+    mean_rsa_cflank                                       77         20     0.3630
+    mean_disorder_cflank                                  77         20     0.0120
+    mean_plddt_nflank                                     22          6    89.0990
+    mean_plddt_cflank                                     77         20    88.8310
+    Total NaN — train: 297 (0.00%), test: 78 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30081 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.6% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14393, neg=16685, ratio=1.159)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 6.7s
+    Inner fold 4 AUC: 0.7130 (256.8s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       23          5     0.3503
+    mean_disorder_nflank                                  23          5     0.0103
+    mean_rsa_cflank                                       74         23     0.3618
+    mean_disorder_cflank                                  74         23     0.0116
+    mean_plddt_nflank                                     23          5    89.1450
+    mean_plddt_cflank                                     74         23    88.8815
+    Total NaN — train: 291 (0.00%), test: 84 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30120 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14402, neg=16676, ratio=1.158)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 6.8s
+    Inner fold 5 AUC: 0.7131 (256.3s)
+
+  Averaging 5 inner models on validation bucket 2...
+  Outer fold 2 validation (n=7770, pos=3602, neg=4168):
+    AUC-ROC: 0.7237  |  AUC-PR: 0.6796  |  Acc: 0.6616  |  F1: 0.6487  |  MCC: 0.3241
+    Sens: 0.6738  |  Spec: 0.6512  |  PPV: 0.6254  |  NPV: 0.6979
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 3/5 (validation bucket = 3)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       28          4     0.3505
+    mean_disorder_nflank                                  28          4     0.0101
+    mean_rsa_cflank                                       81         16     0.3615
+    mean_disorder_cflank                                  81         16     0.0115
+    mean_plddt_nflank                                     28          4    89.0965
+    mean_plddt_cflank                                     81         16    88.8560
+    Total NaN — train: 327 (0.00%), test: 60 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30078 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.4% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14392, neg=16686, ratio=1.159)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 6.6s
+    Inner fold 0 AUC: 0.7008 (256.7s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       24          8     0.3511
+    mean_disorder_nflank                                  24          8     0.0103
+    mean_rsa_cflank                                       85         12     0.3615
+    mean_disorder_cflank                                  85         12     0.0116
+    mean_plddt_nflank                                     24          8    89.0045
+    mean_plddt_cflank                                     85         12    88.8260
+    Total NaN — train: 327 (0.00%), test: 60 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30059 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14426, neg=16652, ratio=1.154)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 7.0s
+    Inner fold 1 AUC: 0.7059 (259.3s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       23          9     0.3509
+    mean_disorder_nflank                                  23          9     0.0103
+    mean_rsa_cflank                                       71         26     0.3619
+    mean_disorder_cflank                                  71         26     0.0118
+    mean_plddt_nflank                                     23          9    89.0430
+    mean_plddt_cflank                                     71         26    88.7750
+    Total NaN — train: 282 (0.00%), test: 105 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30092 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14411, neg=16667, ratio=1.157)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 7.5s
+    Inner fold 2 AUC: 0.7198 (254.3s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       26          6     0.3515
+    mean_disorder_nflank                                  26          6     0.0105
+    mean_rsa_cflank                                       77         20     0.3627
+    mean_disorder_cflank                                  77         20     0.0119
+    mean_plddt_nflank                                     26          6    89.0260
+    mean_plddt_cflank                                     77         20    88.8000
+    Total NaN — train: 309 (0.00%), test: 78 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31079 rows streamed, 30052 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31079 samples (pos=14407, neg=16672, ratio=1.157)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 6.5s
+    Inner fold 4 AUC: 0.7164 (256.7s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       27          5     0.3503
+    mean_disorder_nflank                                  27          5     0.0102
+    mean_rsa_cflank                                       74         23     0.3616
+    mean_disorder_cflank                                  74         23     0.0115
+    mean_plddt_nflank                                     27          5    89.0860
+    mean_plddt_cflank                                     74         23    88.8300
+    Total NaN — train: 303 (0.00%), test: 84 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31079 rows streamed, 30091 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31079 samples (pos=14416, neg=16663, ratio=1.156)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 7.3s
+    Inner fold 5 AUC: 0.7151 (255.5s)
+
+  Averaging 5 inner models on validation bucket 3...
+  Outer fold 3 validation (n=7769, pos=3588, neg=4181):
+    AUC-ROC: 0.7150  |  AUC-PR: 0.6677  |  Acc: 0.6572  |  F1: 0.6364  |  MCC: 0.3127
+    Sens: 0.6494  |  Spec: 0.6640  |  PPV: 0.6238  |  NPV: 0.6882
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 4/5 (validation bucket = 4)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       27          4     0.3513
+    mean_disorder_nflank                                  27          4     0.0103
+    mean_rsa_cflank                                       87         16     0.3624
+    mean_disorder_cflank                                  87         16     0.0116
+    mean_plddt_nflank                                     27          4    89.1560
+    mean_plddt_cflank                                     87         16    88.9250
+    Total NaN — train: 342 (0.00%), test: 60 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30067 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14374, neg=16704, ratio=1.162)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 5.3s
+    Inner fold 0 AUC: 0.7036 (250.3s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       23          8     0.3519
+    mean_disorder_nflank                                  23          8     0.0105
+    mean_rsa_cflank                                       91         12     0.3626
+    mean_disorder_cflank                                  91         12     0.0117
+    mean_plddt_nflank                                     23          8    89.0810
+    mean_plddt_cflank                                     91         12    88.8870
+    Total NaN — train: 342 (0.00%), test: 60 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30048 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14408, neg=16670, ratio=1.157)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 7.5s
+    Inner fold 1 AUC: 0.7084 (256.2s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       22          9     0.3517
+    mean_disorder_nflank                                  22          9     0.0105
+    mean_rsa_cflank                                       77         26     0.3630
+    mean_disorder_cflank                                  77         26     0.0120
+    mean_plddt_nflank                                     22          9    89.0990
+    mean_plddt_cflank                                     77         26    88.8310
+    Total NaN — train: 297 (0.00%), test: 105 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30081 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.6% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14393, neg=16685, ratio=1.159)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 7.4s
+    Inner fold 2 AUC: 0.7175 (258.5s)
+
+  ── Inner fold 4/5 (test bucket = 3) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       26          5     0.3515
+    mean_disorder_nflank                                  26          5     0.0105
+    mean_rsa_cflank                                       77         26     0.3627
+    mean_disorder_cflank                                  77         26     0.0119
+    mean_plddt_nflank                                     26          5    89.0260
+    mean_plddt_cflank                                     77         26    88.8000
+    Total NaN — train: 309 (0.00%), test: 93 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31079 rows streamed, 30052 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31079 samples (pos=14407, neg=16672, ratio=1.157)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 7.9s
+    Inner fold 3 AUC: 0.7107 (260.0s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       26          5     0.3510
+    mean_disorder_nflank                                  26          5     0.0104
+    mean_rsa_cflank                                       80         23     0.3628
+    mean_disorder_cflank                                  80         23     0.0117
+    mean_plddt_nflank                                     26          5    89.1380
+    mean_plddt_cflank                                     80         23    88.8870
+    Total NaN — train: 318 (0.00%), test: 84 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31079 rows streamed, 30080 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31079 samples (pos=14398, neg=16681, ratio=1.159)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 3.7s
+    Inner fold 5 AUC: 0.7159 (251.4s)
+
+  Averaging 5 inner models on validation bucket 4...
+  Outer fold 4 validation (n=7769, pos=3606, neg=4163):
+    AUC-ROC: 0.7210  |  AUC-PR: 0.6823  |  Acc: 0.6601  |  F1: 0.6447  |  MCC: 0.3199
+    Sens: 0.6644  |  Spec: 0.6563  |  PPV: 0.6261  |  NPV: 0.6930
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 5/5 (validation bucket = 5)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       28          4     0.3499
+    mean_disorder_nflank                                  28          4     0.0101
+    mean_rsa_cflank                                       84         16     0.3613
+    mean_disorder_cflank                                  84         16     0.0113
+    mean_plddt_nflank                                     28          4    89.2070
+    mean_plddt_cflank                                     84         16    88.9680
+    Total NaN — train: 336 (0.00%), test: 60 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30106 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.4% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14383, neg=16695, ratio=1.161)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 3.7s
+    Inner fold 0 AUC: 0.7042 (267.9s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       24          8     0.3505
+    mean_disorder_nflank                                  24          8     0.0103
+    mean_rsa_cflank                                       88         12     0.3614
+    mean_disorder_cflank                                  88         12     0.0114
+    mean_plddt_nflank                                     24          8    89.1300
+    mean_plddt_cflank                                     88         12    88.9190
+    Total NaN — train: 336 (0.00%), test: 60 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30087 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14417, neg=16661, ratio=1.156)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 5.5s
+    Inner fold 1 AUC: 0.7057 (254.3s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       23          9     0.3503
+    mean_disorder_nflank                                  23          9     0.0103
+    mean_rsa_cflank                                       74         26     0.3618
+    mean_disorder_cflank                                  74         26     0.0116
+    mean_plddt_nflank                                     23          9    89.1450
+    mean_plddt_cflank                                     74         26    88.8815
+    Total NaN — train: 291 (0.00%), test: 105 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31078 rows streamed, 30120 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31078 samples (pos=14402, neg=16676, ratio=1.158)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 7.5s
+    Inner fold 2 AUC: 0.7179 (258.0s)
+
+  ── Inner fold 4/5 (test bucket = 3) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       27          5     0.3503
+    mean_disorder_nflank                                  27          5     0.0102
+    mean_rsa_cflank                                       74         26     0.3616
+    mean_disorder_cflank                                  74         26     0.0115
+    mean_plddt_nflank                                     27          5    89.0860
+    mean_plddt_cflank                                     74         26    88.8300
+    Total NaN — train: 303 (0.00%), test: 93 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31079 rows streamed, 30091 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31079 samples (pos=14416, neg=16663, ratio=1.156)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 7.5s
+    Inner fold 3 AUC: 0.7086 (258.9s)
+
+  ── Inner fold 5/5 (test bucket = 4) ──
+
+    NaN imputation report — 6 column(s) affected:
+    Column                                         Train NaN   Test NaN     Median
+    -----------------------------------------------------------------------------
+    mean_rsa_nflank                                       26          6     0.3510
+    mean_disorder_nflank                                  26          6     0.0104
+    mean_rsa_cflank                                       80         20     0.3628
+    mean_disorder_cflank                                  80         20     0.0117
+    mean_plddt_nflank                                     26          6    89.1380
+    mean_plddt_cflank                                     80         20    88.8870
+    Total NaN — train: 318 (0.00%), test: 78 (0.00%)
+    CSV features: 683 columns
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=851) ...
+      window PCA (flat) fit: 31079 rows streamed, 30080 fully-real rows kept (k=851 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=851 (851 features) (65.5% variance)
+    Total features after concatenation: 1534
+    Train:  31079 samples (pos=14398, neg=16681, ratio=1.159)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1534
+    Training Logistic Regression (L2) ...
+    Training time: 3.9s
+    Inner fold 4 AUC: 0.7176 (254.0s)
+
+  Averaging 5 inner models on validation bucket 5...
+  Outer fold 5 validation (n=7769, pos=3597, neg=4172):
+    AUC-ROC: 0.7212  |  AUC-PR: 0.6814  |  Acc: 0.6602  |  F1: 0.6408  |  MCC: 0.3189
+    Sens: 0.6547  |  Spec: 0.6649  |  PPV: 0.6275  |  NPV: 0.6907
+
+================================================================================
+NESTED CV RESULTS (mean ± std across 6 outer iterations)
+================================================================================
+
+================================================================================
+CROSS-VALIDATION SUMMARY (mean +/- std)
+================================================================================
+  auc_roc         0.7169 +/- 0.0055    [0.7086  0.7119  0.7237  0.7150  0.7210  0.7212]
+  auc_pr          0.6750 +/- 0.0067    [0.6650  0.6738  0.6796  0.6677  0.6823  0.6814]
+  accuracy        0.6569 +/- 0.0044    [0.6494  0.6526  0.6616  0.6572  0.6601  0.6602]
+  f1              0.6397 +/- 0.0056    [0.6332  0.6344  0.6487  0.6364  0.6447  0.6408]
+  mcc             0.3130 +/- 0.0091    [0.2982  0.3045  0.3241  0.3127  0.3199  0.3189]
+  sensitivity     0.6574 +/- 0.0089    [0.6493  0.6529  0.6738  0.6494  0.6644  0.6547]
+  specificity     0.6564 +/- 0.0061    [0.6496  0.6524  0.6512  0.6640  0.6563  0.6649]
+  ppv             0.6229 +/- 0.0041    [0.6179  0.6170  0.6254  0.6238  0.6261  0.6275]
+  npv             0.6894 +/- 0.0056    [0.6797  0.6867  0.6979  0.6882  0.6930  0.6907]
+
+================================================================================
+PER-OUTER-FOLD VALIDATION METRICS
+================================================================================
+  Outer   auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
+  -----------------------------------------------------------------------------------------------------------------------------
+  0       0.7086       0.6650       0.6494       0.6332       0.2982       0.6493       0.6496       0.6179       0.6797       
+  1       0.7119       0.6738       0.6526       0.6344       0.3045       0.6529       0.6524       0.6170       0.6867       
+  2       0.7237       0.6796       0.6616       0.6487       0.3241       0.6738       0.6512       0.6254       0.6979       
+  3       0.7150       0.6677       0.6572       0.6364       0.3127       0.6494       0.6640       0.6238       0.6882       
+  4       0.7210       0.6823       0.6601       0.6447       0.3199       0.6644       0.6563       0.6261       0.6930       
+  5       0.7212       0.6814       0.6602       0.6408       0.3189       0.6547       0.6649       0.6275       0.6907       
+  -----------------------------------------------------------------------------------------------------------------------------
+  mean    0.7169       0.6750       0.6569       0.6397       0.3130       0.6574       0.6564       0.6229       0.6894       
+  std     0.0055       0.0067       0.0044       0.0056       0.0091       0.0089       0.0061       0.0041       0.0056       
+
+================================================================================
+AVERAGED COEFFICIENTS ACROSS ALL 30 INNER MODELS
+================================================================================
+  Rank   Feature                                          Mean Coef          Std
+  -----------------------------------------------------------------------------
+  1      N1_P                                             -0.183083     0.018080
+  2      mean_plddt_cflank                                 0.174662     0.052818
+  3      P7_H                                              0.163641     0.004603
+  4      P2_F                                              0.158714     0.012341
+  5      P5_P                                             -0.154404     0.009005
+  6      N2_P                                             -0.149036     0.017336
+  7      esmif_eos_bos_repeat_PC002                       -0.145531     0.017042
+  8      C1_I                                             -0.145360     0.009603
+  9      P8_P                                             -0.142290     0.012639
+  10     P9_M                                             -0.140758     0.011139
+  11     min_plddt_cflank                                  0.138173     0.049350
+  12     mean_disorder_peptide                             0.131487     0.094920
+  13     P2_Y                                              0.130144     0.059921
+  14     P5_H                                              0.122737     0.008647
+  15     P5_K                                              0.122473     0.010182
+  16     P8_K                                              0.121277     0.007608
+  17     P7_D                                             -0.121238     0.010367
+  18     C1_X                                              0.120849     0.024332
+  19     N3_P                                             -0.120301     0.016279
+  20     P7_G                                             -0.117161     0.005624
+  21     C1_A                                              0.116386     0.006808
+  22     C1_K                                              0.111596     0.009842
+  23     P5_L                                             -0.109184     0.012411
+  24     P6_F                                             -0.108728     0.009846
+  25     P6_M                                             -0.107421     0.012638
+  26     P6_V                                              0.103002     0.008798
+  27     P8_I                                             -0.102075     0.009331
+  28     P9_V                                              0.101531     0.010490
+  29     N9_X                                              0.101524     0.038150
+  30     P2_W                                              0.098994     0.013012
+
+Results saved: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/flat/cv_results_lr_l2_handcrafted_sparse_esmif_eos_bos_repeat_pca851_flat_20261001_100612.json
+Feature names saved: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/flat/lr_l2_handcrafted_sparse_esmif_eos_bos_repeat_pca851_flat_feature_names.json
+
+================================================================================
+RUN SUMMARY (NESTED CV)
+================================================================================
+  Total runtime:      8334.7s (138.9 min)
+  Nested CV time:     8329.9s (138.8 min)
+  Model:              Logistic Regression (L2) (lr_l2)
+  Feature set:        Structural + one-hot + ESM-IF windows (eos/bos-repeat) (handcrafted_sparse_esmif_eos_bos_repeat)
+  Components:         ['handcrafted', 'sparse', 'esmif_eos_bos_repeat']
+  Scaling:            yes
+  Features (final):   1534
+    CSV features:     683
+    esmif_eos_bos_repeat PCA:       851
+  Outer iterations:   6
+  Inner folds:        5
+  Total models:       30
+  Val AUC-ROC:        0.7169 ± 0.0055
+  Val MCC:            0.3130 ± 0.0091
+  Models dir:         /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/flat/
+  Results file:       /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/flat/cv_results_lr_l2_handcrafted_sparse_esmif_eos_bos_repeat_pca851_flat_20261001_100612.json
+  Feature names:      /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/models/flat/lr_l2_handcrafted_sparse_esmif_eos_bos_repeat_pca851_flat_feature_names.json
+  Log file:           /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/logs/flat/04_modelling_lr_l2_handcrafted_sparse_esmif_eos_bos_repeat_pca851_flat_log_20261001_100612.txt
+  Completed:          2026-10-01 12:25:07
+================================================================================
