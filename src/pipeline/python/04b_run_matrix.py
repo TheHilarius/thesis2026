@@ -22,6 +22,7 @@ import subprocess
 import sys
 import time
 import argparse
+import json
 from pathlib import Path
 from datetime import datetime
 
@@ -166,8 +167,10 @@ def aggregate_results(start_time, combos, pca_mode="slot", dry_run=False,
     if result.returncode == 0 and out_path.exists():
         print(f"\n  Results: {out_path}")
         _print_table(out_path)
+        return out_path
     else:
         print(f"  Aggregation failed or no results found.")
+        return None
 
 
 def _print_table(tsv_path):
@@ -210,6 +213,56 @@ def _print_table(tsv_path):
         )
 
 
+def collect_run_rows(out_root):
+    """Read one summary row per cv_results JSON under a run folder.
+
+    Returns (rows, skipped): rows hold file/model/features/pca_mode/
+    n_features/runtime_seconds/timestamp (missing values become "?");
+    skipped counts unreadable files.
+    """
+    rows = []
+    skipped = 0
+    for path in sorted(Path(out_root).glob("models/*/cv_results_*.json")):
+        try:
+            with open(path) as f:
+                r = json.load(f)
+        except (OSError, ValueError):
+            skipped += 1
+            continue
+        cfg = r.get("config", {})
+        rows.append({
+            "file": path.name,
+            "model": r.get("model_key", "?"),
+            "features": r.get("features_key", "?"),
+            "pca_mode": cfg.get("pca_mode", "?"),
+            "n_features": cfg.get("n_features", "?"),
+            "runtime_seconds": r.get("runtime_seconds", "?"),
+            "timestamp": r.get("timestamp", "?"),
+        })
+    return rows, skipped
+
+
+def write_run_readme(out_root, started, summary_lines, headers, rows):
+    """Write a run-set overview README.md into out_root. Returns its path."""
+    root = Path(out_root)
+    lines = [f"# Run {root.name}", "", f"Started: {started}", ""]
+    lines.extend(f"- {s}" for s in summary_lines)
+    lines.append("")
+    if rows:
+        widths = [max(len(str(row[i])) for row in [headers] + rows)
+                  for i in range(len(headers))]
+        lines.append("| " + " | ".join(headers) + " |")
+        lines.append("| " + " | ".join("-" * w for w in widths) + " |")
+        for row in rows:
+            lines.append("| " + " | ".join(
+                str(v).ljust(w) for v, w in zip(row, widths)) + " |")
+        lines.append("")
+    dest = root / "README.md"
+    dest.write_text("\n".join(lines))
+    print(f"  README: {dest}")
+    return dest
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Run 04_modelling across a matrix of combos and report performance.",
@@ -246,7 +299,51 @@ def main():
              "each run auto-creates runs/<run_tag>_<timestamp>/; aggregate "
              "reads legacy + runs-wide globs into results/tables/.",
     )
+    parser.add_argument(
+        "--write-readme-only", action="store_true",
+        help="Run nothing: scan <out-root>/models/ for cv_results JSONs and "
+             "(re)write the run-set overview README.md. Requires --out-root. "
+             "Use after array grids finish (they run with --no-aggregate).",
+    )
     args = parser.parse_args()
+
+    if args.write_readme_only:
+        if not args.out_root:
+            parser.error("--write-readme-only requires --out-root")
+        if args.dry_run:
+            print(f"  [DRY RUN] Would write: {args.out_root}/README.md")
+            return
+        rows, skipped = collect_run_rows(args.out_root)
+        models = sorted({r["model"] for r in rows})
+        stamps = sorted(str(r["timestamp"]) for r in rows
+                        if r["timestamp"] != "?")
+        total_rt = sum(r["runtime_seconds"] for r in rows
+                       if isinstance(r["runtime_seconds"], (int, float)))
+        tables = sorted(Path(args.out_root).glob("results/model_matrix_*.tsv"))
+        summary = [
+            f"runs found: {len(rows)}"
+            + (f" ({skipped} unreadable skipped)" if skipped else ""),
+            f"models: {', '.join(models) if models else 'none'}",
+            (f"time span: {stamps[0]} .. {stamps[-1]}" if stamps
+             else "time span: ?"),
+            f"total runtime: {total_rt:.1f}s",
+            ("aggregate tables: " + ", ".join(t.name for t in tables)
+             if tables else
+             "aggregate tables: none yet "
+             "(run extract_model_metrics.py --since ...)"),
+        ]
+        table = [(r["model"], r["features"], str(r["pca_mode"]),
+                  str(r["n_features"]), str(r["runtime_seconds"]),
+                  str(r["timestamp"])) for r in rows]
+        write_run_readme(
+            args.out_root,
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            summary,
+            ["model", "features", "pca_mode", "n_features",
+             "runtime_s", "timestamp"],
+            table,
+        )
+        return
 
     combos = []
     if args.pca_sweep:
@@ -301,8 +398,22 @@ def main():
     print(f"  Runtime:  {t_end - t_start:.1f}s ({total_minutes:.1f} min)")
 
     if not args.dry_run and not args.no_aggregate:
-        aggregate_results(start_time, combos, pca_mode=args.pca_mode,
-                          out_root=args.out_root)
+        out_path = aggregate_results(start_time, combos, pca_mode=args.pca_mode,
+                                     out_root=args.out_root)
+        if out_path is not None and args.out_root:
+            table = [(m, f, str(p)) for m, f, p in combos]
+            write_run_readme(
+                args.out_root,
+                start_time.strftime("%Y-%m-%d %H:%M:%S"),
+                [f"pca_mode: {args.pca_mode}",
+                 f"combos: {len(combos)} "
+                 f"(success {successes} / failed {failures})",
+                 f"total wall time: {t_end - t_start:.1f}s",
+                 f"aggregate table: {out_path}",
+                 f"per-run artifacts: models/{args.pca_mode}/"],
+                ["model", "features", "pca"],
+                table,
+            )
     elif args.no_aggregate:
         print("\n  (aggregate skipped via --no-aggregate; run a single manual "
               "extract_model_metrics.py aggregation after all jobs finish)")
