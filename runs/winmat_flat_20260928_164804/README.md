@@ -1,6 +1,6 @@
 # Run winmat_flat_20260928_164804
 
-Started: 2026-10-02 14:38:54
+Started: 2026-10-02 15:13:01
 
 - runs found: 72
 - models: lr_l2, rf, xgb
