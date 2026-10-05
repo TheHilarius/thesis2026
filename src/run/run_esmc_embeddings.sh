@@ -34,7 +34,7 @@ echo "Starting ESM-C embedding ($(date))..."
 echo "  Output: data/processed/embeddings/"
 echo "  Modes: $MODES"
 
-python src/tools/esm/embed_peptides_w_esm.py \
+python src/tools/esm/embed_peptides_esmc.py \
     --out-dir data/processed/embeddings/ \
     --modes "$MODES"
 
