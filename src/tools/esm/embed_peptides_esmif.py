@@ -69,41 +69,16 @@ except ImportError:
     HAS_BIOPYTHON = False
 
 
-# ── Args ──────────────────────────────────────────────────────────────────────
-parser = argparse.ArgumentParser()
-parser.add_argument('--csv', default="data/processed/df_all.csv")
-parser.add_argument('--pdb',
-                    default="data/processed/structures/alphafold/")
-parser.add_argument('--out-prefix',
-                    default="data/processed/embeddings/esm-if_test")
-parser.add_argument('--force-cpu', action='store_true')
-args = parser.parse_args()
-
-# ── Device ────────────────────────────────────────────────────────────────────
-if args.force_cpu:
-    DEVICE, USE_GPU = "cpu", False
-elif torch.cuda.is_available() and HAS_COORD_CONVERTER:
-    DEVICE, USE_GPU = "cuda", True
-elif torch.cuda.is_available() and not HAS_COORD_CONVERTER:
-    DEVICE, USE_GPU = "cpu", False
-    print("WARN: GPU present but CoordBatchConverter import failed -> CPU")
-else:
-    DEVICE, USE_GPU = "cpu", False
-
+# ── Module constants ──────────────────────────────────────────────────────────
 EMB_DIM = 512
 CHUNK_ROWS = 64
 PROBE_K = 8
 
-# No AF2-supplement fallback any more: proteins without an AlphaFold model in
-# --pdb are recorded as status=2 (missing).
-os.makedirs(os.path.dirname(args.out_prefix), exist_ok=True)
-
-print(f"Device        : {DEVICE}")
-
-# ── Load ESM-IF1 ──────────────────────────────────────────────────────────────
-print("Loading ESM-IF1 (142M)...")
-model, alphabet = esm.pretrained.esm_if1_gvp4_t16_142M_UR50()
-model = model.eval().to(DEVICE)
+# Runtime globals, populated by main() before the helpers below are called, so
+# the helper functions stay importable without running the full embedding job.
+args = None
+DEVICE, USE_GPU = "cpu", False
+model = alphabet = None
 
 
 # ── GPU-aware encoder output (raw, [T, D] WITH special tokens) ───────────────
@@ -138,13 +113,13 @@ def strip_special(rep, seq_len):
     if n == 0:
         return rep
     if n == 1:
-        return rep[1:]
+        return rep[1:] # Not expected, but just in case (e.g. no EOS)
     if n == 2:
         return rep[1:-1]
     raise ValueError(f"Unexpected rep offset {n} (rep {rep.shape[0]} vs seq {seq_len})")
 
 
-# ── Probe: derive the pad-token and eos-token constant vectors ────────────────
+# ── Probe: derive the pad-token and eos-token constant vectors from 1 protein ────────────────
 def probe_constants():
     """Return (pad_rep, eos_rep, bos_rep) as [512] float32 constants.
 
@@ -407,144 +382,184 @@ def build_windows(rep, n_start, pep_start, pep_end, c_end, pad_rep, eos_rep, bos
     return W_zero, W_pad, W_boundary, W_eosbos, pad_mask, n_pad, c_pad
 
 
-# ── Load CSV ──────────────────────────────────────────────────────────────────
-df = pd.read_csv(args.csv)
-df['_csv_row'] = np.arange(len(df))  # original 0-based row index in the CSV
-before = len(df)
-df = df.dropna(subset=['peptide', 'uniprot_id', 'start', 'end'])
-print(f"Rows: {len(df)} (dropped {before - len(df)} NaNs)")
+# ── Entry point ───────────────────────────────────────────────────────────────
+def main():
+    global args, DEVICE, USE_GPU, model, alphabet
 
-df = df.sort_values('uniprot_id').reset_index(drop=True)
-df['_pos'] = np.arange(len(df))  # contiguous write position
-n_rows = len(df)
+    # ── Args ──────────────────────────────────────────────────────────────────
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--csv', default="data/processed/df_all.csv")
+    parser.add_argument('--pdb',
+                        default="data/processed/structures/alphafold/")
+    parser.add_argument('--out-prefix',
+                        default="data/processed/embeddings/esm-if_test")
+    parser.add_argument('--force-cpu', action='store_true')
+    args = parser.parse_args()
 
-uid_peptides = df.groupby('uniprot_id')['peptide'].apply(set).to_dict()
+    # ── Device ────────────────────────────────────────────────────────────────
+    if args.force_cpu:
+        DEVICE, USE_GPU = "cpu", False
+    elif torch.cuda.is_available() and HAS_COORD_CONVERTER:
+        DEVICE, USE_GPU = "cuda", True
+    elif torch.cuda.is_available() and not HAS_COORD_CONVERTER:
+        DEVICE, USE_GPU = "cpu", False
+        print("WARN: GPU present but CoordBatchConverter import failed -> CPU")
+    else:
+        DEVICE, USE_GPU = "cpu", False
 
-# ── Probe constants ───────────────────────────────────────────────────────────
-pad_rep, eos_rep, bos_rep = probe_constants()
+    # No AF2-supplement fallback any more: proteins without an AlphaFold model in
+    # --pdb are recorded as status=2 (missing).
+    os.makedirs(os.path.dirname(args.out_prefix), exist_ok=True)
 
-# ── Preallocate 3 HDF5 files ──────────────────────────────────────────────────
-MODES = ["zero", "pad", "boundary", "eos_bos_repeat"]
-files = {}
-for m in MODES:
-    f = h5py.File(f"{args.out_prefix}_{m}.h5", "w")
-    f.create_dataset("window_if_struct", shape=(n_rows, 29, EMB_DIM),
-                     dtype="float32", chunks=(CHUNK_ROWS, 29, EMB_DIM))
-    f.create_dataset("pad_mask", shape=(n_rows, 29), dtype="bool")
-    files[m] = f
+    print(f"Device        : {DEVICE}")
 
-# Small metadata arrays (held in RAM; tiny)
-peptide_ids = np.zeros(n_rows, dtype="S20")
-uniprot_ids = np.zeros(n_rows, dtype="S20")
-row_indices = np.zeros(n_rows, dtype=np.int64)
-starts = np.zeros(n_rows, dtype=np.int32)
-ends = np.zeros(n_rows, dtype=np.int32)
-n_pads = np.zeros(n_rows, dtype=np.int8)
-c_pads = np.zeros(n_rows, dtype=np.int8)
-statuses = np.zeros(n_rows, dtype=np.int8)  # 0 primary, 1 unused (was af2), 2 missing, 3 notfound
+    # ── Load ESM-IF1 ──────────────────────────────────────────────────────────
+    print("Loading ESM-IF1 (142M)...")
+    model, alphabet = esm.pretrained.esm_if1_gvp4_t16_142M_UR50()
+    model = model.eval().to(DEVICE)
 
-ZERO_WINDOW = np.zeros((29, EMB_DIM), dtype=np.float32)
-FULL_MASK = np.ones(29, dtype=bool)
+    # ── Load CSV ──────────────────────────────────────────────────────────────
+    df = pd.read_csv(args.csv)
+    df['_csv_row'] = np.arange(len(df))  # original 0-based row index in the CSV
+    before = len(df)
+    df = df.dropna(subset=['peptide', 'uniprot_id', 'start', 'end'])
+    print(f"Rows: {len(df)} (dropped {before - len(df)} NaNs)")
 
-stats = {"primary": 0, "missing": 0, "notfound": 0}
+    df = df.sort_values('uniprot_id').reset_index(drop=True)
+    df['_pos'] = np.arange(len(df))  # contiguous write position
+    n_rows = len(df)
 
-# ── Main loop: one protein group at a time ────────────────────────────────────
-print(f"\nEmbedding {df['uniprot_id'].nunique()} proteins -> 4 window files ...")
+    uid_peptides = df.groupby('uniprot_id')['peptide'].apply(set).to_dict()
 
-for gi, (uid, group) in enumerate(df.groupby('uniprot_id', sort=True)):
-    if gi % 200 == 0:
-        print(f"  [{gi}] protein {uid}  (rows={len(group)})")
+    # ── Probe constants ───────────────────────────────────────────────────────
+    pad_rep, eos_rep, bos_rep = probe_constants()
 
-    orig_indices = group['_pos'].values       # contiguous write positions
-    csv_rows = group['_csv_row'].values       # original CSV row indices
-    rows = list(group.iterrows())
-
-    # Resolve structure once per protein
-    rep = seq = None
-    source = 2  # default missing
-
-    struct_path = find_structure_file(uid, args.pdb)
-    if struct_path:
-        rep_raw, seq, chain = load_structure_best_chain(
-            struct_path, uid, uid_peptides.get(uid, set()))
-        if rep_raw is not None:
-            rep = strip_special(rep_raw, len(seq))
-            source = 0
-
-    # Build windows for every peptide in this protein
-    W_blocks = {m: np.zeros((len(group), 29, EMB_DIM), dtype=np.float32)
-                for m in MODES}
-    mask_blocks = np.zeros((len(group), 29), dtype=bool)
-
-    for j, (_, row) in enumerate(rows):
-        oi = orig_indices[j]
-        peptide_ids[oi] = str(row['peptide']).encode()
-        uniprot_ids[oi] = str(uid).encode()
-        row_indices[oi] = csv_rows[j]
-        starts[oi] = int(row['start'])
-        ends[oi] = int(row['end'])
-
-        if rep is None:
-            statuses[oi] = 2
-            stats["missing"] += 1
-            n_pads[oi] = c_pads[oi] = -1
-            mask_blocks[j] = FULL_MASK
-            continue
-
-        result = find_peptide_in_structure(seq, rep.shape[0], row)
-        if result is None:
-            statuses[oi] = 3
-            stats["notfound"] += 1
-            n_pads[oi] = c_pads[oi] = -1
-            mask_blocks[j] = FULL_MASK
-            continue
-
-        ps, pe, ns, ce, match = result
-        Wz, Wp, Wb, We, pm, npad, cpad = build_windows(
-            rep, ns, ps, pe, ce, pad_rep, eos_rep, bos_rep)
-
-        W_blocks["zero"][j] = Wz
-        W_blocks["pad"][j] = Wp
-        W_blocks["boundary"][j] = Wb
-        W_blocks["eos_bos_repeat"][j] = We
-        mask_blocks[j] = pm
-        n_pads[oi] = npad
-        c_pads[oi] = cpad
-        statuses[oi] = source
-        stats["primary"] += 1
-
-    # Write this protein's block to the 4 files, then free the rep
+    # ── Preallocate 4 HDF5 files ──────────────────────────────────────────────
+    MODES = ["zero", "pad", "boundary", "eos_bos_repeat"]
+    files = {}
     for m in MODES:
-        files[m]["window_if_struct"][orig_indices] = W_blocks[m]
-        files[m]["pad_mask"][orig_indices] = mask_blocks
-    del W_blocks, mask_blocks, rep
-    if gi % 100 == 0:
-        for f in files.values():
-            f.flush()
-    if USE_GPU and gi % 200 == 0:
-        torch.cuda.empty_cache()
+        f = h5py.File(f"{args.out_prefix}_{m}.h5", "w")
+        f.create_dataset("window_if_struct", shape=(n_rows, 29, EMB_DIM),
+                         dtype="float32", chunks=(CHUNK_ROWS, 29, EMB_DIM))
+        f.create_dataset("pad_mask", shape=(n_rows, 29), dtype="bool")
+        files[m] = f
 
-# ── Write metadata + attrs, close ─────────────────────────────────────────────
-for m, f in files.items():
-    f.create_dataset("peptide_ids", data=peptide_ids)
-    f.create_dataset("uniprot_ids", data=uniprot_ids)
-    f.create_dataset("row_indices", data=row_indices)
-    f.create_dataset("start", data=starts)
-    f.create_dataset("end", data=ends)
-    f.create_dataset("n_pad", data=n_pads)
-    f.create_dataset("c_pad", data=c_pads)
-    f.create_dataset("status", data=statuses)
-    f.attrs["model"] = "esm_if1_gvp4_t16_142M_UR50"
-    f.attrs["emb_dim"] = EMB_DIM
-    f.attrs["window"] = 29
-    f.attrs["pad_mode"] = m
-    f.attrs["pad_rep_norm"] = float(np.linalg.norm(pad_rep))
-    f.attrs["eos_rep_norm"] = float(np.linalg.norm(eos_rep))
-    f.attrs["n_samples"] = n_rows
-    f.attrs["device"] = DEVICE
-    f.attrs["status_legend"] = "0=primary 1=unused 2=missing 3=notfound"
-    f.attrs["n_pad_sentinel"] = "-1 means no structure/peptide found"
-    f.close()
+    # Small metadata arrays (held in RAM; tiny)
+    peptide_ids = np.zeros(n_rows, dtype="S20")
+    uniprot_ids = np.zeros(n_rows, dtype="S20")
+    row_indices = np.zeros(n_rows, dtype=np.int64)
+    starts = np.zeros(n_rows, dtype=np.int32)
+    ends = np.zeros(n_rows, dtype=np.int32)
+    n_pads = np.zeros(n_rows, dtype=np.int8)
+    c_pads = np.zeros(n_rows, dtype=np.int8)
+    statuses = np.zeros(n_rows, dtype=np.int8)  # 0 primary, 1 unused (was af2), 2 missing, 3 notfound
 
-print("\nDone. Source breakdown:", stats)
-print(f"Files: {args.out_prefix}_{{zero,pad,boundary,eos_bos_repeat}}.h5")
+    ZERO_WINDOW = np.zeros((29, EMB_DIM), dtype=np.float32)
+    FULL_MASK = np.ones(29, dtype=bool)
+
+    stats = {"primary": 0, "missing": 0, "notfound": 0}
+
+    # ── Main loop: one protein group at a time ────────────────────────────────
+    print(f"\nEmbedding {df['uniprot_id'].nunique()} proteins -> 4 window files ...")
+
+    for gi, (uid, group) in enumerate(df.groupby('uniprot_id', sort=True)):
+        if gi % 200 == 0:
+            print(f"  [{gi}] protein {uid}  (rows={len(group)})")
+
+        orig_indices = group['_pos'].values       # contiguous write positions
+        csv_rows = group['_csv_row'].values       # original CSV row indices
+        rows = list(group.iterrows())
+
+        # Resolve structure once per protein
+        rep = seq = None
+        source = 2  # default missing
+
+        struct_path = find_structure_file(uid, args.pdb)
+        if struct_path:
+            rep_raw, seq, chain = load_structure_best_chain(
+                struct_path, uid, uid_peptides.get(uid, set()))
+            if rep_raw is not None:
+                rep = strip_special(rep_raw, len(seq))
+                source = 0
+
+        # Build windows for every peptide in this protein
+        W_blocks = {m: np.zeros((len(group), 29, EMB_DIM), dtype=np.float32)
+                    for m in MODES}
+        mask_blocks = np.zeros((len(group), 29), dtype=bool)
+
+        for j, (_, row) in enumerate(rows):
+            oi = orig_indices[j]
+            peptide_ids[oi] = str(row['peptide']).encode()
+            uniprot_ids[oi] = str(uid).encode()
+            row_indices[oi] = csv_rows[j]
+            starts[oi] = int(row['start'])
+            ends[oi] = int(row['end'])
+
+            if rep is None:
+                statuses[oi] = 2
+                stats["missing"] += 1
+                n_pads[oi] = c_pads[oi] = -1
+                mask_blocks[j] = FULL_MASK
+                continue
+
+            result = find_peptide_in_structure(seq, rep.shape[0], row)
+            if result is None:
+                statuses[oi] = 3
+                stats["notfound"] += 1
+                n_pads[oi] = c_pads[oi] = -1
+                mask_blocks[j] = FULL_MASK
+                continue
+
+            ps, pe, ns, ce, match = result
+            Wz, Wp, Wb, We, pm, npad, cpad = build_windows(
+                rep, ns, ps, pe, ce, pad_rep, eos_rep, bos_rep)
+
+            W_blocks["zero"][j] = Wz
+            W_blocks["pad"][j] = Wp
+            W_blocks["boundary"][j] = Wb
+            W_blocks["eos_bos_repeat"][j] = We
+            mask_blocks[j] = pm
+            n_pads[oi] = npad
+            c_pads[oi] = cpad
+            statuses[oi] = source
+            stats["primary"] += 1
+
+        # Write this protein's block to the 4 files, then free the rep
+        for m in MODES:
+            files[m]["window_if_struct"][orig_indices] = W_blocks[m]
+            files[m]["pad_mask"][orig_indices] = mask_blocks
+        del W_blocks, mask_blocks, rep
+        if gi % 100 == 0:
+            for f in files.values():
+                f.flush()
+        if USE_GPU and gi % 200 == 0:
+            torch.cuda.empty_cache()
+
+    # ── Write metadata + attrs, close ─────────────────────────────────────────
+    for m, f in files.items():
+        f.create_dataset("peptide_ids", data=peptide_ids)
+        f.create_dataset("uniprot_ids", data=uniprot_ids)
+        f.create_dataset("row_indices", data=row_indices)
+        f.create_dataset("start", data=starts)
+        f.create_dataset("end", data=ends)
+        f.create_dataset("n_pad", data=n_pads)
+        f.create_dataset("c_pad", data=c_pads)
+        f.create_dataset("status", data=statuses)
+        f.attrs["model"] = "esm_if1_gvp4_t16_142M_UR50"
+        f.attrs["emb_dim"] = EMB_DIM
+        f.attrs["window"] = 29
+        f.attrs["pad_mode"] = m
+        f.attrs["pad_rep_norm"] = float(np.linalg.norm(pad_rep))
+        f.attrs["eos_rep_norm"] = float(np.linalg.norm(eos_rep))
+        f.attrs["n_samples"] = n_rows
+        f.attrs["device"] = DEVICE
+        f.attrs["status_legend"] = "0=primary 1=unused 2=missing 3=notfound"
+        f.attrs["n_pad_sentinel"] = "-1 means no structure/peptide found"
+        f.close()
+
+    print("\nDone. Source breakdown:", stats)
+    print(f"Files: {args.out_prefix}_{{zero,pad,boundary,eos_bos_repeat}}.h5")
+
+
+if __name__ == "__main__":
+    main()
