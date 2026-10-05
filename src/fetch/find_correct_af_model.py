@@ -15,6 +15,7 @@ import urllib.error
 
 
 def find_model(uniprot_id: str, expected_length: int) -> str | None:
+    # 1. Get all models for one accession from AlphaFold API
     url = f"https://alphafold.ebi.ac.uk/api/prediction/{uniprot_id}"
     try:
         req = urllib.request.urlopen(url, timeout=15)
@@ -22,8 +23,11 @@ def find_model(uniprot_id: str, expected_length: int) -> str | None:
     except (urllib.error.URLError, json.JSONDecodeError, TimeoutError):
         return None
 
+    # 2. Each model has uniprotStart / uniprotEnd (1-based, inclusive)
+    #    Length = End - Start + 1
     for model in data:
         model_length = model['uniprotEnd'] - model['uniprotStart'] + 1
+        # 3. Return the correct model
         if model_length == expected_length:
             return model['entryId']
     return None

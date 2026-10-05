@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # fetch_structures.sh
 # Usage: bash src/fetch/fetch_structures.sh <out_dir>
-
 set -uo pipefail
 
-# ── Arguments ────────────────────────────────────────────────────────────────
+# Arguments 
 if [[ $# -ne 1 ]]; then
     echo "Usage: bash src/fetch/fetch_structures.sh <out_dir>"
     echo "Example: bash src/fetch/fetch_structures.sh data/processed/structures"
@@ -12,7 +11,6 @@ if [[ $# -ne 1 ]]; then
 fi
 
 OUT_DIR="${1}"
-
 CANONICAL_LIST="${OUT_DIR}/logs/fetch_list_canonical.tsv"
 ISOFORM_LIST="${OUT_DIR}/logs/fetch_list_isoforms.tsv"
 
@@ -25,20 +23,21 @@ if [[ ! -f "${ISOFORM_LIST}" ]]; then
     exit 1
 fi
 
-# ── Config ───────────────────────────────────────────────────────────────────
+# Config 
 AF2_BASE="https://alphafold.ebi.ac.uk/files"
 PDB_SEARCH="https://search.rcsb.org/rcsbsearch/v2/query"
 PDB_BASE="https://files.rcsb.org/download"
 FASTA_PATH="data/raw/fasta/combined_positives_only.fasta"
-
 mkdir -p "${OUT_DIR}/alphafold"
 mkdir -p "${OUT_DIR}/pdb_fallback"
-
 LOG="${OUT_DIR}/logs/fetch_log.tsv"
 MISSING="${OUT_DIR}/logs/missing_structures.tsv"
 
-# ── Parse FASTA for ground-truth sequence lengths ────────────────────────────
+# Parse FASTA for ground-truth sequence lengths 
 declare -A FASTA_LENGTHS
+# Lengths live in FASTA_LENGTHS[uid] for this run only (bash assoc array).
+# Real parser is the awk block after the unused while-loop (reads /dev/null).
+# Same idea: uid from header pipe-field, length of accumulated seq.
 if [[ -f "${FASTA_PATH}" ]]; then
     echo "Parsing ${FASTA_PATH} for sequence lengths..."
     while IFS= read -r header; do
@@ -49,13 +48,13 @@ if [[ -f "${FASTA_PATH}" ]]; then
             if [[ "${next_line}" == ">"* ]]; then
                 # Extract accession between pipes: >sp|O43236|SEPT4... -> O43236
                 uid=$(echo "${header}" | awk -F'|' '{print $2}')
-                FASTA_LENGTHS["${uid}"]=${#seq}
+                FASTA_LENGTHS["${uid}"]=${#seq} # SAVE CORRECT FASTA LENGTH
                 header="${next_line}"
                 seq=""
             else
                 seq="${seq}${next_line}"
             fi
-        done < /dev/null  # dummy — use process substitution below
+        done < /dev/null
         # This approach doesn't work for multi-line; use awk instead
     done < /dev/null
     # Use awk for reliable multi-line FASTA parsing
@@ -77,7 +76,7 @@ else
     echo "WARNING: ${FASTA_PATH} not found — length validation disabled"
 fi
 
-# ── Resume logic ─────────────────────────────────────────────────────────────
+# Resume logic 
 declare -A ALREADY_DONE
 
 if [[ -f "${LOG}" ]]; then
@@ -92,12 +91,12 @@ else
     echo "Fresh run — logs initialized"
 fi
 
-# ── Helper: strip .0 from pandas float coords ────────────────────────────────
+# Helper: strip .0 from pandas float coords 
 strip_float() {
     printf "%.0f" "${1}"
 }
 
-# ── Helper: fetch AF2 structure, try v6 → v5 → v4 ───────────────────────────
+# Helper: fetch AF2 structure, try v6 → v5 → v4 
 # Returns the version number that worked, or "none"
 # Usage: version=$(fetch_af2 "P04637" "/path/to/output.pdb")
 fetch_af2() {
@@ -127,7 +126,7 @@ fetch_af2() {
     return 1
 }
 
-# ── Helper: check PDB coverage ───────────────────────────────────────────────
+# Helper: check PDB coverage 
 check_coverage() {
     local pdb_file="${1}"
     local start="${2}"
@@ -154,7 +153,7 @@ check_coverage() {
     fi
 }
 
-# ── Process one fetch list ────────────────────────────────────────────────────
+# Process one fetch list 
 process_list() {
     local fetch_list="${1}"
     local list_label="${2}"
@@ -169,28 +168,24 @@ process_list() {
     echo "════════════════════════════════════════"
 
     while IFS=$'\t' read -r UNIPROT START END N_PEPTIDES BASE_ID; do
-
         count=$((count + 1))
-
         START=$(strip_float "${START}")
         END=$(strip_float "${END}")
-
-        # ── Skip if already processed ────────────────────────────────────────
+        # Skip if already processed 
         if [[ -n "${ALREADY_DONE[${UNIPROT}]+_}" ]]; then
             echo "[${count}/${total}] SKIP: ${UNIPROT}"
             continue
         fi
-
         echo "[${count}/${total}] ${UNIPROT} (region: ${START}-${END}, n_pep: ${N_PEPTIDES})"
 
-        # ── Step 1: AlphaFold2 ───────────────────────────────────────────────
+        # Step 1: AlphaFold2 
         AF2_FILE="${OUT_DIR}/alphafold/${UNIPROT}.pdb"
 
         # Strict: fetch exact ID only, no canonical fallback
         WORKED_VERSION=$(fetch_af2 "${UNIPROT}" "${AF2_FILE}" || true)
 
         if [[ "${WORKED_VERSION}" != "none" ]]; then
-            # ── Length validation: does AF2 model match FASTA ground truth? ──
+            # Length validation: does AF2 model match FASTA ground truth? 
             FASTA_LENGTH="${FASTA_LENGTHS[${UNIPROT}]:-}"
             if [[ -n "${FASTA_LENGTH}" ]]; then
                 AF_LENGTH=$(grep "^SEQRES" "${AF2_FILE}" | \
@@ -235,7 +230,7 @@ process_list() {
 
         echo "  Falling through to PDB..."
 
-        # ── Step 2: PDB fallback using BASE_ID ───────────────────────────────
+        # Step 2: PDB fallback using BASE_ID 
         echo "  [PDB] Querying RCSB for ${BASE_ID}..."
 
         QUERY=$(printf '{
@@ -321,11 +316,11 @@ except:
     done < "${fetch_list}"
 }
 
-# ── Run both lists ────────────────────────────────────────────────────────────
+# Run both lists 
 process_list "${CANONICAL_LIST}" "canonical IDs"
 process_list "${ISOFORM_LIST}"   "isoform IDs"
 
-# ── Summary ──────────────────────────────────────────────────────────────────
+# Summary 
 echo ""
 echo "════════════════════════════════════════"
 echo "DONE"

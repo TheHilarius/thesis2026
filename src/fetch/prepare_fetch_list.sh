@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# prepare_fetch_list.sh
-# Usage: bash src/fetch/prepare_fetch_list.sh \
-#            data/processed/pos_EL_8-to-14mers_epitopes_hla0201.csv \
-#            data/processed/structures
+###### prepare_fetch_list.sh
+###### Usage: bash src/fetch/prepare_fetch_list.sh \
+######           data/processed/pos_EL_all_epitopes_hla0201.csv \
+######           data/processed/structures
 
 set -euo pipefail
 
@@ -24,14 +24,14 @@ print("=== COLUMNS ===")
 print(df.columns.tolist())
 print(f"\n=== SHAPE: {df.shape} ===")
 
-# ── Drop missing uniprot_ids ─────────────────────────────────────────────────
+###### Drop missing uniprot_ids
 before = len(df)
 df = df.dropna(subset=['uniprot_id'])
 print(f"Dropped {before - len(df)} rows with missing uniprot_id")
 
-# ── Classify UniProt IDs ─────────────────────────────────────────────────────
-# Strict: must start with letter, 6-10 alphanumeric, optional -isoform
-# Rejects GenBank (AAX38256), RefSeq (NP_, XP_), and other non-UniProt IDs
+###### Classify UniProt IDs
+###### Strict: must start with letter, 6-10 alphanumeric, optional -isoform
+###### Rejects GenBank (AAX38256), RefSeq (NP_, XP_), and other non-UniProt IDs
 UNIPROT_PATTERN = r'^[A-Z][A-Z0-9]{5,9}(-[0-9]+)?$'
 canonical_mask = df['uniprot_id'].str.match(r'^[A-Z][A-Z0-9]{5,9}$',         na=False)
 isoform_mask   = df['uniprot_id'].str.match(r'^[A-Z][A-Z0-9]{5,9}-\d+$',     na=False)
@@ -41,7 +41,7 @@ print(f"\nCanonical UniProt IDs : {canonical_mask.sum()} rows")
 print(f"Isoform UniProt IDs   : {isoform_mask.sum()} rows")
 print(f"Truly invalid         : {other_mask.sum()} rows")
 
-# ── Handle truly invalid ─────────────────────────────────────────────────────
+###### Handle truly invalid
 if other_mask.sum() > 0:
     print("\nTruly invalid examples:")
     print(df[other_mask]['uniprot_id'].head(10).tolist())
@@ -49,7 +49,7 @@ if other_mask.sum() > 0:
                           sep='\t', index=False)
     print(f"Saved to {out_dir}/logs/truly_invalid_ids.tsv")
 
-# ── Split canonical and isoform ──────────────────────────────────────────────
+###### Split canonical and isoform 
 df_canonical = df[canonical_mask].copy()
 df_isoform   = df[isoform_mask].copy()
 
@@ -58,15 +58,15 @@ df_isoform['base_uniprot_id'] = (
     .str.extract(r'^([A-Z0-9]{6,10})-\d+$')
 )
 
-# ── Aggregate: one row per unique ID ────────────────────────────────────────
-# Take min(start) and max(end) across all peptides from same protein
-# so coverage check later covers ALL peptides from that source protein
+###### Aggregate: one row per unique ID 
+###### Take min(start) and max(end) across all peptides from same protein
+###### so coverage check later covers ALL peptides from that source protein
 canonical_grouped = df_canonical.groupby('uniprot_id').agg(
     start=('start', 'min'),
     end=('end', 'max'),
     n_peptides=('peptide', 'count')
 ).reset_index()
-# base_id == uniprot_id for canonical
+###### base_id == uniprot_id for canonical
 canonical_grouped['base_id'] = canonical_grouped['uniprot_id']
 
 isoform_grouped = df_isoform.groupby('uniprot_id').agg(
@@ -79,14 +79,14 @@ isoform_grouped = df_isoform.groupby('uniprot_id').agg(
 print(f"\nUnique canonical proteins : {len(canonical_grouped)}")
 print(f"Unique isoform proteins   : {len(isoform_grouped)}")
 
-# ── Show samples ─────────────────────────────────────────────────────────────
+###### Show samples 
 print("\n--- Canonical sample ---")
 print(canonical_grouped.head(5).to_string())
 print("\n--- Isoform sample ---")
 print(isoform_grouped.head(5).to_string())
 
-# ── Save ─────────────────────────────────────────────────────────────────────
-# Columns: uniprot_id | start | end | n_peptides | base_id
+###### Save 
+###### Columns: uniprot_id | start | end | n_peptides | base_id
 canonical_grouped.to_csv(f"{out_dir}/logs/fetch_list_canonical.tsv",
                          sep='\t', index=False, header=False)
 isoform_grouped.to_csv(f"{out_dir}/logs/fetch_list_isoforms.tsv",
