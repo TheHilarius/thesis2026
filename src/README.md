@@ -28,10 +28,9 @@ src/
 │   │                 # af_version_compare.R
 │   └── esm/           # embed_peptides_esmc.py, embed_peptides_esmif.py,
 │                     # legacy/embed_structures_esmif_gpu.py (flat, pre-pad-modes)
-├── fetch/             # Structure fetching + coverage
-│                     # fetch_structures.sh, fetch_structures_hybrid.sh,
-│                     # audit_hybrid_structures.sh, prepare_fetch_list.sh,
-│                     # report_structure_coverage.py
+├── fetch/             # Structure fetching
+│                     # fetch_uniprot_fastas.py, prepare_fetch_list.sh,
+│                     # fetch_structures.sh, find_correct_af_model.py
 ├── util/              # FASTA / data-prep utilities
 │                     # batch_fasta.py, build_combined_fasta.py,
 │                     # export_fasta_files_from_iedb.py

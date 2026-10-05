@@ -1,5 +1,5 @@
 """
-python src/fetch/report_structure_coverage.py \
+python src/investigation/report_structure_coverage.py \
     --df data/processed/df_all.csv \
     --h5 data/processed/embeddings/esmif_structure_embeddings.h5 \
     --missing data/processed/structures/logs/missing_structures.tsv \
