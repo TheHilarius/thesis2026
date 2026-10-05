@@ -422,7 +422,7 @@ def main():
     df = pd.read_csv(args.csv)
     df['_csv_row'] = np.arange(len(df))  # original 0-based row index in the CSV
     before = len(df)
-    df = df.dropna(subset=['peptide', 'uniprot_id', 'start', 'end'])
+    df = df.dropna(subset=['peptide', 'uniprot_id', 'start', 'end']) # Also done upstream
     print(f"Rows: {len(df)} (dropped {before - len(df)} NaNs)")
 
     df = df.sort_values('uniprot_id').reset_index(drop=True)
@@ -454,40 +454,41 @@ def main():
     c_pads = np.zeros(n_rows, dtype=np.int8)
     statuses = np.zeros(n_rows, dtype=np.int8)  # 0 primary, 1 unused (was af2), 2 missing, 3 notfound
 
-    ZERO_WINDOW = np.zeros((29, EMB_DIM), dtype=np.float32)
+    ZERO_WINDOW = np.zeros((29, EMB_DIM), dtype=np.float32) # unused
     FULL_MASK = np.ones(29, dtype=bool)
 
     stats = {"primary": 0, "missing": 0, "notfound": 0}
 
     # ── Main loop: one protein group at a time ────────────────────────────────
     print(f"\nEmbedding {df['uniprot_id'].nunique()} proteins -> 4 window files ...")
-
+    # uid = uniprot_id, group = all rows for that protein, gi = group index
     for gi, (uid, group) in enumerate(df.groupby('uniprot_id', sort=True)):
-        if gi % 200 == 0:
-            print(f"  [{gi}] protein {uid}  (rows={len(group)})")
+        if gi % 200 == 0: # 
+            print(f"  [{gi}] protein {uid}  (rows={len(group)})") # 
 
-        orig_indices = group['_pos'].values       # contiguous write positions
+        orig_indices = group['_pos'].values       #  write positions
         csv_rows = group['_csv_row'].values       # original CSV row indices
         rows = list(group.iterrows())
 
         # Resolve structure once per protein
-        rep = seq = None
+        rep = seq = None 
         source = 2  # default missing
 
-        struct_path = find_structure_file(uid, args.pdb)
+        struct_path = find_structure_file(uid, args.pdb) # find structure file for this uniprot_id
         if struct_path:
             rep_raw, seq, chain = load_structure_best_chain(
-                struct_path, uid, uid_peptides.get(uid, set()))
+                struct_path, uid, uid_peptides.get(uid, set())) # get the best chain's representation and sequence
             if rep_raw is not None:
                 rep = strip_special(rep_raw, len(seq))
                 source = 0
 
         # Build windows for every peptide in this protein
+        # W_blocks: dict of 4 modes, each is [n_peptides, 29, 512]
         W_blocks = {m: np.zeros((len(group), 29, EMB_DIM), dtype=np.float32)
                     for m in MODES}
         mask_blocks = np.zeros((len(group), 29), dtype=bool)
 
-        for j, (_, row) in enumerate(rows):
+        for j, (_, row) in enumerate(rows): # for each peptide row in the group
             oi = orig_indices[j]
             peptide_ids[oi] = str(row['peptide']).encode()
             uniprot_ids[oi] = str(uid).encode()
@@ -495,22 +496,24 @@ def main():
             starts[oi] = int(row['start'])
             ends[oi] = int(row['end'])
 
-            if rep is None:
+            if rep is None: # No structure found for this protein
                 statuses[oi] = 2
                 stats["missing"] += 1
                 n_pads[oi] = c_pads[oi] = -1
                 mask_blocks[j] = FULL_MASK
-                continue
+                continue 
 
             result = find_peptide_in_structure(seq, rep.shape[0], row)
-            if result is None:
+            if result is None: # Peptide not found in the structure sequence
                 statuses[oi] = 3
                 stats["notfound"] += 1
                 n_pads[oi] = c_pads[oi] = -1
                 mask_blocks[j] = FULL_MASK
                 continue
 
+            # peptide start, end, n-flank start, c-flank end, match type
             ps, pe, ns, ce, match = result
+            # w
             Wz, Wp, Wb, We, pm, npad, cpad = build_windows(
                 rep, ns, ps, pe, ce, pad_rep, eos_rep, bos_rep)
 
