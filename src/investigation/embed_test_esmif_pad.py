@@ -20,7 +20,7 @@ here" signal).  Runs on a sample of small real structures and answers:
                         the "eos" constant used by the eos-repeat fill mode.
 
 The pad/eos constants probed here are derived exactly the same way as in
-embed_windows_esmif.py (end-token output = eos_rep, first gap output = pad_rep),
+embed_peptides_esmif.py (end-token output = eos_rep, first gap output = pad_rep),
 so this script directly validates those constants before the full run.
 
 Run in the fair-esm env (conda activate esm_gpu), NOT the esm (ESM-C) env:

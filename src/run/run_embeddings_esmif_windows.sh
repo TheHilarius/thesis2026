@@ -31,6 +31,6 @@ export PYTHONUNBUFFERED=1
 
 echo "Starting ESM-IF fixed-29 window embedding (4 padding modes: zero, pad, boundary, eos_bos_repeat) at $(date)"
 
-python src/tools/esm/embed_windows_esmif.py
+python src/tools/esm/embed_peptides_esmif.py
 
 echo "Done at $(date)"

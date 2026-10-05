@@ -15,8 +15,8 @@ Fixes over the original:
      tries AlphaFold structure before giving up → fewer zero vectors
 
 Usage:
-    python src/tools/esm/embed_structures_esmif_gpu.py
-    python src/tools/esm/embed_structures_esmif_gpu.py --csv path/to/input.csv --pdb path/to/pdbs/ --out path/to/output.h5 --af2 path/to/af2/
+    python src/tools/esm/legacy/embed_structures_esmif_gpu.py
+    python src/tools/esm/legacy/embed_structures_esmif_gpu.py --csv path/to/input.csv --pdb path/to/pdbs/ --out path/to/output.h5 --af2 path/to/af2/
 """
 
 import argparse

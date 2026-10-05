@@ -406,7 +406,7 @@ def save_prepared(out_path, emb_data, emb_positions, df, df_rows,
 #     and the output is reordered into df row order so downstream modelling
 #     can index prepared row i == df row i.
 
-# Slot layout for the 29-slot window (fixed by embed_windows_esmif.py):
+# Slot layout for the 29-slot window (fixed by embed_peptides_esmif.py):
 #   0-9 N-flank (right-aligned), 10-18 peptide (9), 19-28 C-flank (left-aligned)
 WINDOW_FLANK = 10
 
