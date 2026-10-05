@@ -15,7 +15,7 @@ So explicit seq_id with False at pads stops real residues from attending pads.
 
 Run in the ESM-C env (Windows base anaconda has torch + esm):
 
-    /mnt/c/Users/olive/anaconda3/python.exe src/tools/esm/embed_test_esmc_pad.py
+    /mnt/c/Users/olive/anaconda3/python.exe src/investigation/embed_test_esmc_pad.py
 
 Args:
     --n N          number of proteins to sample (default 100)

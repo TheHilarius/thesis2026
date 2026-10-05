@@ -27,8 +27,7 @@ src/
 │   ├── alphafold/     # af_run_chunks.sh, af_split_predict.py, af_stitch_plddt.py,
 │   │                 # af_version_compare.R
 │   └── esm/           # embed_peptides_w_esm.py, embed_structures_esmif_gpu.py,
-│                     # embed_structures_w_esm_if.py, inspect_embeddings.py,
-│                     # summarize_embeddings.py
+│                     # embed_windows_esmif.py, embed_peptides_esmc.py (dup)
 ├── fetch/             # Structure fetching + coverage
 │                     # fetch_structures.sh, fetch_structures_hybrid.sh,
 │                     # audit_hybrid_structures.sh, prepare_fetch_list.sh,

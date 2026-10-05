@@ -11,7 +11,7 @@ Run in the ESM-C env (the one with `esm` / esm.models.esmc).
 
 From WSL, use the WINDOWS anaconda base python (WSL `python` has no torch):
 
-    /mnt/c/Users/olive/anaconda3/python.exe src/tools/esm/embed_test_esmc.py
+    /mnt/c/Users/olive/anaconda3/python.exe src/investigation/embed_test_esmc.py
 
 Note: this is the `esm` (ESM-C/ESM3) package, NOT fair-esm.
 """

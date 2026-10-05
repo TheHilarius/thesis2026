@@ -25,8 +25,8 @@ so this script directly validates those constants before the full run.
 
 Run in the fair-esm env (conda activate esm_gpu), NOT the esm (ESM-C) env:
 
-    python src/tools/esm/embed_test_esmif_pad.py
-    python src/tools/esm/embed_test_esmif_pad.py --n 20 --k 10
+    python src/investigation/embed_test_esmif_pad.py
+    python src/investigation/embed_test_esmif_pad.py --n 20 --k 10
 
 Args:
     --n N          number of structures to sample (default 20)

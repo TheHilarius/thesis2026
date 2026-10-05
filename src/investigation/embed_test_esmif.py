@@ -11,8 +11,8 @@ Run in the FAIR-ESM env (the one with fair-esm, NOT the `esm` ESM-C package).
 This env is on the H100 cluster (`conda activate esm_gpu`), not the local Windows
 anaconda (which has the new `esm` ESM-C package instead).
 
-    python src/tools/esm/embed_test_esmif.py --pdb path/to/small.pdb
-    python src/tools/esm/embed_test_esmif.py   # auto-finds a small AF2 pdb
+    python src/investigation/embed_test_esmif.py --pdb path/to/small.pdb
+    python src/investigation/embed_test_esmif.py   # auto-finds a small AF2 pdb
 
 If you get "No module named 'esm.inverse_folding'", you are in the wrong env.
 """

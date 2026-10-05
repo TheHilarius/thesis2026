@@ -7,12 +7,12 @@ Supports both the current single context-embedding format and the legacy
 3-region (peptide / n_flank / c_flank) format.
 
 Usage:
-    python src/tools/esm/inspect_embeddings.py \
+    python src/investigation/inspect_embeddings.py \
         data/processed/embeddings/esmc_protein_embeddings.h5 \
         data/processed/df_all.csv \
         --out_dir results/embedding_inspection/esmc
 
-    python src/tools/esm/inspect_embeddings.py \
+    python src/investigation/inspect_embeddings.py \
         data/processed/embeddings/esmif_structure_embeddings.h5 \
         data/processed/df_all.csv \
         --out_dir results/embedding_inspection/esmif

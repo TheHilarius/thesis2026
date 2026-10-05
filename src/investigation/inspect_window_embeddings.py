@@ -16,7 +16,7 @@ Comparisons across the window modes are row-aligned via row_indices
 they have different N / row orders (53072 / 53198 vs 46617).
 
 Usage:
-    python src/tools/esm/inspect_window_embeddings.py \
+    python src/investigation/inspect_window_embeddings.py \
         data/processed/embeddings/esm-if_test_zero.h5 \
         data/processed/embeddings/esm-if_test_pad.h5 \
         data/processed/embeddings/esm-if_test_boundary.h5 \
@@ -26,7 +26,7 @@ Usage:
         data/processed/df_all.csv \
         --out_dir results/embedding_inspection/windows_test
 
-    python src/tools/esm/inspect_window_embeddings.py <any subset> df_all.csv \
+    python src/investigation/inspect_window_embeddings.py <any subset> df_all.csv \
         --out_dir results/embedding_inspection/quick --chunk 2048
 """
 

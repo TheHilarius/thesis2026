@@ -3,7 +3,7 @@
 summarize_embeddings.py — Compare zero-vector rates across embedding HDF5 files.
 
 Usage:
-    python src/tools/esm/summarize_embeddings.py data/processed/embeddings/esmif_*.h5
+    python src/investigation/summarize_embeddings.py data/processed/embeddings/esmif_*.h5
 """
 
 import sys
@@ -67,7 +67,7 @@ def summarize(h5_path):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python src/tools/esm/summarize_embeddings.py <file1.h5> [file2.h5 ...]")
+        print("Usage: python src/investigation/summarize_embeddings.py <file1.h5> [file2.h5 ...]")
         sys.exit(1)
 
     paths = sorted(sys.argv[1:])
