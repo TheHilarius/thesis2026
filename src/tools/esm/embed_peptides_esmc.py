@@ -9,7 +9,6 @@ Four pad-handling modes produce four separate HDF5 files:
   pad_token         - embed the X-padded protein with <pad> tokens + sequence_id
                       mask, then KEEP the model's <pad> vectors at the pad slots
                       (they are NOT zeroed out)
-
 Default pad-mode = impute_boundary.
 Default padded FASTA = data/processed/positives_clean_padded.fasta.
 
@@ -17,7 +16,6 @@ Requirements:
   - df_all.csv must have columns: peptide, uniprot_id, full_context, start, end, sequence
   - full_context must be exactly 29 characters for ALL rows (script aborts otherwise)
   - Target .h5 files must NOT already exist (script errors, no overwrite)
-
 Usage:
     # dry run (validate only)
     python src/tools/esm/embed_peptides_w_esm.py --dry-run
@@ -121,9 +119,9 @@ def span_0idx(row: pd.Series) -> tuple[int, int]:
 # ── Embedding helpers ─────────────────────────────────────────────────────────
 def embed_full_protein(client, seq: str) -> np.ndarray:
     """Full protein embedding via client.logits. Returns [L+2, D] numpy."""
-    protein = ESMProtein(sequence=seq)
-    tensor = client.encode(protein)
-    out = client.logits(
+    protein = ESMProtein(sequence=seq) #Converts str to ESMProtein object
+    tensor = client.encode(protein) #Tekonization. Converting single protein to interger token IDs
+    out = client.logits(  #The full foward pass of the model to get the embeddings
         tensor, LogitsConfig(sequence=True, return_embeddings=True)
     )
     return out.embeddings.squeeze(0).cpu().numpy()  # [L+2, D]
@@ -137,9 +135,10 @@ def embed_padded_protein(
     Returns (emb [L_padded+2, D], n_left) where n_left = number of leading X's.
     """
     L_padded = len(padded_seq)
-    encoded = tokenizer.encode(padded_seq, add_special_tokens=True)
+    encoded = tokenizer.encode(padded_seq, add_special_tokens=True) #Tokenizes the padded sequence and adds special tokens (BOS/EOS)
     tokens = torch.tensor([encoded], dtype=torch.long, device=device)  # [1, L_padded+2]
 
+    # Check that the tokenized length matches the expected padded sequence length + 2 for BOS/EOS
     if tokens.shape[1] != L_padded + 2:
         raise RuntimeError(
             f"Token length {tokens.shape[1]} != padded_seq len {L_padded} + 2"
@@ -151,11 +150,11 @@ def embed_padded_protein(
         dtype=torch.bool,
         device=device,
     )
-
+    # replace X's with pad_token_id in the token tensor (excluding BOS/EOS)
     tokens = tokens.clone()
     tokens[0, 1:-1][pad_mask] = pad_token_id
 
-    # sequence_id: True for real + specials, False for pads
+    # Create a sequence_id mask where True indicates real residues and False indicates pad positions (excluding BOS/EOS)
     seq_id = torch.ones_like(tokens, dtype=torch.bool)
     seq_id[0, 1:-1][pad_mask] = False
 
@@ -163,7 +162,7 @@ def embed_padded_protein(
         out = client.forward(sequence_tokens=tokens, sequence_id=seq_id)
     emb = out.embeddings[0].float().cpu().numpy()  # [L_padded+2, D]
 
-    # count leading X's
+    # Count the number of leading X's in the padded sequence to determine how many residues are on the left side of the peptide window
     n_left = 0
     for ch in padded_seq:
         if ch in ("X", "x"):
@@ -177,15 +176,15 @@ def embed_padded_protein(
 # ── Window builders (zero / impute) ──────────────────────────────────────────
 def make_zero_window(emb_full: np.ndarray, win_start: int, L: int):
     """Zero-fill pads. Returns (window [29,D], pad_mask [29])."""
-    D = emb_full.shape[1]
+    D = emb_full.shape[1] #Grab the embedding dimension from the full protein embedding
     w = np.zeros((WINDOW_LEN, D), dtype=np.float32)
-    pm = np.zeros(WINDOW_LEN, dtype=bool)
-    for i in range(WINDOW_LEN):
-        j = win_start + i
-        if 0 <= j < L:
-            w[i] = emb_full[j + 1]  # +1: skip BOS
+    pm = np.zeros(WINDOW_LEN, dtype=bool) # Initialize a boolean pad mask of length WINDOW_LEN (29) to track which positions are pads
+    for i in range(WINDOW_LEN): 
+        j = win_start + i # j is the index in the full protein sequence corresponding to the current position in the window
+        if 0 <= j < L: # does this slot correspond to a real residue in the protein?  
+            w[i] = emb_full[j + 1]  # If so, copy the embedding from the full protein embedding.
         else:
-            pm[i] = True
+            pm[i] = True # Otherwise, leave it as zero and mark it as a pad in the pad mask.
     return w, pm
 
 
@@ -204,9 +203,9 @@ def make_impute_boundary_window(emb_full: np.ndarray, win_start: int, L: int):
             pm[i] = True
     if valid:
         # fill left pads with first real, right pads with last real
-        for i in range(valid[0]):
+        for i in range(valid[0]): # fill left pads with first real residue embedding
             w[i] = w[valid[0]]
-        for i in range(valid[-1] + 1, WINDOW_LEN):
+        for i in range(valid[-1] + 1, WINDOW_LEN): # fill right pads with last real residue embedding
             w[i] = w[valid[-1]]
     return w, pm
 
@@ -321,21 +320,22 @@ def main():
     lens = df["full_context"].astype(str).str.len()
     bad_count = (lens != WINDOW_LEN).sum()
     if bad_count > 0:
-        bad_idx = df.index[lens != WINDOW_LEN].tolist()[:10]
+        bad_idx = df.index[lens != WINDOW_LEN].tolist()[:10] # Get the indices of the first 10 rows where full_context length is not equal to WINDOW_LEN (29)
         raise SystemExit(
             f"{bad_count} rows have full_context != {WINDOW_LEN}. "
             f"Example indices: {bad_idx}"
         )
 
-    groups = df.groupby("uniprot_id").indices
+    # group by uniprot_id to process each protein separately. Some proteins may have multiple peptides, cutting computing
+    groups = df.groupby("uniprot_id").indices # Stored as a dictionary 
     n_rows = len(df)
 
     print(f"  {n_rows} rows, {len(groups)} unique proteins, coord={CONVENTION}")
 
     # ── load padded FASTA ──
-    fasta_map: dict[str, str] = {}
+    fasta_map: dict[str, str] = {}  # Currently not in use.
     if "pad_token" in modes:
-        fp = Path(args.pad_token_fasta)
+        fp = Path(args.pad_token_fasta) #Check if the padded FASTA file exists at the specified path
         if fp.exists():
             fasta_map = read_fasta(fp)
             print(f"  padded FASTA: {len(fasta_map)} entries from {fp}")
@@ -450,19 +450,19 @@ def main():
                     print(f"  ⚠ padded fail {prot_id}: {exc}")
             elif emb_full is not None:
                 # no padding needed for this protein — reuse full-protein embeddings
-                emb_padded = emb_full
+                emb_padded = emb_full # Reuse the full protein embeddings if no padding is needed for this protein
                 n_left = 0
 
-            if emb_padded is not None and emb_dim is None:
-                emb_dim = int(emb_padded.shape[1])
+            if emb_padded is not None and emb_dim is None: 
+                emb_dim = int(emb_padded.shape[1]) 
                 for m in modes:
-                    ensure_datasets(h5s[m], n_rows, emb_dim)
+                    ensure_datasets(h5s[m], n_rows, emb_dim) 
 
         # ── extract windows per peptide ──
         for ridx in row_idxs:
-            row = df.iloc[ridx]
-            s0, _e0 = span_0idx(row)
-            win_start = s0 - 10
+            row = df.iloc[ridx] #Get the row corresponding to the current peptide in the protein
+            s0 = span_0idx(row) 
+            win_start = s0 - 10 
             fallback = 0
 
             for m in modes:
