@@ -29,21 +29,21 @@ def main():
 
     print(f"Reading processed epitope data: {pos_el_path}...")
 
+    # Read csv and confirm uniprot-ID exists
     try:
         df = pd.read_csv(pos_el_path)
     except Exception as e:
         print(f"Error reading CSV: {e}")
         sys.exit(1)
-
     if 'uniprot_id' not in df.columns:
         print("[ERROR] 'uniprot_id' column not found!")
         sys.exit(1)
 
-    # Strict UniProt accession filter
-    UNIPROT_PATTERN = re.compile(r'^(?![A-Z]{3}[0-9])[A-Z][A-Z0-9]{5,9}(-[0-9]+)?$')
+    # UniProt filter that also catches isoforms
+    UNIPROT_PATTERN = re.compile(r'^(?![A-Z]{3}[0-9])[A-Z][A-Z0-9]{5,9}(-[0-9]+)?$') #
     unique_ids = [uid for uid in df['uniprot_id'].dropna().unique()
                   if UNIPROT_PATTERN.match(str(uid))]
-
+    # Count isoforms
     n_isoforms = sum(1 for uid in unique_ids if re.search(r'-\d+$', str(uid)))
     print(f"Found {len(unique_ids)} unique UniProt IDs "
           f"({n_isoforms} isoforms, {len(unique_ids) - n_isoforms} canonical)")
@@ -57,25 +57,29 @@ def main():
     total_downloaded = 0
     with open(output_fasta, "w") as out_f:
         for i, batch in enumerate(batches, 1):
+            # Query string for the entire batch, e.g. accession:O14730 OR accession:O15042 (etc.)
             query = " OR ".join(f"accession:{uid}" for uid in batch)
             url = "https://rest.uniprot.org/uniprotkb/stream"
             params = {
                 "query": query,
                 "format": "fasta",
-                "includeIsoform": "true",
+                "includeIsoform": "true", # Also return isoform entries
             }
 
             try:
+                # Get from Uniprot Rest API
                 response = requests.get(url, params=params, timeout=30)
                 response.raise_for_status()
 
                 fasta_data = response.text
                 if fasta_data.strip():
                     out_f.write(fasta_data)
+                    # Only write if content is non-empty
                     if not fasta_data.endswith("\n"):
                         out_f.write("\n")
                     total_downloaded += fasta_data.count(">")
 
+                # Print statement for every 10-batch progress
                 if i % 10 == 0 or i == len(batches):
                     print(f"  Batch {i}/{len(batches)} ({total_downloaded} sequences so far)")
                 time.sleep(1)
@@ -88,7 +92,7 @@ def main():
     print(f"Downloaded:          {total_downloaded} FASTA sequences")
     print(f"Output:              {output_fasta}")
 
-    # ── Filter to proteins with positive epitopes ──────────────────────────────
+    # Filter to proteins with positive epitopes
     print(f"\nFiltering to proteins with positive epitopes...")
     pos_ids = set(df['uniprot_id'].dropna().unique())
 
