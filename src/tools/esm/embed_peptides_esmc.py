@@ -57,6 +57,22 @@ DEFAULT_OUTDIR = "data/processed/embeddings"
 DEFAULT_MODEL = "esmc_600m"
 DEFAULT_FALLBACK_WINDOW = 2048
 
+# Expected per-residue embedding dim per ESM-C model size
+# (d_model: 300m=960, 600m=1152, 6b=2560).
+ESMC_DIMS = {
+    "esmc_300m": 960,
+    "esmc_600m": 1152,
+    "esmc_6b": 2560,
+}
+# Output-filename tag per model. 600m keeps the original unsuffixed names so
+# existing downstream config still resolves; other sizes get a size suffix so
+# they never clobber the 600m raw HDF5 files.
+ESMC_OUT_TAGS = {
+    "esmc_300m": "esmc300m",
+    "esmc_600m": "",
+    "esmc_6b": "esmc6b",
+}
+
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
 def parse_args():
@@ -68,7 +84,7 @@ def parse_args():
     p.add_argument(
         "--model",
         default=DEFAULT_MODEL,
-        choices=["esmc_300m", "esmc_600m"],
+        choices=["esmc_300m", "esmc_600m", "esmc_6b"],
     )
     p.add_argument("--fallback-window", type=int, default=DEFAULT_FALLBACK_WINDOW)
     p.add_argument(
@@ -293,11 +309,13 @@ def main():
         if m not in allowed:
             raise SystemExit(f"Unknown mode {m}; allowed: {allowed}")
 
+    tag = ESMC_OUT_TAGS[args.model]
+    prefix = f"{tag}_" if tag else ""
     out_paths = {
-        "zero": outdir / "esmc_context_embeddings_zeropad.h5",
-        "impute_boundary": outdir / "esmc_context_embeddings_impute_boundary.h5",
-        "impute_bos_eos": outdir / "esmc_context_embeddings_impute_bos_eos.h5",
-        "pad_token": outdir / "esmc_context_embeddings_padtoken.h5",
+        "zero": outdir / f"{prefix}esmc_context_embeddings_zeropad.h5",
+        "impute_boundary": outdir / f"{prefix}esmc_context_embeddings_impute_boundary.h5",
+        "impute_bos_eos": outdir / f"{prefix}esmc_context_embeddings_impute_bos_eos.h5",
+        "pad_token": outdir / f"{prefix}esmc_context_embeddings_padtoken.h5",
     }
 
     # ── check no overwrite (skipped for dry-run validation) ──
@@ -356,6 +374,7 @@ def main():
         args.device or ("cuda" if torch.cuda.is_available() else "cpu")
     )
     print(f"  Loading {args.model} on {device}...")
+    print(f"  Expected emb_dim: {ESMC_DIMS[args.model]}")
     client = ESMC.from_pretrained(args.model).to(device)
     client.eval()
     tokenizer = get_esmc_model_tokenizers()
@@ -414,6 +433,11 @@ def main():
 
         if emb_full is not None and emb_dim is None:
             emb_dim = int(emb_full.shape[1])
+            if emb_dim != ESMC_DIMS[args.model]:
+                print(
+                    f"  WARNING: discovered emb_dim={emb_dim} != "
+                    f"expected {ESMC_DIMS[args.model]} for {args.model}"
+                )
             for m in modes:
                 ensure_datasets(h5s[m], n_rows, emb_dim)
 
@@ -547,7 +571,8 @@ def main():
                             fallback = 1
                         except (RuntimeError, MemoryError):
                             w = np.zeros(
-                                (WINDOW_LEN, emb_dim or 1152), dtype=np.float32
+                                (WINDOW_LEN, emb_dim or ESMC_DIMS[args.model]),
+                                dtype=np.float32,
                             )
                             pm = np.ones(WINDOW_LEN, dtype=bool)
                             fallback = 1

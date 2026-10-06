@@ -1,11 +1,11 @@
 #!/bin/bash
-#SBATCH --job-name=esmc_embed
+#SBATCH --job-name=esmc300m_embed
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --mem=64G
 #SBATCH --time=24:00:00
-#SBATCH --output=logs/esmc_embed_%j.out
-#SBATCH --error=logs/esmc_embed_%j.err
+#SBATCH --output=logs/esmc300m_embed_%j.out
+#SBATCH --error=logs/esmc300m_embed_%j.err
 
 # Navigate to the project root on the compute node
 cd /home/projects/thesis_s204692_s204581/thesis2026
@@ -29,13 +29,16 @@ mkdir -p data/processed/embeddings
 export PYTHONUNBUFFERED=1
 
 MODES="${MODES:-zero,impute_boundary,impute_bos_eos,pad_token}"
+MODEL="esmc_300m"
 
 echo "Starting ESM-C embedding ($(date))..."
+echo "  Model: $MODEL"
 echo "  Output: data/processed/embeddings/"
 echo "  Modes: $MODES"
 
 python src/tools/esm/embed_peptides_esmc.py \
     --out-dir data/processed/embeddings/ \
+    --model "$MODEL" \
     --modes "$MODES"
 
 echo "ESM-C embedding completed ($(date))."
