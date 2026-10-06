@@ -365,6 +365,14 @@ FEATURE_SETS = {
         "display_name": "Structural features only",
         "components": ["handcrafted"],
     },
+    "sparse": {
+        "display_name": "Sparse one-hot AA only",
+        "components": ["sparse"],
+    },
+    "blosum": {
+        "display_name": "BLOSUM50 AA only",
+        "components": ["blosum"],
+    },
     "esmc": {
         "display_name": "ESM-C context window only",
         "components": ["esmc"],
@@ -453,6 +461,39 @@ FEATURE_SETS = {
     "handcrafted_sparse_esmc_esmif": {
         "display_name": "Structural + one-hot + ESM-C + ESM-IF",
         "components": ["handcrafted", "sparse", "esmc", "esmif"],
+    },
+    # ── Embeddings-only (single component; pure-embedding comparison) ──
+    "emb_esmc_win_zeropad": {
+        "display_name": "ESM-C windows only (zero-pad)",
+        "components": ["esmc_win_zeropad"],
+    },
+    "emb_esmc_win_padtoken": {
+        "display_name": "ESM-C windows only (pad-token)",
+        "components": ["esmc_win_padtoken"],
+    },
+    "emb_esmc_win_impute_bos_eos": {
+        "display_name": "ESM-C windows only (impute-bos-eos)",
+        "components": ["esmc_win_impute_bos_eos"],
+    },
+    "emb_esmc_win_impute_boundary": {
+        "display_name": "ESM-C windows only (impute-boundary)",
+        "components": ["esmc_win_impute_boundary"],
+    },
+    "emb_esmif_win": {
+        "display_name": "ESM-IF windows only (zero)",
+        "components": ["esmif_win"],
+    },
+    "emb_esmif_pad": {
+        "display_name": "ESM-IF windows only (pad)",
+        "components": ["esmif_pad"],
+    },
+    "emb_esmif_boundary": {
+        "display_name": "ESM-IF windows only (boundary)",
+        "components": ["esmif_boundary"],
+    },
+    "emb_esmif_eos_bos_repeat": {
+        "display_name": "ESM-IF windows only (eos/bos-repeat)",
+        "components": ["esmif_eos_bos_repeat"],
     },
 }
 

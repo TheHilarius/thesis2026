@@ -34,7 +34,7 @@ def infer_embedding_mode(results):
     feature_set = results.get("features_key", "")
     n_features = int(results.get("config", {}).get("n_features", -1))
 
-    if feature_set in ("handcrafted_sparse", "handcrafted_blosum"):
+    if feature_set in ("sparse", "blosum", "handcrafted_sparse", "handcrafted_blosum"):
         return "none"
 
     # New-format results: read component_info (robust to any PCA value)
