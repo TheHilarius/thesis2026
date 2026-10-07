@@ -23,13 +23,10 @@ if [[ ! -f "${ISOFORM_LIST}" ]]; then
     exit 1
 fi
 
-# Config 
+# Config
 AF2_BASE="https://alphafold.ebi.ac.uk/files"
-PDB_SEARCH="https://search.rcsb.org/rcsbsearch/v2/query"
-PDB_BASE="https://files.rcsb.org/download"
 FASTA_PATH="data/raw/fasta/combined_positives_only.fasta"
 mkdir -p "${OUT_DIR}/alphafold"
-mkdir -p "${OUT_DIR}/pdb_fallback"
 LOG="${OUT_DIR}/logs/fetch_log.tsv"
 MISSING="${OUT_DIR}/logs/missing_structures.tsv"
 
@@ -225,92 +222,11 @@ process_list() {
             continue
         fi
 
-        # AF2 failed — no canonical fallback, strict failure
+        # AF2 failed — no model available for this exact accession
         echo "  [AF2] ✗ Not found in AlphaFold (tried v6, v5, v4)"
-
-        echo "  Falling through to PDB..."
-
-        # Step 2: PDB fallback using BASE_ID 
-        echo "  [PDB] Querying RCSB for ${BASE_ID}..."
-
-        QUERY=$(printf '{
-          "query": {
-            "type": "terminal",
-            "service": "text",
-            "parameters": {
-              "attribute": "rcsb_polymer_entity_container_identifiers.reference_sequence_identifiers.database_accession",
-              "operator": "exact_match",
-              "value": "%s"
-            }
-          },
-          "request_options": {
-            "sort": [{"sort_by": "rcsb_entry_info.resolution_combined", "direction": "asc"}],
-            "results_content_type": ["experimental"],
-            "paginate": {"start": 0, "rows": 5}
-          },
-          "return_type": "entry"
-        }' "${BASE_ID}")
-
-        PDB_IDS=$(curl -s -X POST \
-                       -H "Content-Type: application/json" \
-                       -d "${QUERY}" \
-                       --max-time 15 \
-                       "${PDB_SEARCH}" | \
-                  python3 -c "
-import sys, json
-try:
-    data = json.load(sys.stdin)
-    ids = [r['identifier'] for r in data.get('result_set', [])]
-    print('\n'.join(ids))
-except:
-    pass
-" 2>/dev/null || true)
-
-        if [[ -z "${PDB_IDS}" ]]; then
-            echo "  [PDB] No structures found"
-            echo -e "${UNIPROT}\tNo AF2 or PDB structure found" >> "${MISSING}"
-            echo -e "${UNIPROT}\t${START}\t${END}\tnone\tNA\tNA" >> "${LOG}"
-            ALREADY_DONE["${UNIPROT}"]=1
-            sleep 0.3
-            continue
-        fi
-
-        FOUND=0
-        while IFS= read -r PDB_ID; do
-            [[ -z "${PDB_ID}" ]] && continue
-
-            PDB_FILE="${OUT_DIR}/pdb_fallback/${BASE_ID}_${PDB_ID}.pdb"
-
-            HTTP_PDB=$(curl -s -o "${PDB_FILE}" \
-                            -w "%{http_code}" \
-                            --retry 2 \
-                            --max-time 30 \
-                            "${PDB_BASE}/${PDB_ID}.pdb" || echo "000")
-
-            if [[ "${HTTP_PDB}" != "200" ]]; then
-                rm -f "${PDB_FILE}"
-                continue
-            fi
-
-            COVERAGE=$(check_coverage "${PDB_FILE}" "${START}" "${END}")
-            echo "  [PDB] ${PDB_ID} coverage: ${COVERAGE}"
-
-            if [[ "${COVERAGE}" == "ok" ]]; then
-                echo -e "${UNIPROT}\t${START}\t${END}\tpdb:${PDB_ID}\t${PDB_FILE}\tok" >> "${LOG}"
-                FOUND=1
-                ALREADY_DONE["${UNIPROT}"]=1
-                break
-            fi
-
-        done <<< "${PDB_IDS}"
-
-        if [[ "${FOUND}" -eq 0 ]]; then
-            echo "  [WARN] No structure covers full region ${START}-${END}"
-            echo -e "${UNIPROT}\tNo structure covers ${START}-${END}" >> "${MISSING}"
-            echo -e "${UNIPROT}\t${START}\t${END}\tpartial_only\tNA\tpartial" >> "${LOG}"
-            ALREADY_DONE["${UNIPROT}"]=1
-        fi
-
+        echo -e "${UNIPROT}\t${START}\t${END}\tnone\tNA\tNA" >> "${LOG}"
+        echo -e "${UNIPROT}\tNo AlphaFold model" >> "${MISSING}"
+        ALREADY_DONE["${UNIPROT}"]=1
         sleep 0.3
 
     done < "${fetch_list}"
@@ -326,7 +242,6 @@ echo "════════════════════════�
 echo "DONE"
 echo "════════════════════════════════════════"
 echo "AlphaFold successes : $(grep -c 'alphafold' "${LOG}" 2>/dev/null || echo 0)"
-echo "PDB fallback        : $(grep -c 'pdb:'      "${LOG}" 2>/dev/null || echo 0)"
 echo "Nothing found       : $(grep -c 'none'      "${LOG}" 2>/dev/null || echo 0)"
 echo "Partial only        : $(grep -c 'partial'   "${LOG}" 2>/dev/null || echo 0)"
 echo ""
