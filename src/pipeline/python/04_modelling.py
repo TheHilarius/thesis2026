@@ -308,18 +308,43 @@ def load_all_components(df_split, feat_cfg, pca_mode="slot"):
               f"{df.shape[0]} rows x {df.shape[1]} columns")
         del new_col_frames
 
-    # Resolve CSV feature columns (everything numeric, not in exclude set)
+    # Resolve CSV feature columns (component-aware).
+    # Structural (handcrafted) columns always live in the split data, so
+    # they must only be used when the 'handcrafted' component is selected.
+    # AA-encoded columns ({pos}_{AA}, 21 x 29) come from the alternate CSVs
+    # (df_all_sparse.csv / df_all_blosum50.csv) and are only used when
+    # 'sparse' or 'blosum' is selected.
     csv_feature_cols = []
     if csv_components:
+        selected = {comp["_key"] for comp in csv_components}
+        include_structural = "handcrafted" in selected
+        include_encoded = bool(selected & {"sparse", "blosum"})
+
         all_feature_cols = get_feature_cols(df.columns)
-        csv_feature_cols = [
+        numeric_cols = [
             c for c in all_feature_cols
             if pd.api.types.is_numeric_dtype(df[c])
-            #if np.issubdtype(df[c].dtype, np.number)
         ]
-        non_numeric_dropped = len(all_feature_cols) - len(csv_feature_cols)
+        non_numeric_dropped = len(all_feature_cols) - len(numeric_cols)
         if non_numeric_dropped > 0:
             print(f"  Excluded {non_numeric_dropped} non-numeric feature column(s)")
+
+        structural_cols = [
+            c for c in numeric_cols
+            if not any(c.startswith(f"{pos}_") for pos in POSITION_AA_COLS)
+        ]
+        encoded_cols = [c for c in numeric_cols if c not in structural_cols]
+
+        if include_structural:
+            csv_feature_cols.extend(structural_cols)
+        else:
+            print(f"  Excluded {len(structural_cols)} structural column(s) "
+                  f"('handcrafted' component not selected)")
+        if include_encoded:
+            csv_feature_cols.extend(encoded_cols)
+        else:
+            print(f"  Excluded {len(encoded_cols)} AA-encoded column(s) "
+                  f"(no 'sparse'/'blosum' component selected)")
 
     # ── Load embedding components ──
     emb_data_dict = {}

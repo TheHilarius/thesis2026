@@ -122,3 +122,5 @@ runs/*/models/
 
 # Run-folder model artifacts stay untracked (pickles too big; JSONs server-side)
 runs/*/models/
+
+/server_results/data/
