@@ -64,12 +64,13 @@ ESMC_DIMS = {
     "esmc_600m": 1152,
     "esmc_6b": 2560,
 }
-# Output-filename tag per model. 600m keeps the original unsuffixed names so
-# existing downstream config still resolves; other sizes get a size suffix so
-# they never clobber the 600m raw HDF5 files.
+# Output-filename stem per model. 600m keeps the original names
+# (esmc_context_embeddings_<mode>.h5) so existing downstream config still
+# resolves; other sizes get a size prefix (esmc300m_/esmc6b_) so they never
+# clobber the 600m raw HDF5 files.
 ESMC_OUT_TAGS = {
     "esmc_300m": "esmc300m",
-    "esmc_600m": "",
+    "esmc_600m": "esmc",
     "esmc_6b": "esmc6b",
 }
 
@@ -309,13 +310,12 @@ def main():
         if m not in allowed:
             raise SystemExit(f"Unknown mode {m}; allowed: {allowed}")
 
-    tag = ESMC_OUT_TAGS[args.model]
-    prefix = f"{tag}_" if tag else ""
+    stem = ESMC_OUT_TAGS[args.model]
     out_paths = {
-        "zero": outdir / f"{prefix}esmc_context_embeddings_zeropad.h5",
-        "impute_boundary": outdir / f"{prefix}esmc_context_embeddings_impute_boundary.h5",
-        "impute_bos_eos": outdir / f"{prefix}esmc_context_embeddings_impute_bos_eos.h5",
-        "pad_token": outdir / f"{prefix}esmc_context_embeddings_padtoken.h5",
+        "zero": outdir / f"{stem}_context_embeddings_zeropad.h5",
+        "impute_boundary": outdir / f"{stem}_context_embeddings_impute_boundary.h5",
+        "impute_bos_eos": outdir / f"{stem}_context_embeddings_impute_bos_eos.h5",
+        "pad_token": outdir / f"{stem}_context_embeddings_padtoken.h5",
     }
 
     # ── check no overwrite (skipped for dry-run validation) ──
@@ -485,7 +485,7 @@ def main():
         # ── extract windows per peptide ──
         for ridx in row_idxs:
             row = df.iloc[ridx] #Get the row corresponding to the current peptide in the protein
-            s0 = span_0idx(row) 
+            s0, _ = span_0idx(row)  # (start_0, end_0_exclusive); use start
             win_start = s0 - 10 
             fallback = 0
 
@@ -601,6 +601,27 @@ def main():
                 f"  [{prot_n}/{len(groups)}] "
                 f"{rate:.2f} prot/s  ETA: {eta_s}"
             )
+            for m in modes:
+                h5s[m].flush()
+
+    # ── validate real embeddings were written (guards against a ghost file) ──
+    first_w = h5s[modes[0]]["window_embeddings"]
+    n_rows_total = first_w.shape[0]
+    feat = first_w.shape[1] * first_w.shape[2]
+    chunk = 4096
+    n_nonzero = 0
+    for i0 in range(0, n_rows_total, chunk):
+        blk = first_w[i0 : i0 + chunk].reshape(-1, feat)
+        n_nonzero += int((np.linalg.norm(blk, axis=1) > 0).sum())
+    if n_nonzero == 0:
+        for m in modes:
+            h5s[m].close()
+        print(
+            "\nERROR: 0 non-zero window embeddings written; files are "
+            "empty preallocations. Aborting without finalizing."
+        )
+        raise SystemExit(1)
+    print(f"\n  Validation: {n_nonzero}/{n_rows_total} non-zero windows")
 
     # ── finalize ──
     elapsed = time.time() - t0
