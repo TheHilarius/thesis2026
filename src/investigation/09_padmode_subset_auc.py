@@ -1,238 +1,467 @@
 #!/usr/bin/env python3
 """
 09_padmode_subset_auc.py
-AUC on the padded-row subset (padtype comparison for the flat modelling grid).
+Padded-subset AUC comparison across embedding pad-fill modes.
 
-The overall Val AUC cannot separate pad modes — real-slot signal is identical
-across zero/boundary/eos_bos_repeat and near-identical for padtoken. Only the
-padded rows carry mode signal (~1443 terminus peptides per toolkit), so this
-script recomputes AUC on exactly those rows from the saved nested-CV
-predictions, per toolkit x padtype x PCA dim, XGBOOST ONLY (the production
-learner — lr/rf rows excluded; JSONs unchanged on disk). Per-toolkit subset =
-rows with >=1 pad AND >=1 real slot (excludes notfound zero-windows, which
-ESM-IF marks all-pad). Decision (which padtype to keep) is the user's; this
-script only reports. pad_token for ESM-C is provisional — revertable if
-phase-4 performance is bad.
+Reuses saved nested-CV predictions (cv_results_*.json) from 04_modelling.py —
+no retraining. For each run the full out-of-fold probability vector is
+reconstructed from outer_val_predictions[fold 0..5]; rows align to
+df_all_with_folds.csv row order via the fold column (verified against the
+prepared-embedding HDF5). AUC is then computed on the padded subset only.
 
-Inputs (all local after rsync):
-    models/flat/cv_results_*.json          — flat modelling runs (72 on disk;
-        this script reads the 24 xgb ones). outer_val_predictions[fold] =
-        {y_true, y_prob}, folds 0..5 rotate all buckets (incl. held-out) as
-        validation, so every row is predicted exactly once.
-    data/processed/df_all_with_folds.csv   — columns label, fold (SPLIT_DATA_PATH)
-    data/processed/embeddings/esmc_context_embeddings_zeropad.h5  — pad_mask
-    data/processed/embeddings/esm-if_test_zero.h5                 — pad_mask
-        (pad_mask identical across modes within a toolkit; one file per
-        toolkit suffices. Toolkits' masks differ on notfound rows.)
-
-Output:
-    results/padmode_subset_auc.csv
-    stdout table per toolkit
+Because the ~45k unpadded rows are bit-identical across the four pad-fill
+modes, any difference in padded-subset AUC is attributable to the ~1443
+padded rows' mode-specific representations.
 
 Usage:
-    python src/investigation/09_padmode_subset_auc.py
+    python 09_padmode_subset_auc.py
+
+    python 09_padmode_subset_auc.py \
+        --results 'runs/xgb_*_flat_*/models/flat/cv_results_*.json' \
+        --since '2026-10-07 10:00:00' \
+        --out '/net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/results/tables/padmode_base_auc.tsv'
+
+Outputs:
+    --out                       Main per-run AUC summary TSV
+    <out stem>_pivot.tsv        Padmode x PCA pivot table
+    <out stem>_pairwise.tsv     Pairwise |Δprob| summary on padded rows
+    <out stem>_rows.tsv         Per-row probabilities (--save-rows)
 """
 
-from __future__ import annotations
-
+import argparse
 import json
-import re
+import os
 import sys
+from datetime import datetime
 from pathlib import Path
 
-SRC_DIR = Path(__file__).resolve().parent
-PIPELINE_DIR = SRC_DIR.parent / "pipeline" / "python"
-if str(PIPELINE_DIR) not in sys.path:
-    sys.path.insert(0, str(PIPELINE_DIR))
-
+import h5py
 import numpy as np
 import pandas as pd
-import h5py
-from sklearn.metrics import roc_auc_score
-
-from config import PROJECT_ROOT, SPLIT_DATA_PATH, EMBEDDING_DIR
-
-MODELS_DIR = PROJECT_ROOT / "models" / "flat"
-OUT_CSV = PROJECT_ROOT / "results" / "padmode_subset_auc.csv"
-
-PADMASK_FILES = {
-    "ESM-C": EMBEDDING_DIR / "esmc_context_embeddings_zeropad.h5",
-    "ESM-IF": EMBEDDING_DIR / "esm-if_test_zero.h5",
-}
-
-JSON_RE = re.compile(
-    r"cv_results_(lr_l2|rf|xgb)_handcrafted_sparse_"
-    r"(esmc_win_(?:zeropad|impute_boundary|impute_bos_eos|padtoken)"
-    r"|esmif_(?:win|pad|boundary|eos_bos_repeat))"
-    r"_pca(\d+)_flat_"
-)
-
-# log/config name -> canonical padtype label
-PADTYPE_MAP = {
-    "esmc_win_zeropad": ("ESM-C", "zero"),
-    "esmc_win_impute_boundary": ("ESM-C", "boundary"),
-    "esmc_win_impute_bos_eos": ("ESM-C", "eos_bos_repeat"),
-    "esmc_win_padtoken": ("ESM-C", "pad_token"),
-    "esmif_win": ("ESM-IF", "zero"),
-    "esmif_pad": ("ESM-IF", "pad"),
-    "esmif_boundary": ("ESM-IF", "boundary"),
-    "esmif_eos_bos_repeat": ("ESM-IF", "eos_bos_repeat"),
-}
+from sklearn.metrics import average_precision_score, roc_auc_score
 
 
-def load_padded_masks() -> dict[str, np.ndarray]:
-    """Per-toolkit informative padded flag in df order (dict toolkit -> mask).
+SRC_DIR = os.path.dirname(os.path.abspath(__file__))
+PIPELINE_DIR = os.path.join(SRC_DIR, "..", "pipeline", "python")
+if PIPELINE_DIR not in sys.path:
+    sys.path.insert(0, PIPELINE_DIR)
 
-    Informative = >=1 pad slot AND >=1 real slot — rows where pad fill
-    actually differs across modes. Excludes notfound zero-windows (ESM-IF
-    marks those all-pad; ESM-C leaves them all-real). ESM-C row_indices are
-    df-ordered; ESM-IF's are a processing-order permutation — scatter both
-    into df order. The two toolkits' masks need NOT agree: they define
-    independent per-toolkit subsets (the padtype pick is per toolkit).
+from config import SPLIT_DATA_PATH, PREPARED_EMBEDDING_DIR
+
+
+DEFAULT_PAD_H5 = PREPARED_EMBEDDING_DIR / "esmc_win_zeropad_prepared.h5"
+
+
+# ──────────────────────────────────────────────
+# Data loading
+# ──────────────────────────────────────────────
+
+def load_pad_metadata(h5_path):
+    """Load pad_mask (N,29) bool + folds/labels from a prepared window HDF5."""
+    with h5py.File(h5_path, "r") as f:
+        pad_mask = f["pad_mask"][:].astype(bool)
+        folds = f["folds"][:].astype(int)
+        labels = f["labels"][:].astype(int)
+        pad_counts = f["pad_counts"][:].astype(int)
+    return pad_mask, folds, labels, pad_counts
+
+
+def load_split_df():
+    df = pd.read_csv(SPLIT_DATA_PATH)
+    return df
+
+
+def parse_timestamp(ts):
+    """Parse timestamps used in cv_results JSON files."""
+    for fmt in ("%Y%m%d_%H%M%S", "%Y-%m-%d %H:%M:%S"):
+        try:
+            return datetime.strptime(ts, fmt)
+        except (TypeError, ValueError):
+            pass
+    return None
+
+
+def mode_from_result(r):
+    """Extract the pad-fill mode tag from a cv_results JSON."""
+    emb = (
+        r.get("config", {})
+        .get("component_info", {})
+        .get("emb_components", [])
+    )
+
+    if emb:
+        emb_key = emb[0].get("embedding_key", "")
+
+        if emb_key.startswith("esmc_win_"):
+            return emb_key[len("esmc_win_"):]
+
+        if emb_key.startswith("esmif_"):
+            return emb_key[len("esmif_"):]
+
+        return emb_key
+
+    feat = r.get("features_key", "")
+
+    for prefix in (
+        "handcrafted_sparse_esmc_win_",
+        "handcrafted_sparse_esmif_",
+        "handcrafted_sparse_",
+    ):
+        if feat.startswith(prefix):
+            return feat[len(prefix):]
+
+    return feat
+
+
+# ──────────────────────────────────────────────
+# Prediction reconstruction
+# ──────────────────────────────────────────────
+
+def reconstruct_probs(r, folds):
     """
-    masks = {}
-    for toolkit, path in PADMASK_FILES.items():
-        if not path.exists():
-            raise SystemExit(f"Missing pad_mask source: {path}")
-        with h5py.File(path, "r") as f:
-            pm = f["pad_mask"][:].astype(bool)   # (rows, 29)
-            ri = f["row_indices"][:]
-        n = len(ri)
-        if not np.array_equal(np.sort(ri), np.arange(n)):
-            raise SystemExit(f"{path.name}: row_indices not a permutation "
-                             f"of 0..{n-1} — cannot align with split-df rows")
-        informative_by_h5row = pm.any(axis=1) & ~pm.all(axis=1)
-        by_df = np.zeros(n, dtype=bool)
-        by_df[ri] = informative_by_h5row          # scatter to df order
-        masks[toolkit] = by_df
-        print(f"  {toolkit}: informative padded rows = {int(by_df.sum())}")
-    return masks
+    Rebuild the full-length out-of-fold probability vector.
+
+    outer_val_predictions[f] = {y_true, y_prob} holds rows of the validation
+    bucket f in df row order (prepare_validation uses np.where(df.fold==f)[0]).
+
+    So we scatter each bucket's probabilities back onto its fold mask.
+    """
+    n = len(folds)
+    probs = np.full(n, np.nan)
+    y_recon = np.full(n, -1)
+    ovp = r["outer_val_predictions"]
+
+    fold_ids = sorted(ovp.keys(), key=int)
+
+    for fk in fold_ids:
+        f = int(fk)
+        rec = ovp[fk]
+        mask = folds == f
+        n_here = int(mask.sum())
+
+        if len(rec["y_true"]) != n_here:
+            raise ValueError(
+                f"fold {f}: JSON has {len(rec['y_true'])} rows, "
+                f"fold mask has {n_here} — misaligned"
+            )
+
+        probs[mask] = np.asarray(rec["y_prob"], dtype=np.float64)
+        y_recon[mask] = np.asarray(rec["y_true"])
+
+    if np.isnan(probs).any():
+        missing = np.isnan(probs).sum()
+        raise ValueError(
+            f"{missing} rows never covered by any validation bucket"
+        )
+
+    return probs, y_recon.astype(int)
 
 
-def parse_json_name(path: Path):
-    m = JSON_RE.search(path.name)
-    if not m:
-        return None
-    learner, key, pca = m.group(1), m.group(2), int(m.group(3))
-    toolkit, padtype = PADTYPE_MAP[key]
-    return toolkit, padtype, learner, pca
+def auc_safe(y, p):
+    """AUC-ROC with a single-class guard."""
+    if len(np.unique(y)) < 2:
+        return np.nan
+    return roc_auc_score(y, p)
 
 
-def subset_auc_for_json(path: Path, df: pd.DataFrame,
-                        masks: dict[str, np.ndarray]) -> dict | None:
-    parsed = parse_json_name(path)
-    if parsed is None:
-        print(f"  [skip] unrecognized filename: {path.name}")
-        return None
-    toolkit, padtype, learner, pca = parsed
-    padded = masks[toolkit]
-
-    with open(path) as fh:
-        res = json.load(fh)
-    preds = res["outer_val_predictions"]
-
-    n = len(df)
-    y_true = np.full(n, -1, dtype=int)
-    y_prob = np.full(n, np.nan, dtype=float)
-
-    for fold_key, entry in preds.items():
-        fold = int(fold_key)
-        bucket = df[df["fold"] == fold]
-        pos = bucket.index.to_numpy()
-        yt = np.asarray(entry["y_true"], dtype=int)
-        yp = np.asarray(entry["y_prob"], dtype=float)
-        if len(yt) != len(pos):
-            raise SystemExit(
-                f"{path.name} fold {fold}: len(y_true)={len(yt)} != "
-                f"bucket size {len(pos)}")
-        if not np.array_equal(yt, bucket["label"].to_numpy()):
-            raise SystemExit(
-                f"{path.name} fold {fold}: y_true does not match df labels")
-        y_true[pos] = yt
-        y_prob[pos] = yp
-
-    if (y_true < 0).any() or np.isnan(y_prob).any():
-        raise SystemExit(f"{path.name}: not every row received a prediction")
-
-    auc_pad = float(roc_auc_score(y_true[padded], y_prob[padded]))
-    auc_rest = float(roc_auc_score(y_true[~padded], y_prob[~padded]))
-    auc_all = float(roc_auc_score(y_true, y_prob))
-
-    # per-fold spread on padded rows (uncertainty at n≈1443)
-    fold_aucs = []
-    for fold in sorted(int(k) for k in preds):
-        idx = df.index[df["fold"] == fold].to_numpy()
-        sel = idx[padded[idx]]
-        if len(sel) and y_true[sel].min() != y_true[sel].max():
-            fold_aucs.append(roc_auc_score(y_true[sel], y_prob[sel]))
-    fold_std = float(np.std(fold_aucs)) if len(fold_aucs) > 1 else float("nan")
-
-    return {
-        "toolkit": toolkit,
-        "padtype": padtype,
-        "learner": learner,
-        "pca": pca,
-        "auc_padded": auc_pad,
-        "n_padded": int(padded.sum()),
-        "auc_nonpadded": auc_rest,
-        "auc_overall": auc_all,
-        "fold_padded_auc_std": fold_std,
-    }
-
+# ──────────────────────────────────────────────
+# Main
+# ──────────────────────────────────────────────
 
 def main():
-    if not MODELS_DIR.is_dir():
-        raise SystemExit(
-            f"Missing {MODELS_DIR} — rsync the JSONs first:\n"
-            f"  rsync -avz s204581@hub1:/home/projects/"
-            f"thesis_s204692_s204581/thesis2026/models/flat/*.json "
-            f"{MODELS_DIR}/")
-    json_paths = sorted(MODELS_DIR.glob("cv_results_xgb_*_flat_*.json"))
-    print(f"  {len(json_paths)} xgb result JSONs in {MODELS_DIR}")
+    parser = argparse.ArgumentParser(description=__doc__)
 
-    df_path = SPLIT_DATA_PATH
-    df = pd.read_csv(df_path, usecols=["label", "fold"])
-    print(f"  {df_path.name}: {len(df)} rows, "
-          f"pos={(df['label'] == 1).sum()}, neg={(df['label'] == 0).sum()}")
+    parser.add_argument(
+        "--results",
+        nargs="+",
+        default=["runs/xgb_*_flat_*/models/flat/cv_results_*.json"],
+        help="Result JSON paths or globs",
+    )
 
-    masks = load_padded_masks()
-    for toolkit, m in masks.items():
-        if len(m) != len(df):
-            raise SystemExit(
-                f"{toolkit} pad_mask rows {len(m)} != df rows {len(df)}")
+    parser.add_argument(
+        "--since",
+        default=None,
+        help="Only include JSONs >= this timestamp (YYYY-MM-DD HH:MM:SS)",
+    )
 
+    parser.add_argument(
+        "--out",
+        default="results/tables/pad_subset_auc.tsv",
+        help="Output TSV file",
+    )
+
+    parser.add_argument(
+        "--pad-h5",
+        default=str(DEFAULT_PAD_H5),
+        help="Prepared window HDF5 supplying pad_mask/folds/labels",
+    )
+
+    parser.add_argument(
+        "--save-rows",
+        action="store_true",
+        help="Also write the per-row probability table",
+    )
+
+    args = parser.parse_args()
+
+    since = None
+    if args.since:
+        since = datetime.strptime(
+            args.since,
+            "%Y-%m-%d %H:%M:%S",
+        )
+
+    # ── Expand result globs ──
+    paths = []
+
+    for pat in args.results:
+        matches = sorted(Path(".").glob(pat))
+        paths.extend(matches)
+
+    paths = sorted(set(paths))
+
+    if not paths:
+        print("No JSONs matched the supplied --results patterns")
+        sys.exit(1)
+
+    # ── Filter by timestamp stored inside each JSON ──
+    if since:
+        filtered_paths = []
+
+        for path in paths:
+            with open(path) as f:
+                r = json.load(f)
+
+            ts_raw = r.get("timestamp", "")
+            ts_dt = parse_timestamp(ts_raw)
+
+            if ts_dt is not None and ts_dt >= since:
+                filtered_paths.append(path)
+
+        paths = filtered_paths
+
+    if not paths:
+        print("No JSONs remained after applying --since")
+        sys.exit(1)
+
+    print(f"Found {len(paths)} result JSON(s)")
+
+    # ── Load shared metadata ──
+    pad_mask, folds, labels, pad_counts = load_pad_metadata(args.pad_h5)
+    df = load_split_df()
+    n = len(folds)
+
+    if len(df) != n:
+        raise ValueError(
+            f"split CSV has {len(df)} rows, pad h5 has {n}"
+        )
+
+    pad_row = pad_mask.any(axis=1)
+    real_row = ~pad_row
+
+    print(f"  rows total        : {n}")
+    print(
+        f"  rows with any pad : {pad_row.sum()} "
+        f"({pad_row.mean() * 100:.2f}%)"
+    )
+    print(f"  pad slots total   : {pad_mask.sum()}")
+
+    n_only = int(
+        ((pad_counts[:, 0] > 0) & (pad_counts[:, 1] == 0)).sum()
+    )
+    c_only = int(
+        ((pad_counts[:, 0] == 0) & (pad_counts[:, 1] > 0)).sum()
+    )
+    both = int(
+        ((pad_counts[:, 0] > 0) & (pad_counts[:, 1] > 0)).sum()
+    )
+
+    print(
+        f"  N-only / C-only / both: "
+        f"{n_only} / {c_only} / {both}"
+    )
+
+    # ── Load each run, reconstruct, evaluate ──
+    summary = []
+    prob_rows = {}
+
+    for p in paths:
+        with open(p) as f:
+            r = json.load(f)
+
+        mode = mode_from_result(r)
+
+        probs, y_recon = reconstruct_probs(r, folds)
+
+        if not (y_recon == labels).all():
+            raise ValueError(
+                f"{p.name}: reconstructed labels mismatch HDF5"
+            )
+
+        prob_rows[mode] = probs
+
+        n_pad_pos = int((labels[pad_row] == 1).sum())
+        n_pad_neg = int((labels[pad_row] == 0).sum())
+
+        summary.append({
+            "mode": mode,
+            "result_file": p.name,
+            "timestamp": r.get("timestamp", ""),
+            "model_key": r.get("model_key", ""),
+            "features_key": r.get("features_key", ""),
+            "pca_mode": r.get("config", {}).get("pca_mode", ""),
+            "n_features": r.get("config", {}).get("n_features", ""),
+            "n_pad_rows": int(pad_row.sum()),
+            "n_pad_pos": n_pad_pos,
+            "n_pad_neg": n_pad_neg,
+            "pad_auc_roc": auc_safe(
+                labels[pad_row],
+                probs[pad_row],
+            ),
+            "pad_auc_pr": average_precision_score(
+                labels[pad_row],
+                probs[pad_row],
+            ),
+            "real_auc_roc": auc_safe(
+                labels[real_row],
+                probs[real_row],
+            ),
+            "global_auc_roc": auc_safe(
+                labels,
+                probs,
+            ),
+            "pad_prob_mean_pos": float(
+                probs[pad_row & (labels == 1)].mean()
+            ),
+            "pad_prob_mean_neg": float(
+                probs[pad_row & (labels == 0)].mean()
+            ),
+        })
+
+        print(
+            f"  [{mode:<16}] pad AUC-ROC = "
+            f"{summary[-1]['pad_auc_roc']:.4f} "
+            f"(pad rows {n_pad_pos} pos / {n_pad_neg} neg)"
+        )
+
+    if not prob_rows:
+        print("No modes loaded")
+        sys.exit(1)
+
+    # ── Output paths ──
+    out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # ── Main summary TSV ──
+    df_sum = pd.DataFrame(summary)
+    df_sum.to_csv(
+        out_path,
+        sep="\t",
+        index=False,
+    )
+
+    print(f"\nSaved summary: {out_path}")
+
+    # ── Padmode x PC decision table ──
+    df_sum["pca"] = pd.to_numeric(
+        df_sum["result_file"]
+        .str.extract(r"_pca(\d+)_")[0],
+        errors="coerce",
+    )
+
+    piv = df_sum.pivot_table(
+        index="pca",
+        columns="mode",
+        values="pad_auc_roc",
+    )
+
+    print("\nPadmode x PC subset AUC (pad_auc_roc):")
+    print(piv.round(4).to_string())
+
+    piv_path = out_path.with_name(
+        f"{out_path.stem}_pivot.tsv"
+    )
+
+    piv.to_csv(
+        piv_path,
+        sep="\t",
+    )
+
+    print(f"Saved pivot table: {piv_path}")
+
+    # ── Pairwise |Δprob| on padded rows ──
+    modes = sorted(prob_rows.keys())
     rows = []
-    for p in json_paths:
-        r = subset_auc_for_json(p, df, masks)
-        if r:
-            rows.append(r)
-    if not rows:
-        raise SystemExit("No JSONs parsed — check models/flat/ contents")
 
-    out = pd.DataFrame(rows).sort_values(
-        ["toolkit", "learner", "pca", "padtype"])
-    OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
-    out.to_csv(OUT_CSV, index=False)
+    for i in range(len(modes)):
+        for j in range(i + 1, len(modes)):
+            a, b = modes[i], modes[j]
 
-    col_order = {
-        "ESM-C": ["zero", "boundary", "eos_bos_repeat", "pad_token"],
-        "ESM-IF": ["zero", "boundary", "eos_bos_repeat", "pad"],
-    }
-    for toolkit in ["ESM-C", "ESM-IF"]:
-        sub = out[out["toolkit"] == toolkit]
-        n_pad_rows = int(masks[toolkit].sum())
-        print(f"\n{'=' * 72}")
-        print(f"  {toolkit} — XGB AUC on the {n_pad_rows} informative "
-              f"padded rows")
-        print(f"{'=' * 72}")
-        piv = sub.pivot_table(index="pca", columns="padtype",
-                              values="auc_padded")
-        piv = piv.reindex(columns=col_order[toolkit])
-        print(piv.round(4).to_string())
+            d = np.abs(
+                prob_rows[a][pad_row] -
+                prob_rows[b][pad_row]
+            )
 
-    print(f"\n  Saved: {OUT_CSV}")
-    print(f"  NOTE: non-padded control AUC in the CSV must be ~identical "
-          f"across padtypes (mode-invariant reals).")
+            rows.append({
+                "mode_a": a,
+                "mode_b": b,
+                "mean_abs_delta_pad": float(d.mean()),
+                "std_abs_delta_pad": float(d.std()),
+                "pct_delta_gt_0.05": float(
+                    (d > 0.05).mean()
+                ),
+                "pct_delta_gt_0.10": float(
+                    (d > 0.10).mean()
+                ),
+            })
+
+    df_pair = pd.DataFrame(rows)
+
+    pair_path = out_path.with_name(
+        f"{out_path.stem}_pairwise.tsv"
+    )
+
+    df_pair.to_csv(
+        pair_path,
+        sep="\t",
+        index=False,
+    )
+
+    print(f"Saved pairwise deltas: {pair_path}")
+    print(df_pair.to_string(index=False))
+
+    # ── Optional per-row table ──
+    if args.save_rows:
+        row_tbl = df[
+            [
+                "peptide",
+                "uniprot_id",
+                "start",
+                "end",
+                "protein_length",
+                "fold",
+            ]
+        ].copy()
+
+        row_tbl["label"] = labels
+        row_tbl["pad"] = pad_row
+        row_tbl["n_pad"] = pad_counts[:, 0]
+        row_tbl["c_pad"] = pad_counts[:, 1]
+
+        for m in modes:
+            row_tbl[f"prob_{m}"] = prob_rows[m]
+
+        rows_path = out_path.with_name(
+            f"{out_path.stem}_rows.tsv"
+        )
+
+        row_tbl.to_csv(
+            rows_path,
+            sep="\t",
+            index=False,
+        )
+
+        print(f"Saved per-row table: {rows_path}")
 
 
 if __name__ == "__main__":
