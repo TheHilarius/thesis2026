@@ -37,6 +37,9 @@ src/
 ├── run/               # Orchestration scripts (run from repo root)
 │                     # run_all_models.sh, run_all_models_and_analyze.sh,
 │                     # run_all_feature_importance.sh
+├── investigation/     # One-off exploration/diagnosis scripts (ESM pad probes,
+│                     # data/structure audits, embedding QA, post-modelling
+│                     # analysis) — see investigation/README.md
 ├── archive/           # Obsolete/superseded scripts (kept for reference, delete later)
 └── logo_comparison.qmd  # Logo comparison report source (renders to results/)
 ```
