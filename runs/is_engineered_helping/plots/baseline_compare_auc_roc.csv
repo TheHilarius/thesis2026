@@ -1,0 +1,7 @@
+group,feature_set,label,metric,value
+csv,handcrafted,Handcrafted (eng.),heldout_auc_roc,0.5657714238684638
+csv,sparse,Sparse,heldout_auc_roc,0.740941111475974
+csv,blosum,BLOSUM50,heldout_auc_roc,0.763271459886116
+csv,handcrafted_sparse,Sparse + engineered,heldout_auc_roc,0.7409285941654148
+csv,handcrafted_blosum,"BLOSUM50 +
+engineered",heldout_auc_roc,0.7647781859815875

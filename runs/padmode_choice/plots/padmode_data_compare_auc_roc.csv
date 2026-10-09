@@ -1,0 +1,11 @@
+group,feature_set,label,metric,value
+csv,sparse,Sparse,heldout_auc_roc,0.740941111475974
+csv,blosum,BLOSUM50,heldout_auc_roc,0.763271459886116
+esmc,emb_esmc_win_zeropad,zero-pad,heldout_auc_roc,0.687844351792684
+esmc,emb_esmc_win_padtoken,pad-token,heldout_auc_roc,0.6879700395712725
+esmc,emb_esmc_win_impute_bos_eos,EOS/BOS-repeat,heldout_auc_roc,0.6881693952162182
+esmc,emb_esmc_win_impute_boundary,boundary,heldout_auc_roc,0.6869700829352926
+esmif,emb_esmif_win,zero-pad,heldout_auc_roc,0.6334725297426772
+esmif,emb_esmif_pad,pad-token,heldout_auc_roc,0.6324602206601745
+esmif,emb_esmif_eos_bos_repeat,EOS/BOS-repeat,heldout_auc_roc,0.6328440258476502
+esmif,emb_esmif_boundary,boundary,heldout_auc_roc,0.6332911694745121
