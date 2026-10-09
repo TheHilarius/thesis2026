@@ -553,6 +553,23 @@ FEATURE_SETS = {
         "display_name": "ESM-C windows only (impute-boundary)",
         "components": ["esmc_win_impute_boundary"],
     },
+    # ── ESM-C 300M (D=960) ──
+    "emb_esmc300m_win_zeropad": {
+        "display_name": "ESM-C-300M windows only (zero-pad)",
+        "components": ["esmc300m_win_zeropad"],
+    },
+    "emb_esmc300m_win_padtoken": {
+        "display_name": "ESM-C-300M windows only (pad-token)",
+        "components": ["esmc300m_win_padtoken"],
+    },
+    "emb_esmc300m_win_impute_bos_eos": {
+        "display_name": "ESM-C-300M windows only (impute-bos-eos)",
+        "components": ["esmc300m_win_impute_bos_eos"],
+    },
+    "emb_esmc300m_win_impute_boundary": {
+        "display_name": "ESM-C-300M windows only (impute-boundary)",
+        "components": ["esmc300m_win_impute_boundary"],
+    },
     "emb_esmif_win": {
         "display_name": "ESM-IF windows only (zero)",
         "components": ["esmif_win"],
