@@ -10,6 +10,9 @@ variance vs number of components.
 Inputs:
     data/processed/embeddings/esmc_context_embeddings_{zeropad,impute_boundary,
         impute_bos_eos,padtoken}.h5   — window_embeddings [N,29,1152]
+    data/processed/embeddings/esmc300m_context_embeddings_{zeropad,
+        impute_boundary,impute_bos_eos,padtoken}.h5 — window_embeddings
+        [N,29,960]  (keys end `_300m`; every output for them carries the tag)
     data/processed/embeddings/esm-if_test_{zero,pad,boundary,eos_bos_repeat}.h5
                                         — window_if_struct [N,29,512]
 
@@ -33,7 +36,10 @@ Outputs (results/figures/models/pca_optimization/):
     pca_variance_windows_{key}.csv       — per-component explained variance
     pca_variance_windows_{key}_full.*    — flat-full only, complete spectrum
     pca_variance_windows_esmc_{mode}_combined.png — ESM-C curves overlaid
+    pca_variance_windows_esmc300_{mode}_combined.png — ESM-C-300M curves
     pca_variance_windows_esmif_{mode}_combined.png — ESM-IF curves overlaid
+Missing input files are skipped with a warning (300m and 600m subsets can
+coexist in one invocation); hard error only if NO input file is present.
 """
 
 import sys
@@ -83,6 +89,27 @@ WINDOW_SETS = {
         "esmc_context_embeddings_padtoken.h5",
         "window_embeddings", 1152,
         "ESM-C pad", "#8e44ad", "esmc",
+    ),
+    # ── ESM-C 300M (D=960); keys end _300m so all outputs carry the tag ──
+    "esmc_zeropad_300m": (
+        "esmc300m_context_embeddings_zeropad.h5",
+        "window_embeddings", 960,
+        "ESM-C-300M zero", "#f1948a", "esmc300",
+    ),
+    "esmc_impute_boundary_300m": (
+        "esmc300m_context_embeddings_impute_boundary.h5",
+        "window_embeddings", 960,
+        "ESM-C-300M boundary", "#e59866", "esmc300",
+    ),
+    "esmc_impute_bos_eos_300m": (
+        "esmc300m_context_embeddings_impute_bos_eos.h5",
+        "window_embeddings", 960,
+        "ESM-C-300M EOS/BOS-repeat", "#e74c3c", "esmc300",
+    ),
+    "esmc_padtoken_300m": (
+        "esmc300m_context_embeddings_padtoken.h5",
+        "window_embeddings", 960,
+        "ESM-C-300M pad", "#c39bd3", "esmc300",
     ),
     # ── ESM-IF (D=512) ──
     "esmif_zero": (
@@ -493,21 +520,27 @@ if __name__ == "__main__":
     print(f"  Modes: {list(sets.keys())}")
     print("=" * 65)
 
-    # ── Check all files exist before starting ──
-    missing = []
-    for key, (fname, *_) in sets.items():
-        p = EMBEDDING_DIR / fname
-        if not p.exists():
-            missing.append(f"  {key}: {p}")
-    if missing:
-        print("\n  ERROR — missing input files:")
-        print("\n".join(missing))
-        print("\n  Transfer these files before running.")
+    # ── Check all files exist before starting (skip missing with a
+    #    warning — lets 300m and 600m subsets coexist in one run) ──
+    available = {}
+    skipped = []
+    for key, spec in sets.items():
+        p = EMBEDDING_DIR / spec[0]
+        if p.exists():
+            available[key] = spec
+        else:
+            skipped.append(f"  {key}: {p}")
+    if skipped:
+        print("\n  WARNING — missing input files (skipping):")
+        print("\n".join(skipped))
+    if not available:
+        print("\n  ERROR — no input files found.")
         sys.exit(1)
+    sets = available
 
     # ── Fit PCA for each version ──
     results = {}  # key -> (explained, cumulative)
-    group_curves = {"esmc": {}, "esmif": {}}
+    group_curves = {"esmc": {}, "esmif": {}, "esmc300": {}}
 
     suffix = "_full" if args.pca_mode == "flat-full" else ""
     for key, (fname, ds_name, emb_dim, display_name, color, group) in sets.items():
@@ -585,14 +618,19 @@ if __name__ == "__main__":
         identical_sets = {
             "ESM-C": ["esmc_zeropad", "esmc_impute_boundary",
                       "esmc_impute_bos_eos"],
+            "ESM-C-300M": ["esmc_zeropad_300m", "esmc_impute_boundary_300m",
+                           "esmc_impute_bos_eos_300m"],
             "ESM-IF": ["esmif_zero", "esmif_boundary",
                        "esmif_eos_bos_repeat"],
         }
         for label, keys in identical_sets.items():
-            ref_cum = results[keys[0]][1]
-            for k in keys[1:]:
+            present = [k for k in keys if k in results]
+            if len(present) < 2:
+                continue  # not enough modes of this toolkit in this run
+            ref_cum = results[present[0]][1]
+            for k in present[1:]:
                 diff = float(np.max(np.abs(results[k][1] - ref_cum)))
-                print(f"  {label}: {keys[0]} vs {k}: max |Δcum| = {diff:.2e}")
+                print(f"  {label}: {present[0]} vs {k}: max |Δcum| = {diff:.2e}")
                 # 1e-6 tolerates eigvalsh thread-order noise (observed up to
                 # ~4e-08 on the 14848-dim ESM-IF fit); real inconsistencies
                 # (wrong file/mask) differ at ≥1e-3 scale.
@@ -600,6 +638,8 @@ if __name__ == "__main__":
                     print(f"    ERROR: identical-mode spectra diverged > 1e-6 "
                           f"— embeddings or run inconsistent")
                     sys.exit(1)
+            if len(present) < len([k for k in keys]):
+                print(f"  {label}: note — only {present} present in this run")
         print("  padtoken/pad exempt from identity check (shifted reals)")
 
     # ── Combined plots ──
@@ -607,7 +647,8 @@ if __name__ == "__main__":
     print("  COMBINED PLOTS")
     print(f"{'=' * 65}")
 
-    for group, label in [("esmc", "ESM-C"), ("esmif", "ESM-IF")]:
+    for group, label in [("esmc", "ESM-C"), ("esmc300", "ESM-C-300M"),
+                         ("esmif", "ESM-IF")]:
         if not group_curves[group]:
             continue
         out_path = OUT_DIR / f"pca_variance_windows_{group}_{args.pca_mode}_combined.png"
