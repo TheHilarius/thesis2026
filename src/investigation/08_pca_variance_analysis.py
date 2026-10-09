@@ -29,7 +29,8 @@ PCA modes:
 
 Caching: finished curves (validated CSV: exact row count, monotonic
 cumulative) are reused on rerun — only missing/aborted modes recompute.
---force recomputes everything.
+--force recomputes everything. --only KEY[,KEY...] (substring match on
+keys) restricts the run, e.g. --only esmc_padtoken_300m or --only _300m.
 
 Outputs (results/figures/models/pca_optimization/):
     pca_variance_windows_{key}.png       — individual plot with threshold annotations
@@ -485,6 +486,13 @@ if __name__ == "__main__":
         help="Max components for the flat variance curve",
     )
     ap.add_argument(
+        "--only", type=str, default=None,
+        help="Comma-separated substrings of WINDOW_SETS/FLAT_SETS keys — "
+             "run just the matching modes. Examples: "
+             "--only esmc_padtoken_300m (single fit), --only _300m (all "
+             "300m modes), --only esmc_padtoken (600m padtoken).",
+    )
+    ap.add_argument(
         "--force", action="store_true",
         help="Recompute every curve even if a finished *_full/CSV output "
              "already exists (default: skip finished curves, recompute "
@@ -509,6 +517,16 @@ if __name__ == "__main__":
     else:
         # slot AND flat-full: all 8 (4 modes × 2 toolkits) for parity
         sets = WINDOW_SETS
+
+    if args.only:
+        tokens = [t.strip() for t in args.only.split(",") if t.strip()]
+        sets = {k: v for k, v in sets.items()
+                if any(t in k for t in tokens)}
+        if not sets:
+            print(f"  ERROR: --only {args.only!r} matched no keys. "
+                  f"Available: {list(WINDOW_SETS)}")
+            sys.exit(1)
+        print(f"  --only {args.only!r} → {list(sets)}")
 
     print("=" * 65)
     print("  PCA VARIANCE ANALYSIS — Per-Residue Window Embeddings")
