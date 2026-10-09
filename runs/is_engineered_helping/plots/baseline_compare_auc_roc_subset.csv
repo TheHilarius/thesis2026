@@ -1,7 +1,0 @@
-group,feature_set,label,metric,value
-csv,handcrafted,Handcrafted (eng.),auc_padded,0.6447262903012325
-csv,sparse,Sparse,auc_padded,0.7382103566673675
-csv,blosum,BLOSUM50,auc_padded,0.7329374255483148
-csv,handcrafted_sparse,Sparse + engineered,auc_padded,0.7518909754825248
-csv,handcrafted_blosum,"BLOSUM50 +
-engineered",auc_padded,0.7654917898769065

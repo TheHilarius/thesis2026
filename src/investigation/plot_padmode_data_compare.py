@@ -413,7 +413,30 @@ def main():
                 by_group[grp] = [it for it in items
                                  if (it[4] if it[4] is not None else it[3])
                                  < 0.05]
-            by_group = {g: its for g, its in by_group.items() if its}
+            # hub brackets: ONE bracket per left bar -> its rightmost
+            # significant partner; stars from the min p_adj over the
+            # covered pairs (exact per-pair p's stay in the CSV)
+            keys_placed = [k for k in layout_keys if k in key_to_x]
+            hubs = []
+            for i, ka in enumerate(keys_placed):
+                rightmost, best, partners = None, None, []
+                for kb in keys_placed[i + 1:]:
+                    for it in by_group.get("csv", []):
+                        if {it[0], it[1]} != {ka, kb}:
+                            continue
+                        rightmost = kb  # ascending scan: last sig = rightmost
+                        partners.append(kb)
+                        src = it[4] if it[4] is not None else it[3]
+                        best_src = (best[4] if best and best[4] is not None
+                                    else (best[3] if best else np.inf))
+                        if best is None or src < best_src:
+                            best = it
+                if rightmost is not None and best is not None:
+                    # tick at the hub bar + every significant partner so
+                    # "differs from all covered" is visually explicit
+                    hubs.append((ka, rightmost, best[2], best[3], best[4],
+                                 [ka] + partners))
+            by_group = {"csv": hubs} if hubs else {}
         for items in by_group.values():
             items.sort(key=lambda it: -abs(key_to_x[it[0]] - key_to_x[it[1]]))
         y0 = max(values) * 1.08
@@ -445,14 +468,25 @@ def main():
 
     # significance brackets (15_ stats); staggered per group — widest
     # span on top. Text shows raw p + Holm p_adj; stars from p_adj.
+    # Baselines hubs carry a 6th field: keys of every significant partner
+    # inside the span — small down-ticks there make "differs from each"
+    # explicit (ns bars inside a span get NO tick).
     if stats:
         for grp, items in by_group.items():
-            for lvl, (ka, kb, delta, p, p_adj) in enumerate(items):
+            for lvl, item in enumerate(items):
+                ka, kb, delta, p, p_adj = item[:5]
+                tick_keys = item[5] if len(item) > 5 else []
                 xa, xb = key_to_x[ka], key_to_x[kb]
                 y_br = y0 + lvl * step
                 ax.plot([xa, xa, xb, xb],
                         [y_br * 0.985, y_br, y_br, y_br * 0.985],
                         color="black", lw=0.9)
+                for tk_ in tick_keys:
+                    xt = key_to_x[tk_]
+                    if xt in (xa, xb):
+                        continue  # endpoints already ticked
+                    ax.plot([xt, xt], [y_br * 0.985, y_br],
+                            color="black", lw=0.9)
                 star_src = p_adj if p_adj is not None else p
                 # dense all-sig strips: stars only (p/p_adj live in CSV)
                 txt = (stars(star_src) if args.layout == "baselines"
