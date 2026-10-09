@@ -25,6 +25,6 @@ export PYTHONUNBUFFERED=1
 # Re-prepare all 8 window embeddings (raw -> embeddings_prepared) so the
 # modelling step reads the current raw files. This overwrites the stale
 # ESM-IF prepared files and the ESM-C pad_token prepared file.
-python src/pipeline/python/03b_run_matrix.py
+python3 src/pipeline/python/03b_run_matrix.py --keys data/processed/embeddings/esmc300m_context_embeddings_impute_bos_eos.h5 data/processed/embeddings/esmc300m_context_embeddings_impute_boundary.h5 data/processed/embeddings/esmc300m_context_embeddings_padtoken.h5 data/processed/embeddings/esmc300m_context_embeddings_zeropad.h5
 
 echo "Prepare embeddings completed."
