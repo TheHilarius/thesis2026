@@ -428,6 +428,31 @@ FEATURE_COMPONENTS = {
         "embedding_key": "esmc_win_impute_boundary",
         "pca_components": 64,
     },
+    # ── ESM-C 300M windows (D=960) ──
+    "esmc300m_win_zeropad": {
+        "display_name": "ESM-C-300M windows (zero-pad, 29x960)",
+        "type": "embedding_windows",
+        "embedding_key": "esmc300m_win_zeropad",
+        "pca_components": 64,
+    },
+    "esmc300m_win_padtoken": {
+        "display_name": "ESM-C-300M windows (pad-token, 29x960)",
+        "type": "embedding_windows",
+        "embedding_key": "esmc300m_win_padtoken",
+        "pca_components": 64,
+    },
+    "esmc300m_win_impute_bos_eos": {
+        "display_name": "ESM-C-300M windows (impute-bos-eos, 29x960)",
+        "type": "embedding_windows",
+        "embedding_key": "esmc300m_win_impute_bos_eos",
+        "pca_components": 64,
+    },
+    "esmc300m_win_impute_boundary": {
+        "display_name": "ESM-C-300M windows (impute-boundary, 29x960)",
+        "type": "embedding_windows",
+        "embedding_key": "esmc300m_win_impute_boundary",
+        "pca_components": 64,
+    },
 }
 
 # ──────────────────────────────────────────────
