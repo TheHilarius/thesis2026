@@ -147,16 +147,10 @@ alphafold_features <- df_af_clean |>
       \(uid, s, e, fb) extract_plddt_imputed(uid, s, e, plddt_lookup_split, 10, "right", fb)
     ),
 
-    # ── Scalar summaries: mean/min/max per region ──────────────────────────
+    # ── Scalar summaries: mean per region ──────────────────────────
     mean_plddt_peptide = map_dbl(plddt_vec_peptide, ~ mean(.x, na.rm = TRUE)),
-    min_plddt_peptide  = map_dbl(plddt_vec_peptide, ~ min(.x, na.rm = TRUE)),
-    max_plddt_peptide  = map_dbl(plddt_vec_peptide, ~ max(.x, na.rm = TRUE)),
-    mean_plddt_nflank  = map_dbl(plddt_vec_nflank, ~ mean(.x, na.rm = TRUE)),
-    min_plddt_nflank   = map_dbl(plddt_vec_nflank, ~ min(.x, na.rm = TRUE)),
-    max_plddt_nflank   = map_dbl(plddt_vec_nflank, ~ max(.x, na.rm = TRUE)),
-    mean_plddt_cflank  = map_dbl(plddt_vec_cflank, ~ mean(.x, na.rm = TRUE)),
-    min_plddt_cflank   = map_dbl(plddt_vec_cflank, ~ min(.x, na.rm = TRUE)),
-    max_plddt_cflank   = map_dbl(plddt_vec_cflank, ~ max(.x, na.rm = TRUE))
+    mean_plddt_nflank  = map_dbl(plddt_vec_nflank,  ~ mean(.x, na.rm = TRUE)),
+    mean_plddt_cflank  = map_dbl(plddt_vec_cflank,  ~ mean(.x, na.rm = TRUE))
   ) |>
   # Drop intermediate list columns and boundary vectors
   select(-plddt_p1, -plddt_p9, -plddt_vec_peptide, -plddt_vec_nflank, -plddt_vec_cflank)
@@ -171,7 +165,7 @@ cat("Peptides with no pLDDT coverage:", n_missing, "\n")
 
 cat("\n=== pLDDT feature summary ===\n")
 print(alphafold_features |>
-        select(mean_plddt_peptide, min_plddt_peptide, max_plddt_peptide,
+        select(mean_plddt_peptide,
                mean_plddt_nflank, mean_plddt_cflank) |>
         summary())
 
@@ -193,11 +187,11 @@ alphafold_scalar <- alphafold_features |>
     peptide, uniprot_id, n_flank, c_flank, full_context,
     pep_start, pep_end,
     # pLDDT features: peptide
-    mean_plddt_peptide, min_plddt_peptide, max_plddt_peptide,
+    mean_plddt_peptide,
     # pLDDT features: N-flank
-    mean_plddt_nflank, min_plddt_nflank, max_plddt_nflank,
+    mean_plddt_nflank,
     # pLDDT features: C-flank
-    mean_plddt_cflank, min_plddt_cflank, max_plddt_cflank
+    mean_plddt_cflank
   )
 
 df_all <- df_raw |>

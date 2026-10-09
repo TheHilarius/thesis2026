@@ -614,15 +614,14 @@ read_nsp3_csv <- function(path, uniprot_id) {
 # Now only computes RSA and disorder (Q8 handled by point system)
 # ─────────────────────────────────────────
 aggregate_nsp3_window <- function(res_df, target_len, pad_side = "none", fallback = NULL) {
-  # Impute short/empty flanks, then compute mean/min/max.
+  # Impute short/empty flanks, then compute mean.
   # pad_side: "left" (N-flank, repeat first) / "right" (C-flank, repeat last)
   #           / "none" (peptide, always full length).
   # fallback: single-row df (P1 or P9) used when window is completely empty.
   if (nrow(res_df) == 0) {
     if (is.null(fallback)) {
       return(tibble(
-        mean_rsa = NA_real_, min_rsa = NA_real_, max_rsa = NA_real_,
-        mean_disorder = NA_real_, min_disorder = NA_real_, max_disorder = NA_real_
+        mean_rsa = NA_real_, mean_disorder = NA_real_
       ))
     }
     res_df <- fallback
@@ -637,11 +636,7 @@ aggregate_nsp3_window <- function(res_df, target_len, pad_side = "none", fallbac
   dis <- impute(res_df$disorder, target_len, pad_side)
   tibble(
     mean_rsa      = mean(rsa, na.rm = TRUE),
-    min_rsa       = min(rsa, na.rm = TRUE),
-    max_rsa       = max(rsa, na.rm = TRUE),
-    mean_disorder = mean(dis, na.rm = TRUE),
-    min_disorder  = min(dis, na.rm = TRUE),
-    max_disorder  = max(dis, na.rm = TRUE)
+    mean_disorder = mean(dis, na.rm = TRUE)
   )
 }
 
