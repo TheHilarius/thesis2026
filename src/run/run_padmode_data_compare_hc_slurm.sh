@@ -36,7 +36,7 @@ OUT="${RUN:-.}"
 
 # Entry format: MODEL|FEATURES|PCA|PCA_MODE
 CONFIGS=(
-  "xgb|handcrafted|none|flat"
+  "xgb|handcrafted_sparse|none|flat"
 )
 
 IDX="${SLURM_ARRAY_TASK_ID:-0}"
