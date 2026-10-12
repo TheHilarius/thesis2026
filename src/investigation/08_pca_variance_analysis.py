@@ -17,12 +17,14 @@ Inputs:
                                         — window_if_struct [N,29,512]
 
 PCA modes:
-    slot     — per-position IncrementalPCA (default, matches 04_modelling slot path)
+    slot     — per-position IncrementalPCA (legacy; matches 04_modelling
+               old slot path)
     flat     — flattened-window randomized SVD, capped at --flat-n-components;
                representative set only (FLAT_SETS: zeropad/zero)
     flat-full — EXACT full spectrum via streaming Gram + eigvalsh over ALL 8
                files (4 pad modes × 2 toolkits, WINDOW_SETS — parity with
-               slot). Peak RAM ≈ 18 GB per ESM-C fit (D=1152), ≈4 GB ESM-IF.
+               slot). DEFAULT. Peak RAM ≈ 18 GB per ESM-C fit (D=1152),
+               ≈4 GB ESM-IF.
                Outputs get `_full` suffix; cross-mode identity asserted on
                zero/boundary/eos_bos_repeat (padtoken/pad exempt — shifted
                reals).
@@ -70,26 +72,26 @@ from config import EMBEDDING_DIR, FIGURES_DIR
 # ── Window embedding sources ──────────────────────────────────────────────────
 # Each entry: (filename, window_dataset_name, emb_dim, display_name, color, group)
 WINDOW_SETS = {
-    # ── ESM-C (D=1152) ──
+    # ── ESM-C-600M (D=1152) ──
     "esmc_zeropad": (
         "esmc_context_embeddings_zeropad.h5",
         "window_embeddings", 1152,
-        "ESM-C zero", "#e74c3c", "esmc",
+        "ESM-C-600M zero", "#e74c3c", "esmc",
     ),
     "esmc_impute_boundary": (
         "esmc_context_embeddings_impute_boundary.h5",
         "window_embeddings", 1152,
-        "ESM-C boundary", "#e67e22", "esmc",
+        "ESM-C-600M boundary", "#e67e22", "esmc",
     ),
     "esmc_impute_bos_eos": (
         "esmc_context_embeddings_impute_bos_eos.h5",
         "window_embeddings", 1152,
-        "ESM-C EOS/BOS-repeat", "#c0392b", "esmc",
+        "ESM-C-600M EOS/BOS-repeat", "#c0392b", "esmc",
     ),
     "esmc_padtoken": (
         "esmc_context_embeddings_padtoken.h5",
         "window_embeddings", 1152,
-        "ESM-C pad", "#8e44ad", "esmc",
+        "ESM-C-600M pad", "#8e44ad", "esmc",
     ),
     # ── ESM-C 300M (D=960); keys end _300m so all outputs carry the tag ──
     "esmc_zeropad_300m": (
@@ -390,7 +392,7 @@ def plot_individual(cumulative, thresholds_info, display_name, color, out_path):
 
     ax.set_xlabel("Number of PCA Components")
     ax.set_ylabel("Cumulative Explained Variance")
-    ax.set_title(f"PCA Variance — {display_name}")
+    ax.set_title(f"PCA: {display_name}")
     ax.set_xlim(0, len(cumulative) + 10)
     ax.set_ylim(0, 1.05)
 
@@ -474,12 +476,12 @@ if __name__ == "__main__":
         description="PCA variance analysis for window embeddings",
     )
     ap.add_argument(
-        "--pca-mode", type=str, default="slot",
+        "--pca-mode", type=str, default="flat-full",
         choices=["slot", "flat", "flat-full"],
-        help="'slot' (per-position PCA, default), 'flat' (flattened-window, "
-             "capped at --flat-n-components, representative set), or "
-             "'flat-full' (exact full spectrum via Gram + eigvalsh over all "
-             "8 files; ~18 GB RAM per ESM-C fit)",
+        help="'flat-full' (default; exact full spectrum via Gram + eigvalsh "
+             "over all 8 files; ~18 GB RAM per ESM-C fit), 'flat' "
+             "(flattened-window, capped at --flat-n-components, "
+             "representative set), or 'slot' (legacy per-position PCA)",
     )
     ap.add_argument(
         "--flat-n-components", type=int, default=FLAT_N_COMPONENTS,
@@ -612,7 +614,7 @@ if __name__ == "__main__":
         # Save individual plot
         plot_individual(
             cumulative, thresholds_info,
-            f"{display_name} ({args.pca_mode})", color,
+            display_name, color,
             OUT_DIR / f"pca_variance_windows_{key}{suffix}.png",
         )
 
@@ -672,8 +674,8 @@ if __name__ == "__main__":
         out_path = OUT_DIR / f"pca_variance_windows_{group}_{args.pca_mode}_combined.png"
         plot_combined(
             group_curves[group],
-            f"PCA Variance — {label} Window Embeddings "
-            f"({args.pca_mode} pad-mode comparison)",
+            f"PCA: {label} Window Embeddings "
+            f"(pad-mode comparison)",
             out_path,
         )
 
