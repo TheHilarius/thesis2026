@@ -23,7 +23,11 @@ SPLIT_DATA_PATH = DATA_DIR / "df_all_with_folds.csv"
 
 # Alternate CSVs with encoded positional AA columns
 SPARSE_DATA_PATH = DATA_DIR / "df_all_sparse.csv"
-BLOSUM_DATA_PATH = DATA_DIR / "df_all_blosum50.csv"
+BLOSUM50_DATA_PATH = DATA_DIR / "df_all_blosum50.csv"
+BLOSUM62_DATA_PATH = DATA_DIR / "df_all_blosum62.csv"
+BLOSUM80_DATA_PATH = DATA_DIR / "df_all_blosum80.csv"
+KIDERA_DATA_PATH = DATA_DIR / "df_all_kidera.csv"
+ATCHLEY_DATA_PATH = DATA_DIR / "df_all_atchley.csv"
 
 # ──────────────────────────────────────────────
 # EMBEDDING PATHS & SCHEMAS
@@ -363,10 +367,30 @@ FEATURE_COMPONENTS = {
         "type": "csv",
         "csv_path": SPARSE_DATA_PATH,
     },
-    "blosum": {
+    "blosum50": {
         "display_name": "BLOSUM50 AA encoding",
         "type": "csv",
-        "csv_path": BLOSUM_DATA_PATH,
+        "csv_path": BLOSUM50_DATA_PATH,
+    },
+    "blosum62": {
+        "display_name": "BLOSUM62 AA encoding",
+        "type": "csv",
+        "csv_path": BLOSUM62_DATA_PATH,
+    },
+    "blosum80": {
+        "display_name": "BLOSUM80 AA encoding",
+        "type": "csv",
+        "csv_path": BLOSUM80_DATA_PATH,
+    },
+    "kidera": {
+        "display_name": "Kidera factors AA encoding",
+        "type": "csv",
+        "csv_path": KIDERA_DATA_PATH,
+    },
+    "atchley": {
+        "display_name": "Atchley factors AA encoding",
+        "type": "csv",
+        "csv_path": ATCHLEY_DATA_PATH,
     },
     "esmc": {
         "display_name": "ESM-C (600M) context window",
@@ -468,9 +492,25 @@ FEATURE_SETS = {
         "display_name": "Sparse one-hot AA only",
         "components": ["sparse"],
     },
-    "blosum": {
+    "blosum50": {
         "display_name": "BLOSUM50 AA only",
-        "components": ["blosum"],
+        "components": ["blosum50"],
+    },
+    "blosum62": {
+        "display_name": "BLOSUM62 AA only",
+        "components": ["blosum62"],
+    },
+    "blosum80": {
+        "display_name": "BLOSUM80 AA only",
+        "components": ["blosum80"],
+    },
+    "kidera": {
+        "display_name": "Kidera factors AA only",
+        "components": ["kidera"],
+    },
+    "atchley": {
+        "display_name": "Atchley factors AA only",
+        "components": ["atchley"],
     },
     "esmc": {
         "display_name": "ESM-C context window only",
@@ -485,9 +525,9 @@ FEATURE_SETS = {
         "display_name": "Structural + one-hot AA",
         "components": ["handcrafted", "sparse"],
     },
-    "handcrafted_blosum": {
+    "handcrafted_blosum50": {
         "display_name": "Structural + BLOSUM50 AA",
-        "components": ["handcrafted", "blosum"],
+        "components": ["handcrafted", "blosum50"],
     },
     # ── Structural + AA + single embedding (context window) ──
     "handcrafted_esmc": {
@@ -515,9 +555,9 @@ FEATURE_SETS = {
         "display_name": "Structural + one-hot + ESM-IF windows",
         "components": ["handcrafted", "sparse", "esmif_win"],
     },
-    "handcrafted_blosum_esmif_win": {
+    "handcrafted_blosum50_esmif_win": {
         "display_name": "Structural + BLOSUM50 + ESM-IF windows",
-        "components": ["handcrafted", "blosum", "esmif_win"],
+        "components": ["handcrafted", "blosum50", "esmif_win"],
     },
     "handcrafted_sparse_esmif_pad": {
         "display_name": "Structural + one-hot + ESM-IF windows (pad)",
@@ -548,13 +588,13 @@ FEATURE_SETS = {
         "display_name": "Structural + one-hot + ESM-C windows (impute-boundary)",
         "components": ["handcrafted", "sparse", "esmc_win_impute_boundary"],
     },
-    "handcrafted_blosum_esmc": {
+    "handcrafted_blosum50_esmc": {
         "display_name": "Structural + BLOSUM50 + ESM-C",
-        "components": ["handcrafted", "blosum", "esmc"],
+        "components": ["handcrafted", "blosum50", "esmc"],
     },
-    "handcrafted_blosum_esmif": {
+    "handcrafted_blosum50_esmif": {
         "display_name": "Structural + BLOSUM50 + ESM-IF",
-        "components": ["handcrafted", "blosum", "esmif"],
+        "components": ["handcrafted", "blosum50", "esmif"],
     },
     # ── Combined context window ──
     "handcrafted_sparse_esmc_esmif": {
@@ -698,6 +738,19 @@ DEFAULT_MODEL = "rf"
 # HELPERS
 # ──────────────────────────────────────────────
 
+# Pre-2026-10-12 runs labelled "blosum" are BLOSUM50 (read-path only).
+# New runs must use an explicit blosum50/blosum62/blosum80.
+FEATURE_SET_ALIASES = {
+    "blosum": "blosum50",
+    "handcrafted_blosum": "handcrafted_blosum50",
+}
+
+
+def canonical_feature_set(features_key):
+    """Map legacy feature-set names to their post-rename equivalents."""
+    return FEATURE_SET_ALIASES.get(features_key, features_key)
+
+
 def get_feature_cols(df_columns):
     """Return all columns that are not metadata or raw AA letters."""
     return [c for c in df_columns if c not in _EXCLUDE_COLS]
@@ -711,6 +764,13 @@ def get_model_config(model_key):
 
 
 def get_feature_set_config(features_key):
+    if features_key in ("blosum", "handcrafted_blosum"):
+        raise KeyError(
+            f"Bare '{features_key}' was retired 2026-10-12; existing runs "
+            f"labelled '{features_key}' are {FEATURE_SET_ALIASES[features_key]} "
+            f"(canonical_feature_set() maps them on read). New runs must be "
+            f"explicit: blosum50 / blosum62 / blosum80."
+        )
     if features_key not in FEATURE_SETS:
         valid = ", ".join(sorted(FEATURE_SETS.keys()))
         raise KeyError(f"Unknown feature set '{features_key}'. Valid keys: {valid}")
@@ -739,12 +799,16 @@ def validate_feature_set(feat_cfg):
     for comp_key in components:
         get_feature_component(comp_key)
 
-    # Cannot combine sparse + blosum (same column names, different values)
-    aa_encodings = [c for c in components if c in ("sparse", "blosum")]
+    # Cannot combine multiple AA encodings in one feature set
+    # (same column names, different values)
+    aa_encodings = [
+        c for c in components
+        if c in ("sparse", "blosum50", "blosum62", "blosum80", "kidera", "atchley")
+    ]
     if len(aa_encodings) > 1:
         raise ValueError(
             f"Cannot combine multiple AA encodings in one feature set: "
-            f"{aa_encodings}. Use either 'sparse' or 'blosum', not both."
+            f"{aa_encodings}. Use exactly one."
         )
 
     # No duplicate components

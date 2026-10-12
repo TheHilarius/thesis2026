@@ -39,7 +39,7 @@ DEFAULT_COMBOS = [
     # Baselines
     ("rf", "handcrafted", None),
     ("rf", "handcrafted_sparse", None),
-    ("rf", "handcrafted_blosum", None),
+    ("rf", "handcrafted_blosum50", None),
     # ESM-C context (50% variance -> 1 PC)
     ("rf", "handcrafted_sparse_esmc", 1),
     # ESM-IF context (50% variance -> 9 PCs)
@@ -49,21 +49,21 @@ DEFAULT_COMBOS = [
     # Same with L2
     ("lr_l2", "handcrafted", None),
     ("lr_l2", "handcrafted_sparse", None),
-    ("lr_l2", "handcrafted_blosum", None),
+    ("lr_l2", "handcrafted_blosum50", None),
     ("lr_l2", "handcrafted_sparse_esmc", 1),
     ("lr_l2", "handcrafted_sparse_esmif", 9),
     ("lr_l2", "handcrafted_sparse_esmc_esmif", "esmc=1,esmif=9"),
     # Same with ElasticNet
     ("lr_elasticnet", "handcrafted", None),
     ("lr_elasticnet", "handcrafted_sparse", None),
-    ("lr_elasticnet", "handcrafted_blosum", None),
+    ("lr_elasticnet", "handcrafted_blosum50", None),
     ("lr_elasticnet", "handcrafted_sparse_esmc", 1),
     ("lr_elasticnet", "handcrafted_sparse_esmif", 9),
     ("lr_elasticnet", "handcrafted_sparse_esmc_esmif", "esmc=1,esmif=9"),
     # XGBoost
     ("xgb", "handcrafted", None),
     ("xgb", "handcrafted_sparse", None),
-    ("xgb", "handcrafted_blosum", None),
+    ("xgb", "handcrafted_blosum50", None),
     ("xgb", "handcrafted_sparse_esmc", 1),
     ("xgb", "handcrafted_sparse_esmif", 9),
     ("xgb", "handcrafted_sparse_esmc_esmif", "esmc=1,esmif=9"),

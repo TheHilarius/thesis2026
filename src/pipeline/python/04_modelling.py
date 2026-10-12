@@ -311,14 +311,17 @@ def load_all_components(df_split, feat_cfg, pca_mode="slot"):
     # Resolve CSV feature columns (component-aware).
     # Structural (handcrafted) columns always live in the split data, so
     # they must only be used when the 'handcrafted' component is selected.
-    # AA-encoded columns ({pos}_{AA}, 21 x 29) come from the alternate CSVs
-    # (df_all_sparse.csv / df_all_blosum50.csv) and are only used when
-    # 'sparse' or 'blosum' is selected.
+    # AA-encoded columns ({pos}_{AA}/KF*/AF*, 29 positions) come from the
+    # alternate CSVs (df_all_sparse.csv / df_all_blosum50.csv / ...) and are
+    # only used when an AA-encoding component is selected.
+    AA_ENCODING_COMPONENTS = {
+        "sparse", "blosum50", "blosum62", "blosum80", "kidera", "atchley"
+    }
     csv_feature_cols = []
     if csv_components:
         selected = {comp["_key"] for comp in csv_components}
         include_structural = "handcrafted" in selected
-        include_encoded = bool(selected & {"sparse", "blosum"})
+        include_encoded = bool(selected & AA_ENCODING_COMPONENTS)
 
         all_feature_cols = get_feature_cols(df.columns)
         numeric_cols = [
@@ -344,7 +347,7 @@ def load_all_components(df_split, feat_cfg, pca_mode="slot"):
             csv_feature_cols.extend(encoded_cols)
         else:
             print(f"  Excluded {len(encoded_cols)} AA-encoded column(s) "
-                  f"(no 'sparse'/'blosum' component selected)")
+                  f"(no AA-encoding component selected)")
 
     # ── Load embedding components ──
     emb_data_dict = {}

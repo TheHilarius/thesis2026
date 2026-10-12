@@ -8,10 +8,7 @@ POSITION_COLS <- c(
   paste0("C", 1:10)     # C1..C10
 )
 
-AMINO_ACIDS <- c(
-  "A", "C", "D", "E", "F", "G", "H", "I", "K", "L",
-  "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y", "X"
-)
+# AA_ORDER (with X) comes from functions.R
 
 df_raw <- read_csv("data/processed/df_all.csv", show_col_types = FALSE)
 
@@ -32,93 +29,90 @@ if (nrow(na_counts) > 0) {
 non_position_cols <- setdiff(colnames(df_raw), POSITION_COLS)
 
 # =============================================================================
-# 1. SPARSE (ONE-HOT) ENCODING — 29 x 21 = 609 binary features
+# ENCODINGS — each produces df_<enc>.csv (encoded cols only)
+#                          and df_all_<enc>.csv (encoded + all other cols)
 # =============================================================================
 
-cat("\n=== Sparse Encoding ===\n")
-cat("Encoding", length(POSITION_COLS), "positions x",
-    length(AMINO_ACIDS), "AAs =",
-    length(POSITION_COLS) * length(AMINO_ACIDS), "features\n")
+ENCODINGS <- list(
+  sparse   = NULL,          # special-cased: one-hot
+  blosum50 = BLOSUM50,
+  blosum62 = BLOSUM62,
+  blosum80 = BLOSUM80,
+  kidera   = KIDERA,
+  atchley  = ATCHLEY
+)
 
-sparse_features <- map_dfc(POSITION_COLS, \(pos) {
-  sparse_encode_position(df_raw, pos)
-})
+dims <- function(enc) {
+  if (enc == "sparse") length(AA_ORDER) else ncol(ENCODINGS[[enc]])
+}
 
-row_sums <- map_dfc(POSITION_COLS, \(pos) {
-  cols <- paste0(pos, "_", AMINO_ACIDS)
-  tibble(!!pos := rowSums(sparse_features[, cols]))
-})
+dfs_all <- list()  # kept for post-hoc sanity checks below
 
-bad_rows <- row_sums |>
-  filter(if_any(everything(), \(x) !x %in% c(0, 1)))
-
-if (nrow(bad_rows) > 0) {
-  stop("Sparse validation failed: ", nrow(bad_rows),
-       " rows have sums other than 0 or 1.")
-} else {
-  zero_counts <- row_sums |>
-    summarise(across(everything(), \(x) sum(x == 0))) |>
-    pivot_longer(everything(), names_to = "position", values_to = "n_zero") |>
-    filter(n_zero > 0)
+for (enc in names(ENCODINGS)) {
+  n_dims <- dims(enc)
+  cat("\n===", toupper(enc), "Encoding ===\n")
+  cat("Encoding", length(POSITION_COLS), "positions x", n_dims,
+      "dims =", length(POSITION_COLS) * n_dims, "features\n")
   
-  cat("Validation passed: all rows sum to 0 (NA) or 1.\n")
+  if (enc == "sparse") {
+    features <- map_dfc(POSITION_COLS, \(pos) {
+      sparse_encode_position(df_raw, pos)
+    })
+    
+    # Strict validation: one-hot rows must sum to 0 (NA) or 1
+    row_sums <- map_dfc(POSITION_COLS, \(pos) {
+      cols <- paste0(pos, "_", AA_ORDER)
+      tibble(!!pos := rowSums(features[, cols]))
+    })
+    bad_rows <- row_sums |> filter(if_any(everything(), \(x) !x %in% c(0, 1)))
+    if (nrow(bad_rows) > 0) {
+      stop(enc, " validation failed: ", nrow(bad_rows),
+           " rows have sums other than 0 or 1.")
+    }
+    cat("Validation passed: all rows sum to 0 (NA) or 1.\n")
+    zero_counts <- row_sums |>
+      summarise(across(everything(), \(x) sum(x == 0))) |>
+      pivot_longer(everything(), names_to = "position", values_to = "n_zero") |>
+      filter(n_zero > 0)
+  } else {
+    mat <- ENCODINGS[[enc]]
+    features <- map_dfc(POSITION_COLS, \(pos) {
+      matrix_encode_position(df_raw, pos, mat)
+    })
+    
+    # Validation: NA rows must encode as all-zero vectors
+    abs_sums <- map_dfc(POSITION_COLS, \(pos) {
+      cols <- paste0(pos, "_", colnames(mat))
+      tibble(!!pos := rowSums(abs(features[, cols])))
+    })
+    zero_counts <- abs_sums |>
+      summarise(across(everything(), \(x) sum(x == 0))) |>
+      pivot_longer(everything(), names_to = "position", values_to = "n_zero") |>
+      filter(n_zero > 0)
+  }
+  
+  cat("Validation passed.\n")
   if (nrow(zero_counts) > 0) {
     cat("All-zero rows (from NAs) per position:\n")
     print(zero_counts, n = Inf)
   }
+  
+  df_all <- bind_cols(
+    df_raw |> select(all_of(non_position_cols)),
+    features
+  )
+  dfs_all[[enc]] <- df_all
+  
+  cat("Output dimensions:", nrow(df_all), "x", ncol(df_all), "\n")
+  
+  write_csv(features, paste0("data/processed/df_", enc, ".csv"))
+  cat("Saved: data/processed/df_", enc, ".csv\n", sep = "")
+  write_csv(df_all, paste0("data/processed/df_all_", enc, ".csv"))
+  cat("Saved: data/processed/df_all_", enc, ".csv\n", sep = "")
 }
 
-df_sparse <- bind_cols(
-  df_raw |> select(all_of(non_position_cols)),
-  sparse_features
-)
-
-cat("Output dimensions:", nrow(df_sparse), "x", ncol(df_sparse), "\n")
-
-write_csv(df_sparse, "data/processed/df_all_sparse.csv")
-cat("Saved: data/processed/df_all_sparse.csv\n")
-
 # =============================================================================
-# 2. BLOSUM50 ENCODING — 29 x 21 = 609 continuous features
-# =============================================================================
-
-cat("\n=== BLOSUM50 Encoding ===\n")
-cat("Encoding", length(POSITION_COLS), "positions x", length(AMINO_ACIDS), "BLOSUM50 dims =",
-    length(POSITION_COLS) * length(AMINO_ACIDS), "features\n")
-
-blosum_features <- map_dfc(POSITION_COLS, \(pos) {
-  blosum50_encode_position(df_raw, pos)
-})
-
-# Validation: NAs should produce all-zero rows, others should have non-zero values
-blosum_row_sums <- map_dfc(POSITION_COLS, \(pos) {
-  cols <- paste0(pos, "_", AMINO_ACIDS)
-  tibble(!!pos := rowSums(abs(blosum_features[, cols])))
-})
-
-blosum_zero_counts <- blosum_row_sums |>
-  summarise(across(everything(), \(x) sum(x == 0))) |>
-  pivot_longer(everything(), names_to = "position", values_to = "n_zero") |>
-  filter(n_zero > 0)
-
-cat("Validation passed.\n")
-if (nrow(blosum_zero_counts) > 0) {
-  cat("All-zero rows (from NAs) per position:\n")
-  print(blosum_zero_counts, n = Inf)
-}
-
-df_blosum <- bind_cols(
-  df_raw |> select(all_of(non_position_cols)),
-  blosum_features
-)
-
-cat("Output dimensions:", nrow(df_blosum), "x", ncol(df_blosum), "\n")
-
-write_csv(df_blosum, "data/processed/df_all_blosum50.csv")
-cat("Saved: data/processed/df_all_blosum50.csv\n")
-
-# =============================================================================
-# 3. SANITY CHECK — Anchor positions (HLA-A*02:01)
+# SANITY CHECK — Anchor positions (HLA-A*02:01)
 # =============================================================================
 
 cat("\n--- Anchor Position Sanity Check (HLA-A*02:01) ---\n")
@@ -140,7 +134,7 @@ print(anchor_check)
 # BLOSUM50 anchor check: P2 and P9 should have similar BLOSUM profiles
 cat("\n--- BLOSUM50 Anchor Check: Mean P2 and P9 vectors by label ---\n")
 
-blosum_anchor <- df_blosum |>
+blosum_anchor <- dfs_all[["blosum50"]] |>
   mutate(label_str = if_else(label == 1, "positive", "negative")) |>
   group_by(label_str) |>
   summarise(
@@ -160,11 +154,18 @@ cat("\n(Similar values across labels confirms rank-matching preserved binding mo
 # =============================================================================
 
 cat("\n=== Encoding Summary ===\n")
-cat("Sparse:  ", nrow(df_sparse), "x", ncol(df_sparse),
-    "  → data/processed/df_all_sparse.csv\n")
-cat("BLOSUM50:", nrow(df_blosum), "x", ncol(df_blosum),
-    "  → data/processed/df_all_blosum50.csv\n")
-cat("Both have", length(non_position_cols), "non-position columns +", length(POSITION_COLS) * length(AMINO_ACIDS), "encoded columns\n")
+cat(sprintf("%-10s %6s %12s  %s\n", "encoding", "dims", "features", "files"))
+for (enc in names(ENCODINGS)) {
+  n_dims <- dims(enc)
+  cat(sprintf(
+    "%-10s %6d %12d  df_%s.csv + df_all_%s.csv\n",
+    enc, n_dims, length(POSITION_COLS) * n_dims, enc, enc
+  ))
+}
 
-cat("Column naming: {position}_{amino_acid}, e.g. P2_L, N4_A, C1_V\n")
+cat("\nNon-position columns:", length(non_position_cols), "\n")
+cat("df_<enc>.csv: encoded position columns only.\n")
+cat("df_all_<enc>.csv: encoded columns + all non-position columns.\n")
+cat("Column naming: {position}_{aa} for sparse/BLOSUMs, {position}_KF*/AF* for\n")
+cat("kidera/atchley, e.g. P2_L, N4_A, P2_KF1, C1_AF3.\n")
 cat("NAs encoded as all-zero vectors; X is a real token (own column/row).\n")

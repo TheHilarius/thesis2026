@@ -19,6 +19,12 @@ METRIC_NAMES = [
     "npv",
 ]
 
+# Pre-2026-10-12 runs labelled "blosum" are BLOSUM50 (see config.FEATURE_SET_ALIASES)
+FEATURE_SET_ALIASES = {
+    "blosum": "blosum50",
+    "handcrafted_blosum": "handcrafted_blosum50",
+}
+
 
 def parse_timestamp(ts):
     # Expected formats: 20260506_151424 or 2026-05-06 15:14:00
@@ -34,7 +40,9 @@ def infer_embedding_mode(results):
     feature_set = results.get("features_key", "")
     n_features = int(results.get("config", {}).get("n_features", -1))
 
-    if feature_set in ("sparse", "blosum", "handcrafted_sparse", "handcrafted_blosum"):
+    # "blosum"/"handcrafted_blosum" = legacy names, pre-rename to blosum50
+    if feature_set in ("sparse", "blosum", "blosum50",
+                       "handcrafted_sparse", "handcrafted_blosum", "handcrafted_blosum50"):
         return "none"
 
     # New-format results: read component_info (robust to any PCA value)
@@ -135,7 +143,9 @@ def main():
             "timestamp": ts_raw,
             "model_key": r.get("model_key", ""),
             "model_class": r.get("model_class", ""),
-            "feature_set": r.get("features_key", ""),
+            # legacy "blosum"/"handcrafted_blosum" → blosum50 equivalents
+            "feature_set": FEATURE_SET_ALIASES.get(
+                r.get("features_key", ""), r.get("features_key", "")),
             "components": r.get("components", ""),
             "embedding_mode": infer_embedding_mode(r),
             "pca_mode": cfg.get("pca_mode", ""),

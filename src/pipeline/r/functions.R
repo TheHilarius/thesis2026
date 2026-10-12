@@ -1256,6 +1256,12 @@ sample_bin_matched <- function(df_pos, df_neg, n_bins, seed = 42) {
 # Amino Acid Encoding Functions
 # =============================================================================
 
+#' Amino acid order shared by all encoding matrices
+AA_ORDER <- c(
+  "A", "C", "D", "E", "F", "G", "H", "I", "K", "L",
+  "M", "N", "P", "Q", "R", "S", "T", "V", "W", "Y", "X"
+)
+
 #' BLOSUM50 substitution matrix
 #' Each amino acid is represented by its 20-dimensional BLOSUM50 row vector.
 #' Source: NCBI, same encoding used by NetMHCpan 4.0–4.2
@@ -1289,6 +1295,175 @@ dimnames = list(
   c("A","C","D","E","F","G","H","I","K","L","M","N","P","Q","R","S","T","V","W","Y","X")
 ))
 
+#' BLOSUM62 substitution matrix
+#' Source: NCBI official BLOSUM62 (https://ftp.ncbi.nih.gov/blast/matrices/BLOSUM62),
+#' subset to our 21-AA alphabet. NCBI X row/col values preserved.
+BLOSUM62 <- matrix(c(
+  # A   C   D   E   F   G   H   I   K   L   M   N   P   Q   R   S   T   V   W   Y   X
+  4,  0, -2, -1, -2,  0, -2, -1, -1, -1, -1, -2, -1, -1, -1,  1,  0,  0, -3, -2,  0, # A
+  0,  9, -3, -4, -2, -3, -3, -1, -3, -1, -1, -3, -3, -3, -3, -1, -1, -1, -2, -2, -2, # C
+ -2, -3,  6,  2, -3, -1, -1, -3, -1, -4, -3,  1, -1,  0, -2,  0, -1, -3, -4, -3, -1, # D
+ -1, -4,  2,  5, -3, -2,  0, -3,  1, -3, -2,  0, -1,  2,  0,  0, -1, -2, -3, -2, -1, # E
+ -2, -2, -3, -3,  6, -3, -1,  0, -3,  0,  0, -3, -4, -3, -3, -2, -2, -1,  1,  3, -1, # F
+  0, -3, -1, -2, -3,  6, -2, -4, -2, -4, -3,  0, -2, -2, -2,  0, -2, -3, -2, -3, -1, # G
+ -2, -3, -1,  0, -1, -2,  8, -3, -1, -3, -2,  1, -2,  0,  0, -1, -2, -3, -2,  2, -1, # H
+ -1, -1, -3, -3,  0, -4, -3,  4, -3,  2,  1, -3, -3, -3, -3, -2, -1,  3, -3, -1, -1, # I
+ -1, -3, -1,  1, -3, -2, -1, -3,  5, -2, -1,  0, -1,  1,  2,  0, -1, -2, -3, -2, -1, # K
+ -1, -1, -4, -3,  0, -4, -3,  2, -2,  4,  2, -3, -3, -2, -2, -2, -1,  1, -2, -1, -1, # L
+ -1, -1, -3, -2,  0, -3, -2,  1, -1,  2,  5, -2, -2,  0, -1, -1, -1,  1, -1, -1, -1, # M
+ -2, -3,  1,  0, -3,  0,  1, -3,  0, -3, -2,  6, -2,  0,  0,  1,  0, -3, -4, -2, -1, # N
+ -1, -3, -1, -1, -4, -2, -2, -3, -1, -3, -2, -2,  7, -1, -2, -1, -1, -2, -4, -3, -2, # P
+ -1, -3,  0,  2, -3, -2,  0, -3,  1, -2,  0,  0, -1,  5,  1,  0, -1, -2, -2, -1, -1, # Q
+ -1, -3, -2,  0, -3, -2,  0, -3,  2, -2, -1,  0, -2,  1,  5, -1, -1, -3, -3, -2, -1, # R
+  1, -1,  0,  0, -2,  0, -1, -2,  0, -2, -1,  1, -1,  0, -1,  4,  1, -2, -3, -2,  0, # S
+  0, -1, -1, -1, -2, -2, -2, -1, -1, -1, -1,  0, -1, -1, -1,  1,  5,  0, -2, -2,  0, # T
+  0, -1, -3, -2, -1, -3, -3,  3, -2,  1,  1, -3, -2, -2, -3, -2,  0,  4, -3, -1, -1, # V
+ -3, -2, -4, -3,  1, -2, -2, -3, -3, -2, -1, -4, -4, -2, -3, -3, -2, -3, 11,  2, -2, # W
+ -2, -2, -3, -2,  3, -3,  2, -1, -2, -1, -1, -2, -3, -1, -2, -2, -2, -1,  2,  7, -1, # Y
+  0, -2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -2, -1, -1,  0,  0, -1, -2, -1, -1  # X
+), nrow = 21, ncol = 21, byrow = TRUE, dimnames = list(AA_ORDER, AA_ORDER))
+
+#' BLOSUM80 substitution matrix
+#' Source: NCBI official BLOSUM80 (https://ftp.ncbi.nih.gov/blast/matrices/BLOSUM80),
+#' subset to our 21-AA alphabet. NCBI X row/col values preserved.
+BLOSUM80 <- matrix(c(
+  # A   C   D   E   F   G   H   I   K   L   M   N   P   Q   R   S   T   V   W   Y   X
+  7, -1, -3, -2, -4,  0, -3, -3, -1, -3, -2, -3, -1, -2, -3,  2,  0, -1, -5, -4, -1, # A
+ -1, 13, -7, -7, -4, -6, -7, -2, -6, -3, -3, -5, -6, -5, -6, -2, -2, -2, -5, -5, -4, # C
+ -3, -7, 10,  2, -6, -3, -2, -7, -2, -7, -6,  2, -3, -1, -3, -1, -2, -6, -8, -6, -3, # D
+ -2, -7,  2,  8, -6, -4,  0, -6,  1, -6, -4, -1, -2,  3, -1, -1, -2, -4, -6, -5, -2, # E
+ -4, -4, -6, -6, 10, -6, -2, -1, -5,  0,  0, -6, -6, -5, -5, -4, -4, -2,  0,  4, -3, # F
+  0, -6, -3, -4, -6,  9, -4, -7, -3, -7, -5, -1, -5, -4, -4, -1, -3, -6, -6, -6, -3, # G
+ -3, -7, -2,  0, -2, -4, 12, -6, -1, -5, -4,  1, -4,  1,  0, -2, -3, -5, -4,  3, -2, # H
+ -3, -2, -7, -6, -1, -7, -6,  7, -5,  2,  2, -6, -5, -5, -5, -4, -2,  4, -5, -3, -2, # I
+ -1, -6, -2,  1, -5, -3, -1, -5,  8, -4, -3,  0, -2,  2,  3, -1, -1, -4, -6, -4, -2, # K
+ -3, -3, -7, -6,  0, -7, -5,  2, -4,  6,  3, -6, -5, -4, -4, -4, -3,  1, -4, -2, -2, # L
+ -2, -3, -6, -4,  0, -5, -4,  2, -3,  3,  9, -4, -4, -1, -3, -3, -1,  1, -3, -3, -2, # M
+ -3, -5,  2, -1, -6, -1,  1, -6,  0, -6, -4,  9, -4,  0, -1,  1,  0, -5, -7, -4, -2, # N
+ -1, -6, -3, -2, -6, -5, -4, -5, -2, -5, -4, -4, 12, -3, -3, -2, -3, -4, -7, -6, -3, # P
+ -2, -5, -1,  3, -5, -4,  1, -5,  2, -4, -1,  0, -3,  9,  1, -1, -1, -4, -4, -3, -2, # Q
+ -3, -6, -3, -1, -5, -4,  0, -5,  3, -4, -3, -1, -3,  1,  9, -2, -2, -4, -5, -4, -2, # R
+  2, -2, -1, -1, -4, -1, -2, -4, -1, -4, -3,  1, -2, -1, -2,  7,  2, -3, -6, -3, -1, # S
+  0, -2, -2, -2, -4, -3, -3, -2, -1, -3, -1,  0, -3, -1, -2,  2,  8,  0, -5, -3, -1, # T
+ -1, -2, -6, -4, -2, -6, -5,  4, -4,  1,  1, -5, -4, -4, -4, -3,  0,  7, -5, -3, -2, # V
+ -5, -5, -8, -6,  0, -6, -4, -5, -6, -4, -3, -7, -7, -4, -5, -6, -5, -5, 16,  3, -5, # W
+ -4, -5, -6, -5,  4, -6,  3, -3, -4, -2, -3, -4, -6, -3, -4, -3, -3, -3,  3, 11, -3, # Y
+ -1, -4, -3, -2, -3, -3, -2, -2, -2, -2, -2, -2, -3, -2, -2, -1, -1, -2, -5, -3, -2  # X
+), nrow = 21, ncol = 21, byrow = TRUE, dimnames = list(AA_ORDER, AA_ORDER))
+
+#' Kidera–Gō factor matrix (10 factors per amino acid)
+#' Source: github.com/vadimnazarov/kidera-atchley (kidera.txt),
+#' Kidera et al. 10-factor scores as reproduced in the Scheraga JBSD paper.
+#' X has no published factors → zeros (matches NA-as-zero convention).
+KIDERA <- matrix(c(
+  # A
+  -1.56, -1.67, -0.97, -0.27, -0.93, -0.78, -0.2,  -0.08,  0.21, -0.48,
+  # C
+   0.12, -0.89,  0.45, -1.05, -0.71,  2.41,  1.52, -0.69,  1.13,  1.10,
+  # D
+   0.58, -0.22, -1.58,  0.81, -0.92,  0.15, -1.52,  0.47,  0.76,  0.70,
+  # E
+  -1.45,  0.19, -1.61,  1.17, -1.31,  0.40,  0.04,  0.38, -0.35, -0.12,
+  # F
+  -0.21,  0.98, -0.36, -1.43,  0.22, -0.81,  0.67,  1.10,  1.71, -0.44,
+  # G
+   1.46, -1.96, -0.23, -0.16,  0.10, -0.11,  1.32,  2.36, -1.66,  0.46,
+  # H
+  -0.41,  0.52, -0.28,  0.28,  1.61,  1.01, -1.85,  0.47,  1.13,  1.63,
+  # I
+  -0.73, -0.16,  1.79, -0.77, -0.54,  0.03, -0.83,  0.51,  0.66, -1.78,
+  # K
+  -0.34,  0.82, -0.23,  1.70,  1.54, -1.62,  1.15, -0.08, -0.48,  0.60,
+  # L
+  -1.04,  0.00, -0.24, -1.10, -0.55, -2.05,  0.96, -0.76,  0.45,  0.93,
+  # M
+  -1.40,  0.18, -0.42, -0.73,  2.00,  1.52,  0.26,  0.11, -1.27,  0.27,
+  # N
+   1.14, -0.07, -0.12,  0.81,  0.18,  0.37, -0.09,  1.23,  1.10, -1.73,
+  # P
+   2.06, -0.33, -1.15, -0.75,  0.88, -0.45,  0.30, -2.30,  0.74, -0.28,
+  # Q
+  -0.47,  0.24,  0.07,  1.10,  1.10,  0.59,  0.84, -0.71, -0.03, -2.33,
+  # R
+   0.22,  1.27,  1.37,  1.87, -1.70,  0.46,  0.92, -0.39,  0.23,  0.93,
+  # S
+   0.81, -1.08,  0.16,  0.42, -0.21, -0.43, -1.89, -1.15, -0.97, -0.23,
+  # T
+   0.26, -0.70,  1.21,  0.63, -0.10,  0.21,  0.24, -1.15, -0.56,  0.19,
+  # V
+  -0.74, -0.71,  2.04, -0.40,  0.50, -0.81, -1.07,  0.06, -0.46,  0.65,
+  # W
+   0.30,  2.10, -0.72, -1.57, -1.16,  0.57, -0.48, -0.40, -2.30, -0.60,
+  # Y
+   1.38,  1.48,  0.80, -0.56,  0.00, -0.68, -0.31,  1.03, -0.05,  0.53,
+  # X
+   0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00
+), nrow = 21, ncol = 10, byrow = TRUE,
+dimnames = list(AA_ORDER, paste0("KF", 1:10)))
+
+#' Atchley factor matrix (5 factors per amino acid)
+#' Source: github.com/vadimnazarov/kidera-atchley (atchley.txt),
+#' Atchley et al. 2005 PNAS 102(18):6395 five factors P1..P5.
+#' X has no published factors → zeros.
+ATCHLEY <- matrix(c(
+  # A
+  -0.591, -1.302, -0.733,  1.570, -0.146,
+  # C
+  -1.343,  0.465, -0.862, -1.020, -0.255,
+  # D
+   1.050,  0.302, -3.656, -0.259, -3.242,
+  # E
+   1.357, -1.453,  1.477,  0.113, -0.837,
+  # F
+  -1.006, -0.590,  1.891, -0.397,  0.412,
+  # G
+  -0.384,  1.652,  1.330,  1.045,  2.064,
+  # H
+   0.336, -0.417, -1.673, -1.474, -0.078,
+  # I
+  -1.239, -0.547,  2.131,  0.393,  0.816,
+  # K
+   1.831, -0.561,  0.533, -0.277,  1.648,
+  # L
+  -1.019, -0.987, -1.505,  1.266, -0.912,
+  # M
+  -0.663, -1.524,  2.219, -1.005,  1.212,
+  # N
+   0.945,  0.828,  1.299, -0.169,  0.933,
+  # P
+   0.189,  2.081, -1.628,  0.421, -1.392,
+  # Q
+   0.931, -0.179, -3.005, -0.503, -1.853,
+  # R
+   1.538, -0.055,  1.502,  0.440,  2.897,
+  # S
+  -0.228,  1.399, -4.760,  0.670, -2.647,
+  # T
+  -0.032,  0.326,  2.213,  0.908,  1.313,
+  # V
+  -1.337, -0.279, -0.544,  1.242, -1.262,
+  # W
+  -0.595,  0.009,  0.672, -2.128, -0.184,
+  # Y
+   0.260,  0.830,  3.097, -0.838,  1.512,
+  # X
+   0.000,  0.000,  0.000,  0.000,  0.000
+), nrow = 21, ncol = 5, byrow = TRUE,
+dimnames = list(AA_ORDER, paste0("AF", 1:5)))
+
+# Load-time validation: all matrices share the AA order; BLOSUMs are symmetric.
+for (.mat_name in c("BLOSUM50", "BLOSUM62", "BLOSUM80", "KIDERA", "ATCHLEY")) {
+  .m <- get(.mat_name)
+  stopifnot(
+    identical(rownames(.m), AA_ORDER),
+    nrow(.m) == 21
+  )
+  if (startsWith(.mat_name, "BLOSUM")) {
+    stopifnot(isSymmetric(unname(.m)))
+  }
+}
+rm(.mat_name, .m)
+
 #' Sparse (one-hot) encode a single position column
 #'
 #' @param df        A data frame
@@ -1316,16 +1491,18 @@ sparse_encode_position <- function(df, pos_col, alphabet = c(
   })
 }
 
-#' BLOSUM50 encode a single position column
+#' Matrix-encode a single position column
 #'
-#' @param df        A data frame
-#' @param pos_col   Name of the position column (character)
-#' @param blosum    BLOSUM50 matrix (20x20, rownames = amino acids)
-#' @return A tibble with 20 columns named {pos_col}_{aa}, containing the
-#'         BLOSUM50 row vector for each residue. NAs become all-zero rows.
-blosum50_encode_position <- function(df, pos_col, blosum = BLOSUM50) {
+#' @param df      A data frame
+#' @param pos_col Name of the position column (character)
+#' @param mat     Encoding matrix: rows = amino acids (rownames), cols = features
+#'                (colnames). Works for square AA-to-AA matrices (BLOSUMs, colnames
+#'                = AAs) and factor matrices (Kidera/Atchley, colnames = KFn/AFn).
+#' @return A tibble with one column per matrix column, named {pos_col}_{colname}.
+#'         NAs and unexpected characters become all-zero rows.
+matrix_encode_position <- function(df, pos_col, mat) {
   values <- df[[pos_col]]
-  aa_names <- rownames(blosum)
+  aa_names <- rownames(mat)
   
   unexpected <- setdiff(na.omit(unique(values)), aa_names)
   if (length(unexpected) > 0) {
@@ -1337,15 +1514,15 @@ blosum50_encode_position <- function(df, pos_col, blosum = BLOSUM50) {
     values[values %in% unexpected] <- NA
   }
   
-  # Build index: map each value to a row in the BLOSUM matrix
+  # Build index: map each value to a row in the encoding matrix
   idx <- match(values, aa_names)
   
   # Extract rows; NAs get a zero vector
-  encoded <- matrix(0, nrow = length(values), ncol = ncol(blosum))
+  encoded <- matrix(0, nrow = length(values), ncol = ncol(mat))
   valid <- !is.na(idx)
-  encoded[valid, ] <- blosum[idx[valid], ]
+  encoded[valid, ] <- mat[idx[valid], ]
   
-  colnames(encoded) <- paste0(pos_col, "_", aa_names)
+  colnames(encoded) <- paste0(pos_col, "_", colnames(mat))
   as_tibble(encoded)
 }
 
