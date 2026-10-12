@@ -77,12 +77,12 @@ WINDOW_SETS = {
     "esmc_zeropad": (
         "esmc_context_embeddings_zeropad.h5",
         "window_embeddings", 1152,
-        "ESM-C-600M zero", "#e74c3c", "esmc",
+        "ESM-C-600M zero-pad", "#e74c3c", "esmc",
     ),
     "esmc_impute_boundary": (
         "esmc_context_embeddings_impute_boundary.h5",
         "window_embeddings", 1152,
-        "ESM-C-600M boundary", "#e67e22", "esmc",
+        "ESM-C-600M boundary-repeat", "#e67e22", "esmc",
     ),
     "esmc_impute_bos_eos": (
         "esmc_context_embeddings_impute_bos_eos.h5",
@@ -92,18 +92,18 @@ WINDOW_SETS = {
     "esmc_padtoken": (
         "esmc_context_embeddings_padtoken.h5",
         "window_embeddings", 1152,
-        "ESM-C-600M pad", "#8e44ad", "esmc",
+        "ESM-C-600M pad-token", "#8e44ad", "esmc",
     ),
     # ── ESM-C 300M (D=960); keys end _300m so all outputs carry the tag ──
     "esmc_zeropad_300m": (
         "esmc300m_context_embeddings_zeropad.h5",
         "window_embeddings", 960,
-        "ESM-C-300M zero", "#f1948a", "esmc300",
+        "ESM-C-300M zero-pad", "#f1948a", "esmc300",
     ),
     "esmc_impute_boundary_300m": (
         "esmc300m_context_embeddings_impute_boundary.h5",
         "window_embeddings", 960,
-        "ESM-C-300M boundary", "#e59866", "esmc300",
+        "ESM-C-300M boundary-repeat", "#e59866", "esmc300",
     ),
     "esmc_impute_bos_eos_300m": (
         "esmc300m_context_embeddings_impute_bos_eos.h5",
@@ -113,23 +113,23 @@ WINDOW_SETS = {
     "esmc_padtoken_300m": (
         "esmc300m_context_embeddings_padtoken.h5",
         "window_embeddings", 960,
-        "ESM-C-300M pad", "#c39bd3", "esmc300",
+        "ESM-C-300M pad-token", "#c39bd3", "esmc300",
     ),
     # ── ESM-IF (D=512) ──
     "esmif_zero": (
         "esm-if_test_zero.h5",
         "window_if_struct", 512,
-        "ESM-IF zero", "#3498db", "esmif",
+        "ESM-IF zero-pad", "#3498db", "esmif",
     ),
     "esmif_pad": (
         "esm-if_test_pad.h5",
         "window_if_struct", 512,
-        "ESM-IF pad", "#2980b9", "esmif",
+        "ESM-IF pad-token", "#2980b9", "esmif",
     ),
     "esmif_boundary": (
         "esm-if_test_boundary.h5",
         "window_if_struct", 512,
-        "ESM-IF boundary", "#1abc9c", "esmif",
+        "ESM-IF boundary-repeat", "#1abc9c", "esmif",
     ),
     "esmif_eos_bos_repeat": (
         "esm-if_test_eos_bos_repeat.h5",

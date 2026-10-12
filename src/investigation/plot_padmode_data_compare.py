@@ -60,11 +60,11 @@ BAR_ORDER = [
     ("emb_esmc_win_zeropad", "zero-pad", "esmc"),
     ("emb_esmc_win_padtoken", "pad-token", "esmc"),
     ("emb_esmc_win_impute_bos_eos", "EOS/BOS-repeat", "esmc"),
-    ("emb_esmc_win_impute_boundary", "boundary", "esmc"),
+    ("emb_esmc_win_impute_boundary", "boundary-repeat", "esmc"),
     ("emb_esmif_win", "zero-pad", "esmif"),
     ("emb_esmif_pad", "pad-token", "esmif"),
     ("emb_esmif_eos_bos_repeat", "EOS/BOS-repeat", "esmif"),
-    ("emb_esmif_boundary", "boundary", "esmif"),
+    ("emb_esmif_boundary", "boundary-repeat", "esmif"),
 ]
 
 # Paul Tol bright qualitative scheme (SRON/EPS/TN/09-002, colour-blind safe)
@@ -75,8 +75,8 @@ GROUP_COLORS = {
 }
 GROUP_LABELS = {
     "csv": "AA encoding",
-    "esmc": "ESM-C",
-    "esmif": "ESM-IF",
+    "esmc": "ESM-C 90%",
+    "esmif": "ESM-IF 90%",
 }
 
 BAR_BY_KEY = {k: (k, l, g) for k, l, g in BAR_ORDER}
