@@ -1,0 +1,6 @@
+bar,label,auc,runtime_hours,cores,cpu_hours,req_mem_gb,status,result_file,p_delong,p_delong_holm,t_runtime,p_runtime,p_runtime_holm
+sparse,Sparse,0.740941111475974,0.06,12,0.7,56,ok,cv_results_xgb_sparse_flat_20261007_142819.json,,,,,
+blosum,BLOSUM50,0.763271459886116,0.13,12,1.6,56,ok,cv_results_xgb_blosum_flat_20261007_143220.json,,,,,
+esmc300m,ESM-C-300M pad-token,0.6885704155333273,20.88,12,250.5,56,ok,cv_results_xgb_emb_esmc300m_win_padtoken_pca5883_flat_20261009_224239.json,,,,,
+esmc600m,ESM-C-600M pad-token,0.6879700395712725,24.99,12,299.9,56,ok,cv_results_xgb_emb_esmc_win_padtoken_pca6389_flat_20261007_110801.json,0.7538828138813977,0.7538828138813977,-43.90751692777784,4.437636133492081e-28,4.437636133492081e-28
+esmif_eos,ESM-IF EOS/BOS-repeat,0.6328440258476502,8.26,12,99.1,56,ok,cv_results_xgb_emb_esmif_eos_bos_repeat_pca4308_flat_20261008_032609.json,,,,,

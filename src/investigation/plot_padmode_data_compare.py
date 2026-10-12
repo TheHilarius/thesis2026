@@ -92,6 +92,8 @@ LAYOUTS = {
     # is-engineered-helping figure: CSV feature sets only
     "baselines": ["handcrafted", "sparse", "blosum",
                   "handcrafted_sparse", "handcrafted_blosum"],
+    # every bar (runtime figures / full inventory), BAR_ORDER order
+    "all": list(BAR_BY_KEY),
 }
 
 # (toolkit, padtype) in padmode_subset_auc.csv -> BAR_ORDER feature key

@@ -1,0 +1,15 @@
+group,feature_set,label,metric,value
+csv,handcrafted,Handcrafted (eng.),runtime_hours,0.03
+csv,sparse,Sparse,runtime_hours,0.06
+csv,blosum,BLOSUM50,runtime_hours,0.13
+csv,handcrafted_sparse,Sparse + engineered,runtime_hours,0.13
+csv,handcrafted_blosum,"BLOSUM50 +
+engineered",runtime_hours,0.19
+esmc,emb_esmc_win_zeropad,zero-pad,runtime_hours,19.71
+esmc,emb_esmc_win_padtoken,pad-token,runtime_hours,24.99
+esmc,emb_esmc_win_impute_bos_eos,EOS/BOS-repeat,runtime_hours,15.21
+esmc,emb_esmc_win_impute_boundary,boundary,runtime_hours,15.5
+esmif,emb_esmif_win,zero-pad,runtime_hours,12.79
+esmif,emb_esmif_pad,pad-token,runtime_hours,7.69
+esmif,emb_esmif_eos_bos_repeat,EOS/BOS-repeat,runtime_hours,8.26
+esmif,emb_esmif_boundary,boundary,runtime_hours,10.51
