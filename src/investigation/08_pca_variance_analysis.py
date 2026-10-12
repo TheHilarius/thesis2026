@@ -31,8 +31,9 @@ PCA modes:
 
 Caching: finished curves (validated CSV: exact row count, monotonic
 cumulative) are reused on rerun — only missing/aborted modes recompute.
---force recomputes everything. --only KEY[,KEY...] (substring match on
-keys) restricts the run, e.g. --only esmc_padtoken_300m or --only _300m.
+--force recomputes everything. --only KEY[,KEY...] restricts the run: a
+token exactly matching a key selects only that key (--only esmc_padtoken
+= 600m padtoken alone); other tokens substring-match (--only _300m).
 
 Outputs (results/figures/models/pca_optimization/):
     pca_variance_windows_{key}.png       — individual plot with threshold annotations
@@ -489,10 +490,11 @@ if __name__ == "__main__":
     )
     ap.add_argument(
         "--only", type=str, default=None,
-        help="Comma-separated substrings of WINDOW_SETS/FLAT_SETS keys — "
-             "run just the matching modes. Examples: "
-             "--only esmc_padtoken_300m (single fit), --only _300m (all "
-             "300m modes), --only esmc_padtoken (600m padtoken).",
+        help="Comma-separated WINDOW_SETS/FLAT_SETS keys — a token that "
+             "exactly matches a key selects only that key; any other token "
+             "is a substring match. Examples: --only esmc_padtoken (600m "
+             "padtoken only), --only esmc_padtoken_300m (single fit), "
+             "--only _300m (all 300m modes)",
     )
     ap.add_argument(
         "--force", action="store_true",
@@ -522,11 +524,15 @@ if __name__ == "__main__":
 
     if args.only:
         tokens = [t.strip() for t in args.only.split(",") if t.strip()]
+        # Exact key match when the token IS a key (docstring promise:
+        # --only esmc_padtoken → 600m only, not esmc_padtoken_300m);
+        # substring otherwise (--only _300m → all 300m modes).
+        keys = set(sets)
         sets = {k: v for k, v in sets.items()
-                if any(t in k for t in tokens)}
+                if any((k == t) if t in keys else (t in k) for t in tokens)}
         if not sets:
             print(f"  ERROR: --only {args.only!r} matched no keys. "
-                  f"Available: {list(WINDOW_SETS)}")
+                  f"Available: {sorted(keys)}")
             sys.exit(1)
         print(f"  --only {args.only!r} → {list(sets)}")
 
