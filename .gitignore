@@ -124,3 +124,14 @@ runs/*/models/
 runs/*/models/
 
 /server_results/
+
+runs/xgb_*
+runs/rf_*
+runs/lr_*
+
+# Not fully flattened out models
+runs/padmode_choice/xgb_* 
+
+logs/*.txt
+logs/slot/
+logs/flat/
