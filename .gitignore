@@ -138,3 +138,7 @@ logs/flat/
 runs/*/models/**/*.pkl
 runs/slot_legacy/**/*.json
 runs/slot_legacy/*/*.json
+
+runs/slot_legacy/*/
+runs/_legacy/*/
+runs/smoketest_*/
