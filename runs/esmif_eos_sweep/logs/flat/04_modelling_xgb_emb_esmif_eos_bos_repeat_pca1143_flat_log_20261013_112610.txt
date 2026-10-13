@@ -1,0 +1,635 @@
+================================================================================
+  04_MODELLING -- XGBOOST + ESM-IF WINDOWS ONLY (EOS/BOS-REPEAT)
+================================================================================
+  Timestamp:       2026-10-13 11:26:10
+  Model key:       xgb
+  Model class:     xgboost.XGBClassifier
+  Feature set:     emb_esmif_eos_bos_repeat (ESM-IF windows only (eos/bos-repeat))
+  PCA mode:        flat
+  Components:      ['esmif_eos_bos_repeat']
+  Data path:       /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_with_folds.csv
+  Log path:        runs/esmif_eos_sweep/logs/flat/04_modelling_xgb_emb_esmif_eos_bos_repeat_pca1143_flat_log_20261013_112610.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   False
+
+  Model hyperparameters:
+    n_estimators              1000
+    max_depth                 6
+    learning_rate             0.1
+    subsample                 1.0
+    colsample_bytree          1.0
+    min_child_weight          1
+    reg_lambda                1.0
+    reg_alpha                 0.0
+    gamma                     0.0
+    eval_metric               logloss
+    n_jobs                    -1
+    verbosity                 0
+    random_state              42
+================================================================================
+
+Loading split data: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_with_folds.csv
+  Shape: 46617 rows x 105 columns
+  [OK] Fold column validated: [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5)]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+  Loading embedding component: ESM-IF1 windows (eos/bos-repeat, 29x512)
+    Loading prepared embeddings: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/embeddings_prepared/esmif_eos_bos_repeat_windows_prepared.h5
+    Loaded (windows): 46617 samples, window=29, dim=512 (tensor streamed lazily)
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  Embedding components (1):
+    [esmif_eos_bos_repeat] ESM-IF1 windows (eos/bos-repeat, 29x512)
+      Context dim:    29x512 (flat 14848)
+      After PCA: 1143
+
+  Estimated total features: ~1143
+    CSV:        0
+    Embeddings: 1143 (after PCA)
+
+================================================================================
+PIPELINE READY: ~1143 features, 5 folds, XGBoost
+================================================================================
+
+================================================================================
+NESTED CROSS-VALIDATION
+  Outer iterations: 6 (rotate validation bucket)
+  Inner folds:      5 (per outer iteration)
+  Total models:     30
+================================================================================
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 0/5 (validation bucket = 0)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 1) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31077 rows streamed, 30074 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.5% variance)
+    Total features after concatenation: 1143
+    Train:  31077 samples (pos=14393, neg=16684, ratio=1.159)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1592 (neg=16684, pos=14393)
+    Training XGBoost ...
+    Training time: 177.6s
+    Inner fold 1 AUC: 0.6108 (471.3s)
+
+  ── Inner fold 2/5 (test bucket = 2) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31077 rows streamed, 30107 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.5% variance)
+    Total features after concatenation: 1143
+    Train:  31077 samples (pos=14378, neg=16699, ratio=1.161)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1614 (neg=16699, pos=14378)
+    Training XGBoost ...
+    Training time: 163.3s
+    Inner fold 2 AUC: 0.6093 (442.1s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31078 rows streamed, 30078 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.5% variance)
+    Total features after concatenation: 1143
+    Train:  31078 samples (pos=14392, neg=16686, ratio=1.159)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1594 (neg=16686, pos=14392)
+    Training XGBoost ...
+    Training time: 160.1s
+    Inner fold 3 AUC: 0.6169 (425.0s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31078 rows streamed, 30067 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.5% variance)
+    Total features after concatenation: 1143
+    Train:  31078 samples (pos=14374, neg=16704, ratio=1.162)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1621 (neg=16704, pos=14374)
+    Training XGBoost ...
+    Training time: 158.0s
+    Inner fold 4 AUC: 0.6173 (418.9s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31078 rows streamed, 30106 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.5% variance)
+    Total features after concatenation: 1143
+    Train:  31078 samples (pos=14383, neg=16695, ratio=1.161)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1607 (neg=16695, pos=14383)
+    Training XGBoost ...
+    Training time: 163.0s
+    Inner fold 5 AUC: 0.6148 (422.8s)
+
+  Averaging 5 inner models on validation bucket 0...
+  Outer fold 0 validation (n=7770, pos=3621, neg=4149):
+    AUC-ROC: 0.6433  |  AUC-PR: 0.5932  |  Acc: 0.6076  |  F1: 0.5389  |  MCC: 0.2055
+    Sens: 0.4921  |  Spec: 0.7084  |  PPV: 0.5956  |  NPV: 0.6151
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 1/5 (validation bucket = 1)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31077 rows streamed, 30074 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.5% variance)
+    Total features after concatenation: 1143
+    Train:  31077 samples (pos=14393, neg=16684, ratio=1.159)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1592 (neg=16684, pos=14393)
+    Training XGBoost ...
+    Training time: 167.0s
+    Inner fold 0 AUC: 0.6122 (435.6s)
+
+  ── Inner fold 2/5 (test bucket = 2) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31077 rows streamed, 30088 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.6% variance)
+    Total features after concatenation: 1143
+    Train:  31077 samples (pos=14412, neg=16665, ratio=1.156)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1563 (neg=16665, pos=14412)
+    Training XGBoost ...
+    Training time: 163.2s
+    Inner fold 2 AUC: 0.6081 (421.9s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31078 rows streamed, 30059 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.5% variance)
+    Total features after concatenation: 1143
+    Train:  31078 samples (pos=14426, neg=16652, ratio=1.154)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1543 (neg=16652, pos=14426)
+    Training XGBoost ...
+    Training time: 160.0s
+    Inner fold 3 AUC: 0.6151 (420.3s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31078 rows streamed, 30048 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.6% variance)
+    Total features after concatenation: 1143
+    Train:  31078 samples (pos=14408, neg=16670, ratio=1.157)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1570 (neg=16670, pos=14408)
+    Training XGBoost ...
+    Training time: 164.3s
+    Inner fold 4 AUC: 0.6153 (425.3s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31078 rows streamed, 30087 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.6% variance)
+    Total features after concatenation: 1143
+    Train:  31078 samples (pos=14417, neg=16661, ratio=1.156)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1556 (neg=16661, pos=14417)
+    Training XGBoost ...
+    Training time: 162.6s
+    Inner fold 5 AUC: 0.6138 (428.2s)
+
+  Averaging 5 inner models on validation bucket 1...
+  Outer fold 1 validation (n=7770, pos=3587, neg=4183):
+    AUC-ROC: 0.6382  |  AUC-PR: 0.5975  |  Acc: 0.5988  |  F1: 0.5272  |  MCC: 0.1857
+    Sens: 0.4845  |  Spec: 0.6969  |  PPV: 0.5782  |  NPV: 0.6119
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 2/5 (validation bucket = 2)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31077 rows streamed, 30107 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.5% variance)
+    Total features after concatenation: 1143
+    Train:  31077 samples (pos=14378, neg=16699, ratio=1.161)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1614 (neg=16699, pos=14378)
+    Training XGBoost ...
+    Training time: 163.6s
+    Inner fold 0 AUC: 0.6165 (428.6s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31077 rows streamed, 30088 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.6% variance)
+    Total features after concatenation: 1143
+    Train:  31077 samples (pos=14412, neg=16665, ratio=1.156)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1563 (neg=16665, pos=14412)
+    Training XGBoost ...
+    Training time: 166.0s
+    Inner fold 1 AUC: 0.6108 (425.0s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31078 rows streamed, 30092 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.6% variance)
+    Total features after concatenation: 1143
+    Train:  31078 samples (pos=14411, neg=16667, ratio=1.157)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1565 (neg=16667, pos=14411)
+    Training XGBoost ...
+    Training time: 162.4s
+    Inner fold 3 AUC: 0.6134 (423.5s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31078 rows streamed, 30081 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.6% variance)
+    Total features after concatenation: 1143
+    Train:  31078 samples (pos=14393, neg=16685, ratio=1.159)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1592 (neg=16685, pos=14393)
+    Training XGBoost ...
+    Training time: 161.2s
+    Inner fold 4 AUC: 0.6215 (421.5s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31078 rows streamed, 30120 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.6% variance)
+    Total features after concatenation: 1143
+    Train:  31078 samples (pos=14402, neg=16676, ratio=1.158)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1579 (neg=16676, pos=14402)
+    Training XGBoost ...
+    Training time: 161.9s
+    Inner fold 5 AUC: 0.6179 (427.9s)
+
+  Averaging 5 inner models on validation bucket 2...
+  Outer fold 2 validation (n=7770, pos=3602, neg=4168):
+    AUC-ROC: 0.6424  |  AUC-PR: 0.5948  |  Acc: 0.6030  |  F1: 0.5366  |  MCC: 0.1954
+    Sens: 0.4958  |  Spec: 0.6955  |  PPV: 0.5846  |  NPV: 0.6148
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 3/5 (validation bucket = 3)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31078 rows streamed, 30078 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.5% variance)
+    Total features after concatenation: 1143
+    Train:  31078 samples (pos=14392, neg=16686, ratio=1.159)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1594 (neg=16686, pos=14392)
+    Training XGBoost ...
+    Training time: 162.3s
+    Inner fold 0 AUC: 0.6105 (439.2s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31078 rows streamed, 30059 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.5% variance)
+    Total features after concatenation: 1143
+    Train:  31078 samples (pos=14426, neg=16652, ratio=1.154)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1543 (neg=16652, pos=14426)
+    Training XGBoost ...
+    Training time: 172.1s
+    Inner fold 1 AUC: 0.6080 (431.8s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31078 rows streamed, 30092 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.6% variance)
+    Total features after concatenation: 1143
+    Train:  31078 samples (pos=14411, neg=16667, ratio=1.157)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1565 (neg=16667, pos=14411)
+    Training XGBoost ...
+    Training time: 165.2s
+    Inner fold 2 AUC: 0.6101 (426.5s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31079 rows streamed, 30052 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.6% variance)
+    Total features after concatenation: 1143
+    Train:  31079 samples (pos=14407, neg=16672, ratio=1.157)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1572 (neg=16672, pos=14407)
+    Training XGBoost ...
+    Training time: 161.8s
+    Inner fold 4 AUC: 0.6121 (420.4s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31079 rows streamed, 30091 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.6% variance)
+    Total features after concatenation: 1143
+    Train:  31079 samples (pos=14416, neg=16663, ratio=1.156)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1559 (neg=16663, pos=14416)
+    Training XGBoost ...
+    Training time: 165.2s
+    Inner fold 5 AUC: 0.6103 (425.6s)
+
+  Averaging 5 inner models on validation bucket 3...
+  Outer fold 3 validation (n=7769, pos=3588, neg=4181):
+    AUC-ROC: 0.6484  |  AUC-PR: 0.5998  |  Acc: 0.6126  |  F1: 0.5435  |  MCC: 0.2140
+    Sens: 0.4994  |  Spec: 0.7096  |  PPV: 0.5961  |  NPV: 0.6229
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 4/5 (validation bucket = 4)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31078 rows streamed, 30067 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.5% variance)
+    Total features after concatenation: 1143
+    Train:  31078 samples (pos=14374, neg=16704, ratio=1.162)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1621 (neg=16704, pos=14374)
+    Training XGBoost ...
+    Training time: 164.0s
+    Inner fold 0 AUC: 0.6142 (429.1s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31078 rows streamed, 30048 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.6% variance)
+    Total features after concatenation: 1143
+    Train:  31078 samples (pos=14408, neg=16670, ratio=1.157)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1570 (neg=16670, pos=14408)
+    Training XGBoost ...
+    Training time: 158.4s
+    Inner fold 1 AUC: 0.6054 (419.9s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31078 rows streamed, 30081 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.6% variance)
+    Total features after concatenation: 1143
+    Train:  31078 samples (pos=14393, neg=16685, ratio=1.159)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1592 (neg=16685, pos=14393)
+    Training XGBoost ...
+    Training time: 159.3s
+    Inner fold 2 AUC: 0.6176 (422.0s)
+
+  ── Inner fold 4/5 (test bucket = 3) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31079 rows streamed, 30052 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.6% variance)
+    Total features after concatenation: 1143
+    Train:  31079 samples (pos=14407, neg=16672, ratio=1.157)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1572 (neg=16672, pos=14407)
+    Training XGBoost ...
+    Training time: 161.2s
+    Inner fold 3 AUC: 0.6174 (419.1s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31079 rows streamed, 30080 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.6% variance)
+    Total features after concatenation: 1143
+    Train:  31079 samples (pos=14398, neg=16681, ratio=1.159)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1586 (neg=16681, pos=14398)
+    Training XGBoost ...
+    Training time: 160.7s
+    Inner fold 5 AUC: 0.6149 (420.3s)
+
+  Averaging 5 inner models on validation bucket 4...
+  Outer fold 4 validation (n=7769, pos=3606, neg=4163):
+    AUC-ROC: 0.6473  |  AUC-PR: 0.6011  |  Acc: 0.6066  |  F1: 0.5429  |  MCC: 0.2034
+    Sens: 0.5033  |  Spec: 0.6961  |  PPV: 0.5893  |  NPV: 0.6180
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 5/5 (validation bucket = 5)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31078 rows streamed, 30106 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.5% variance)
+    Total features after concatenation: 1143
+    Train:  31078 samples (pos=14383, neg=16695, ratio=1.161)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1607 (neg=16695, pos=14383)
+    Training XGBoost ...
+    Training time: 161.8s
+    Inner fold 0 AUC: 0.6039 (422.1s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31078 rows streamed, 30087 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.6% variance)
+    Total features after concatenation: 1143
+    Train:  31078 samples (pos=14417, neg=16661, ratio=1.156)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1556 (neg=16661, pos=14417)
+    Training XGBoost ...
+    Training time: 163.0s
+    Inner fold 1 AUC: 0.6070 (424.4s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31078 rows streamed, 30120 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.6% variance)
+    Total features after concatenation: 1143
+    Train:  31078 samples (pos=14402, neg=16676, ratio=1.158)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1579 (neg=16676, pos=14402)
+    Training XGBoost ...
+    Training time: 162.2s
+    Inner fold 2 AUC: 0.6105 (423.4s)
+
+  ── Inner fold 4/5 (test bucket = 3) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31079 rows streamed, 30091 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.6% variance)
+    Total features after concatenation: 1143
+    Train:  31079 samples (pos=14416, neg=16663, ratio=1.156)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1559 (neg=16663, pos=14416)
+    Training XGBoost ...
+    Training time: 161.4s
+    Inner fold 3 AUC: 0.6184 (422.7s)
+
+  ── Inner fold 5/5 (test bucket = 4) ──
+Embedding components loaded: dict_keys(['esmif_eos_bos_repeat'])
+    esmif_eos_bos_repeat: fitting flattened-window PCA (window=29, D=512, k=1143) ...
+      window PCA (flat) fit: 31079 rows streamed, 30080 fully-real rows kept (k=1143 over 14848 dims)
+    esmif_eos_bos_repeat: window PCA 14848 → k=1143 (1143 features) (70.6% variance)
+    Total features after concatenation: 1143
+    Train:  31079 samples (pos=14398, neg=16681, ratio=1.159)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1143
+    scale_pos_weight (auto) = 1.1586 (neg=16681, pos=14398)
+    Training XGBoost ...
+    Training time: 162.7s
+    Inner fold 4 AUC: 0.6093 (423.7s)
+
+  Averaging 5 inner models on validation bucket 5...
+  Outer fold 5 validation (n=7769, pos=3597, neg=4172):
+    AUC-ROC: 0.6453  |  AUC-PR: 0.5992  |  Acc: 0.6039  |  F1: 0.5261  |  MCC: 0.1960
+    Sens: 0.4748  |  Spec: 0.7152  |  PPV: 0.5898  |  NPV: 0.6124
+
+================================================================================
+NESTED CV RESULTS (mean ± std across 6 outer iterations)
+================================================================================
+
+================================================================================
+CROSS-VALIDATION SUMMARY (mean +/- std)
+================================================================================
+  auc_roc         0.6442 +/- 0.0034    [0.6433  0.6382  0.6424  0.6484  0.6473  0.6453]
+  auc_pr          0.5976 +/- 0.0028    [0.5932  0.5975  0.5948  0.5998  0.6011  0.5992]
+  accuracy        0.6054 +/- 0.0043    [0.6076  0.5988  0.6030  0.6126  0.6066  0.6039]
+  f1              0.5359 +/- 0.0069    [0.5389  0.5272  0.5366  0.5435  0.5429  0.5261]
+  mcc             0.2000 +/- 0.0090    [0.2055  0.1857  0.1954  0.2140  0.2034  0.1960]
+  sensitivity     0.4917 +/- 0.0096    [0.4921  0.4845  0.4958  0.4994  0.5033  0.4748]
+  specificity     0.7036 +/- 0.0078    [0.7084  0.6969  0.6955  0.7096  0.6961  0.7152]
+  ppv             0.5889 +/- 0.0062    [0.5956  0.5782  0.5846  0.5961  0.5893  0.5898]
+  npv             0.6159 +/- 0.0038    [0.6151  0.6119  0.6148  0.6229  0.6180  0.6124]
+
+================================================================================
+PER-OUTER-FOLD VALIDATION METRICS
+================================================================================
+  Outer   auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
+  -----------------------------------------------------------------------------------------------------------------------------
+  0       0.6433       0.5932       0.6076       0.5389       0.2055       0.4921       0.7084       0.5956       0.6151       
+  1       0.6382       0.5975       0.5988       0.5272       0.1857       0.4845       0.6969       0.5782       0.6119       
+  2       0.6424       0.5948       0.6030       0.5366       0.1954       0.4958       0.6955       0.5846       0.6148       
+  3       0.6484       0.5998       0.6126       0.5435       0.2140       0.4994       0.7096       0.5961       0.6229       
+  4       0.6473       0.6011       0.6066       0.5429       0.2034       0.5033       0.6961       0.5893       0.6180       
+  5       0.6453       0.5992       0.6039       0.5261       0.1960       0.4748       0.7152       0.5898       0.6124       
+  -----------------------------------------------------------------------------------------------------------------------------
+  mean    0.6442       0.5976       0.6054       0.5359       0.2000       0.4917       0.7036       0.5889       0.6159       
+  std     0.0034       0.0028       0.0043       0.0069       0.0090       0.0096       0.0078       0.0062       0.0038       
+
+================================================================================
+AVERAGED FEATURE IMPORTANCE ACROSS ALL 30 INNER MODELS
+================================================================================
+  Rank   Feature                                           Mean Imp          Std
+  -----------------------------------------------------------------------------
+  1      esmif_eos_bos_repeat_PC003                        0.002790     0.000131
+  2      esmif_eos_bos_repeat_PC008                        0.001600     0.000124
+  3      esmif_eos_bos_repeat_PC038                        0.001493     0.000170
+  4      esmif_eos_bos_repeat_PC025                        0.001302     0.000122
+  5      esmif_eos_bos_repeat_PC037                        0.001283     0.000229
+  6      esmif_eos_bos_repeat_PC057                        0.001277     0.000124
+  7      esmif_eos_bos_repeat_PC036                        0.001218     0.000104
+  8      esmif_eos_bos_repeat_PC072                        0.001216     0.000291
+  9      esmif_eos_bos_repeat_PC052                        0.001210     0.000264
+  10     esmif_eos_bos_repeat_PC084                        0.001197     0.000171
+  11     esmif_eos_bos_repeat_PC114                        0.001161     0.000225
+  12     esmif_eos_bos_repeat_PC051                        0.001157     0.000223
+  13     esmif_eos_bos_repeat_PC141                        0.001145     0.000295
+  14     esmif_eos_bos_repeat_PC142                        0.001118     0.000258
+  15     esmif_eos_bos_repeat_PC004                        0.001111     0.000111
+  16     esmif_eos_bos_repeat_PC143                        0.001104     0.000308
+  17     esmif_eos_bos_repeat_PC130                        0.001104     0.000236
+  18     esmif_eos_bos_repeat_PC154                        0.001099     0.000274
+  19     esmif_eos_bos_repeat_PC064                        0.001099     0.000250
+  20     esmif_eos_bos_repeat_PC063                        0.001096     0.000206
+  21     esmif_eos_bos_repeat_PC068                        0.001093     0.000192
+  22     esmif_eos_bos_repeat_PC054                        0.001083     0.000159
+  23     esmif_eos_bos_repeat_PC150                        0.001079     0.000229
+  24     esmif_eos_bos_repeat_PC073                        0.001078     0.000196
+  25     esmif_eos_bos_repeat_PC101                        0.001075     0.000198
+  26     esmif_eos_bos_repeat_PC010                        0.001069     0.000127
+  27     esmif_eos_bos_repeat_PC120                        0.001069     0.000207
+  28     esmif_eos_bos_repeat_PC175                        0.001062     0.000211
+  29     esmif_eos_bos_repeat_PC203                        0.001060     0.000214
+  30     esmif_eos_bos_repeat_PC181                        0.001059     0.000168
+
+Results saved: runs/esmif_eos_sweep/models/flat/cv_results_xgb_emb_esmif_eos_bos_repeat_pca1143_flat_20261013_112610.json
+Feature names saved: runs/esmif_eos_sweep/models/flat/xgb_emb_esmif_eos_bos_repeat_pca1143_flat_feature_names.json
+
+================================================================================
+RUN SUMMARY (NESTED CV)
+================================================================================
+  Total runtime:      13414.8s (223.6 min)
+  Nested CV time:     13413.1s (223.6 min)
+  Model:              XGBoost (xgb)
+  Feature set:        ESM-IF windows only (eos/bos-repeat) (emb_esmif_eos_bos_repeat)
+  Components:         ['esmif_eos_bos_repeat']
+  Scaling:            no
+  Features (final):   1143
+    esmif_eos_bos_repeat PCA:       1143
+  Outer iterations:   6
+  Inner folds:        5
+  Total models:       30
+  Val AUC-ROC:        0.6442 ± 0.0034
+  Val MCC:            0.2000 ± 0.0090
+  Models dir:         runs/esmif_eos_sweep/models/flat/
+  Results file:       runs/esmif_eos_sweep/models/flat/cv_results_xgb_emb_esmif_eos_bos_repeat_pca1143_flat_20261013_112610.json
+  Feature names:      runs/esmif_eos_sweep/models/flat/xgb_emb_esmif_eos_bos_repeat_pca1143_flat_feature_names.json
+  Log file:           runs/esmif_eos_sweep/logs/flat/04_modelling_xgb_emb_esmif_eos_bos_repeat_pca1143_flat_log_20261013_112610.txt
+  Completed:          2026-10-13 15:09:45
+================================================================================
