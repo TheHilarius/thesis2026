@@ -24,7 +24,7 @@ import pandas as pd
 import numpy as np
 import h5py
 from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA, IncrementalPCA
+from sklearn.decomposition import PCA
 from sklearn.metrics import (
     roc_auc_score, average_precision_score,
     accuracy_score, f1_score, matthews_corrcoef,
@@ -257,7 +257,7 @@ def resolve_components(feat_cfg):
     return csv_components, emb_components
 
 
-def load_all_components(df_split, feat_cfg, pca_mode="slot"):
+def load_all_components(df_split, feat_cfg, pca_mode="flat"):
     """
     Load everything required by the feature set.
 
@@ -377,12 +377,9 @@ def load_all_components(df_split, feat_cfg, pca_mode="slot"):
             if pca_mode == "flat_raw":
                 pca_total = window * emb_dim          # no PCA — all raw dims
                 raw_dim_desc = f"{window}x{emb_dim} (flat_raw {window * emb_dim})"
-            elif pca_mode == "flat":
+            else:  # flat
                 pca_total = int(pca_components)
                 raw_dim_desc = f"{window}x{emb_dim} (flat {window * emb_dim})"
-            else:
-                pca_total = window * int(min(pca_components, emb_dim))
-                raw_dim_desc = f"{window}x{emb_dim}"
         else:
             window = None
             pca_total = pca_components
@@ -515,64 +512,6 @@ def concat_window_slots(emb_data, indices):
         out[cur:cur + c] = flat.reshape(c, window * D)
         cur += c
     return out
-
-
-def fit_window_pca(emb_data, indices, k):
-    """
-    Stream real (non-pad, non-zero-norm) training slots and fit an
-    IncrementalPCA.  Returns the fitted estimator (k components).
-    """
-    prepared_path = emb_data["prepared_path"]
-    D = emb_data["emb_dim"]
-    k = int(min(k, D))
-    ipca = IncrementalPCA(n_components=k, batch_size=32768)
-
-    n_slots = 0
-    n_kept = 0
-    for flat, flatm in _stream_window_slots(prepared_path, indices):
-        n_slots += flat.shape[0]
-        real = ~flatm
-        block = flat[real].astype(np.float64)
-        norms = np.linalg.norm(block, axis=1)
-        block = block[norms > 0.0]
-        if block.shape[0] > 0:
-            ipca.partial_fit(block)
-            n_kept += block.shape[0]
-
-    print(f"      window PCA fit: {n_slots} slots streamed, "
-          f"{n_kept} real non-zero slots kept (k={k})")
-    return ipca
-
-
-def transform_window_block(emb_data, indices, ipca, k):
-    """
-    Stream window rows for `indices`, project each slot through the shared
-    PCA, and flatten to (n, window*k).  Padded slots keep their raw token
-    values (zero-pad/pad-token are ~0; impute modes carry meaningful imputed
-    vectors).  Returns (n, window*k) float64.
-    """
-    prepared_path = emb_data["prepared_path"]
-    window = emb_data["window"]
-    n = len(indices)
-    out = np.empty((n, window * k), dtype=np.float64)
-    cur = 0
-    with h5py.File(prepared_path, "r") as f:
-        W = f["windows"]
-        for i0 in range(0, n, WINDOW_CHUNK_ROWS):
-            idx = indices[i0:i0 + WINDOW_CHUNK_ROWS]
-            block = W[idx].astype(np.float64)   # (c, window, D)
-            c = block.shape[0]
-            proj = ipca.transform(block.reshape(c * window, -1))
-            flat = proj.reshape(c, window * k)
-            out[cur:cur + c] = flat
-            cur += c
-    return out
-
-
-def window_feature_names(comp_key, window, k):
-    """Slot-indexed PC names (order matches the block)."""
-    return [f"{comp_key}_S{ss:02d}_PC{i + 1:03d}"
-            for ss in range(window) for i in range(k)]
 
 
 def fit_window_pca_flat(emb_data, indices, k):
@@ -734,18 +673,16 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
     for comp_key, emb_data in emb_data_dict.items():
         pca_components = emb_data["pca_components"]
 
-        # ── Window-embedding path (slot PCA or flattened-window PCA) ──
+        # ── Window-embedding path (flattened-window PCA or raw) ──
         if emb_data.get("kind") == "windows":
             window = emb_data["window"]
             D = emb_data["emb_dim"]
-            pca_mode = emb_data.get("pca_mode", "slot")
+            pca_mode = emb_data.get("pca_mode", "flat")
 
-            if pca_mode == "flat":
-                total_components = int(min(pca_components, window * D))
-            elif pca_mode == "flat_raw":
+            if pca_mode == "flat_raw":
                 total_components = int(window * D)   # no PCA — all raw dims
             else:
-                total_components = int(min(pca_components, D))
+                total_components = int(min(pca_components, window * D))
 
             if pca_mode == "flat":
                 print(f"    {comp_key}: fitting flattened-window PCA "
@@ -763,16 +700,6 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
                 X_emb_train = concat_window_slots(emb_data, train_indices)
                 X_emb_test = concat_window_slots(emb_data, test_indices)
                 ipca = None  # raw features — nothing to transform at predict time
-            else:
-                print(f"    {comp_key}: fitting shared slot PCA "
-                      f"(window={window}, D={D}, k={total_components}) ...")
-                ipca = fit_window_pca(emb_data, train_indices, total_components)
-                X_emb_train = transform_window_block(
-                    emb_data, train_indices, ipca, total_components,
-                )
-                X_emb_test = transform_window_block(
-                    emb_data, test_indices, ipca, total_components,
-                )
 
             explained = (ipca.explained_variance_ratio_.sum() * 100
                          if hasattr(ipca, "explained_variance_ratio_") else 100.0)
@@ -788,13 +715,6 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
                       f"{window}x{D} → {total_components} (no PCA, 100% by definition)")
                 feature_names.extend(
                     window_feature_names_flat(comp_key, total_components)
-                )
-            else:
-                print(f"    {comp_key}: window PCA D={D} → k={total_components} "
-                      f"(slot features {window * total_components}) "
-                      f"({explained:.1f}% variance)")
-                feature_names.extend(
-                    window_feature_names(comp_key, window, total_components)
                 )
 
             fold_artifacts["pca_dict"][comp_key] = ipca
@@ -957,16 +877,14 @@ def prepare_validation(df, csv_feature_cols, emb_data_dict, model_cfg,
 def _transform_embeddings(emb_data, indices, pca_obj):
     """
     Transform the single context embedding through its fitted PCA
-    (legacy), or stream window slots through the shared PCA (windows).
+    (legacy), or stream window slots through the fitted window PCA.
     """
     if emb_data.get("kind") == "windows":
         if pca_obj is None:
             # flat_raw — features were raw at fit time; identical at predict time
             return concat_window_slots(emb_data, indices)
         k = int(getattr(pca_obj, "n_components_", pca_obj.n_components))
-        if emb_data.get("pca_mode", "slot") == "flat":
-            return transform_window_block_flat(emb_data, indices, pca_obj, k)
-        return transform_window_block(emb_data, indices, pca_obj, k)
+        return transform_window_block_flat(emb_data, indices, pca_obj, k)
     X_emb = get_context_matrix(emb_data, indices)
     X_emb[np.isinf(X_emb)] = 0.0
     X_emb[np.isnan(X_emb)] = 0.0
@@ -1123,11 +1041,11 @@ def parse_args():
              "or per-embedding dict ('esmc=1,esmif=9')",
     )
     parser.add_argument(
-        "--pca-mode", type=str, default="slot",
-        choices=["slot", "flat", "flat_raw"],
-        help="Window PCA scheme: 'slot' (per-position shared PCA, default), "
-             "'flat' (flatten window*D, PCA across the full window), or "
-             "'flat_raw' (flatten window*D, NO PCA — all raw dims; low mem)",
+        "--pca-mode", type=str, default="flat",
+        choices=["flat", "flat_raw"],
+        help="Window PCA scheme: 'flat' (flatten window*D, PCA across the "
+             "full window, default), or 'flat_raw' (flatten window*D, NO PCA "
+             "— all raw dims; low mem)",
     )
     parser.add_argument(
         "--C", type=float, default=None,
@@ -1137,7 +1055,8 @@ def parse_args():
     parser.add_argument(
         "--out-root", type=str, default=None,
         help="Run-folder root shared by a whole submission "
-             "(e.g. runs/padfull_flat_20261001_1645). Default: automatic "
+             "(e.g. runs/4padmodes_and_PCA_handcrafted_sparse_with_embeddings). "
+             "Default: automatic "
              "runs/<run_tag>_<timestamp>/ folder per run (no flags needed).",
     )
     return parser.parse_args()
@@ -1179,13 +1098,12 @@ if __name__ == "__main__":
             run_tag = f"{model_key}_{features_key}_pca{pca_override}"
     else:
         run_tag = f"{model_key}_{features_key}"
-    if pca_mode in ("flat", "flat_raw"):
-        run_tag += f"_{pca_mode}"
+    run_tag += f"_{pca_mode}"
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    # Namespace all run outputs by PCA experiment so slot/flat batches
+    # Namespace all run outputs by PCA experiment so flat/flat_raw batches
     # never mix (logs, cv_results, pickles). Baselines run with the
-    # default pca_mode=slot, so they live under slot/ as well.
+    # default pca_mode=flat, so they live under flat/ as well.
     # --out-root redirects the base (campaign folder shared by a whole
     # submission). Default = automatic per-run folder
     # runs/<run_tag>_<timestamp>/ — no flags needed. Legacy repo-root
@@ -1286,11 +1204,8 @@ if __name__ == "__main__":
             if info.get("pca_mode") == "flat_raw":
                 info["pca_total"] = (info["window"] * info["emb_dim"]
                                      if info.get("window") else int(k))
-            elif info.get("pca_mode") == "flat":
+            else:  # flat
                 info["pca_total"] = int(k)
-            else:
-                info["pca_total"] = (info["window"] * int(min(k, info["emb_dim"]))
-                                     if info.get("window") else k)
 
     del df_split  # free the original copy
 

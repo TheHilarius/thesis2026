@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 14_plot_grid_auc.py
-Bar plots of the padfull_flat modelling grid (XGBoost, handcrafted_sparse + windows).
+Bar plots of the padmode x PC-EV modelling grid (XGBoost,
+handcrafted_sparse + windows).
 
 Figure sets:
   1. Overviews — full-data AUC-ROC and MCC per run (mean +/- std over the
@@ -20,30 +21,31 @@ handcrafted_sparse_esmif) — embeddings are never shown alone.
 Plus grid_table.csv with every metric + wall time joined from the harness logs.
 
 Inputs (relative to repo root):
-    runs/padfull_flat_20261001_1645/models/{flat,flat_raw,slot}/cv_results_*.json
-    logs/padfull_flat_*.out                      — "DONE in <s>s" per task
+    runs/4padmodes_and_PCA_handcrafted_sparse_with_embeddings/
+        models/{flat,flat_raw,reference}/cv_results_*.json
+    logs/*.out                              — "DONE in <s>s" per task
     data/processed/df_all_with_folds.csv         — label, fold (SPLIT_DATA_PATH)
     data/processed/embeddings/esmc_context_embeddings_zeropad.h5  — pad_mask
     data/processed/embeddings/esm-if_test_zero.h5                 — pad_mask
 
 Output (under the campaign folder):
-    runs/padfull_flat_20261001_1645/plots/grid_auc_full.png       — overviews
-    runs/padfull_flat_20261001_1645/plots/grid_mcc_full.png
-    runs/padfull_flat_20261001_1645/plots/grid_saturation_<toolkit>.png
+    runs/4padmodes_.../plots/grid_auc_full.png       — overviews
+    runs/4padmodes_.../plots/grid_mcc_full.png
+    runs/4padmodes_.../plots/grid_saturation_<toolkit>.png
         — TOTAL view: AUC vs explained-variance ladder, 4 padmode groups,
           one bar per PC level (EV% tick label), dashed handcrafted_sparse
           reference line; top panel full data, bottom panel subset rows.
-    runs/padfull_flat_20261001_1645/plots/per_pc/grid_auc_<toolkit>_<k>.png
-    runs/padfull_flat_20261001_1645/plots/per_pc_subset/grid_auc_<toolkit>_<k>.png
+    runs/4padmodes_.../plots/per_pc/grid_auc_<toolkit>_<k>.png
+    runs/4padmodes_.../plots/per_pc_subset/grid_auc_<toolkit>_<k>.png
         — ONE FIGURE PER PC LEVEL (or raw): all padmodes at that k vs
           handcrafted_sparse, fixed order, full data / subset rows.
           This is the within-PC pick-best-padmode view.
-    runs/padfull_flat_20261001_1645/results/grid_table.csv
-    runs/padfull_flat_20261001_1645/results/grid_summary.tsv
-        — one row per run (48 grid + sparse_raw/blosum_raw reference arms
+    runs/4padmodes_.../results/grid_table.csv
+    runs/4padmodes_.../results/grid_summary.tsv
+        — one row per run (49 grid + sparse_raw/blosum_raw reference arms
           borrowed from runs/padmode_choice/): metrics + subset AUCs under
           both toolkit masks + runtime + n_features.
-    runs/padfull_flat_20261001_1645/results/grid_comparisons.tsv
+    runs/4padmodes_.../results/grid_comparisons.tsv
         — paired t-tests on the 6 fold-level SUBSET AUCs, BH-FDR corrected
           across every test: within-PC padmode pairs, each run vs the two
           raw-encoding arms, sparse_raw vs blosum_raw.
@@ -75,7 +77,8 @@ from sklearn.metrics import roc_auc_score
 
 from config import PROJECT_ROOT, SPLIT_DATA_PATH, EMBEDDING_DIR
 
-CAMPAIGN = PROJECT_ROOT / "runs" / "padfull_flat_20261001_1645"
+CAMPAIGN = (PROJECT_ROOT / "runs"
+            / "4padmodes_and_PCA_handcrafted_sparse_with_embeddings")
 MODELS_DIR = CAMPAIGN / "models"
 PLOTS_DIR = CAMPAIGN / "plots"
 OUT_CSV = CAMPAIGN / "results" / "grid_table.csv"
@@ -171,8 +174,8 @@ JSON_RAW_RE = re.compile(
     r"^cv_results_xgb_handcrafted_sparse_"
     r"(?P<feat>.+?)_flat_raw_(?P<ts>\d{8}_\d{6})\.json$"
 )
-# baseline: run_tag has no pca/mode segment (slot mode, no embeddings)
-JSON_SLOT_RE = re.compile(
+# baseline reference arm: run_tag has no pca/mode segment (no embeddings)
+JSON_BASE_RE = re.compile(
     r"^cv_results_xgb_handcrafted_sparse_(?P<ts>\d{8}_\d{6})\.json$"
 )
 # raw-encoding arms borrowed from padmode_choice (sparse / blosum alone)
@@ -186,10 +189,10 @@ LOG_RESULTS_RE = re.compile(r"Results file:\s+.*/([^/]+\.json)")
 def discover_runs() -> list[dict]:
     """One entry per grid JSON in the campaign folder."""
     runs = []
-    for mode in ("flat", "flat_raw", "slot"):
+    for mode in ("flat", "flat_raw", "reference"):
         for p in sorted((MODELS_DIR / mode).glob("cv_results_xgb_handcrafted_sparse_*.json")):
             m = (JSON_RE.match(p.name) or JSON_RAW_RE.match(p.name)
-                 or JSON_SLOT_RE.match(p.name))
+                 or JSON_BASE_RE.match(p.name))
             if not m:
                 print(f"  [skip] unrecognized: {p.name}")
                 continue
@@ -201,7 +204,7 @@ def discover_runs() -> list[dict]:
             k = int(m.group("k")) if m.groupdict().get("k") else None
             if mode == "flat_raw":
                 k_label = "raw"
-            elif mode == "slot" or k is None:
+            elif mode == "reference" or k is None:
                 k_label = "baseline"
             else:
                 k_label = str(k)
@@ -235,7 +238,7 @@ def load_padded_masks() -> dict[str, np.ndarray]:
 def parse_runtimes() -> dict[str, float]:
     """cv_results basename -> wall seconds, from the harness .out logs."""
     out = {}
-    for log in sorted(LOGS_DIR.glob("padfull_flat_*.out")):
+    for log in sorted(LOGS_DIR.glob("*.out")):
         text = log.read_text(errors="replace")
         m_res = LOG_RESULTS_RE.search(text)
         if not m_res:
@@ -675,7 +678,7 @@ def main():
     runs = discover_runs()
     print(f"  {len(runs)} grid JSONs in {MODELS_DIR}")
     runtimes = parse_runtimes()
-    print(f"  {len(runtimes)} runtimes parsed from {LOGS_DIR}/padfull_flat_*.out")
+    print(f"  {len(runtimes)} runtimes parsed from {LOGS_DIR}/*.out")
 
     rows = []
     for r in runs:

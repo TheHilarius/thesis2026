@@ -70,7 +70,7 @@ DEFAULT_COMBOS = [
 ]
 
 
-def run_combo(model, features, pca, pca_mode="slot", dry_run=False,
+def run_combo(model, features, pca, pca_mode="flat", dry_run=False,
               out_root=None):
     """Run one 04_modelling.py invocation."""
     cmd = [
@@ -89,8 +89,7 @@ def run_combo(model, features, pca, pca_mode="slot", dry_run=False,
     label = f"{model} x {features}"
     if pca is not None:
         label += f" (pca={pca})"
-    if pca_mode != "slot":
-        label += f" [{pca_mode}]"
+    label += f" [{pca_mode}]"
 
     print(f"\n{'_' * 60}")
     print(f"  RUNNING: {label}")
@@ -128,7 +127,7 @@ def expand_pca_sweep(spec):
     return combos
 
 
-def aggregate_results(start_time, combos, pca_mode="slot", dry_run=False,
+def aggregate_results(start_time, combos, pca_mode="flat", dry_run=False,
                       out_root=None):
     """Run extract_model_metrics.py to build performance table."""
     if out_root and out_root != ".":
@@ -282,8 +281,8 @@ def main():
              "E.g. rf:handcrafted_sparse_esmc:1,13,26,66,218,718",
     )
     parser.add_argument(
-        "--pca-mode", type=str, default="slot", choices=["slot", "flat", "flat_raw"],
-        help="Window PCA scheme passed to 04_modelling (default: slot). "
+        "--pca-mode", type=str, default="flat", choices=["flat", "flat_raw"],
+        help="Window PCA scheme passed to 04_modelling (default: flat). "
              "'flat_raw' = no PCA, all raw dims (ignores --pca).",
     )
     parser.add_argument(
@@ -294,7 +293,8 @@ def main():
     parser.add_argument(
         "--out-root", type=str, default=None,
         help="Run-folder root shared by a whole submission "
-             "(e.g. runs/padfull_flat_20261001_1645), forwarded to each "
+             "(e.g. runs/4padmodes_and_PCA_handcrafted_sparse_with_embeddings), "
+             "forwarded to each "
              "04_modelling.py call; aggregate table goes under it. Default: "
              "each run auto-creates runs/<run_tag>_<timestamp>/; aggregate "
              "reads legacy + runs-wide globs into results/tables/.",

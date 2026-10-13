@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=padfull_flat
+#SBATCH --job-name=padmode_pca
 #SBATCH --partition=cpu
 #SBATCH --cpus-per-task=12
 #SBATCH --mem=96G
 #SBATCH --time=96:00:00
 #SBATCH --array=0-24%4
-#SBATCH --output=logs/padfull_flat_%A_%a.out
-#SBATCH --error=logs/padfull_flat_%A_%a.err
+#SBATCH --output=logs/padmode_pca_%A_%a.out
+#SBATCH --error=logs/padmode_pca_%A_%a.err
 
 set -euo pipefail
 
@@ -39,7 +39,7 @@ if [ -n "${RUN:-}" ]; then
 fi
 
 # Submit future grids with a timestamped run folder (paste, no new files needed):
-#   RUN="runs/padfull_flat_$(date +%Y%m%d_%H%M)"; mkdir -p "$RUN"/{models,logs/slurm,results,plots,data} && sbatch --job-name=padfull_flat --output="$RUN/logs/slurm/%A_%a.out" --error="$RUN/logs/slurm/%A_%a.err" --export=RUN="$RUN",ALL src/run/run_matrix_windows_flat_slurm.sh
+#   RUN="runs/padmode_pca_$(date +%Y%m%d_%H%M)"; mkdir -p "$RUN"/{models,logs/slurm,results,plots,data} && sbatch --job-name=padmode_pca --output="$RUN/logs/slurm/%A_%a.out" --error="$RUN/logs/slurm/%A_%a.err" --export=RUN="$RUN",ALL src/run/run_matrix_windows_flat_slurm.sh
 
 # ════════════════════════════════════════════════════════════════════════════
 # Ordered padmode × PC grid — XGBOOST ONLY.
@@ -81,7 +81,7 @@ CONFIGS=(
   "xgb|handcrafted_sparse_esmif_boundary|${ESMIF_MAIN}|flat"
   "xgb|handcrafted_sparse_esmif_eos_bos_repeat|${ESMIF_MAIN}|flat"
   # 8 baseline (structural + one-hot, NO embeddings)
-  "xgb|handcrafted_sparse|none|slot"
+  "xgb|handcrafted_sparse|none|flat"
   # 9-12 ESM-C 99%
   "xgb|handcrafted_sparse_esmc_win_zeropad|${ESMC_99}|flat"
   "xgb|handcrafted_sparse_esmc_win_padtoken|${ESMC_99}|flat"
@@ -111,7 +111,7 @@ FEAT="${REST%%|*}";  REST="${REST#*|}"
 PCA="${REST%%|*}"
 PCAMODE="${REST##*|}"
 
-# flat_raw ignores PCA (runs all raw dims); "none" placeholder for slot/flat
+# flat_raw ignores PCA (runs all raw dims); "none" placeholder for flat
 if [ "$PCAMODE" = "flat_raw" ]; then
   PCA_ARG="0"
 else

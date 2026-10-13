@@ -10,7 +10,7 @@ Exploratory, diagnostic, and one-off analysis scripts supporting the MHC-I antig
   - **ESM-C env** — `esm` 3.x package (EvolutionaryScale), Windows anaconda. From WSL: `/mnt/c/Users/olive/anaconda3/python.exe <script>`. See `requirements_esmc_working.txt`.
   - **ESM-IF env** — `fair-esm` 2.0.0, conda `esm_gpu` on the H100 cluster. `No module named 'esm.inverse_folding'` = wrong env. See `requirements_esmif_working.txt`.
   - Inspection/QA scripts (group E) and most analysis scripts need only h5py/pandas/matplotlib/sklearn — run in either env.
-- **Config import gotcha:** `02_datasplit_analysis.py`, `05_model_analysis.py`, `06_feature_importance.py` insert only `src/investigation` into `sys.path` yet `from config import ...` (config lives in `src/pipeline/python/`) → run with `PYTHONPATH=src/pipeline/python` or from that dir. `08_pca_variance_analysis.py`, `09_padmode_subset_auc.py`, `10_pad_subset_auc.py` bootstrap correctly; `07`, `09_sequence_consistency_audit`, `10_dynamic_coordinate_translation`, `11_isoform_structure_audit`, `12_indexing_audit`, `13_compare_slot_flat` don't need config.
+- **Config import gotcha:** `02_datasplit_analysis.py`, `05_model_analysis.py`, `06_feature_importance.py` insert only `src/investigation` into `sys.path` yet `from config import ...` (config lives in `src/pipeline/python/`) → run with `PYTHONPATH=src/pipeline/python` or from that dir. `08_pca_variance_analysis.py`, `09_padmode_subset_auc.py`, `10_pad_subset_auc.py` bootstrap correctly; `07`, `09_sequence_consistency_audit`, `10_dynamic_coordinate_translation`, `11_isoform_structure_audit`, `12_indexing_audit` don't need config.
 - **R scripts:** `04`, `09_numeric`, `10`, `11` `source("src/pipeline/r/functions.R")` → launch from repo root; `set_working_directory()` then hard-`setwd`s per username (`olive` → Windows path) and **stops on unknown users** (WSL `olivers` fails). `01`, `02` use plain relative paths, no `source()` — run from repo root.
 - Most scripts resolve `data/`, `models/`, `results/` relative to CWD → run from repo root unless noted.
 - **BLOSUM naming (changed 2026-10-12):** every run, filename, `features_key`, TSV entry, or annotation dated **before 2026-10-12** that says `blosum` or `handcrafted_blosum` refers to **BLOSUM50** — nothing else existed. New runs must use an explicit encoding key: `blosum50` / `blosum62` / `blosum80` / `kidera` / `atchley` (`get_feature_set_config("blosum")` now raises). `config.canonical_feature_set()` and the alias table in `extract_model_metrics.py` map legacy labels to `blosum50` when reading old results. Analysis scripts matching historical filenames (e.g. `15_padmode_significance.py`, `plot_padmode_data_compare.py`, `14_plot_grid_auc.py`, `16_esmc300_vs_600.py`) intentionally keep the old `blosum` strings — on-disk artifacts are unchanged.
@@ -31,7 +31,7 @@ Exploratory, diagnostic, and one-off analysis scripts supporting the MHC-I antig
 **Input** — `results/figures/models/pca_optimization/joint_pca_results_handcrafted_sparse_{esmc,esmif}.json` (125 pooled AUCs + per-fold winners) — missing today.
 **Output** — Single combined PNG `pca_sensitivity_analysis.png` (same dir): heatmaps, per-fold winner bars, ranked distribution, marginals, one-region sensitivity.
 **How** — `jsonlite` parse → ggplot2 + `patchwork` 20×35 in composite.
-**Notes** — Superseded by `08_pca_variance_analysis.py` + `09_padmode_subset_auc.py` + `10_pad_subset_auc.py` (slot/pad-mode work). Not re-runnable. Assumes exactly 6 outer folds (hardcoded 0:5).
+**Notes** — Superseded by `08_pca_variance_analysis.py` + `09_padmode_subset_auc.py` + `10_pad_subset_auc.py` (pad-mode work). Not re-runnable. Assumes exactly 6 outer folds (hardcoded 0:5).
 
 ### `04_data_overview_figures.R`
 **Purpose** — Thesis data-overview figures: positives/negatives pipeline Sankeys, NetMHCpan-vs-IEDB Venn, methods schematic.
@@ -126,11 +126,11 @@ Exploratory, diagnostic, and one-off analysis scripts supporting the MHC-I antig
 **Notes** — Only fully portable py script here (no config import, no bootstrap). Complements `05` (cross-run vs per-run). `--split heldout|cv`.
 
 ### `08_pca_variance_analysis.py`
-**Purpose** — How many PCA components per toolkit × pad mode for the 29-slot window embeddings; 3 PCA fit modes matching `04_modelling.py`.
+**Purpose** — How many PCA components per toolkit × pad mode for the 29-slot window embeddings; 2 PCA fit modes matching `04_modelling.py`.
 **Input** — `data/processed/embeddings/esmc_context_embeddings_{zeropad,impute_boundary,impute_bos_eos,padtoken}.h5` (`window_embeddings` [N,29,1152] + `pad_mask`) and `esm-if_test_{zero,pad,boundary,eos_bos_repeat}.h5` (`window_if_struct` [N,29,512] + `pad_mask`). Existence-checked upfront.
-**Output** — `results/figures/models/pca_optimization/<mode>/pca_variance_windows_<key>.{png,csv}` (+`_full` variants for flat-full; per-toolkit combined overlays). CSV: `component_idx, explained_variance_ratio, cumulative_variance`.
-**How** — `slot`: IncrementalPCA on real non-pad slots only (2048-row chunks, batch 32768) — matches `04_modelling` per-position PCA. `flat`: full-memory `PCA(svd_solver="randomized", random_state=42)` on fully-real rows flattened to 29·D, capped `--flat-n-components 1024`. `flat-full`: exact full spectrum via streamed Gram matrix `XᵀX` + center correction (~18 GB peak ESM-C / ~4 GB ESM-IF). Cross-mode validation (flat-full): zero/boundary/eos_bos_repeat spectra must match within 1e-6 per toolkit. Threshold table at 50/80/85/90/95/99%.
-**Notes** — CLI: `--pca-mode slot|flat|flat-full`, `--force`. CSV caching with validity checks. matplotlib optional (CSVs still written without it). Outputs consumed by `13_compare_slot_flat.py`.
+**Output** — `results/figures/models/pca_optimization/flat/pca_variance_windows_<key>.{png,csv}` (+`_full` variants for flat-full; per-toolkit combined overlays). CSV: `component_idx, explained_variance_ratio, cumulative_variance`.
+**How** — `flat`: full-memory `PCA(svd_solver="randomized", random_state=42)` on fully-real rows flattened to 29·D, capped `--flat-n-components 1024`. `flat-full`: exact full spectrum via streamed Gram matrix `XᵀX` + center correction (~18 GB peak ESM-C / ~4 GB ESM-IF). Cross-mode validation (flat-full): zero/boundary/eos_bos_repeat spectra must match within 1e-6 per toolkit. Threshold table at 50/80/85/90/95/99%.
+**Notes** — CLI: `--pca-mode flat|flat-full`, `--force`. CSV caching with validity checks. matplotlib optional (CSVs still written without it).
 
 ### `09_padmode_subset_auc.py`
 **Purpose** — Pad-mode comparison on the FLAT modelling grid: overall AUC cannot separate pad modes (real-slot signal identical) → recompute AUC on only the informative padded rows (~1443 terminus peptides per toolkit), XGBoost only.
@@ -140,18 +140,11 @@ Exploratory, diagnostic, and one-off analysis scripts supporting the MHC-I antig
 **Notes** — No CLI; hardcoded `models/flat` (prints server rsync hint if missing). Filename regex supports lr_l2/rf but reads xgb only. Overlaps `10_pad_subset_auc.py` — see relationship map.
 
 ### `10_pad_subset_auc.py`
-**Purpose** — Same question on the SLOT grid (default) + pairwise probability deltas between modes.
-**Input** — `models/slot/cv_results_xgb_handcrafted_sparse_esmc_win_*_pca9_*.json` (`--json-dir`, `--pattern`), `data/processed/embeddings_prepared/esmc_win_zeropad_prepared.h5` (`--pad-h5`: `pad_mask`, `folds`, `labels`, `pad_counts`), `df_all_with_folds.csv`.
+**Purpose** — Same question on the (now-archived) SLOT grid + pairwise probability deltas between modes. Reads archived results under `runs/slot_legacy/`; slot PCA mode has been removed from the pipeline, so no new inputs.
+**Input** — `runs/slot_legacy/**/cv_results_xgb_handcrafted_sparse_esmc_win_*_pca9_*.json` (`--json-dir`, `--pattern`), `data/processed/embeddings_prepared/esmc_win_zeropad_prepared.h5` (`--pad-h5`: `pad_mask`, `folds`, `labels`, `pad_counts`), `df_all_with_folds.csv`.
 **Output** — `results/tables/pad_subset_auc_<tag>/{<tag>.csv, _pivot.csv, _pairwise.csv, _rows.csv}` (`--save-rows`: per-row probabilities per mode + metadata).
 **How** — `pad_row = pad_mask.any(axis=1)` (any-pad — differs from 09's informative mask); reconstruct out-of-fold probability vectors via fold scatter; pad/real/global ROC-AUC + pad PR-AUC; pairwise |Δprob| stats between modes; label checks vs H5.
 **Notes** — CWD-dependent output. Generic `--json-dir`/`--pattern` could subsume `09_padmode`'s grid, but `09_padmode` stays purpose-built (flat grid, both toolkits) — both kept.
-
-### `13_compare_slot_flat.py`
-**Purpose** — Slot-PCA vs flat-PCA head-to-head anchored on ~50% cumulative explained variance (component counts differ between modes, EV makes them comparable).
-**Input** — `server_results/**/cv_results_*.json` (`--root server_results`); EV curves from `08`: `server_results/results/figures/models/pca_optimization/slot/*.csv` + `runs/padfull_flat_20261001_1645/plots/pca_variance/*_full.csv` (run folder hardcoded).
-**Output** — `results/tables/slot_vs_flat_{results,leaderboard,deltas_50ev}.tsv` + `results/figures/slot_vs_flat/{slot_vs_flat_auc, slot_vs_flat_curve, slot_vs_flat_padding}.png`.
-**How** — 8 feature sets × 3 models × 2 PCA modes × 3 PCA sweep values; map pca count → EV% off the 08 variance curve; dedup latest timestamp per config; flat−slot deltas at the ~50% EV anchor; coverage-gap report (expects 12 results per cell).
-**Notes** — Slot 85/95% EV points exceed the flat EV ceiling (~72%) → only the ~50% anchor is shared. Depends on 08 outputs + the modelling grid. Scope-locked PCA sets (`SLOT_PCA`/`FLAT_PCA` constants filter the sweep).
 
 ### `plot_padmode_data_compare.py`
 **Purpose** — 11-bar held-out AUC-ROC figure for the data-comparison grid: sparse one-hot AA, BLOSUM50, BLOSUM50+engineered, 4 ESM-C pad modes, 4 ESM-IF pad modes.
@@ -242,11 +235,11 @@ Inspection:
   legacy H5s (no longer on disk) → inspect_embeddings.py / report_structure_coverage.py / summarize_embeddings.py
 
 Modelling/analysis chain:
-  window H5s → pipeline 03_prepare_embeddings.py → embeddings_prepared/ → 04_modelling.py (slot|flat grids)
-      → models/{slot,flat}/cv_results_*.json
+  window H5s → pipeline 03_prepare_embeddings.py → embeddings_prepared/ → 04_modelling.py (flat|flat_raw grids)
+      → models/{flat,flat_raw}/cv_results_*.json
       → 05_model_analysis.py (per-run deep dive) / 07_compare_heldout_roc.py (cross-run overlay) / 06_feature_importance.py (from pickles)
-      → 08_pca_variance_analysis.py (EV curves) → 13_compare_slot_flat.py (slot vs flat @ ~50% EV)
-      → 09_padmode_subset_auc.py (flat grid, pad modes) / 10_pad_subset_auc.py (slot grid, pad modes)
+      → 08_pca_variance_analysis.py (EV curves)
+      → 09_padmode_subset_auc.py (flat grid, pad modes) / 10_pad_subset_auc.py (archived slot grid, pad modes)
       → extract_model_metrics.py TSV → plot_padmode_data_compare.py (11-bar figure)
 
 Structure/coordinate audit chain:
@@ -260,7 +253,7 @@ R analyses:
   09_numeric + 10_categorical + 11_structural logo — feature-association analyses on df_all*.csv
 ```
 
-`09_padmode_subset_auc.py` vs `10_pad_subset_auc.py` — same scientific question, different grids: 09 = flat grid, both toolkits, XGB, informative mask (≥1 pad AND ≥1 real) from raw H5 + `row_indices`; 10 = slot grid (default), ESM-C prepared H5, any-pad mask, pairwise Δprob + per-row export. 10's generic CLI could cover 09's grid, but 09 stays purpose-built; both kept.
+`09_padmode_subset_auc.py` vs `10_pad_subset_auc.py` — same scientific question, different grids: 09 = flat grid, both toolkits, XGB, informative mask (≥1 pad AND ≥1 real) from raw H5 + `row_indices`; 10 = archived slot grid, ESM-C prepared H5, any-pad mask, pairwise Δprob + per-row export. 10's generic CLI could cover 09's grid, but 09 stays purpose-built; both kept.
 
 ## Cross-cutting gotchas
 
@@ -287,8 +280,7 @@ R analyses:
 | `07_compare_heldout_roc.py` | Depends on models/ JSONs | Yes — fully portable |
 | `08_pca_variance_analysis.py` | Yes (8 window H5s) | Yes |
 | `09_padmode_subset_auc.py` | Needs `models/flat/` JSONs | Yes if dir present |
-| `10_pad_subset_auc.py` | Needs `models/slot/` JSONs | Yes |
-| `13_compare_slot_flat.py` | Needs `server_results/` | Yes if present |
+| `10_pad_subset_auc.py` | Needs archived `runs/slot_legacy/` JSONs | Yes |
 | `plot_padmode_data_compare.py` | Needs run TSV | Yes |
 | `embed_test_esmc*.py` | Yes (df_all.csv / none) | Yes — ESM-C env |
 | `embed_test_esmif*.py` | Yes (PDBs) | Yes — fair-esm env |

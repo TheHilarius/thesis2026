@@ -3,9 +3,8 @@
 08_pca_variance_analysis.py
 PCA variance analysis for per-residue window embeddings (fixed 29-mer).
 
-Fits IncrementalPCA on pooled real residue slots (N×29_real, D) — matching
-the PCA fit in 04_modelling.fit_window_pca — and plots cumulative explained
-variance vs number of components.
+Fits flattened-window PCA on fully-real window rows and plots cumulative
+explained variance vs number of components.
 
 Inputs:
     data/processed/embeddings/esmc_context_embeddings_{zeropad,impute_boundary,
@@ -17,13 +16,11 @@ Inputs:
                                         — window_if_struct [N,29,512]
 
 PCA modes:
-    slot     — per-position IncrementalPCA (legacy; matches 04_modelling
-               old slot path)
     flat     — flattened-window randomized SVD, capped at --flat-n-components;
                representative set only (FLAT_SETS: zeropad/zero)
     flat-full — EXACT full spectrum via streaming Gram + eigvalsh over ALL 8
-               files (4 pad modes × 2 toolkits, WINDOW_SETS — parity with
-               slot). DEFAULT. Peak RAM ≈ 18 GB per ESM-C fit (D=1152),
+               files (4 pad modes × 2 toolkits, WINDOW_SETS). DEFAULT.
+               Peak RAM ≈ 18 GB per ESM-C fit (D=1152),
                ≈4 GB ESM-IF.
                Outputs get `_full` suffix; cross-mode identity asserted on
                zero/boundary/eos_bos_repeat (padtoken/pad exempt — shifted
@@ -64,7 +61,7 @@ try:
     HAS_MPL = True
 except ImportError:
     HAS_MPL = False
-from sklearn.decomposition import IncrementalPCA, PCA
+from sklearn.decomposition import PCA
 from pathlib import Path
 from datetime import datetime
 
@@ -144,11 +141,10 @@ OUT_DIR = FIGURES_DIR / "pca_optimization"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 CHUNK = 2048
-PCA_BATCH = 32768
 
 # Representative sources for capped `flat` mode only (--pca-mode flat).
-# flat-full iterates WINDOW_SETS (all 8 files) for parity with slot;
-# slot/flat-full do not consult this dict.
+# flat-full iterates WINDOW_SETS (all 8 files); only `flat` consults
+# this dict.
 FLAT_SETS = {
     # ESM-IF first: cheap (~4 GB), validates numerics before ESM-C.
     "esmif_flat": (
@@ -163,64 +159,6 @@ FLAT_SETS = {
     ),
 }
 FLAT_N_COMPONENTS = 1024
-
-
-# ── Stream real (non-pad, non-zero-norm) residue slots ────────────────────────
-def stream_real_slots(raw_path: Path, ds_name: str, chunk: int = CHUNK):
-    """
-    Yield blocks of real residue slot vectors [m, D] from the raw window HDF5.
-
-    Matches 04_modelling._stream_window_slots: reshape (N,29,D) -> (N*29, D),
-    exclude pad_mask=True and zero-norm rows.
-    """
-    with h5py.File(raw_path, "r") as f:
-        W = f[ds_name]
-        M = f["pad_mask"]
-        n = W.shape[0]
-
-        for i0 in range(0, n, chunk):
-            block = W[i0 : i0 + chunk]          # (c, 29, D)
-            mblock = M[i0 : i0 + chunk]         # (c, 29) bool/uint8
-            c = block.shape[0]
-
-            flat = block.reshape(c * 29, block.shape[-1]).astype(np.float32)
-            flat_mask = mblock.reshape(-1)
-
-            # convert uint8 mask to bool if needed
-            if flat_mask.dtype != bool:
-                flat_mask = flat_mask.astype(bool)
-
-            real = ~flat_mask
-            slots = flat[real]
-
-            # exclude zero-norm rows
-            norms = np.linalg.norm(slots, axis=1)
-            nonzero = norms > 0.0
-            yield slots[nonzero]
-
-
-# ── Fit PCA streaming ─────────────────────────────────────────────────────────
-def fit_pca_streaming(raw_path: Path, ds_name: str, emb_dim: int):
-    """
-    Fit IncrementalPCA with n_components=emb_dim on streamed real slots.
-    Returns (explained, cumulative) numpy arrays.
-    """
-    ipca = IncrementalPCA(n_components=emb_dim, batch_size=PCA_BATCH)
-
-    n_slots = 0
-    n_kept = 0
-    for block in stream_real_slots(raw_path, ds_name):
-        n_slots += block.shape[0]
-        n_kept += block.shape[0]
-        ipca.partial_fit(block.astype(np.float64))
-
-    explained = ipca.explained_variance_ratio_
-    cumulative = np.cumsum(explained)
-
-    print(f"    slots streamed: {n_slots}, kept (real+nonzero): {n_kept}")
-    print(f"    top-10 PCs explain: {cumulative[min(9, len(cumulative)-1)] * 100:.1f}%")
-
-    return explained, cumulative
 
 
 # ── Flat (flattened-window) streaming + PCA fit ───────────────────────────────
@@ -478,11 +416,11 @@ if __name__ == "__main__":
     )
     ap.add_argument(
         "--pca-mode", type=str, default="flat-full",
-        choices=["slot", "flat", "flat-full"],
+        choices=["flat", "flat-full"],
         help="'flat-full' (default; exact full spectrum via Gram + eigvalsh "
-             "over all 8 files; ~18 GB RAM per ESM-C fit), 'flat' "
+             "over all 8 files; ~18 GB RAM per ESM-C fit), or 'flat' "
              "(flattened-window, capped at --flat-n-components, "
-             "representative set), or 'slot' (legacy per-position PCA)",
+             "representative set)",
     )
     ap.add_argument(
         "--flat-n-components", type=int, default=FLAT_N_COMPONENTS,
@@ -505,21 +443,20 @@ if __name__ == "__main__":
     ap.add_argument(
         "--out-dir", type=str, default=None,
         help="Override the output directory (e.g. a run folder's "
-             "plots/pca_variance/). Default: pca_optimization/<slot|flat>.",
+             "plots/pca_variance/). Default: pca_optimization/flat/.",
     )
     args = ap.parse_args()
 
-    # Outputs live in per-mode subfolders: slot/, flat/ (flat + flat-full
-    # share flat/ — filenames differ by the _full suffix). --out-dir
-    # overrides (e.g. a run folder's plots/pca_variance/).
-    mode_dir = "slot" if args.pca_mode == "slot" else "flat"
-    OUT_DIR = Path(args.out_dir) if args.out_dir else OUT_DIR / mode_dir
+    # Outputs live in the flat/ subfolder (flat and flat-full share it —
+    # filenames differ by the _full suffix). --out-dir overrides
+    # (e.g. a run folder's plots/pca_variance/).
+    OUT_DIR = Path(args.out_dir) if args.out_dir else OUT_DIR / "flat"
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     if args.pca_mode == "flat":
         sets = FLAT_SETS
     else:
-        # slot AND flat-full: all 8 (4 modes × 2 toolkits) for parity
+        # flat-full: all 8 (4 modes × 2 toolkits)
         sets = WINDOW_SETS
 
     if args.only:
@@ -581,10 +518,8 @@ if __name__ == "__main__":
         out_csv = OUT_DIR / f"pca_variance_windows_{key}{suffix}.csv"
         if args.pca_mode == "flat-full":
             expected_n = 29 * emb_dim
-        elif args.pca_mode == "flat":
-            expected_n = int(min(args.flat_n_components, 29 * emb_dim))
         else:
-            expected_n = int(emb_dim)
+            expected_n = int(min(args.flat_n_components, 29 * emb_dim))
         cached = None if args.force else load_existing_curve(out_csv, expected_n)
         if cached is not None:
             explained, cumulative = cached
@@ -602,8 +537,6 @@ if __name__ == "__main__":
             print(f"  flat dims: {n_feat}, fitting n_components={n_comp}")
             explained, cumulative = fit_pca_streaming_flat(
                 raw_path, ds_name, n_comp)
-        else:
-            explained, cumulative = fit_pca_streaming(raw_path, ds_name, emb_dim)
 
         thresholds_info = find_threshold_components(cumulative, THRESHOLDS)
 
