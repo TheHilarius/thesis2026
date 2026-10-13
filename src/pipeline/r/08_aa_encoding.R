@@ -105,7 +105,14 @@ for (enc in names(ENCODINGS)) {
   
   cat("Output dimensions:", nrow(df_all), "x", ncol(df_all), "\n")
   
-  write_csv(features, paste0("data/processed/df_", enc, ".csv"))
+  # Solo CSV: encoded cols + peptide/label keys (keys enable 04_modelling's
+  # row-alignment check; they are not model features)
+  df_solo <- bind_cols(
+    df_raw |> select(peptide, label),
+    features
+  )
+  
+  write_csv(df_solo, paste0("data/processed/df_", enc, ".csv"))
   cat("Saved: data/processed/df_", enc, ".csv\n", sep = "")
   write_csv(df_all, paste0("data/processed/df_all_", enc, ".csv"))
   cat("Saved: data/processed/df_all_", enc, ".csv\n", sep = "")
@@ -164,7 +171,7 @@ for (enc in names(ENCODINGS)) {
 }
 
 cat("\nNon-position columns:", length(non_position_cols), "\n")
-cat("df_<enc>.csv: encoded position columns only.\n")
+cat("df_<enc>.csv: peptide + label keys + encoded position columns only.\n")
 cat("df_all_<enc>.csv: encoded columns + all non-position columns.\n")
 cat("Column naming: {position}_{aa} for sparse/BLOSUMs, {position}_KF*/AF* for\n")
 cat("kidera/atchley, e.g. P2_L, N4_A, P2_KF1, C1_AF3.\n")

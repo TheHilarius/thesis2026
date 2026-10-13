@@ -135,3 +135,6 @@ runs/padmode_choice/xgb_*
 logs/*.txt
 logs/slot/
 logs/flat/
+runs/*/models/**/*.pkl
+runs/slot_legacy/**/*.json
+runs/slot_legacy/*/*.json

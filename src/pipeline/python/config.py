@@ -22,12 +22,14 @@ RAW_DATA_PATH = DATA_DIR / "df_all.csv"
 SPLIT_DATA_PATH = DATA_DIR / "df_all_with_folds.csv"
 
 # Alternate CSVs with encoded positional AA columns
-SPARSE_DATA_PATH = DATA_DIR / "df_all_sparse.csv"
-BLOSUM50_DATA_PATH = DATA_DIR / "df_all_blosum50.csv"
-BLOSUM62_DATA_PATH = DATA_DIR / "df_all_blosum62.csv"
-BLOSUM80_DATA_PATH = DATA_DIR / "df_all_blosum80.csv"
-KIDERA_DATA_PATH = DATA_DIR / "df_all_kidera.csv"
-ATCHLEY_DATA_PATH = DATA_DIR / "df_all_atchley.csv"
+# df_<enc>.csv: peptide+label keys + encoded cols only (used by modelling)
+# df_all_<enc>.csv: encoded + all non-position cols (for R/analyses)
+SPARSE_DATA_PATH = DATA_DIR / "df_sparse.csv"
+BLOSUM50_DATA_PATH = DATA_DIR / "df_blosum50.csv"
+BLOSUM62_DATA_PATH = DATA_DIR / "df_blosum62.csv"
+BLOSUM80_DATA_PATH = DATA_DIR / "df_blosum80.csv"
+KIDERA_DATA_PATH = DATA_DIR / "df_kidera.csv"
+ATCHLEY_DATA_PATH = DATA_DIR / "df_atchley.csv"
 
 # ──────────────────────────────────────────────
 # EMBEDDING PATHS & SCHEMAS
@@ -652,6 +654,31 @@ FEATURE_SETS = {
         "components": ["esmif_eos_bos_repeat"],
     },
 }
+
+# ── Generated AA-encoding feature sets ──
+# handcrafted_<enc> (structural + encoding) and
+# handcrafted_<enc>_<emb> for the two optimum-PC embeddings under study.
+# Existing entries (e.g. handcrafted_sparse, handcrafted_sparse_esmif_eos_bos_repeat)
+# are kept as-is.
+_AA_ENCODINGS = ["sparse", "blosum50", "blosum62", "blosum80", "kidera", "atchley"]
+_AA_DISPLAY = {
+    "sparse": "one-hot", "blosum50": "BLOSUM50", "blosum62": "BLOSUM62",
+    "blosum80": "BLOSUM80", "kidera": "Kidera factors", "atchley": "Atchley factors",
+}
+_AA_EMB_PAIRS = [
+    ("esmif_eos_bos_repeat", "ESM-IF eos/bos-repeat"),
+    ("esmc300m_win_padtoken", "ESM-C-300M pad-token"),
+]
+for _e in _AA_ENCODINGS:
+    _ed = _AA_DISPLAY[_e]
+    _generated = {f"handcrafted_{_e}": (f"Structural + {_ed}", ["handcrafted", _e])}
+    for _emb, _elab in _AA_EMB_PAIRS:
+        _generated[f"handcrafted_{_e}_{_emb}"] = (
+            f"Structural + {_ed} + {_elab}", ["handcrafted", _e, _emb])
+    for _k, (_dn, _comps) in _generated.items():
+        if _k not in FEATURE_SETS:
+            FEATURE_SETS[_k] = {"display_name": _dn, "components": _comps}
+del _e, _ed, _generated, _emb, _elab, _k, _dn, _comps
 
 DEFAULT_FEATURE_SET = "handcrafted"
 
