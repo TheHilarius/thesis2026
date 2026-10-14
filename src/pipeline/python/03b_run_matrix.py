@@ -30,6 +30,7 @@ DEFAULT_KEYS = [
     "esmif_zero", "esmif_pad", "esmif_boundary", "esmif_eos_bos_repeat",
     "esmc_win_zeropad", "esmc_win_padtoken",
     "esmc_win_impute_bos_eos", "esmc_win_impute_boundary",
+    "esmc6b_win_padtoken",
 ]
 
 

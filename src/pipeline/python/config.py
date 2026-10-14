@@ -290,6 +290,26 @@ EMBEDDING_SOURCES = {
         "has_row_indices": True,
         "has_start_end": False,
     },
+    # ── ESM-C (6B) fixed-29 window embeddings ──
+    # Same schema as the 600M/300M windows; emb_dim=2560 (d_model of esmc_6b).
+    "esmc6b_win_padtoken": {
+        "display_name": "ESM-C (6B) windows (pad-token)",
+        "kind": "windows",
+        "raw_path": EMBEDDING_DIR / "esmc6b_context_embeddings_padtoken.h5",
+        "prepared_path": PREPARED_EMBEDDING_DIR / "esmc6b_win_padtoken_prepared.h5",
+        "window_ds": "window_embeddings",
+        "pad_mask_ds": "pad_mask",
+        "n_pad_ds": None,
+        "c_pad_ds": None,
+        "status_ds": None,
+        "emb_dim": 2560,
+        "window": 29,
+        "pad_mode": "pad_token",
+        "peptide_id_col": "peptide",
+        "uniprot_id_col": "uniprot_id",
+        "has_row_indices": True,
+        "has_start_end": False,
+    },
 }
 
 EMBEDDING_REGIONS = ["context_emb"]
@@ -479,6 +499,13 @@ FEATURE_COMPONENTS = {
         "embedding_key": "esmc300m_win_impute_boundary",
         "pca_components": 64,
     },
+    # ── ESM-C 6B windows (D=2560) ──
+    "esmc6b_win_padtoken": {
+        "display_name": "ESM-C-6B windows (pad-token, 29x2560)",
+        "type": "embedding_windows",
+        "embedding_key": "esmc6b_win_padtoken",
+        "pca_components": 64,
+    },
 }
 
 # ──────────────────────────────────────────────
@@ -637,6 +664,11 @@ FEATURE_SETS = {
         "display_name": "ESM-C-300M windows only (impute-boundary)",
         "components": ["esmc300m_win_impute_boundary"],
     },
+    # ── ESM-C 6B (D=2560) ──
+    "emb_esmc6b_win_padtoken": {
+        "display_name": "ESM-C-6B windows only (pad-token)",
+        "components": ["esmc6b_win_padtoken"],
+    },
     "emb_esmif_win": {
         "display_name": "ESM-IF windows only (zero)",
         "components": ["esmif_win"],
@@ -668,6 +700,7 @@ _AA_DISPLAY = {
 _AA_EMB_PAIRS = [
     ("esmif_eos_bos_repeat", "ESM-IF eos/bos-repeat"),
     ("esmc300m_win_padtoken", "ESM-C-300M pad-token"),
+    ("esmc6b_win_padtoken", "ESM-C-6B pad-token"),
 ]
 for _e in _AA_ENCODINGS:
     _ed = _AA_DISPLAY[_e]
