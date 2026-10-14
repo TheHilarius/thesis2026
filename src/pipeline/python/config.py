@@ -688,10 +688,10 @@ FEATURE_SETS = {
 }
 
 # ── Generated AA-encoding feature sets ──
-# handcrafted_<enc> (structural + encoding) and
-# handcrafted_<enc>_<emb> for the two optimum-PC embeddings under study.
-# Existing entries (e.g. handcrafted_sparse, handcrafted_sparse_esmif_eos_bos_repeat)
-# are kept as-is.
+# <enc> (encoding alone), handcrafted_<enc> (structural + encoding),
+# <enc>_<emb> (encoding + embedding, no structural) and
+# handcrafted_<enc>_<emb> (all three).
+# Existing entries are kept as-is.
 _AA_ENCODINGS = ["sparse", "blosum50", "blosum62", "blosum80", "kidera", "atchley"]
 _AA_DISPLAY = {
     "sparse": "one-hot", "blosum50": "BLOSUM50", "blosum62": "BLOSUM62",
@@ -706,6 +706,8 @@ for _e in _AA_ENCODINGS:
     _ed = _AA_DISPLAY[_e]
     _generated = {f"handcrafted_{_e}": (f"Structural + {_ed}", ["handcrafted", _e])}
     for _emb, _elab in _AA_EMB_PAIRS:
+        _generated[f"{_e}_{_emb}"] = (
+            f"{_ed} + {_elab}", [_e, _emb])
         _generated[f"handcrafted_{_e}_{_emb}"] = (
             f"Structural + {_ed} + {_elab}", ["handcrafted", _e, _emb])
     for _k, (_dn, _comps) in _generated.items():
