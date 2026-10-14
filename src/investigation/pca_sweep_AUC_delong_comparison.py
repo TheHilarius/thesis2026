@@ -4,24 +4,45 @@ pca_sweep_AUC_delong_comparison.py
 AUC-vs-PC-count comparison for the two PCA k-sweeps, with paired DeLong.
 
 Campaigns (both nested-CV XGB, flat PCA, one padmode each):
-    esmif_eos_sweep     ESM-IF EOS/BOS-repeat   k = 345/2125/2974/6700/11243
-    esmc300m_pca_sweep  ESM-C-300M pad-token    k = 96/2278/3663/5883/9854
+    esmif_eos_sweep     ESM-IF EOS/BOS-repeat   k = 47..11243 (30-99% EV)
+    esmc300m_pca_sweep  ESM-C-300M pad-token    k = 7..9854 (30-95% EV);
+                        k=17909 (99% EV) still running — drawn as a
+                        pending ghost slot until its JSON lands
 
-Per campaign emits (into <campaign>/plots/):
-    pca_sweep_auc_full.png      pooled held-out AUC vs k (log-x), DeLong
-                                brackets vs the 90%-EV anchor k, dashed
-                                handcrafted_sparse ceiling reference
-    pca_sweep_auc_subset.png    same on the informative padded subset
-    pca_sweep_runtime.png       core-hours per k (log-y), fold-seconds
-                                paired t-test vs anchor (Nadeau-Bengio)
-    pca_sweep_results.csv       per-k metrics + runtime (maxrss=NA:
-                                JobAcctGather=none, finished-job cgroups
-                                are gone — runtime carries the cost story)
-    pca_sweep_delong.csv        all pairwise + vs-anchor + vs-best DeLong
-                                tests, Holm-adjusted within each family
+Per campaign emits (into <campaign>/plots/), --refs both (default):
+    pca_sweep_auc_full.png              bars; DeLong brackets (stars only,
+                                        only for k significantly different
+                                        from the best-AUC reference k),
+                                        BLOSUM50 + Sparse baseline lines
+    pca_sweep_auc_full_nobaselines.png  same without the baseline lines
+    pca_sweep_auc_line.png              clean log-x line + markers,
+                                        baselines, no p-values
+    pca_sweep_auc_line_nobaselines.png  same without baselines
+    pca_sweep_auc_roi.png               ROI band figure: k's inside
+                                        cfg['roi_ev'] only, stacked
+                                        bracket band per candidate anchor
+                                        (cfg['anchor_sets']) with
+                                        p (p_adj) labels
+    pca_sweep_auc_roi_nobaselines.png   same without baselines
+    pca_sweep_runtime.png               core-hours per k (log-y),
+                                        fold-seconds paired t-test vs the
+                                        best-AUC reference k; peak memory
+                                        was NOT recorded (JobAcctGather=none)
+    pca_sweep_results.csv               per-k metrics + runtime
+                                        (maxrss=NA except live-measured
+                                        points)
+    pca_sweep_delong.csv                all pairwise + vs-anchor + vs-best
+                                        DeLong tests, Holm-adjusted per
+                                        family
 
-Anchor k = 90%-EV operating point: esmif 4308 (external JSON from
-padmode_choice — absent from the sweep ladder), esmc300 5883 (in-ladder).
+All figures: title "PCA dimension sweep: <campaign>" (runtime: "Compute
+cost by PCA dimensionality: ..."), x = "Number of PCs" with ticks
+"k (EV%)", y = "Held-out AUC".  No in-figure captions — thesis figure
+captions live outside the plots.
+
+Reference k (hatched bar / open marker / bold tick / t-test) = best-AUC
+ladder k.  The 90%-EV anchor (esmif 4308 external JSON, esmc300 5883)
+stays a regular data point + its own DeLong family in the CSVs.
 
 Optimum-PC rule (printed + CSV): smallest ladder k statistically
 indistinguishable (paired DeLong, Holm) from the best-AUC ladder k.
@@ -43,6 +64,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.ticker import NullLocator
 from scipy.stats import norm, t as t_dist, ttest_rel
 from sklearn.metrics import roc_auc_score
 
@@ -57,41 +79,62 @@ PADMASK_FILES = {
     "ESM-IF": EMBEDDING_DIR / "esm-if_test_zero.h5",
 }
 
-HC_JSON = (PROJECT_ROOT / "runs" / "padmode_choice" / "models" / "flat" /
-           "cv_results_xgb_handcrafted_sparse_flat_20261009_124007.json")
+# Baseline XGB runs (flat, same nested-CV protocol) drawn as reference lines.
+REF_JSONS = {
+    "BLOSUM50": (PROJECT_ROOT / "runs" / "padmode_choice" / "models" / "flat" /
+                 "cv_results_xgb_blosum_flat_20261007_143220.json"),
+    "Sparse": (PROJECT_ROOT / "runs" / "padmode_choice" / "models" / "flat" /
+               "cv_results_xgb_sparse_flat_20261007_142819.json"),
+}
 
 CAMPAIGNS = {
     "esmif_eos_sweep": {
         "models": PROJECT_ROOT / "runs" / "esmif_eos_sweep" / "models" / "flat",
         "out": PROJECT_ROOT / "runs" / "esmif_eos_sweep" / "plots",
-        "ladder": [345, 2125, 2974, 6700, 11243],
-        "ev": {345: 50, 2125: 80, 2974: 85, 6700: 95, 11243: 99,
+        "ladder": [47, 176, 345, 632, 850, 1143, 1548,
+                   2125, 2974, 6700, 11243],
+        "ev": {47: 30, 176: 40, 345: 50, 632: 60, 850: 65, 1143: 70,
+               1548: 75, 2125: 80, 2974: 85, 6700: 95, 11243: 99,
                4308: 90},
         "mask": "ESM-IF",
         "color": "#4477AA",
         "title": "ESM-IF EOS/BOS-repeat",
         "anchor": 4308,
+        "roi_ev": (40, 85),          # ROI band figure: 40-85% EV
+        "anchor_sets": [632, 850, 1143],  # 60 / 65 / 70% EV candidates
         "anchor_json": (PROJECT_ROOT / "runs" / "padmode_choice" /
                         "models" / "flat" /
                         "cv_results_xgb_emb_esmif_eos_bos_repeat_pca4308_flat_20261008_032609.json"),
-        "wall_h": {345: 1.925, 2125: 5.936, 2974: 11.353, 6700: 22.672,
+        "wall_h": {47: 1.805, 176: 1.738, 345: 1.925, 632: 3.885,
+                   850: 3.157, 1143: 3.729, 1548: 6.526,
+                   2125: 5.936, 2974: 11.353, 6700: 22.672,
                    11243: 34.325, 4308: 10.507},
-        "cores": {345: 8, 2125: 12, 2974: 12, 6700: 12, 11243: 12,
-                  4308: 12},
+        "cores": {47: 8, 176: 8, 345: 8, 632: 8, 850: 8, 1143: 8,
+                  1548: 12, 2125: 12, 2974: 12, 6700: 12,
+                  11243: 12, 4308: 12},
     },
     "esmc300m_pca_sweep": {
         "models": PROJECT_ROOT / "runs" / "esmc300m_pca_sweep" / "models" / "flat",
         "out": PROJECT_ROOT / "runs" / "esmc300m_pca_sweep" / "plots",
-        "ladder": [96, 2278, 3663, 5883, 9854],
-        "ev": {96: 50, 2278: 80, 3663: 85, 5883: 90, 9854: 95},
+        "ladder": [7, 29, 96, 291, 507, 856, 1403,
+                   2278, 3663, 5883, 9854],
+        "ev": {7: 30, 29: 40, 96: 50, 291: 60, 507: 65, 856: 70,
+               1403: 75, 2278: 80, 3663: 85, 5883: 90, 9854: 95,
+               17909: 99},
+        "pending": [17909],  # k=17909 (99% EV) still running (job 83438)
         "mask": "ESM-C",
         "color": "#EE6677",
         "title": "ESM-C-300M pad-token",
         "anchor": 5883,
+        "roi_ev": (70, 95),          # ROI band figure: 70-95% EV
+        "anchor_sets": [1403, 2278, 3663],  # 75 / 80 / 85% EV candidates
         "anchor_json": None,  # in-ladder
-        "wall_h": {96: 3.051, 2278: 14.484, 3663: 9.557, 5883: 13.513,
+        "wall_h": {7: 2.584, 29: 2.914, 96: 3.051, 291: 3.351,
+                   507: 4.124, 856: 4.769, 1403: 7.711,
+                   2278: 14.484, 3663: 9.557, 5883: 13.513,
                    9854: 27.545},
-        "cores": {96: 8, 2278: 12, 3663: 12, 5883: 12, 9854: 12},
+        "cores": {7: 8, 29: 8, 96: 8, 291: 8, 507: 8, 856: 8,
+                  1403: 12, 2278: 12, 3663: 12, 5883: 12, 9854: 12},
     },
 }
 
@@ -224,123 +267,330 @@ def holm_family(pairs, key="p"):
 
 
 # ── plotting helpers ────────────────────────────────────────────────
-def draw_bracket(ax, x0, x1, y, text, h):
+# Baseline line styles. Both are AA encodings — same Tol-grey as the
+# "AA encoding" bars in plot_padmode_data_compare (#BBBBBB); the two are
+# told apart by linestyle (dashed vs dotted).
+REF_STYLE = {
+    "BLOSUM50": dict(color="#BBBBBB", ls="--"),
+    "Sparse": dict(color="#BBBBBB", ls=":"),
+}
+
+
+def draw_reference_lines(ax, refs, min_sep=0.035):
+    """Horizontal baseline lines + direct labels in the right margin."""
+    if not refs:
+        return
+    items = sorted(refs.items(), key=lambda kv: kv[1])
+    label_y = []
+    for _, v in items:  # nudge labels apart; the line itself stays at v
+        label_y.append(v if not label_y else max(v, label_y[-1] + min_sep))
+    for (name, v), ly in zip(items, label_y):
+        st = REF_STYLE.get(name, dict(color="0.4", ls="-."))
+        ax.axhline(v, color=st["color"], ls=st["ls"], lw=1.1, zorder=3.5)
+        ax.text(1.008, ly, f"{name} {v:.4f}", transform=ax.get_yaxis_transform(),
+                ha="left", va="center", fontsize=8, color=st["color"])
+
+
+def draw_bracket(ax, x0, x1, y, text, h, fontsize=9, ha="center", x=None):
     ax.plot([x0, x0, x1, x1], [y - h, y, y, y - h],
-            color="0.35", lw=0.8, zorder=3)
-    ax.text((x0 + x1) / 2, y, text, ha="center", va="bottom",
-            fontsize=7.5, color="0.2", zorder=3)
+            color="0.35", lw=0.8, zorder=3, solid_joinstyle="miter")
+    if text:
+        ax.text(x if x is not None else (x0 + x1) / 2, y, text,
+                ha=ha, va="bottom", fontsize=fontsize, color="0.2", zorder=3)
 
 
-def plot_auc(cfg, models, ref_auc, pairs_vs_anchor, out_png):
-    """Padmode_choice-style bars: pooled AUC ± outer-fold std, y 0-1,
-    value labels, hatched anchor, vs-anchor DeLong brackets."""
-    ks = sorted(models)
-    anchor = cfg["anchor"]
-    pos = np.arange(len(ks))
-    pooled = np.array([models[k]["auc"] for k in ks])
-    ostd = np.array([np.std(models[k]["outer"], ddof=1) for k in ks])
+def _sig_label(pr):
+    """Bracket label: stars only (thresholds live in the thesis caption);
+    brackets are only drawn for significant pairs anyway."""
+    return stars(pr["p_adj"])
 
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.axhline(ref_auc, color="0.45", ls=":", lw=1.0, zorder=2)
-    ax.text(len(ks) - 0.5, ref_auc, f"handcrafted_sparse {ref_auc:.3f}",
-            fontsize=7.5, color="0.45", va="bottom", ha="right")
 
-    bars = ax.bar(pos, pooled, yerr=ostd, color=cfg["color"], alpha=0.85,
-                  capsize=3, edgecolor="white", lw=0.5, zorder=3)
-    for i, k in enumerate(ks):
-        if k == anchor:
-            bars[i].set_hatch("//")
-            bars[i].set_edgecolor("0.2")
-        ax.text(i, pooled[i] + ostd[i] + 0.015, f"{pooled[i]:.3f}",
-                ha="center", va="bottom", fontsize=8)
+def _check_label_overlaps(fig, tag=""):
+    """Print any overlapping rendered text bboxes (cheap layout self-check)."""
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    texts = [t for t in fig.texts + [t for ax in fig.axes for t in ax.texts]]
+    boxes = []
+    for t in texts:
+        s = t.get_text().strip()
+        if not s or not t.get_visible():
+            continue
+        bb = t.get_window_extent(renderer=r)
+        boxes.append((s, bb))
+    overlaps = 0
+    for i in range(len(boxes)):
+        for j in range(i + 1, len(boxes)):
+            if boxes[i][1].overlaps(boxes[j][1]):
+                overlaps += 1
+                if overlaps <= 8:
+                    print(f"    overlap{'[' + tag + ']' if tag else ''}: "
+                          f"{boxes[i][0]!r} <-> {boxes[j][0]!r}")
+    if overlaps:
+        print(f"    ({overlaps} overlapping label pair(s))")
+    else:
+        print("    label layout clean (no overlaps)")
 
-    ax.set_ylim(0, 1)
-    y_span = 1.0
-    # brackets vs anchor, staggered 3 levels, skipping the anchor bar itself
-    anchor_i = ks.index(anchor)
-    others = [(i, pr) for i, pr in
-              ((ks.index(pr["k1"]), pr) for pr in pairs_vs_anchor)]
-    for rank, (i, pr) in enumerate(sorted(others, key=lambda t: t[0])):
-        lvl = 0.82 - 0.06 * (rank % 3)
-        draw_bracket(ax, float(i), float(anchor_i), lvl,
-                     f"p={pr['p']:.2g}, p_adj={pr['p_adj']:.2g} "
-                     f"({stars(pr['p_adj'])})", h=0.02)
 
-    ax.set_xticks(pos)
-    ax.set_xticklabels([f"{k}\n{cfg['ev'][k]}% EV" for k in ks], fontsize=8)
-    ax.set_xlabel("PCA components k")
-    ax.set_ylabel("Held-out AUC (full data)")
-    ax.set_title(f"Held-out AUC vs PCA components — {cfg['title']}")
-    ax.grid(True, axis="y", alpha=0.3)
-    fig.tight_layout()
+def _tick_label(cfg, k, pending):
+    tag = " pending" if k in pending else ""
+    return f"{k} ({cfg['ev'][k]}%{tag})"
+
+
+def _finish(fig, ax, title, out_png):
+    """Suptitle only — no in-figure caption text (thesis captions live
+    outside the plots)."""
+    fig.suptitle(title, fontsize=12, y=0.97)
+    fig.tight_layout(rect=(0, 0, 1, 0.95))
+    _check_label_overlaps(fig, tag=out_png.stem)
     fig.savefig(out_png, dpi=200, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"  Saved: {out_png}")
 
 
-def plot_line(cfg, models, ref_auc, out_png):
-    """Clean trend companion: log-x line + markers, NO brackets/p-values."""
+def plot_auc(cfg, models, refs, pairs_vs_ref, out_png, ref_k,
+             alpha=0.05, min_delta=0.0):
+    """Pooled AUC ± outer-fold std bars, hatched best-AUC reference k,
+    baseline lines, and brackets to the reference ONLY for k's
+    significantly different from it (pairs_vs_ref = vs_best family).
+    cfg['pending'] k's (results not in yet) get an empty ghost slot."""
     ks = sorted(models)
-    anchor = cfg["anchor"]
+    pending = sorted(cfg.get("pending", []))
+    ref_i = ks.index(ref_k)
+    pos = np.arange(len(ks))
+    pooled = np.array([models[k]["auc"] for k in ks])
+    ostd = np.array([np.std(models[k]["outer"], ddof=1) for k in ks])
+
+    # ---- which k's get a bracket -------------------------------------
+    sig = [pr for pr in pairs_vs_ref
+           if pr["p_adj"] < alpha and abs(pr["delta"]) >= min_delta]
+    dist = lambda pr: abs(ks.index(pr["k1"]) - ref_i)
+    left = sorted((pr for pr in sig if ks.index(pr["k1"]) < ref_i), key=dist)
+    right = sorted((pr for pr in sig if ks.index(pr["k1"]) > ref_i), key=dist)
+    n_levels = max(len(left), len(right), 1)
+
+    # ---- vertical layout: brackets sit above bars AND baselines -------
+    h, step, gap = 0.012, 0.045, 0.06
+    ref_top = max(refs.values(), default=0.0)
+    base = max((pooled + ostd).max() + 0.05, ref_top + 0.04) + h
+    y_top = max(1.0, base + (n_levels - 1) * step + 0.5 * step + 0.045)
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    bars = ax.bar(pos, pooled, yerr=ostd, color=cfg["color"], alpha=0.85,
+                  capsize=3, edgecolor="white", lw=0.5, zorder=3)
+    bars[ref_i].set_hatch("//")
+    bars[ref_i].set_edgecolor("0.2")
+    for i in range(len(ks)):
+        ax.text(i, pooled[i] + ostd[i] + 0.015, f"{pooled[i]:.4f}",
+                ha="center", va="bottom", fontsize=8, zorder=5,
+                bbox=dict(fc="white", ec="none", alpha=0.75, pad=0.8))
+
+    # pending ghost slots (results still cooking)
+    for j, pk in enumerate(pending):
+        xi = len(ks) + j
+        ax.bar(xi, 0.35, facecolor="none", edgecolor="0.55",
+               ls="--", lw=1.0, zorder=3)
+        ax.text(xi, 0.175, "pending", rotation=90, ha="center", va="center",
+                fontsize=7.5, color="0.5")
+
+    draw_reference_lines(ax, refs, min_sep=0.06)
+
+    for side, sign in ((left, -1), (right, +1)):
+        for lvl, pr in enumerate(side):
+            # right-side brackets sit half a step higher so same-level
+            # left/right labels can never collide near the reference
+            y = base + lvl * step + (0.5 * step if sign > 0 else 0.0)
+            draw_bracket(ax, float(ks.index(pr["k1"])),
+                         ref_i + sign * gap,
+                         y, _sig_label(pr), h, fontsize=7)
+
+    ax.set_ylim(0, y_top)
+    ax.set_yticks(np.arange(0, 1.01, 0.2))
+    tick_ks = ks + pending
+    ax.set_xticks(np.arange(len(tick_ks)))
+    ax.set_xticklabels([_tick_label(cfg, k, set(pending)) for k in tick_ks],
+                       fontsize=7.5, rotation=35, ha="right",
+                       rotation_mode="anchor")
+    for lab, k in zip(ax.get_xticklabels(), tick_ks):
+        if k in pending:
+            lab.set_color("0.5")
+        elif k == ref_k:
+            lab.set_fontweight("bold")
+    ax.set_xlabel("Number of PCs")
+    ax.set_ylabel("Held-out AUC")
+    ax.grid(True, axis="y", alpha=0.3)
+
+    _finish(fig, ax, f"PCA dimension sweep: {cfg['title']}", out_png)
+    print(f"  ({len(sig)} bracket(s) vs k={ref_k})")
+
+
+def plot_auc_roi(cfg, models, refs, families, out_png, alpha=0.05):
+    """Option-B band figure: ROI bars only, hatched candidate anchors, and
+    one stacked bracket band per anchor (every ROI k vs that anchor,
+    nested by distance so nothing crosses). Bracket label =
+    'p=… (p_adj=…)'. `families` maps anchor_k -> [pair dicts]."""
+    lo, hi = cfg["roi_ev"]
+    anchors = sorted(families)
+    roi = [k for k in sorted(models) if lo <= cfg["ev"][k] <= hi]
+    pos = {k: i for i, k in enumerate(roi)}
+    pooled = np.array([models[k]["auc"] for k in roi])
+    ostd = np.array([np.std(models[k]["outer"], ddof=1) for k in roi])
+
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+
+    bars = ax.bar(pos.values(), pooled, yerr=ostd, color=cfg["color"],
+                  alpha=0.85, capsize=3, edgecolor="white", lw=0.5, zorder=3)
+    for k, bar in zip(roi, bars):
+        if k in anchors:
+            bar.set_hatch("//")
+            bar.set_edgecolor("0.2")
+    for i, k in enumerate(roi):
+        ax.text(i, pooled[i] + ostd[i] + 0.008, f"{pooled[i]:.4f}",
+                ha="center", va="bottom", fontsize=7.5, zorder=5,
+                bbox=dict(fc="white", ec="none", alpha=0.75, pad=0.6))
+
+    draw_reference_lines(ax, refs, min_sep=0.06)
+
+    # ---- stacked bracket bands, one per anchor; SIG-ONLY brackets -----
+    h, step, gap, band_gap = 0.010, 0.038, 0.07, 0.07
+    ref_top = max(refs.values(), default=0.0)
+    base = max((pooled + ostd).max() + 0.04, ref_top + 0.04) + 2 * h
+    cursor = base
+    for a in anchors:
+        a_i = pos[a]
+        pairs = [pr for pr in families[a] if pr["p_adj"] < alpha]
+        if not pairs:
+            continue
+        pairs = sorted(pairs, key=lambda pr: abs(pos[pr["k1"]] - a_i))
+        left = [pr for pr in pairs if pos[pr["k1"]] < a_i]
+        right = [pr for pr in pairs if pos[pr["k1"]] > a_i]
+        n_lv = max(len(left), len(right), 1)
+        band_mid = cursor + (n_lv - 1) * step / 2
+        for side, sign in ((left, -1), (right, +1)):
+            for lvl, pr in enumerate(side):
+                y = cursor + lvl * step
+                x0, x1 = float(pos[pr["k1"]]), a_i + sign * gap
+                draw_bracket(ax, x0, x1, y, _sig_label(pr), h,
+                             fontsize=6.5)
+        ax.text(-0.06, band_mid, f"vs {cfg['ev'][a]}%",
+                transform=ax.get_yaxis_transform(), rotation=90,
+                ha="center", va="center", fontsize=7, color="0.3")
+        cursor += n_lv * step + band_gap
+
+    ax.set_ylim(0, max(cursor, 1.0) - band_gap + 0.03)
+    ax.set_yticks(np.arange(0, 1.01, 0.2))
+    ax.set_xticks(list(pos.values()))
+    ax.set_xticklabels([_tick_label(cfg, k, set()) for k in roi],
+                       fontsize=7.5, rotation=35, ha="right",
+                       rotation_mode="anchor")
+    for lab, k in zip(ax.get_xticklabels(), roi):
+        if k in anchors:
+            lab.set_fontweight("bold")
+    ax.set_xlabel("Number of PCs")
+    ax.set_ylabel("Held-out AUC")
+    ax.grid(True, axis="y", alpha=0.3)
+    title = (f"PCA dimension sweep: {cfg['title']} "
+             f"({lo}-{hi}% EV, candidate anchors)")
+    _finish(fig, ax, title, out_png)
+    print(f"  (ROI {lo}-{hi}%, anchors {anchors})")
+
+
+def plot_line(cfg, models, refs, out_png, ref_k, rot=35):
+    """Clean trend companion: log-x line + markers, NO brackets/p-values.
+    Tick labels are single-line 'k (EV%)', rotated by `rot` degrees.
+    The best-AUC reference k gets an open marker + bold tick.
+    cfg['pending'] k's get a grey dotted vertical marker + ghost tick."""
+    ks = sorted(models)
+    pending = sorted(cfg.get("pending", []))
     xs = np.array(ks, float)
     pooled = np.array([models[k]["auc"] for k in ks])
     ostd = np.array([np.std(models[k]["outer"], ddof=1) for k in ks])
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    ax.axhline(ref_auc, color="0.5", ls=":", lw=1.0, zorder=1)
-    ax.text(ks[0], ref_auc, f" handcrafted_sparse {ref_auc:.3f}",
-            fontsize=7.5, color="0.45", va="bottom", ha="left")
     ax.errorbar(xs, pooled, yerr=ostd, fmt="o-", color=cfg["color"],
                 lw=1.6, ms=6, capsize=3, zorder=4, label=cfg["title"])
-    ax.plot([anchor], [models[anchor]["auc"]], marker="o", ms=11,
+    ax.plot([ref_k], [models[ref_k]["auc"]], marker="o", ms=11,
             mfc="none", mec="0.1", mew=1.4, ls="none", zorder=5)
+    draw_reference_lines(ax, refs)
 
     ax.set_xscale("log")
-    ax.set_xticks(ks)
-    ax.set_xticklabels([f"{k}\n{cfg['ev'][k]}% EV" for k in ks], fontsize=8)
+    ax.xaxis.set_minor_locator(NullLocator())
+    tick_ks = ks + pending
+    ax.set_xticks(tick_ks)
+    ax.set_xticklabels([_tick_label(cfg, k, set(pending)) for k in tick_ks],
+                       fontsize=8, rotation=rot, ha="right",
+                       rotation_mode="anchor")
+    for lab, k in zip(ax.get_xticklabels(), tick_ks):
+        if k == ref_k:
+            lab.set_fontweight("bold")
+        if k in pending:
+            lab.set_color("0.5")
+    for pk in pending:
+        ax.axvline(pk, color="0.6", ls=":", lw=1.0, zorder=2)
+    ax.set_xlim(xs.min() * 0.7,
+                (pending[-1] if pending else ks[-1]) * 1.6)
     ax.set_ylim(0, 1)
-    ax.set_xlabel("PCA components k")
-    ax.set_ylabel("Held-out AUC (full data)")
-    ax.set_title(f"Held-out AUC vs PCA components — {cfg['title']}")
+    ax.set_xlabel("Number of PCs")
+    ax.set_ylabel("Held-out AUC")
     ax.grid(True, alpha=0.3)
     ax.legend(fontsize=8, loc="lower left", frameon=False)
-    fig.tight_layout()
-    fig.savefig(out_png, dpi=200, bbox_inches="tight", facecolor="white")
-    plt.close(fig)
-    print(f"  Saved: {out_png}")
+    _finish(fig, ax, f"PCA dimension sweep: {cfg['title']}", out_png)
 
 
-def plot_runtime(cfg, models, t_rows, out_png):
+def plot_runtime(cfg, models, t_rows, out_png, ref_k):
+    """Core-hours per k (log-y); fold-seconds t-test annotation and hatched
+    bar reference the same k the AUC figure uses (best-AUC k)."""
     ks = sorted(models)
-    anchor = cfg["anchor"]
+    pending = sorted(cfg.get("pending", []))
     core_h = [cfg["wall_h"][k] * cfg["cores"][k] for k in ks]
 
     fig, ax = plt.subplots(figsize=(8, 5))
     bars = ax.bar([str(k) for k in ks], core_h, color=cfg["color"],
                   alpha=0.85)
     for k, bar in zip(ks, bars):
-        if k == anchor:
+        if k == ref_k:
             bar.set_hatch("//")
             bar.set_edgecolor("0.2")
     ax.set_yscale("log")
     ax.set_ylabel("Core-hours (nested CV, full data)")
-    ax.set_xlabel("PCA components k")
-    ax.set_title(f"Compute cost vs PCA components — {cfg['title']}")
+    ax.set_xlabel("Number of PCs")
     for i, k in enumerate(ks):
         tr = next((t for t in t_rows if t["k"] == k), None)
         txt = f"{core_h[i]:.1f}h"
-        if tr is not None and k != anchor:
+        if tr is not None and k != ref_k:
             txt += f"\np={tr['p']:.2g}"
-        ax.text(i, core_h[i], txt, ha="center", va="bottom", fontsize=8)
+        ax.text(i, core_h[i], txt, ha="center", va="bottom", fontsize=7)
+    tick_ks = ks + pending
+    ax.set_xticks(range(len(tick_ks)))
+    ax.set_xticklabels([_tick_label(cfg, k, set(pending)) for k in tick_ks],
+                       fontsize=7.5, rotation=35, ha="right",
+                       rotation_mode="anchor")
+    for lab, k in zip(ax.get_xticklabels(), tick_ks):
+        if k == ref_k:
+            lab.set_fontweight("bold")
+        if k in pending:
+            lab.set_color("0.5")
+    for j, pk in enumerate(pending):
+        ax.bar(len(ks) + j, max(core_h) * 0.4, facecolor="none",
+               edgecolor="0.55", ls="--", lw=1.0)
+        ax.text(len(ks) + j, max(core_h) * 0.2, "pending", rotation=90,
+                ha="center", va="center", fontsize=7.5, color="0.5")
     ax.grid(True, axis="y", alpha=0.3)
-    fig.tight_layout()
-    fig.savefig(out_png, dpi=200, bbox_inches="tight", facecolor="white")
-    plt.close(fig)
-    print(f"  Saved: {out_png}")
+    _finish(fig, ax, f"Compute cost by PCA dimensionality: {cfg['title']}",
+            out_png)
 
 
 # ── main ────────────────────────────────────────────────────────────
 def main():
+    import argparse
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--refs", choices=["both", "with", "none"],
+                    default="both",
+                    help="baseline reference lines in AUC figures: 'with' "
+                         "(only), 'none' (only), or 'both' (default, "
+                         "emits _nobaselines variants)")
+    refs_mode = ap.parse_args().refs
+
     df = pd.read_csv(SPLIT_DATA_PATH)
     fold_vec = df["fold"].to_numpy(dtype=int)
     y = df["label"].to_numpy(dtype=int)
@@ -349,9 +599,12 @@ def main():
     print(f"df rows={n}, folds={sorted(set(fold_vec))}, "
           f"padded: " + ", ".join(f"{tk}={m.sum()}" for tk, m in masks.items()))
 
-    with open(HC_JSON) as fh:
-        hc = load_model(HC_JSON, fold_vec, y, HC_JSON.name)
-    hc["auc"] = roc_auc_score(y, hc["probs"])
+    refs = {}
+    for ref_name, ref_path in REF_JSONS.items():
+        r = load_model(ref_path, fold_vec, y, ref_path.name)
+        r["auc"] = roc_auc_score(y, r["probs"])
+        refs[ref_name] = r
+    ref_aucs = {n_: r["auc"] for n_, r in refs.items()}
 
     all_results, all_pairs = [], []
 
@@ -404,13 +657,15 @@ def main():
                 fam_all.append(dict(family="all_pairs", k1=a, k2=b,
                                     auc1=ya, auc2=yb, delta=d, z=z, p=p))
         for k in ladder:
-            if k == anchor:
-                continue
-            ya, yb, d, z, p = delong_p(y, found[k]["probs"], found[anchor]["probs"])
-            fam_anchor.append(dict(family="vs_anchor", k1=k, k2=anchor,
-                                   auc1=ya, auc2=yb, delta=d, z=z, p=p))
-            ya, yb, d, z, p = delong_p(y, found[k]["probs"], found[best_k]["probs"])
-            fam_best.append(dict(family="vs_best", k1=k, k2=best_k,
+            if k != anchor:
+                ya, yb, d, z, p = delong_p(y, found[k]["probs"],
+                                            found[anchor]["probs"])
+                fam_anchor.append(dict(family="vs_anchor", k1=k, k2=anchor,
+                                       auc1=ya, auc2=yb, delta=d, z=z, p=p))
+            if k != best_k:  # every non-best ladder k, incl. the 90% anchor
+                ya, yb, d, z, p = delong_p(y, found[k]["probs"],
+                                            found[best_k]["probs"])
+                fam_best.append(dict(family="vs_best", k1=k, k2=best_k,
                                  auc1=ya, auc2=yb, delta=d, z=z, p=p))
         # subset all-pairs + vs-anchor
         fam_sub, fam_sub_anchor = [], []
@@ -434,14 +689,34 @@ def main():
         fam_sub_anchor = holm_family(fam_sub_anchor)
         all_pairs.extend(fam_all + fam_anchor + fam_best + fam_sub + fam_sub_anchor)
 
-        # runtime NB t-tests vs anchor
+        # ROI band figure: DeLong vs each candidate anchor, Holm within
+        # that anchor's family (family name vs_anchor{k})
+        roi_families = {}
+        if "anchor_sets" in cfg:
+            lo, hi = cfg["roi_ev"]
+            roi_ks = [k for k in sorted(found) if lo <= cfg["ev"][k] <= hi]
+            for a in cfg["anchor_sets"]:
+                fam_a = []
+                for k in roi_ks:
+                    if k == a:
+                        continue
+                    ya, yb, d, z, p = delong_p(y, found[k]["probs"],
+                                                found[a]["probs"])
+                    fam_a.append(dict(family=f"vs_anchor{a}", k1=k, k2=a,
+                                      auc1=ya, auc2=yb, delta=d, z=z, p=p))
+                fam_a = holm_family(fam_a)
+                roi_families[a] = fam_a
+                all_pairs.extend(fam_a)
+
+        # runtime NB t-tests vs the same reference the AUC figure uses
+        # (best-AUC k, per user: t-test anchor = AUC anchor)
         t_rows = []
         for k in ladder:
-            if k == anchor:
+            if k == best_k:
                 continue
             ma, mb, t_stat, p = fold_t_nb(found[k]["fold_seconds"],
-                                          found[anchor]["fold_seconds"])
-            t_rows.append(dict(k=k, mean_k=ma, mean_anchor=mb, t=t_stat, p=p))
+                                          found[best_k]["fold_seconds"])
+            t_rows.append(dict(k=k, mean_k=ma, mean_ref=mb, t=t_stat, p=p))
 
         # verdict: smallest ladder k Holm-ns vs best
         verdict_k = best_k
@@ -480,27 +755,40 @@ def main():
                 core_h=round(cfg["wall_h"][anchor] * cfg["cores"][anchor], 2),
                 maxrss="NA", optimal=False, best=False))
 
-        # figures: bars (with brackets) + clean line (no p-values)
+        # figures: bars (with brackets vs best-AUC k) + clean line,
+        # with and without baseline reference lines (--refs)
         cfg["out"].mkdir(parents=True, exist_ok=True)
-        ref = roc_auc_score(y[mask], hc["probs"][mask])
-        plot_auc(cfg, found, hc["auc"], fam_anchor,
-                 cfg["out"] / "pca_sweep_auc_full.png")
-        plot_line(cfg, found, hc["auc"],
-                  cfg["out"] / "pca_sweep_auc_line.png")
+        variants = []
+        if refs_mode in ("both", "with"):
+            variants.append(("", ref_aucs))
+        if refs_mode in ("both", "none"):
+            variants.append(("_nobaselines", {}))
+        for suffix, rmap in variants:
+            plot_auc(cfg, found, rmap, fam_best,
+                     cfg["out"] / f"pca_sweep_auc_full{suffix}.png",
+                     ref_k=best_k)
+            plot_line(cfg, found, rmap,
+                      cfg["out"] / f"pca_sweep_auc_line{suffix}.png",
+                      ref_k=best_k)
+            if roi_families:
+                plot_auc_roi(cfg, found, rmap, roi_families,
+                             cfg["out"] / f"pca_sweep_auc_roi{suffix}.png")
         plot_runtime(cfg, {k: found[k] for k in ladder}, t_rows,
-                     cfg["out"] / "pca_sweep_runtime.png")
+                     cfg["out"] / "pca_sweep_runtime.png", ref_k=best_k)
         # stale subset figure from earlier versions — remove
         stale = cfg["out"] / "pca_sweep_auc_subset.png"
         if stale.exists():
             stale.unlink()
 
         with open(cfg["out"] / "pca_sweep_runtime_t.csv", "w") as fh:
-            fh.write("k,mean_fold_seconds_k,mean_fold_seconds_anchor,t,p_nb\n")
+            fh.write("k,mean_fold_seconds_k,mean_fold_seconds_ref,t,p_nb\n")
             for tr in t_rows:
-                fh.write(f"{tr['k']},{tr['mean_k']:.1f},{tr['mean_anchor']:.1f},"
+                fh.write(f"{tr['k']},{tr['mean_k']:.1f},{tr['mean_ref']:.1f},"
                          f"{tr['t']:.3f},{tr['p']:.3g}\n")
-        print(f"  handcrafted_sparse ref: full={hc['auc']:.4f} "
-              f"subset[{cfg['mask']}]={ref:.4f}")
+        for ref_name, r in refs.items():
+            sub = roc_auc_score(y[mask], r["probs"][mask])
+            print(f"  {ref_name} baseline: full={r['auc']:.4f} "
+                  f"subset[{cfg['mask']}]={sub:.4f}")
 
     # combined CSVs at repo level
     res_dir = PROJECT_ROOT / "runs" / "pca_sweep_delong"
