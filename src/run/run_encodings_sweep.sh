@@ -85,7 +85,7 @@ cg=$(awk -F: '$1=="0"{print $3}' /proc/self/cgroup)
 cgroup_peak=$(cat "/sys/fs/cgroup${cg}/memory.peak" 2>/dev/null || echo NA)
 peak_kb=$(awk -F': ' '/Maximum resident set size/{print $2}' "$TIME_FILE")
 cpu_pct=$(awk -F': ' '/Percent of CPU/{print $2}' "$TIME_FILE" | tr -d '%')
-wall=$(awk -F': ' '/Elapsed \(wall clock\) time/{print $2}')
+wall=$(awk -F': ' '/Elapsed \(wall clock\) time/{print $2}' "$TIME_FILE")
 wall_s=$(echo "$wall" | awk -F: '
     NF==3 {print $1*3600+$2*60+$3}
     NF==2 {print $1*60+$2}
