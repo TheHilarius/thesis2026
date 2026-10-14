@@ -349,9 +349,8 @@ def _finish(fig, ax, title, out_png):
 
 def plot_auc(cfg, models, refs, pairs_vs_ref, out_png, ref_k,
              alpha=0.05, min_delta=0.0):
-    """Pooled AUC ± outer-fold std bars, hatched best-AUC reference k,
-    baseline lines, and brackets to the reference ONLY for k's
-    significantly different from it (pairs_vs_ref = vs_best family).
+    """Pooled AUC ± outer-fold std bars, brackets to the reference ONLY for
+    k's significantly different from it (pairs_vs_ref = vs_best family).
     cfg['pending'] k's (results not in yet) get an empty ghost slot."""
     ks = sorted(models)
     pending = sorted(cfg.get("pending", []))
@@ -376,10 +375,8 @@ def plot_auc(cfg, models, refs, pairs_vs_ref, out_png, ref_k,
 
     fig, ax = plt.subplots(figsize=(8, 5))
 
-    bars = ax.bar(pos, pooled, yerr=ostd, color=cfg["color"], alpha=0.85,
-                  capsize=3, edgecolor="white", lw=0.5, zorder=3)
-    bars[ref_i].set_hatch("//")
-    bars[ref_i].set_edgecolor("0.2")
+    ax.bar(pos, pooled, yerr=ostd, color=cfg["color"], alpha=0.85,
+           capsize=3, edgecolor="white", lw=0.5, zorder=3)
     for i in range(len(ks)):
         ax.text(i, pooled[i] + ostd[i] + 0.015, f"{pooled[i]:.4f}",
                 ha="center", va="bottom", fontsize=8, zorder=5,
@@ -414,8 +411,6 @@ def plot_auc(cfg, models, refs, pairs_vs_ref, out_png, ref_k,
     for lab, k in zip(ax.get_xticklabels(), tick_ks):
         if k in pending:
             lab.set_color("0.5")
-        elif k == ref_k:
-            lab.set_fontweight("bold")
     ax.set_xlabel("Number of PCs")
     ax.set_ylabel("Held-out AUC")
     ax.grid(True, axis="y", alpha=0.3)
