@@ -1,0 +1,31 @@
+diff --git a/protein_mpnn_utils.py b/protein_mpnn_utils.py
+index a8fd008..948fafd 100644
+--- a/protein_mpnn_utils.py
++++ b/protein_mpnn_utils.py
+@@ -1054,6 +1054,26 @@ class ProteinMPNN(nn.Module):
+             if p.dim() > 1:
+                 nn.init.xavier_uniform_(p)
+ 
++    def encode(self, X, mask, residue_idx, chain_encoding_all):
++        """Encoder-only forward: returns per-residue node embeddings h_V
++        [B, L, hidden_dim] after the unmasked self-attention encoder, WITHOUT
++        running the autoregressive decoder. Structure-only — takes no sequence
++        S, so nothing leaks from the true sequence (decoder h_V would).
++
++        ADDED for thesis2026 structure-embedding extraction; mirrors the
++        encoder block at the top of forward(). h_V is post-LayerNorm and
++        masked (0 at padded/masked residues).
++        """
++        E, E_idx = self.features(X, mask, residue_idx, chain_encoding_all)
++        h_V = torch.zeros((E.shape[0], E.shape[1], E.shape[-1]), device=E.device)
++        h_E = self.W_e(E)
++        # Encoder is unmasked self-attention
++        mask_attend = gather_nodes(mask.unsqueeze(-1), E_idx).squeeze(-1)
++        mask_attend = mask.unsqueeze(-1) * mask_attend
++        for layer in self.encoder_layers:
++            h_V, h_E = layer(h_V, h_E, E_idx, mask, mask_attend)
++        return h_V
++
+     def forward(self, X, S, mask, chain_M, residue_idx, chain_encoding_all, randn, use_input_decoding_order=False, decoding_order=None):
+         """ Graph-conditioned sequence model """
+         device=X.device

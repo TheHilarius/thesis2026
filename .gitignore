@@ -50,6 +50,8 @@ data/processed/epitopes_*
 data/processed/df_all*
 env_*
 env_*
+# ProteinMPNN vendored clone (216M) kept out of git; reproduce via vendor/README.md
+vendor/ProteinMPNN/
 results/*.csv
 data/processed/*.csv
 data/processed/alphafold*.rds
