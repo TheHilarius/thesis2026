@@ -37,23 +37,6 @@ declare -A FASTA_LENGTHS
 # Same idea: uid from header pipe-field, length of accumulated seq.
 if [[ -f "${FASTA_PATH}" ]]; then
     echo "Parsing ${FASTA_PATH} for sequence lengths..."
-    while IFS= read -r header; do
-        IFS= read -r seq_line
-        # Accumulate multi-line sequences
-        seq="${seq_line}"
-        while IFS= read -r next_line; do
-            if [[ "${next_line}" == ">"* ]]; then
-                # Extract accession between pipes: >sp|O43236|SEPT4... -> O43236
-                uid=$(echo "${header}" | awk -F'|' '{print $2}')
-                FASTA_LENGTHS["${uid}"]=${#seq} # SAVE CORRECT FASTA LENGTH
-                header="${next_line}"
-                seq=""
-            else
-                seq="${seq}${next_line}"
-            fi
-        done < /dev/null
-        # This approach doesn't work for multi-line; use awk instead
-    done < /dev/null
     # Use awk for reliable multi-line FASTA parsing
     while IFS=$'\t' read -r uid length; do
         FASTA_LENGTHS["${uid}"]="${length}"

@@ -514,7 +514,7 @@ def main():
             # peptide start, end, n-flank start, c-flank end, match type
             ps, pe, ns, ce, match = result
             # w
-            Wz, Wp, Wb, We, pm, npad, cpad = (rep, ns, ps, pe, ce, pad_rep, eos_rep, bos_rep)
+            Wz, Wp, Wb, We, pm, npad, cpad = build_windows(rep, ns, ps, pe, ce, pad_rep, eos_rep, bos_rep)
 
             W_blocks["zero"][j] = Wz
             W_blocks["pad"][j] = Wp

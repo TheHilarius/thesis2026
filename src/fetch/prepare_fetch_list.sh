@@ -32,7 +32,7 @@ print(f"Dropped {before - len(df)} rows with missing uniprot_id")
 ###### Classify UniProt IDs
 ###### Strict: must start with letter, 6-10 alphanumeric, optional -isoform
 ###### Rejects GenBank (AAX38256), RefSeq (NP_, XP_), and other non-UniProt IDs
-UNIPROT_PATTERN = r'^[A-Z][A-Z0-9]{5,9}(-[0-9]+)?$'
+
 canonical_mask = df['uniprot_id'].str.match(r'^[A-Z][A-Z0-9]{5,9}$',         na=False)
 isoform_mask   = df['uniprot_id'].str.match(r'^[A-Z][A-Z0-9]{5,9}-\d+$',     na=False)
 other_mask     = ~canonical_mask & ~isoform_mask
