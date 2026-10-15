@@ -65,6 +65,9 @@ def infer_embedding_mode(results):
     if feature_set == "esmif":
         return "esmif_pca" if n_features == 150 else "esmif_full"
 
+    if "esmc6b" in feature_set and "esmif" not in feature_set:
+        return "esmc6b_pca" if n_features == 781 else "esmc6b_full"
+
     if "esmc" in feature_set and "esmif" not in feature_set:
         return "esmc_pca" if n_features == 781 else "esmc_full"
 
@@ -78,6 +81,9 @@ def infer_embedding_mode(results):
 
 
 def _emb_source_mode(feature_set, suffix):
+    # esmc6b first: "esmc6b..." contains the substring "esmc".
+    if "esmc6b" in feature_set:
+        return f"esmc6b_{suffix}"
     if "esmc" in feature_set and "esmif" in feature_set:
         return f"all_{suffix}"
     if "esmc" in feature_set:

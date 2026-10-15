@@ -12,6 +12,8 @@ Inputs:
     data/processed/embeddings/esmc300m_context_embeddings_{zeropad,
         impute_boundary,impute_bos_eos,padtoken}.h5 — window_embeddings
         [N,29,960]  (keys end `_300m`; every output for them carries the tag)
+    data/processed/embeddings/esmc6b_context_embeddings_padtoken.h5
+                                        — window_embeddings [N,29,2560]
     data/processed/embeddings/esm-if_test_{zero,pad,boundary,eos_bos_repeat}.h5
                                         — window_if_struct [N,29,512]
 
@@ -112,6 +114,12 @@ WINDOW_SETS = {
         "window_embeddings", 960,
         "ESM-C-300M pad-token", "#c39bd3", "esmc300",
     ),
+    # ── ESM-C-6B (D=2560) ──
+    "esmc6b_padtoken": (
+        "esmc6b_context_embeddings_padtoken.h5",
+        "window_embeddings", 2560,
+        "ESM-C-6B pad-token", "#2c3e50", "esmc6b",
+    ),
     # ── ESM-IF (D=512) ──
     "esmif_zero": (
         "esm-if_test_zero.h5",
@@ -135,7 +143,7 @@ WINDOW_SETS = {
     ),
 }
 
-THRESHOLDS = [0.50, 0.80, 0.85, 0.90, 0.95, 0.99]
+THRESHOLDS = [0.50, 0.70, 0.80, 0.85, 0.90, 0.95, 0.99]
 
 OUT_DIR = FIGURES_DIR / "pca_optimization"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -503,7 +511,7 @@ if __name__ == "__main__":
 
     # ── Fit PCA for each version ──
     results = {}  # key -> (explained, cumulative)
-    group_curves = {"esmc": {}, "esmif": {}, "esmc300": {}}
+    group_curves = {"esmc": {}, "esmif": {}, "esmc300": {}, "esmc6b": {}}
 
     suffix = "_full" if args.pca_mode == "flat-full" else ""
     for key, (fname, ds_name, emb_dim, display_name, color, group) in sets.items():
@@ -607,7 +615,7 @@ if __name__ == "__main__":
     print(f"{'=' * 65}")
 
     for group, label in [("esmc", "ESM-C"), ("esmc300", "ESM-C-300M"),
-                         ("esmif", "ESM-IF")]:
+                         ("esmc6b", "ESM-C-6B"), ("esmif", "ESM-IF")]:
         if not group_curves[group]:
             continue
         out_path = OUT_DIR / f"pca_variance_windows_{group}_{args.pca_mode}_combined.png"

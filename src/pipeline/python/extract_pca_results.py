@@ -42,7 +42,10 @@ def main() -> None:
         cv_auc_mean, cv_auc_std = get_cv_auc(cv_summary)
 
         features = d.get("features_key", "")
-        if "esmc" in features and "esmif" in features:
+        # esmc6b first: "esmc6b..." contains the substring "esmc".
+        if "esmc6b" in features:
+            embedding = "esmc6b"
+        elif "esmc" in features and "esmif" in features:
             embedding = "combined"
         elif "esmc" in features:
             embedding = "esmc"
