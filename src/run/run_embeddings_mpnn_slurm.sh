@@ -5,13 +5,18 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --time=24:00:00
-#SBATCH --array=0-1
+#SBATCH --array=0-3
 #SBATCH --output=logs/mpnn_windows_%A_%a.out
 #SBATCH --error=logs/mpnn_windows_%A_%a.err
 
 # ProteinMPNN encoder-only 29-mer window embeddings, one array task per checkpoint.
 #   array 0 -> v_48_020 (default; moderate 0.20A training noise, robust to AF2 error)
 #   array 1 -> v_48_002 (0.02A noise; sensitivity arm)
+#   array 2 -> v_48_010 (0.10A noise; train-noise ladder)
+#   array 3 -> v_48_030 (0.30A noise; train-noise ladder)
+#
+# Re-submitting only the new checkpoints after 0/1 have finished:
+#   sbatch --array=2-3 src/run/run_embeddings_mpnn_slurm.sh
 #
 # Submit from repo root (server: healthtech hub1):
 #   mkdir -p logs
@@ -35,7 +40,7 @@ else
 fi
 
 # checkpoint per array task
-CKPTS=(v_48_020 v_48_002)
+CKPTS=(v_48_020 v_48_002 v_48_010 v_48_030)
 CKPT="${CKPTS[$SLURM_ARRAY_TASK_ID]}"
 echo "Array task ${SLURM_ARRAY_TASK_ID}: checkpoint=${CKPT}"
 

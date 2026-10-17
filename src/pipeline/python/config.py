@@ -312,8 +312,10 @@ EMBEDDING_SOURCES = {
     },
     # ── ProteinMPNN fixed-29 window embeddings (encoder-only h_V, dim 128) ──
     # Raw HDF5: window_embeddings (N,29,128) + pad_mask + window_plddt + status
-    # + peptide/uniprot_id/row_indices/fallback_flag. Positional mapping; the 13
-    # isoform-mismatch proteins are status=3 (zero-filled), not silently mapped.
+    # + peptide/uniprot_id/row_indices/fallback_flag. Hybrid mapping: positional
+    # when df sequence == structure sequence (status=0, ~46550 rows); the 13
+    # isoform-mismatch proteins are located by sequence search (status=1, 67
+    # rows), not zero-filled. No notfound rows.
     # Only zero + boundary pad modes exist — ProteinMPNN has no BOS/EOS or pad token.
     # window_plddt (AFDB CA B-factor, NaN at pads) is available for confidence
     # stratification but is not consumed by the flat/PCA modelling path.
@@ -376,6 +378,78 @@ EMBEDDING_SOURCES = {
         "kind": "windows",
         "raw_path": EMBEDDING_DIR / "mpnn_v_48_002_context_embeddings_boundary.h5",
         "prepared_path": PREPARED_EMBEDDING_DIR / "mpnn_v48002_boundary_prepared.h5",
+        "window_ds": "window_embeddings",
+        "pad_mask_ds": "pad_mask",
+        "n_pad_ds": None,
+        "c_pad_ds": None,
+        "status_ds": "status",
+        "emb_dim": 128,
+        "window": 29,
+        "pad_mode": "boundary",
+        "peptide_id_col": "peptide",
+        "uniprot_id_col": "uniprot_id",
+        "has_row_indices": True,
+        "has_start_end": False,
+    },
+    "mpnn_v48010_zeropad": {
+        "display_name": "ProteinMPNN v_48_010 windows (zero-pad)",
+        "kind": "windows",
+        "raw_path": EMBEDDING_DIR / "mpnn_v_48_010_context_embeddings_zero.h5",
+        "prepared_path": PREPARED_EMBEDDING_DIR / "mpnn_v48010_zeropad_prepared.h5",
+        "window_ds": "window_embeddings",
+        "pad_mask_ds": "pad_mask",
+        "n_pad_ds": None,
+        "c_pad_ds": None,
+        "status_ds": "status",
+        "emb_dim": 128,
+        "window": 29,
+        "pad_mode": "zero",
+        "peptide_id_col": "peptide",
+        "uniprot_id_col": "uniprot_id",
+        "has_row_indices": True,
+        "has_start_end": False,
+    },
+    "mpnn_v48010_boundary": {
+        "display_name": "ProteinMPNN v_48_010 windows (boundary)",
+        "kind": "windows",
+        "raw_path": EMBEDDING_DIR / "mpnn_v_48_010_context_embeddings_boundary.h5",
+        "prepared_path": PREPARED_EMBEDDING_DIR / "mpnn_v48010_boundary_prepared.h5",
+        "window_ds": "window_embeddings",
+        "pad_mask_ds": "pad_mask",
+        "n_pad_ds": None,
+        "c_pad_ds": None,
+        "status_ds": "status",
+        "emb_dim": 128,
+        "window": 29,
+        "pad_mode": "boundary",
+        "peptide_id_col": "peptide",
+        "uniprot_id_col": "uniprot_id",
+        "has_row_indices": True,
+        "has_start_end": False,
+    },
+    "mpnn_v48030_zeropad": {
+        "display_name": "ProteinMPNN v_48_030 windows (zero-pad)",
+        "kind": "windows",
+        "raw_path": EMBEDDING_DIR / "mpnn_v_48_030_context_embeddings_zero.h5",
+        "prepared_path": PREPARED_EMBEDDING_DIR / "mpnn_v48030_zeropad_prepared.h5",
+        "window_ds": "window_embeddings",
+        "pad_mask_ds": "pad_mask",
+        "n_pad_ds": None,
+        "c_pad_ds": None,
+        "status_ds": "status",
+        "emb_dim": 128,
+        "window": 29,
+        "pad_mode": "zero",
+        "peptide_id_col": "peptide",
+        "uniprot_id_col": "uniprot_id",
+        "has_row_indices": True,
+        "has_start_end": False,
+    },
+    "mpnn_v48030_boundary": {
+        "display_name": "ProteinMPNN v_48_030 windows (boundary)",
+        "kind": "windows",
+        "raw_path": EMBEDDING_DIR / "mpnn_v_48_030_context_embeddings_boundary.h5",
+        "prepared_path": PREPARED_EMBEDDING_DIR / "mpnn_v48030_boundary_prepared.h5",
         "window_ds": "window_embeddings",
         "pad_mask_ds": "pad_mask",
         "n_pad_ds": None,
@@ -585,6 +659,58 @@ FEATURE_COMPONENTS = {
         "embedding_key": "esmc6b_win_padtoken",
         "pca_components": 64,
     },
+    # ── ProteinMPNN windows (D=128) ──
+    # pca_components = default only; ALWAYS overridden by --pca N90.
+    # v_48_020=1325 / v_48_002=1478 = 90% variance (08_pca_variance_analysis
+    # flat-full). v_48_010 / v_48_030 PROVISIONAL until their spectra exist.
+    "mpnn_v48020_zeropad": {
+        "display_name": "ProteinMPNN v_48_020 windows (zero-pad, 29x128)",
+        "type": "embedding_windows",
+        "embedding_key": "mpnn_v48020_zeropad",
+        "pca_components": 1325,
+    },
+    "mpnn_v48020_boundary": {
+        "display_name": "ProteinMPNN v_48_020 windows (boundary, 29x128)",
+        "type": "embedding_windows",
+        "embedding_key": "mpnn_v48020_boundary",
+        "pca_components": 1325,
+    },
+    "mpnn_v48010_zeropad": {
+        "display_name": "ProteinMPNN v_48_010 windows (zero-pad, 29x128)",
+        "type": "embedding_windows",
+        "embedding_key": "mpnn_v48010_zeropad",
+        "pca_components": 1325,
+    },
+    "mpnn_v48010_boundary": {
+        "display_name": "ProteinMPNN v_48_010 windows (boundary, 29x128)",
+        "type": "embedding_windows",
+        "embedding_key": "mpnn_v48010_boundary",
+        "pca_components": 1325,
+    },
+    "mpnn_v48002_zeropad": {
+        "display_name": "ProteinMPNN v_48_002 windows (zero-pad, 29x128)",
+        "type": "embedding_windows",
+        "embedding_key": "mpnn_v48002_zeropad",
+        "pca_components": 1478,
+    },
+    "mpnn_v48002_boundary": {
+        "display_name": "ProteinMPNN v_48_002 windows (boundary, 29x128)",
+        "type": "embedding_windows",
+        "embedding_key": "mpnn_v48002_boundary",
+        "pca_components": 1478,
+    },
+    "mpnn_v48030_zeropad": {
+        "display_name": "ProteinMPNN v_48_030 windows (zero-pad, 29x128)",
+        "type": "embedding_windows",
+        "embedding_key": "mpnn_v48030_zeropad",
+        "pca_components": 1325,
+    },
+    "mpnn_v48030_boundary": {
+        "display_name": "ProteinMPNN v_48_030 windows (boundary, 29x128)",
+        "type": "embedding_windows",
+        "embedding_key": "mpnn_v48030_boundary",
+        "pca_components": 1325,
+    },
 }
 
 # ──────────────────────────────────────────────
@@ -763,6 +889,39 @@ FEATURE_SETS = {
     "emb_esmif_eos_bos_repeat": {
         "display_name": "ESM-IF windows only (eos/bos-repeat)",
         "components": ["esmif_eos_bos_repeat"],
+    },
+    # ── ProteinMPNN windows (embedding-only) ──
+    "emb_mpnn_v48020_zeropad": {
+        "display_name": "ProteinMPNN v_48_020 only (zero-pad)",
+        "components": ["mpnn_v48020_zeropad"],
+    },
+    "emb_mpnn_v48020_boundary": {
+        "display_name": "ProteinMPNN v_48_020 only (boundary)",
+        "components": ["mpnn_v48020_boundary"],
+    },
+    "emb_mpnn_v48010_zeropad": {
+        "display_name": "ProteinMPNN v_48_010 only (zero-pad)",
+        "components": ["mpnn_v48010_zeropad"],
+    },
+    "emb_mpnn_v48010_boundary": {
+        "display_name": "ProteinMPNN v_48_010 only (boundary)",
+        "components": ["mpnn_v48010_boundary"],
+    },
+    "emb_mpnn_v48002_zeropad": {
+        "display_name": "ProteinMPNN v_48_002 only (zero-pad)",
+        "components": ["mpnn_v48002_zeropad"],
+    },
+    "emb_mpnn_v48002_boundary": {
+        "display_name": "ProteinMPNN v_48_002 only (boundary)",
+        "components": ["mpnn_v48002_boundary"],
+    },
+    "emb_mpnn_v48030_zeropad": {
+        "display_name": "ProteinMPNN v_48_030 only (zero-pad)",
+        "components": ["mpnn_v48030_zeropad"],
+    },
+    "emb_mpnn_v48030_boundary": {
+        "display_name": "ProteinMPNN v_48_030 only (boundary)",
+        "components": ["mpnn_v48030_boundary"],
     },
 }
 
