@@ -92,6 +92,9 @@ PADMODE_CHOICE_DIR = PROJECT_ROOT / "runs" / "padmode_choice" / "models" / "flat
 PADMASK_FILES = {
     "ESM-C": EMBEDDING_DIR / "esmc_context_embeddings_zeropad.h5",
     "ESM-IF": EMBEDDING_DIR / "esm-if_test_zero.h5",
+    # ProteinMPNN: pad SLOTS are identical across zero/boundary (only the fill
+    # differs), so one mask serves every pad mode and checkpoint.
+    "ProteinMPNN": EMBEDDING_DIR / "mpnn_v_48_020_context_embeddings_zero.h5",
 }
 
 # filename/feature-key -> (toolkit, padtype label)
@@ -104,6 +107,15 @@ FEATURE_MAP = {
     "esmif_boundary": ("ESM-IF", "boundary"),
     "esmif_eos_bos_repeat": ("ESM-IF", "eos_bos_repeat"),
     "esmif_pad": ("ESM-IF", "pad"),
+    # ProteinMPNN (all 4 checkpoints x 2 modes)
+    "mpnn_v48002_zeropad": ("ProteinMPNN", "zero"),
+    "mpnn_v48002_boundary": ("ProteinMPNN", "boundary"),
+    "mpnn_v48010_zeropad": ("ProteinMPNN", "zero"),
+    "mpnn_v48010_boundary": ("ProteinMPNN", "boundary"),
+    "mpnn_v48020_zeropad": ("ProteinMPNN", "zero"),
+    "mpnn_v48020_boundary": ("ProteinMPNN", "boundary"),
+    "mpnn_v48030_zeropad": ("ProteinMPNN", "zero"),
+    "mpnn_v48030_boundary": ("ProteinMPNN", "boundary"),
     "handcrafted_sparse": ("baseline", "-"),
 }
 
@@ -121,7 +133,7 @@ PADTYPE_COLOR = {
 #   -> pad_token (ESM-C) / pad (ESM-IF)
 PADMODE_ORDER = ["-", "zero", "eos_bos_repeat", "boundary", "pad_token", "pad"]
 _MODE_RANK = {p: i for i, p in enumerate(PADMODE_ORDER)}
-_TOOLKIT_RANK = {"baseline": 0, "ESM-C": 1, "ESM-IF": 2}
+_TOOLKIT_RANK = {"baseline": 0, "ESM-C": 1, "ESM-IF": 2, "ProteinMPNN": 3}
 
 
 def _order_overview(df: pd.DataFrame) -> pd.DataFrame:

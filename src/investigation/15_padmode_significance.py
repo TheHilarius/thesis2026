@@ -74,12 +74,13 @@ import pandas as pd
 from scipy.stats import norm, t as t_dist, ttest_rel
 from sklearn.metrics import roc_auc_score
 
-# 09_ has a leading digit — import via importlib; it also inserts
-# pipeline/python on sys.path for `config`.
+# 14_ has a leading digit — import via importlib; it sets up pipeline/python
+# on sys.path for `config` and owns the pad-mask registry. PADTYPE_MAP here is
+# 14_'s FEATURE_MAP (feature_key -> (toolkit, padtype)) — same shape, old name.
 import importlib
-_mod = importlib.import_module("09_padmode_subset_auc")
+_mod = importlib.import_module("14_plot_grid_auc")
 PADMASK_FILES = _mod.PADMASK_FILES
-PADTYPE_MAP = _mod.PADTYPE_MAP
+PADTYPE_MAP = _mod.FEATURE_MAP
 load_padded_masks = _mod.load_padded_masks
 
 from config import PROJECT_ROOT, SPLIT_DATA_PATH  # noqa: E402
@@ -95,7 +96,8 @@ NB_DF = 5
 EMB_JSON_RE = re.compile(
     r"cv_results_xgb_emb_"
     r"(esmc_win_(?:zeropad|impute_boundary|impute_bos_eos|padtoken)"
-    r"|esmif_(?:win|pad|boundary|eos_bos_repeat))"
+    r"|esmif_(?:win|pad|boundary|eos_bos_repeat)"
+    r"|mpnn_v48\d{3}_(?:zeropad|boundary))"
     r"_pca(\d+)_flat_"
 )
 BASELINE_JSON_RE = re.compile(
@@ -225,8 +227,8 @@ def main():
     masks = load_padded_masks()
 
     # ── Load OOF vectors + fold AUCs ──
-    pad_probs = {"ESM-C": {}, "ESM-IF": {}}
-    pad_fold_full = {"ESM-C": {}, "ESM-IF": {}}
+    pad_probs = {"ESM-C": {}, "ESM-IF": {}, "ProteinMPNN": {}}
+    pad_fold_full = {"ESM-C": {}, "ESM-IF": {}, "ProteinMPNN": {}}
     baseline_probs = {}
     baseline_fold_auc = {}
     for pth in sorted(json_dir.glob("cv_results_xgb_*_flat_*.json")):
@@ -252,7 +254,7 @@ def main():
         """HARD: row-identity + single-mask invariant. WARN: DeLong SE vs
         bootstrap SD ratio (checked per pair inside families)."""
         # row-identity: every loaded OOF vector is same length, all finite
-        for tk in ("ESM-C", "ESM-IF"):
+        for tk in pad_probs:
             for padtype, probs in pad_probs[tk].items():
                 assert len(probs) == n, (tk, padtype, len(probs), n)
                 assert np.isfinite(probs).all(), (tk, padtype, "nonfinite")
@@ -264,9 +266,15 @@ def main():
         # cross-toolkit subset pairs would not be matched)
         assert int(masks["ESM-C"].sum()) == 1443
         assert int(masks["ESM-IF"].sum()) == 1442
-        print(f"  build asserts OK: {len(pad_probs['ESM-C']) + len(pad_probs['ESM-IF'])} "
+        # MPNN mask: informative (partially padded) row count is not fixed
+        # by construction here, only that the mask is non-empty and in range.
+        assert 0 < int(masks["ProteinMPNN"].sum()) <= n, "ProteinMPNN mask"
+        _n_emb = sum(len(pad_probs[tk]) for tk in pad_probs)
+        print(f"  build asserts OK: {_n_emb} "
               f"emb + {len(baseline_probs)} baseline OOF vectors; "
-              f"masks ESM-C=1443 / ESM-IF=1442 (no cross-toolkit pairs)")
+              f"masks ESM-C=1443 / ESM-IF=1442 / "
+              f"ProteinMPNN={int(masks['ProteinMPNN'].sum())} "
+              f"(no cross-toolkit pairs)")
 
     run_build_asserts()
 
@@ -352,8 +360,9 @@ def main():
 
     # ── Smoke: DeLong asserts on one pair, then exit ──
     if args.smoke:
-        tk = "ESM-C"
-        ma, mb = "zero", "pad_token"
+        # first toolkit with >=2 loaded modes (ESM-C when present)
+        tk = next(tk for tk, d in pad_probs.items() if len(d) >= 2)
+        ma, mb = sorted(pad_probs[tk])[:2]
         padded = masks[tk]
         sub = pad_probs[tk][ma][padded], pad_probs[tk][mb][padded]
         y_sub = y_full[padded]
@@ -373,7 +382,9 @@ def main():
     rows = []
 
     # ── 1. Padmode pairwise, per toolkit ──
-    for toolkit in ["ESM-C", "ESM-IF"]:
+    # Iterate only toolkits with >=2 loaded pad modes (campaign dirs may
+    # contain a subset; an empty dict yields no pairs).
+    for toolkit in sorted(tk for tk, d in pad_probs.items() if len(d) >= 2):
         padded = masks[toolkit]
         tk = toolkit.replace("-", "").lower()
         modes = sorted(pad_probs[toolkit])
@@ -498,7 +509,8 @@ def main():
 
     # CI extent for Methods wording (padmode subset families; DeLong CIs
     # are primary, bootstrap CIs cross-check)
-    for grp in ("padmode_esmc", "padmode_esmif"):
+    for grp in sorted(g for g in out["test_group"].unique()
+                      if g.startswith("padmode_") and not g.endswith("_full")):
         sub = out[out["test_group"] == grp]
         d_bound = max(sub["ci95_lo"].abs().max(), sub["ci95_hi"].abs().max())
         b_bound = max(sub["ci_lo"].abs().max(), sub["ci_hi"].abs().max())
