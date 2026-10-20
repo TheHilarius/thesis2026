@@ -376,7 +376,9 @@ def main():
         print(f"  smoke OK: AUC match 1e-12; DeLong SE={se_d:.5f} "
               f"z={z_d:.3f} p={p_d:.3g}; bootstrap SD={sd_boot:.5f} "
               f"rel_diff={rel:.3%}")
-        assert rel < 0.05, f"DeLong SE vs bootstrap SD off by {rel:.1%}"
+        # --skip-bootstrap leaves sd_boot nan -> no cross-check to assert on
+        if not np.isnan(rel):
+            assert rel < 0.05, f"DeLong SE vs bootstrap SD off by {rel:.1%}"
         return
 
     rows = []
