@@ -21,7 +21,7 @@ PCA modes:
     flat     — flattened-window randomized SVD, capped at --flat-n-components;
                representative set only (FLAT_SETS: zeropad/zero)
     flat-full — EXACT full spectrum via streaming Gram + eigvalsh over ALL 8
-               files (4 pad modes × 2 toolkits, WINDOW_SETS). DEFAULT.
+               files (all WINDOW_SETS toolkits incl. ProteinMPNN). DEFAULT.
                Peak RAM ≈ 18 GB per ESM-C fit (D=1152),
                ≈4 GB ESM-IF.
                Outputs get `_full` suffix; cross-mode identity asserted on
@@ -64,6 +64,7 @@ try:
 except ImportError:
     HAS_MPL = False
 from sklearn.decomposition import PCA
+from scipy.linalg.blas import dsyrk
 from pathlib import Path
 from datetime import datetime
 
@@ -141,6 +142,27 @@ WINDOW_SETS = {
         "window_if_struct", 512,
         "ESM-IF EOS/BOS-repeat", "#16a085", "esmif",
     ),
+    # ── ProteinMPNN (D=128) ──
+    "mpnn_v48020_zeropad": (
+        "mpnn_v_48_020_context_embeddings_zero.h5",
+        "window_embeddings", 128,
+        "ProteinMPNN v_48_020 zero-pad", "#27ae60", "mpnn",
+    ),
+    "mpnn_v48020_boundary": (
+        "mpnn_v_48_020_context_embeddings_boundary.h5",
+        "window_embeddings", 128,
+        "ProteinMPNN v_48_020 boundary", "#2ecc71", "mpnn",
+    ),
+    "mpnn_v48002_zeropad": (
+        "mpnn_v_48_002_context_embeddings_zero.h5",
+        "window_embeddings", 128,
+        "ProteinMPNN v_48_002 zero-pad", "#1e8449", "mpnn",
+    ),
+    "mpnn_v48002_boundary": (
+        "mpnn_v_48_002_context_embeddings_boundary.h5",
+        "window_embeddings", 128,
+        "ProteinMPNN v_48_002 boundary", "#58d68d", "mpnn",
+    ),
 }
 
 THRESHOLDS = [0.50, 0.70, 0.80, 0.85, 0.90, 0.95, 0.99]
@@ -164,6 +186,14 @@ FLAT_SETS = {
         "esmc_context_embeddings_zeropad.h5",
         "window_embeddings", 1152,
         "ESM-C flat", "#e74c3c", "esmc",
+    ),
+    # ESM-C-6B (D=2560): flat-full's D x D Gram (74240^2) segfaults inside the
+    # D x D dgemm (isolated mm_test 117332), so 6B must use this randomized
+    # path, which never forms the D x D matrix.
+    "esmc6b_padtoken": (
+        "esmc6b_context_embeddings_padtoken.h5",
+        "window_embeddings", 2560,
+        "ESM-C-6B pad-token", "#2c3e50", "esmc6b",
     ),
 }
 FLAT_N_COMPONENTS = 1024
@@ -287,6 +317,69 @@ def fit_pca_full_spectrum(raw_path: Path, ds_name: str):
     print(f"    sum(eigenvalues)={total:.6g}  trace(C)={trace_c:.6g}  "
           f"rel_diff={abs(total - trace_c) / max(trace_c, 1e-12):.2e}")
     print(f"    top-10 PCs explain: {cumulative[min(9, len(cumulative)-1)] * 100:.1f}%")
+
+    return explained, cumulative, n_rows
+
+
+# ── Gram-xtx: exact full nonzero spectrum via the m x m Gram (X X^T) ──────────
+def fit_pca_gram_xtx(raw_path: Path, ds_name: str):
+    """
+    Exact full spectrum from the m x m Gram, where m = fully-real rows.
+
+    The flattened matrix X is (m, D) with m < D, so its rank <= m-1 and the
+    nonzero eigenvalues of the D x D covariance (X^T X) are exactly those of
+    X X^T (m x m). Computing the smaller side gives the SAME curve as
+    flat-full but with ~ (m/D)^3 the eigensolve cost.
+
+    Why this mode exists for D=74240 (ESM-C-6B):
+      * `G += b.T @ b` in fit_pca_full_spectrum routes to a transposed-operand
+        dgemm (transa='T'), which SEGFAULTS at D=74240 (isolated mm_test);
+        dsyrk(1.0, X, trans=0) is the correct non-transposed symmetric update.
+      * eigvalsh at n=D=74240 exceeded a 2h wall (TIMEOUT), while at n=m
+        (45174) it is ~0.22x the flops.
+
+    Returns (explained, cumulative, n_rows).
+    """
+    import gc
+
+    rows = []
+    n_rows = 0
+    for block in stream_real_rows_flat(raw_path, ds_name):
+        rows.append(block.astype(np.float64))
+        n_rows += block.shape[0]
+
+    X = np.concatenate(rows, axis=0)
+    del rows
+    gc.collect()
+
+    print(f"    flat rows kept (fully-real): {n_rows}")
+    print(f"    X: {X.shape}, Gram: {X.shape[0]}x{X.shape[0]} (dsyrk)")
+
+    G = dsyrk(1.0, X, trans=0)          # G = X @ X.T, in one non-transposed call
+    del X
+    gc.collect()
+    # dsyrk only fills the upper triangle (lower is left 0); eigvalsh needs a
+    # fully symmetric matrix. In-place mirror: off-diagonals 0 -> correct,
+    # diagonal doubled -> halve it. No extra 16 GB temporary.
+    G += G.T
+    np.fill_diagonal(G, np.diag(G) * 0.5)
+
+    evals = np.linalg.eigvalsh(G)       # ascending
+    del G
+    gc.collect()
+    evals = np.clip(evals[::-1], 0.0, None)   # descending, guard negatives
+
+    total = float(evals.sum())
+    if total <= 0:
+        raise RuntimeError(f"Non-positive total variance in {raw_path}")
+
+    explained = evals / total
+    cumulative = np.cumsum(explained)
+
+    print(f"    full spectrum: {len(explained)} components (rank of X)")
+    print(f"    sum(eigenvalues)={total:.6g}")
+    print(f"    top-10 PCs explain: "
+          f"{cumulative[min(9, len(cumulative)-1)] * 100:.1f}%")
 
     return explained, cumulative, n_rows
 
@@ -424,11 +517,12 @@ if __name__ == "__main__":
     )
     ap.add_argument(
         "--pca-mode", type=str, default="flat-full",
-        choices=["flat", "flat-full"],
-        help="'flat-full' (default; exact full spectrum via Gram + eigvalsh "
-             "over all 8 files; ~18 GB RAM per ESM-C fit), or 'flat' "
-             "(flattened-window, capped at --flat-n-components, "
-             "representative set)",
+        choices=["flat", "flat-full", "gram-xtx"],
+        help="'flat-full' (default; exact full spectrum via the D x D Gram "
+             "+ eigvalsh), 'flat' (flattened-window, capped at "
+             "--flat-n-components, representative set), or 'gram-xtx' "
+             "(exact full spectrum via the m x m Gram X X^T; same curve, "
+             "for m < D, where the D x D path is too slow or segfaults)",
     )
     ap.add_argument(
         "--flat-n-components", type=int, default=FLAT_N_COMPONENTS,
@@ -464,7 +558,7 @@ if __name__ == "__main__":
     if args.pca_mode == "flat":
         sets = FLAT_SETS
     else:
-        # flat-full: all 8 (4 modes × 2 toolkits)
+        # flat-full and gram-xtx: all windows (4 modes x toolkits)
         sets = WINDOW_SETS
 
     if args.only:
@@ -511,9 +605,11 @@ if __name__ == "__main__":
 
     # ── Fit PCA for each version ──
     results = {}  # key -> (explained, cumulative)
-    group_curves = {"esmc": {}, "esmif": {}, "esmc300": {}, "esmc6b": {}}
+    group_curves = {"esmc": {}, "esmif": {}, "esmc300": {}, "esmc6b": {},
+                    "mpnn": {}}
 
-    suffix = "_full" if args.pca_mode == "flat-full" else ""
+    suffix = {"flat-full": "_full", "gram-xtx": "_xtx"}.get(
+        args.pca_mode, "")
     for key, (fname, ds_name, emb_dim, display_name, color, group) in sets.items():
         print(f"\n{'-' * 65}")
         print(f"  {display_name}")
@@ -526,9 +622,14 @@ if __name__ == "__main__":
         out_csv = OUT_DIR / f"pca_variance_windows_{key}{suffix}.csv"
         if args.pca_mode == "flat-full":
             expected_n = 29 * emb_dim
+        elif args.pca_mode == "gram-xtx":
+            # Component count == fully-real row count, only known after the
+            # fit, so the up-front cache check is meaningless: always recompute.
+            expected_n = 0
         else:
             expected_n = int(min(args.flat_n_components, 29 * emb_dim))
-        cached = None if args.force else load_existing_curve(out_csv, expected_n)
+        cached = None if (args.force or args.pca_mode == "gram-xtx") \
+            else load_existing_curve(out_csv, expected_n)
         if cached is not None:
             explained, cumulative = cached
             print(f"  SKIP (cached, {len(cumulative)} components): "
@@ -538,6 +639,12 @@ if __name__ == "__main__":
             print(f"  flat dims: {n_feat}, fitting FULL spectrum "
                   f"({n_feat} components)")
             explained, cumulative, _n_rows = fit_pca_full_spectrum(
+                raw_path, ds_name)
+        elif args.pca_mode == "gram-xtx":
+            n_feat = 29 * emb_dim
+            print(f"  flat dims: {n_feat}, fitting m x m Gram spectrum "
+                  f"(exact, no cap)")
+            explained, cumulative, _n_rows = fit_pca_gram_xtx(
                 raw_path, ds_name)
         elif args.pca_mode == "flat":
             n_feat = 29 * emb_dim
@@ -589,6 +696,10 @@ if __name__ == "__main__":
                            "esmc_impute_bos_eos_300m"],
             "ESM-IF": ["esmif_zero", "esmif_boundary",
                        "esmif_eos_bos_repeat"],
+            "ProteinMPNN v_48_020": ["mpnn_v48020_zeropad",
+                                     "mpnn_v48020_boundary"],
+            "ProteinMPNN v_48_002": ["mpnn_v48002_zeropad",
+                                     "mpnn_v48002_boundary"],
         }
         for label, keys in identical_sets.items():
             present = [k for k in keys if k in results]
@@ -615,7 +726,8 @@ if __name__ == "__main__":
     print(f"{'=' * 65}")
 
     for group, label in [("esmc", "ESM-C"), ("esmc300", "ESM-C-300M"),
-                         ("esmc6b", "ESM-C-6B"), ("esmif", "ESM-IF")]:
+                         ("esmc6b", "ESM-C-6B"), ("esmif", "ESM-IF"),
+                         ("mpnn", "ProteinMPNN")]:
         if not group_curves[group]:
             continue
         out_path = OUT_DIR / f"pca_variance_windows_{group}_{args.pca_mode}_combined.png"
