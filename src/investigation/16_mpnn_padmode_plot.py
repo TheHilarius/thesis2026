@@ -60,15 +60,43 @@ DEFAULT_RUN = PROJECT_ROOT / "runs" / "mpnn_padmode_v48020"
 _PCA_RE = re.compile(r"_pca(\d+)_flat_")
 
 
+def _resolve(feats: str) -> tuple[str, str]:
+    """cv_results features_key -> (toolkit, padtype).
+
+    The JSON stores the FEATURE-SET key (e.g. emb_mpnn_v48020_boundary) while
+    14_'s FEATURE_MAP is keyed by COMPONENT (mpnn_v48020_boundary); try both.
+    """
+    if feats in PADTYPE_MAP:
+        return PADTYPE_MAP[feats]
+    bare = feats[4:] if feats.startswith("emb_") else feats
+    if bare in PADTYPE_MAP:
+        return PADTYPE_MAP[bare]
+    raise KeyError(f"unmapped features_key {feats!r}")
+
+
+def _stat(cv_summary: dict, metric: str, kind: str) -> float:
+    """cv_summary[metric][mean|std]; clear error naming the schema if absent."""
+    try:
+        return float(cv_summary[metric][kind])
+    except KeyError as exc:
+        raise KeyError(
+            f"cv_summary missing {metric!r}/{kind!r}; "
+            f"has {sorted(cv_summary)}") from exc
+
+
 def load_bar_rows(run_dir: Path) -> pd.DataFrame:
-    """One row per pad mode: CV mean +- std for AUC and MCC, plus runtime."""
+    """One row per pad mode: CV mean +- std for AUC and MCC, plus runtime.
+
+    Aggregates are read from r['cv_summary'][metric][mean|std] — the same
+    source extract_model_metrics.py uses, so these bars match its TSV.
+    """
     rows = []
     for p in sorted((run_dir / "models" / "flat").glob(
             "cv_results_xgb_emb_mpnn_*_flat_*.json")):
         r = json.load(open(p))
-        feats = r["features_key"]
-        toolkit, padtype = PADTYPE_MAP[feats]
+        toolkit, padtype = _resolve(r["features_key"])
         m = _PCA_RE.search(p.name)
+        cv = r["cv_summary"]
         rows.append({
             "toolkit": toolkit,
             "padtype": padtype,
@@ -76,10 +104,10 @@ def load_bar_rows(run_dir: Path) -> pd.DataFrame:
             "k_label": "90%",
             "pca": int(m.group(1)) if m else np.nan,
             "runtime_h": r["runtime_seconds"] / 3600.0,
-            "auc": r["cv_mean_auc_roc"],
-            "auc_std": r["cv_std_auc_roc"],
-            "mcc": r["cv_mean_mcc"],
-            "mcc_std": r["cv_std_mcc"],
+            "auc": _stat(cv, "auc_roc", "mean"),
+            "auc_std": _stat(cv, "auc_roc", "std"),
+            "mcc": _stat(cv, "mcc", "mean"),
+            "mcc_std": _stat(cv, "mcc", "std"),
         })
     if not rows:
         raise SystemExit(f"No MPNN cv_results found under {run_dir}/models/flat")
@@ -96,12 +124,10 @@ def plot_delong_ci(paired_csv: Path, outfile: Path, title: str) -> None:
     if df.empty:
         raise SystemExit(f"no padmode_* rows in {paired_csv}")
 
-    # friendlier family labels; padmode_proteinmpnn -> "padded subset (n=...)"
-    def label(r):
-        fam = "full data" if r["test_group"].endswith("_full") else "padded subset"
-        return f"{fam} (n={int(r['n_rows']):,})"
-
-    df["_label"] = df.apply(label, axis=1)
+    # short tick labels (long ones bleed into the axes); n lives in the
+    # annotation block on the right instead
+    df["_label"] = df["test_group"].apply(
+        lambda g: "full data" if str(g).endswith("_full") else "padded subset")
     df = df.sort_values("n_rows")           # subset first, full data last
 
     y = np.arange(len(df))
@@ -123,9 +149,11 @@ def plot_delong_ci(paired_csv: Path, outfile: Path, title: str) -> None:
         p = r.get("p_delong_holm", np.nan)
         verdict = "n/a" if pd.isna(p) else ("*" if p < 0.05 else "ns")
         ax.annotate(
-            f"{di:+.4f}   [{l:+.4f}, {h:+.4f}]   p={p:.3f} {verdict}",
-            xy=(1.01, yi), xycoords=("data", "y"), va="center", ha="left",
-            fontsize=8, family="monospace", annotation_clip=False)
+            f"n={int(r['n_rows']):,}  {di:+.4f}  [{l:+.4f}, {h:+.4f}]"
+            f"  p={p:.3f} {verdict}",
+            xy=(1.01, yi), xycoords=("axes fraction", "data"),
+            va="center", ha="left", fontsize=8, family="monospace",
+            annotation_clip=False)
 
     ax.set_yticks(y)
     ax.set_yticklabels(df["_label"], fontsize=9)
