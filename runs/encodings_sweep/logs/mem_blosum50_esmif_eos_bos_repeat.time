@@ -1,0 +1,23 @@
+	Command being timed: "python src/pipeline/python/04b_run_matrix.py --pca-mode flat --no-aggregate --out-root runs/encodings_sweep --combos xgb,blosum50_esmif_eos_bos_repeat,632"
+	User time (seconds): 37550.55
+	System time (seconds): 470.37
+	Percent of CPU this job got: 471%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 2:14:25
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 9754080
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 1141
+	Minor (reclaiming a frame) page faults: 33470522
+	Voluntary context switches: 2390316
+	Involuntary context switches: 184652
+	Swaps: 0
+	File system inputs: 6013040
+	File system outputs: 253496
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
