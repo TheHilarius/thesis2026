@@ -1053,6 +1053,12 @@ def parse_args():
              "smaller = stronger reg)",
     )
     parser.add_argument(
+        "--xgb-params", type=str, default=None, dest="xgb_params",
+        help="Override XGB params as JSON dict, e.g. "
+             "'{\"learning_rate\": 0.05, \"n_estimators\": 2500}'. "
+             "Merged into MODEL_REGISTRY['xgb']['params'].",
+    )
+    parser.add_argument(
         "--out-root", type=str, default=None,
         help="Run-folder root shared by a whole submission "
              "(e.g. runs/4padmodes_and_PCA_handcrafted_sparse_with_embeddings). "
@@ -1087,6 +1093,17 @@ if __name__ == "__main__":
         print(f"  [CLI OVERRIDE] C: {args.C}")
         model_cfg["params"]["C"] = args.C
 
+    # ── XGB params override (JSON dict merged into registry params) ──
+    # shortcut: constructor params only (lr, n_estimators, depth...).
+    # early-stopping (fit-time) not wired yet.
+    xgb_params_override = None
+    if args.xgb_params is not None:
+        xgb_params_override = json.loads(args.xgb_params)
+        if not isinstance(xgb_params_override, dict):
+            raise ValueError("--xgb-params must be a JSON object (dict)")
+        print(f"  [CLI OVERRIDE] xgb-params: {xgb_params_override}")
+        model_cfg["params"].update(xgb_params_override)
+
     display_name = model_cfg["display_name"]
     feat_display = feat_cfg["display_name"]
 
@@ -1099,6 +1116,15 @@ if __name__ == "__main__":
     else:
         run_tag = f"{model_key}_{features_key}"
     run_tag += f"_{pca_mode}"
+    if xgb_params_override:
+        lr = xgb_params_override.get("learning_rate")
+        n_est = xgb_params_override.get("n_estimators")
+        if lr is not None or n_est is not None:
+            lr_part = f"lr{str(lr).replace('.', 'p')}" if lr is not None else ""
+            n_part = f"n{n_est}" if n_est is not None else ""
+            run_tag += f"_xgb{lr_part}{n_part}"
+        else:
+            run_tag += "_xgbcustom"
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     # Namespace all run outputs by PCA experiment so flat/flat_raw batches

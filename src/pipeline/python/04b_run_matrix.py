@@ -71,7 +71,7 @@ DEFAULT_COMBOS = [
 
 
 def run_combo(model, features, pca, pca_mode="flat", dry_run=False,
-              out_root=None):
+              out_root=None, xgb_params=None):
     """Run one 04_modelling.py invocation."""
     cmd = [
         sys.executable, str(MODELING_SCRIPT),
@@ -79,6 +79,8 @@ def run_combo(model, features, pca, pca_mode="flat", dry_run=False,
         "--features", features,
         "--pca-mode", pca_mode,
     ]
+    if xgb_params and model == "xgb":
+        cmd += ["--xgb-params", xgb_params]
     if (pca is not None and pca_mode != "flat_raw"
             and str(pca).lower() not in ("none", "")):
         # flat_raw ignores --pca (all raw dims); "none" = no PCA at all
@@ -300,6 +302,11 @@ def main():
              "reads legacy + runs-wide globs into results/tables/.",
     )
     parser.add_argument(
+        "--xgb-params", type=str, default=None, dest="xgb_params",
+        help="JSON dict forwarded as --xgb-params to 04_modelling.py "
+             "for xgb combos, e.g. '{\"learning_rate\": 0.05}'.",
+    )
+    parser.add_argument(
         "--write-readme-only", action="store_true",
         help="Run nothing: scan <out-root>/models/ for cv_results JSONs and "
              "(re)write the run-set overview README.md. Requires --out-root. "
@@ -380,7 +387,8 @@ def main():
     failures = 0
     for model, features, pca in combos:
         ok = run_combo(model, features, pca, pca_mode=args.pca_mode,
-                       dry_run=args.dry_run, out_root=args.out_root)
+                       dry_run=args.dry_run, out_root=args.out_root,
+                       xgb_params=args.xgb_params)
         if ok:
             successes += 1
         else:
