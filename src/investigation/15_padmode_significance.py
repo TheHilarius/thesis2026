@@ -31,6 +31,13 @@ Test groups (Holm within each):
                         (bootstrap only for sparse-vs-blosum)
   baseline_subset_esmc  same pairs, ESM-C-mask padded-subset rows
 
+Checkpoint campaign (--arm-key checkpoint): arms are the ProteinMPNN
+train-noise checkpoints (v48002/v48010/v48020/v48030, all zeropad) instead
+of pad-fill modes — they all share padtype "zeropad" in PADTYPE_MAP, so
+the arm label is parsed from the component name. Groups:
+  ckpt_<tk>             pairwise, padded-subset rows
+  ckpt_<tk>_full        pairwise, all rows (DeLong + t only)
+
 No cross-toolkit subset comparisons (masks differ on notfound rows) —
 asserted below. Equivalence is NOT formally tested (TOST dropped: a
 +/-0.03 margin would exceed the sparse-blosum full-data effect |d|=0.022);
@@ -53,6 +60,11 @@ Usage:
     env_esmc/bin/python src/investigation/15_padmode_significance.py
     env_esmc/bin/python src/investigation/15_padmode_significance.py --smoke
     env_esmc/bin/python src/investigation/15_padmode_significance.py --skip-bootstrap
+    # ProteinMPNN checkpoint campaign (all zeropad):
+    env_esmc/bin/python src/investigation/15_padmode_significance.py \
+        --arm-key checkpoint \
+        --json-dir runs/mpnn_ckpt_zeropad/models/flat \
+        --out runs/mpnn_ckpt_zeropad/results/paired_tests.csv
 """
 
 from __future__ import annotations
@@ -104,6 +116,8 @@ BASELINE_JSON_RE = re.compile(
     r"cv_results_xgb_(sparse|blosum|handcrafted_blosum|"
     r"handcrafted_sparse|handcrafted)_flat_"
 )
+# component name -> train-noise checkpoint id (v48002 ... v48030)
+CKPT_RE = re.compile(r"^mpnn_(v48\d{3})_")
 
 
 def reconstruct_oof(res: dict, n: int) -> np.ndarray:
@@ -211,6 +225,11 @@ def main():
     ap.add_argument("--skip-bootstrap", action="store_true",
                     help="Skip the secondary row-level bootstrap (fast "
                          "dev runs; primary DeLong + fold tests still run)")
+    ap.add_argument("--arm-key", default="padtype",
+                    choices=["padtype", "checkpoint"],
+                    help="Arm axis: padtype (pad-fill modes per toolkit) or "
+                         "checkpoint (ProteinMPNN train-noise checkpoints, "
+                         "all zeropad -> groups ckpt_<tk>[_full])")
     ap.add_argument("--smoke", action="store_true",
                     help="DeLong asserts on one pair, then exit")
     args = ap.parse_args()
@@ -229,6 +248,8 @@ def main():
     # ── Load OOF vectors + fold AUCs ──
     pad_probs = {"ESM-C": {}, "ESM-IF": {}, "ProteinMPNN": {}}
     pad_fold_full = {"ESM-C": {}, "ESM-IF": {}, "ProteinMPNN": {}}
+    ckpt_probs = {"ProteinMPNN": {}}       # --arm-key checkpoint
+    ckpt_fold_full = {"ProteinMPNN": {}}
     baseline_probs = {}
     baseline_fold_auc = {}
     for pth in sorted(json_dir.glob("cv_results_xgb_*_flat_*.json")):
@@ -239,10 +260,17 @@ def main():
         if m_emb:
             key = m_emb.group(1)
             toolkit, padtype = PADTYPE_MAP[key]
-            pad_probs[toolkit][padtype] = reconstruct_oof(res, n)
-            pad_fold_full[toolkit][padtype] = [
-                m["auc_roc"] for m in res["outer_val_metrics"]]
-            print(f"  loaded {toolkit}/{padtype:<14} {pth.name}")
+            probs = reconstruct_oof(res, n)
+            folds = [m["auc_roc"] for m in res["outer_val_metrics"]]
+            if args.arm_key == "checkpoint" and toolkit == "ProteinMPNN":
+                ckpt = CKPT_RE.match(key).group(1)
+                ckpt_probs[toolkit][ckpt] = probs
+                ckpt_fold_full[toolkit][ckpt] = folds
+                print(f"  loaded {toolkit}/{ckpt:<14} {pth.name}")
+            else:
+                pad_probs[toolkit][padtype] = probs
+                pad_fold_full[toolkit][padtype] = folds
+                print(f"  loaded {toolkit}/{padtype:<14} {pth.name}")
         elif m_base:
             baseline_probs[m_base.group(1)] = reconstruct_oof(res, n)
             baseline_fold_auc[m_base.group(1)] = [
@@ -258,6 +286,10 @@ def main():
             for padtype, probs in pad_probs[tk].items():
                 assert len(probs) == n, (tk, padtype, len(probs), n)
                 assert np.isfinite(probs).all(), (tk, padtype, "nonfinite")
+        for tk in ckpt_probs:
+            for ckpt, probs in ckpt_probs[tk].items():
+                assert len(probs) == n, (tk, ckpt, len(probs), n)
+                assert np.isfinite(probs).all(), (tk, ckpt, "nonfinite")
         for feat, probs in baseline_probs.items():
             assert len(probs) == n, (feat, len(probs), n)
             assert np.isfinite(probs).all(), (feat, "nonfinite")
@@ -269,7 +301,8 @@ def main():
         # MPNN mask: informative (partially padded) row count is not fixed
         # by construction here, only that the mask is non-empty and in range.
         assert 0 < int(masks["ProteinMPNN"].sum()) <= n, "ProteinMPNN mask"
-        _n_emb = sum(len(pad_probs[tk]) for tk in pad_probs)
+        _n_emb = (sum(len(pad_probs[tk]) for tk in pad_probs)
+                  + sum(len(ckpt_probs[tk]) for tk in ckpt_probs))
         print(f"  build asserts OK: {_n_emb} "
               f"emb + {len(baseline_probs)} baseline OOF vectors; "
               f"masks ESM-C=1443 / ESM-IF=1442 / "
@@ -358,13 +391,25 @@ def main():
             y_, pa, pb, args.B, rng)
         return lo, hi, p, sd
 
+    # ── Campaigns: (group_prefix, arm_probs, arm_fold_full, padded_mask) ──
+    # padmode families per toolkit; checkpoint family adds ckpt_<tk>[_full]
+    # with arms = train-noise checkpoints on the same toolkit mask.
+    campaigns = [
+        (f"padmode_{tk.replace('-', '').lower()}", pad_probs[tk],
+         pad_fold_full[tk], masks[tk])
+        for tk in sorted(pad_probs) if len(pad_probs[tk]) >= 2]
+    if args.arm_key == "checkpoint":
+        campaigns += [
+            (f"ckpt_{tk.replace('-', '').lower()}", ckpt_probs[tk],
+             ckpt_fold_full[tk], masks[tk])
+            for tk in sorted(ckpt_probs) if len(ckpt_probs[tk]) >= 2]
+
     # ── Smoke: DeLong asserts on one pair, then exit ──
     if args.smoke:
-        # first toolkit with >=2 loaded modes (ESM-C when present)
-        tk = next(tk for tk, d in pad_probs.items() if len(d) >= 2)
-        ma, mb = sorted(pad_probs[tk])[:2]
-        padded = masks[tk]
-        sub = pad_probs[tk][ma][padded], pad_probs[tk][mb][padded]
+        prefix, probs_by_arm, _, padded = next(
+            c for c in campaigns if len(c[1]) >= 2)
+        ma, mb = sorted(probs_by_arm)[:2]
+        sub = probs_by_arm[ma][padded], probs_by_arm[mb][padded]
         y_sub = y_full[padded]
         p_d, a_d, b_d, se_d, z_d = delong_p(y_sub, *sub)
         a_r, b_r = roc_auc_score(y_sub, sub[0]), roc_auc_score(y_sub, sub[1])
@@ -373,9 +418,9 @@ def main():
         lo, hi, _, sd_boot = maybe_bootstrap(
             y_sub, sub[0], sub[1], "smoke", ma, mb)
         rel = abs(se_d - sd_boot) / sd_boot if sd_boot else float("nan")
-        print(f"  smoke OK: AUC match 1e-12; DeLong SE={se_d:.5f} "
-              f"z={z_d:.3f} p={p_d:.3g}; bootstrap SD={sd_boot:.5f} "
-              f"rel_diff={rel:.3%}")
+        print(f"  smoke OK ({prefix}): AUC match 1e-12; "
+              f"DeLong SE={se_d:.5f} z={z_d:.3f} p={p_d:.3g}; "
+              f"bootstrap SD={sd_boot:.5f} rel_diff={rel:.3%}")
         # --skip-bootstrap leaves sd_boot nan -> no cross-check to assert on
         if not np.isnan(rel):
             assert rel < 0.05, f"DeLong SE vs bootstrap SD off by {rel:.1%}"
@@ -383,34 +428,32 @@ def main():
 
     rows = []
 
-    # ── 1. Padmode pairwise, per toolkit ──
-    # Iterate only toolkits with >=2 loaded pad modes (campaign dirs may
-    # contain a subset; an empty dict yields no pairs).
-    for toolkit in sorted(tk for tk, d in pad_probs.items() if len(d) >= 2):
-        padded = masks[toolkit]
-        tk = toolkit.replace("-", "").lower()
-        modes = sorted(pad_probs[toolkit])
-        pairs = list(itertools.combinations(modes, 2))
-        fold_sub = {m: fold_subset_aucs(pad_probs[toolkit][m], padded)
-                    for m in modes}
+    # ── 1. Pairwise families (padmode_<tk> and/or ckpt_<tk>) ──
+    def run_pair_family(prefix, probs_by_arm, fold_full_by_arm, padded):
+        """One family: pairwise DeLong (+bootstrap) on the padded subset
+        and DeLong (+fold t/NB) on all rows; Holm within each block."""
+        arms = sorted(probs_by_arm)
+        pairs = list(itertools.combinations(arms, 2))
+        fold_sub = {m: fold_subset_aucs(probs_by_arm[m], padded)
+                    for m in arms}
         y_sub = y_full[padded]
-        assert len(y_sub) == int(padded.sum())  # within-toolkit matched
+        assert len(y_sub) == int(padded.sum())  # within-family matched
 
         # 1a. padded-subset: DeLong (primary) + bootstrap + fold t / NB
         def comp_sub(ma, mb):
-            pa = pad_probs[toolkit][ma][padded]
-            pb = pad_probs[toolkit][mb][padded]
+            pa = probs_by_arm[ma][padded]
+            pb = probs_by_arm[mb][padded]
             p_d, d_a, d_b, se_d, z_d = delong_p(y_sub, pa, pb)
             lo, hi, p, sd_b = maybe_bootstrap(
-                y_sub, pa, pb, f"padmode_{tk}", ma, mb)
+                y_sub, pa, pb, prefix, ma, mb)
             t, p_t, t_nb, p_nb = fold_t_nb(fold_sub[ma], fold_sub[mb])
             if (np.isfinite(se_d) and sd_b
                     and abs(se_d - sd_b) / sd_b > 0.05):
-                print(f"  WARN {tk} {ma}/{mb}: DeLong SE {se_d:.5f} vs "
+                print(f"  WARN {prefix} {ma}/{mb}: DeLong SE {se_d:.5f} vs "
                       f"bootstrap SD {sd_b:.5f} "
                       f"(ratio {se_d / sd_b:.3f})")
             row = {
-                "test_group": f"padmode_{tk}",
+                "test_group": prefix,
                 "model_a": ma, "model_b": mb,
                 "ci_lo": lo, "ci_hi": hi,
                 "p_value": p, "n_rows": int(padded.sum()),
@@ -423,13 +466,13 @@ def main():
 
         # 1b. full-data: DeLong on pooled OOF + fold t / NB
         def comp_full(ma, mb):
-            pa, pb = pad_probs[toolkit][ma], pad_probs[toolkit][mb]
+            pa, pb = probs_by_arm[ma], probs_by_arm[mb]
             p_d, d_a, d_b, se_d, z_d = delong_p(y_full, pa, pb)
-            fa = np.asarray(pad_fold_full[toolkit][ma])
-            fb = np.asarray(pad_fold_full[toolkit][mb])
+            fa = np.asarray(fold_full_by_arm[ma])
+            fb = np.asarray(fold_full_by_arm[mb])
             t, p_t, t_nb, p_nb = fold_t_nb(fa, fb)
             row = {
-                "test_group": f"padmode_{tk}_full",
+                "test_group": f"{prefix}_full",
                 "model_a": ma, "model_b": mb,
                 "ci_lo": np.nan, "ci_hi": np.nan,
                 "p_value": np.nan, "n_rows": n,
@@ -439,6 +482,9 @@ def main():
             row.update(delong_fields(d_a, d_b, se_d, z_d, p_d))
             return row, np.nan, p_t, p_nb, p_d
         rows.extend(holm_pair_block(pairs, comp_full))
+
+    for prefix, probs_by_arm, fold_by_arm, padded in campaigns:
+        run_pair_family(prefix, probs_by_arm, fold_by_arm, padded)
 
     # ── 2. Baseline pairs, full-data ──
     base_modes = [m for m in ("sparse", "blosum", "handcrafted_blosum",
@@ -512,7 +558,8 @@ def main():
     # CI extent for Methods wording (padmode subset families; DeLong CIs
     # are primary, bootstrap CIs cross-check)
     for grp in sorted(g for g in out["test_group"].unique()
-                      if g.startswith("padmode_") and not g.endswith("_full")):
+                      if (g.startswith("padmode_") or g.startswith("ckpt_"))
+                      and not g.endswith("_full")):
         sub = out[out["test_group"] == grp]
         d_bound = max(sub["ci95_lo"].abs().max(), sub["ci95_hi"].abs().max())
         b_bound = max(sub["ci_lo"].abs().max(), sub["ci_hi"].abs().max())
