@@ -79,7 +79,7 @@ mkdir -p "$OUT_ROOT"/{models/flat,logs/slurm,results}
 echo "xgb lr=$LR n_estimators=$NEST features=$FEATURES pca=${PCA:-None} out=$OUT_ROOT  ($(date))"
 CMD=(python src/pipeline/python/04_modelling.py
      --model xgb --features "$FEATURES"
-     --xgb-params "{\"learning_rate\": $LR, \"n_estimators\": $NEST}"
+     --xgb-params "{\"learning_rate\": $LR, \"n_estimators\": $NEST, \"early_stopping_rounds\": 50}"
      --out-root "$OUT_ROOT")
 [[ -n "$PCA" ]] && CMD+=(--pca "$PCA")
 "${CMD[@]}"

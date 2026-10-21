@@ -77,12 +77,6 @@ class Logger:
 # 1. MODEL FACTORY
 # ──────────────────────────────────────────────
 
-# XGB-only fit-time params (accepted via --xgb-params but NOT passed to
-# the XGBClassifier constructor — consumed by train_one_fold at fit time).
-# shortcut: early stopping only; add more fit kwargs here if ever needed.
-XGB_FIT_ONLY_PARAMS = {"early_stopping_rounds"}
-
-
 def build_model(model_cfg, param_overrides=None):
     """Instantiate a sklearn model from a MODEL_REGISTRY entry."""
     class_path = model_cfg["model_class"]
@@ -92,9 +86,8 @@ def build_model(model_cfg, param_overrides=None):
     params = dict(model_cfg["params"])
     if param_overrides:
         params.update(param_overrides)
-    if "xgboost" in class_path:
-        params = {k: v for k, v in params.items()
-                  if k not in XGB_FIT_ONLY_PARAMS}
+    # early_stopping_rounds is a valid XGBClassifier constructor param
+    # (xgboost >= 1.6; server runs 3.4.1) — passed through untouched.
     return cls(**params)
 
 
@@ -943,31 +936,16 @@ def train_one_fold(model_cfg, X_train, y_train, X_test, y_test, fold_id):
 
     print(f"    Training {display} ...")
     t_start = time.time()
-    # XGB early stopping: eval on this inner fold's test bucket, stop after
-    # `early_stopping_rounds` trees without logloss improvement. Each fold
-    # keeps its own best tree count (model.best_iteration_).
+    # XGB early stopping: rounds live in the constructor (xgboost >= 1.6,
+    # server 3.4.1); fit only supplies the eval set. Stop after
+    # `early_stopping_rounds` trees without logloss improvement on the
+    # inner fold's test bucket; each fold keeps its own tree count
+    # (model.best_iteration_).
     es_rounds = model_cfg["params"].get("early_stopping_rounds")
     is_xgb = model_cfg["model_class"].endswith("XGBClassifier")
     if is_xgb and es_rounds:
-        try:
-            es_rounds = int(es_rounds)
-        except (TypeError, ValueError):
-            es_rounds = None
-    if is_xgb and es_rounds:
-        fit_kwargs = {"eval_set": [(X_test, y_test)], "verbose": False}
-        try:
-            from xgboost.callback import EarlyStopping
-            fit_kwargs["callbacks"] = [
-                EarlyStopping(rounds=es_rounds, save_best=True)
-            ]
-            model.fit(X_train, y_train, **fit_kwargs)
-        except Exception:
-            # legacy fit kwarg (xgboost < 3.x API)
-            fit_kwargs.pop("callbacks", None)
-            fit_kwargs["early_stopping_rounds"] = es_rounds
-            model.fit(X_train, y_train, **fit_kwargs)
-        best_iter = getattr(model, "best_iteration_",
-                            getattr(model, "best_iteration", None))
+        model.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+        best_iter = getattr(model, "best_iteration_", None)
         print(f"    early stopping: rounds={es_rounds}, "
               f"best_iteration={best_iter}")
     else:
