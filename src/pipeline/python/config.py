@@ -805,6 +805,15 @@ FEATURE_SETS = {
         "display_name": "Structural + one-hot + ESM-IF windows (eos/bos-repeat)",
         "components": ["handcrafted", "sparse", "esmif_eos_bos_repeat"],
     },
+    # ── Explicit + embedding (no AA encoding) ──
+    "handcrafted_esmif_eos_bos_repeat": {
+        "display_name": "Structural + ESM-IF windows (eos/bos-repeat)",
+        "components": ["handcrafted", "esmif_eos_bos_repeat"],
+    },
+    "handcrafted_esmc300m_win_padtoken": {
+        "display_name": "Structural + ESM-C-300M windows (pad-token)",
+        "components": ["handcrafted", "esmc300m_win_padtoken"],
+    },
     # ── ESM-C window-embedding feature sets ──
     "handcrafted_sparse_esmc_win_zeropad": {
         "display_name": "Structural + one-hot + ESM-C windows (zero-pad)",
