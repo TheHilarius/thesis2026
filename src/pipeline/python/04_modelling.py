@@ -77,6 +77,12 @@ class Logger:
 # 1. MODEL FACTORY
 # ──────────────────────────────────────────────
 
+# XGB-only fit-time params (accepted via --xgb-params but NOT passed to
+# the XGBClassifier constructor — consumed by train_one_fold at fit time).
+# shortcut: early stopping only; add more fit kwargs here if ever needed.
+XGB_FIT_ONLY_PARAMS = {"early_stopping_rounds"}
+
+
 def build_model(model_cfg, param_overrides=None):
     """Instantiate a sklearn model from a MODEL_REGISTRY entry."""
     class_path = model_cfg["model_class"]
@@ -86,6 +92,9 @@ def build_model(model_cfg, param_overrides=None):
     params = dict(model_cfg["params"])
     if param_overrides:
         params.update(param_overrides)
+    if "xgboost" in class_path:
+        params = {k: v for k, v in params.items()
+                  if k not in XGB_FIT_ONLY_PARAMS}
     return cls(**params)
 
 
@@ -934,7 +943,35 @@ def train_one_fold(model_cfg, X_train, y_train, X_test, y_test, fold_id):
 
     print(f"    Training {display} ...")
     t_start = time.time()
-    model.fit(X_train, y_train)
+    # XGB early stopping: eval on this inner fold's test bucket, stop after
+    # `early_stopping_rounds` trees without logloss improvement. Each fold
+    # keeps its own best tree count (model.best_iteration_).
+    es_rounds = model_cfg["params"].get("early_stopping_rounds")
+    is_xgb = model_cfg["model_class"].endswith("XGBClassifier")
+    if is_xgb and es_rounds:
+        try:
+            es_rounds = int(es_rounds)
+        except (TypeError, ValueError):
+            es_rounds = None
+    if is_xgb and es_rounds:
+        fit_kwargs = {"eval_set": [(X_test, y_test)], "verbose": False}
+        try:
+            from xgboost.callback import EarlyStopping
+            fit_kwargs["callbacks"] = [
+                EarlyStopping(rounds=es_rounds, save_best=True)
+            ]
+            model.fit(X_train, y_train, **fit_kwargs)
+        except Exception:
+            # legacy fit kwarg (xgboost < 3.x API)
+            fit_kwargs.pop("callbacks", None)
+            fit_kwargs["early_stopping_rounds"] = es_rounds
+            model.fit(X_train, y_train, **fit_kwargs)
+        best_iter = getattr(model, "best_iteration_",
+                            getattr(model, "best_iteration", None))
+        print(f"    early stopping: rounds={es_rounds}, "
+              f"best_iteration={best_iter}")
+    else:
+        model.fit(X_train, y_train)
     t_end = time.time()
     print(f"    Training time: {t_end - t_start:.1f}s")
 
@@ -1298,6 +1335,7 @@ if __name__ == "__main__":
     outer_val_metrics = []
     outer_val_predictions = {}
     all_outer_inner_weights = []
+    all_best_iterations = []
     fold_times = []
 
     t_nested_start = time.time()
@@ -1345,6 +1383,13 @@ if __name__ == "__main__":
             model, test_metrics, y_prob = train_one_fold(
                 model_cfg, X_train, y_train, X_test, y_test, inner_fold,
             )
+            best_iter = getattr(model, "best_iteration_",
+                                getattr(model, "best_iteration", None))
+            if best_iter is not None:
+                try:
+                    all_best_iterations.append(int(best_iter))
+                except (TypeError, ValueError):
+                    pass
 
             t_fold_end = time.time()
             fold_times.append(round(t_fold_end - t_fold_start, 1))
@@ -1476,6 +1521,7 @@ if __name__ == "__main__":
                        for m, s in summary.items()},
         "outer_val_metrics": outer_val_metrics,
         "outer_val_predictions": outer_val_predictions,
+        "best_iterations": all_best_iterations,
     }
 
     if all_outer_inner_weights:
