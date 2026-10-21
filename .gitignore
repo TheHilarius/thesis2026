@@ -100,6 +100,8 @@ data/processed/af_version_comparison/
 data/processed/af_*_output.log
 *.bak
 
+# Local dev venv (never commit envs)
+.venv/
 reference_manager/.venv/
 reference_manager/nbib/
 reference_manager/*.json
@@ -144,3 +146,4 @@ runs/slot_legacy/*/*.json
 runs/slot_legacy/*/
 runs/_legacy/*/
 runs/smoketest_*/
+runs/cnn_*/
