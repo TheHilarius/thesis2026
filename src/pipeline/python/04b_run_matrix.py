@@ -71,7 +71,7 @@ DEFAULT_COMBOS = [
 
 
 def run_combo(model, features, pca, pca_mode="flat", dry_run=False,
-              out_root=None, xgb_params=None, slots=None, dims=None):
+              out_root=None, xgb_params=None, dims=None):
     """Run one 04_modelling.py invocation."""
     cmd = [
         sys.executable, str(MODELING_SCRIPT),
@@ -79,8 +79,6 @@ def run_combo(model, features, pca, pca_mode="flat", dry_run=False,
         "--features", features,
         "--pca-mode", pca_mode,
     ]
-    if slots:
-        cmd += ["--slots", str(slots)]
     if dims:
         cmd += ["--dims", str(dims)]
     if xgb_params and model == "xgb":
@@ -312,12 +310,6 @@ def main():
              "for xgb combos, e.g. '{\"learning_rate\": 0.05}'.",
     )
     parser.add_argument(
-        "--slots", type=str, default=None,
-        help="Slot list forwarded as --slots to 04_modelling.py "
-             "(simple21 var21 test): '0,1,5' or path to top-N JSON. "
-             "Requires --pca-mode simple21.",
-    )
-    parser.add_argument(
         "--dims", type=str, default=None,
         help="Dim list forwarded as --dims to 04_modelling.py "
              "(simple21 29x21 test): '0,1,5' or path to top-N JSON. "
@@ -405,7 +397,7 @@ def main():
     for model, features, pca in combos:
         ok = run_combo(model, features, pca, pca_mode=args.pca_mode,
                        dry_run=args.dry_run, out_root=args.out_root,
-                       xgb_params=args.xgb_params, slots=args.slots,
+                       xgb_params=args.xgb_params,
                        dims=args.dims)
         if ok:
             successes += 1
