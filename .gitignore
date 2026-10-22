@@ -147,3 +147,4 @@ runs/slot_legacy/*/
 runs/_legacy/*/
 runs/smoketest_*/
 runs/cnn_*/
+runs/**/models/
