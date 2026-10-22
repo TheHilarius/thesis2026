@@ -62,3 +62,13 @@ explicit_pairwise	blosum62	atchley	handcrafted_blosum62	handcrafted_atchley	0.76
 explicit_pairwise	blosum80	kidera	handcrafted_blosum80	handcrafted_kidera	0.765749	0.761426	0.004324	0.000945	4.5743	4.778e-06	1.911e-05	True
 explicit_pairwise	blosum80	atchley	handcrafted_blosum80	handcrafted_atchley	0.765749	0.753208	0.012542	0.001090	11.5105	1.168e-30	1.051e-29	True
 explicit_pairwise	kidera	atchley	handcrafted_kidera	handcrafted_atchley	0.761426	0.753208	0.008218	0.001059	7.7569	8.700e-15	6.090e-14	True
+explicit_emb_vs_emb		esmif_eos_bos_repeat	handcrafted_esmif_eos_bos_repeat	emb_esmif_eos_bos_repeat	0.650287	0.644835	0.005452	0.001233	4.4199	9.874e-06	1.975e-05	True
+explicit_emb_vs_emb		esmc300m_win_padtoken	handcrafted_esmc300m_win_padtoken	emb_esmc300m_win_padtoken	0.698554	0.697261	0.001293	0.001071	1.2076	2.272e-01	2.272e-01	False
+explicit_emb_vs_explicit		esmif_eos_bos_repeat	handcrafted_esmif_eos_bos_repeat	handcrafted	0.650287	0.566626	0.083661	0.003086	27.1072	8.099e-162	8.099e-162	True
+explicit_emb_vs_explicit		esmc300m_win_padtoken	handcrafted_esmc300m_win_padtoken	handcrafted	0.698554	0.566626	0.131928	0.003093	42.6546	0.000e+00	0.000e+00	True
+explicit_embedding_pairwise			emb_esmif_eos_bos_repeat	emb_esmc300m_win_padtoken	0.644835	0.697261	-0.052426	0.002583	-20.2961	1.392e-91	6.962e-91	True
+explicit_embedding_pairwise			emb_esmif_eos_bos_repeat	handcrafted_esmif_eos_bos_repeat	0.644835	0.650287	-0.005452	0.001233	-4.4199	9.874e-06	1.975e-05	True
+explicit_embedding_pairwise			emb_esmif_eos_bos_repeat	handcrafted_esmc300m_win_padtoken	0.644835	0.698554	-0.053719	0.002553	-21.0430	2.652e-98	1.591e-97	True
+explicit_embedding_pairwise			emb_esmc300m_win_padtoken	handcrafted_esmif_eos_bos_repeat	0.697261	0.650287	0.046974	0.002551	18.4112	1.069e-75	3.207e-75	True
+explicit_embedding_pairwise			emb_esmc300m_win_padtoken	handcrafted_esmc300m_win_padtoken	0.697261	0.698554	-0.001293	0.001071	-1.2076	2.272e-01	2.272e-01	False
+explicit_embedding_pairwise			handcrafted_esmif_eos_bos_repeat	handcrafted_esmc300m_win_padtoken	0.650287	0.698554	-0.048267	0.002475	-19.5045	1.006e-84	4.024e-84	True

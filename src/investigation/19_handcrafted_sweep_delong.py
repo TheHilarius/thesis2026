@@ -12,21 +12,22 @@ are already settled by 18_encodings_sweep_delong.py and are NOT recomputed:
   T3  three_vs_explicit  three-way vs explicit alone             (12)
   E6  explicit_emb_vs_emb       explicit+embedding vs embedding   (2, when landed)
   E7  explicit_emb_vs_explicit  explicit+embedding vs explicit    (2, when landed)
+  E8  explicit_embedding_pairwise  4 embedding arms all-vs-all     (6, when landed)
 
 Statistical protocol identical to 18_ (pooled out-of-fold DeLong, Holm
 correction within each family, brackets only for significant pairs) —
 stats code copied verbatim. Every arm's OOF labels are md5-checked against
 the split CSV at load time.
 
-Plot display terminology: "explicit features" (user preference, Oct 21);
-code keys keep the handcrafted_* names.
+Plot display terminology: "handcrafted features" (reverted from "explicit
+features", user decision Oct 22); code keys keep the handcrafted_* names.
 
 Emits (into runs/handcrafted_sweep/):
-  plots/explicit_effect_on_encodings.png   enc / explicit+enc / explicit
-  plots/explicit_encodings_ranking.png     explicit+enc arms, all-vs-all
-  plots/explicit_effect_on_esmif.png       ESM-IF / explicit+ESM-IF / explicit
-  plots/explicit_effect_on_esmc.png        ESM-C / explicit+ESM-C / explicit
-                                             (last two skip until E6/E7 arms land)
+  plots/handcrafted_effect_on_encodings.png   enc / hc+enc / hc
+  plots/handcrafted_encodings_ranking.png     hc+enc arms, all-vs-all
+  plots/handcrafted_effect_on_esmif.png       ESM-IF / hc+ESM-IF / hc
+  plots/handcrafted_effect_on_esmc.png        ESM-C / hc+ESM-C / hc
+  plots/handcrafted_embeddings_ranking.png    4 embedding arms, all-vs-all
   results/handcrafted_sweep_delong_stats.tsv    every tested pair
   results/handcrafted_sweep_deltas.tsv          explicit contrasts + memory
 
@@ -235,8 +236,8 @@ def enc_emb_key(enc, emb):
 
 
 def exp_label(enc=None):
-    """Display label for the explicit feature set (user terminology)."""
-    return f"explicit+{ENC_LABEL[enc]}" if enc else "explicit features"
+    """Display label for the handcrafted feature set."""
+    return f"handcrafted+{ENC_LABEL[enc]}" if enc else "handcrafted features"
 
 
 # ── plotting helpers (padmode_choice style, copied from 18_) ─────────────
@@ -347,34 +348,24 @@ def plot_effect_on_encodings(models, famExpEnc, famExpAlone, out_png,
     ax.set_xticklabels([ENC_LABEL[e] for e in ENCODINGS],
                        rotation=30, ha="right", fontsize=9)
     _finish_padmode(fig, ax,
-                    "Effect of explicit features: encoding vs explicit+encoding "
-                    "vs explicit features alone",
+                    "Effect of handcrafted features: encoding vs "
+                    "handcrafted+encoding vs handcrafted features alone",
                     out_png,
                     [("AA encoding", C_SOLO),
-                     ("explicit + encoding", C_EXP),
-                     ("explicit features", C_EXP_FULL)])
+                     ("handcrafted + encoding", C_EXP),
+                     ("handcrafted features", C_EXP_FULL)])
 
 
-def plot_exp_enc_ranking(models, famExpPair, out_png, alpha=ALPHA):
-    """Flat 6 bars, all explicit+encoding arms compared against each other
-    (pairwise DeLong, Holm within family). Hub brackets (padmode 'baselines'
-    layout, same as 18_'s encodings-only figure): ONE bracket per left bar
-    to its rightmost significant partner, down-ticks at intermediate
-    significant bars; ns contrasts live in the stats TSV."""
-    xs = list(range(len(ENCODINGS)))
-    key_to_x = {enc: i for i, enc in enumerate(ENCODINGS)}
-    vals = [models[exp_key(enc)]["auc"] for enc in ENCODINGS]
-    errs = [models[exp_key(enc)]["outer_std"] for enc in ENCODINGS]
-    colors = [C_EXP] * len(ENCODINGS)
-
-    sig = [pr for pr in famExpPair if pr["p_adj"] < alpha]
+def _hub_entries(sig, keys, key_to_x):
+    """Hub brackets: per left key, ONE bracket to its rightmost significant
+    partner; down-ticks at intermediate significant partners; text shows the
+    best (lowest p_adj) partner pair."""
     hubs = []
-    for i, ka in enumerate(ENCODINGS):
+    for i, ka in enumerate(keys):
         rightmost, best, partners = None, None, []
-        for kb in ENCODINGS[i + 1:]:
+        for kb in keys[i + 1:]:
             hit = next((pr for pr in sig
-                        if {pr["name_a"], pr["name_b"]}
-                        == {exp_key(ka), exp_key(kb)}), None)
+                        if {pr["name_a"], pr["name_b"]} == {ka, kb}), None)
             if hit is not None:
                 rightmost = kb
                 partners.append(kb)
@@ -384,11 +375,49 @@ def plot_exp_enc_ranking(models, famExpPair, out_png, alpha=ALPHA):
             hubs.append((key_to_x[ka], key_to_x[rightmost],
                          best["p"], best["p_adj"],
                          [key_to_x[ka]] + [key_to_x[k] for k in partners]))
+    return hubs
+
+
+def _draw_hubs(ax, hubs, vals):
+    if not hubs:
+        return
+    y0 = max(vals) * 1.08
+    max_lvl = len(hubs)
+    headroom = 0.97 - y0 - max(vals) * 0.03
+    step = min(max(vals) * 0.085, headroom / (max_lvl - 1 + 0.35))
+    fontsize = 7.5 if step >= max(vals) * 0.05 else 6.5
+    for lvl, (xa, xb, p, p_adj, tick_keys) in enumerate(sorted(
+            hubs, key=lambda h: -(h[1] - h[0]))):
+        y_br = y0 + lvl * step
+        ax.plot([xa, xa, xb, xb], [y_br * 0.985, y_br, y_br, y_br * 0.985],
+                color="black", lw=0.9)
+        for xt in tick_keys:            # "differs from each" down-ticks
+            if xt not in (xa, xb):
+                ax.plot([xt, xt], [y_br * 0.985, y_br], color="black", lw=0.9)
+        ax.text((xa + xb) / 2, y_br + step * 0.12,
+                f"{fmt_p_pair(p, p_adj)} ({stars(p_adj)})",
+                ha="center", va="bottom", fontsize=fontsize)
+
+
+def plot_exp_enc_ranking(models, famExpPair, out_png, alpha=ALPHA):
+    """Flat 6 bars, all explicit+encoding arms compared against each other
+    (pairwise DeLong, Holm within family). Hub brackets (padmode 'baselines'
+    layout, same as 18_'s encodings-only figure): ONE bracket per left bar
+    to its rightmost significant partner, down-ticks at intermediate
+    significant bars; ns contrasts live in the stats TSV."""
+    xs = list(range(len(ENCODINGS)))
+    key_to_x = {exp_key(enc): i for i, enc in enumerate(ENCODINGS)}
+    vals = [models[exp_key(enc)]["auc"] for enc in ENCODINGS]
+    errs = [models[exp_key(enc)]["outer_std"] for enc in ENCODINGS]
+    colors = [C_EXP] * len(ENCODINGS)
+
+    sig = [pr for pr in famExpPair if pr["p_adj"] < alpha]
+    hubs = _hub_entries(sig, [exp_key(e) for e in ENCODINGS], key_to_x)
 
     best_enc = max(ENCODINGS, key=lambda e: models[exp_key(e)]["auc"])
     ns_n = len(famExpPair) - len(sig)
     footnote = (
-        f"best arm: explicit+{ENC_LABEL[best_enc]} "
+        f"best arm: handcrafted+{ENC_LABEL[best_enc]} "
         f"{models[exp_key(best_enc)]['auc']:.4f}; "
         f"{ns_n}/{len(famExpPair)} pairwise contrasts ns "
         "(handcrafted_sweep_delong_stats.tsv, family explicit_pairwise)."
@@ -396,31 +425,56 @@ def plot_exp_enc_ranking(models, famExpPair, out_png, alpha=ALPHA):
 
     fig, ax = plt.subplots(figsize=(10, 6.2))
     _padmode_bars(ax, xs, vals, errs, colors)
-    if hubs:
-        y0 = max(vals) * 1.08
-        max_lvl = len(hubs)
-        headroom = 0.97 - y0 - max(vals) * 0.03
-        step = min(max(vals) * 0.085, headroom / (max_lvl - 1 + 0.35))
-        fontsize = 7.5 if step >= max(vals) * 0.05 else 6.5
-        for lvl, (xa, xb, p, p_adj, tick_keys) in enumerate(sorted(
-                hubs, key=lambda h: -(h[1] - h[0]))):
-            y_br = y0 + lvl * step
-            ax.plot([xa, xa, xb, xb], [y_br * 0.985, y_br, y_br, y_br * 0.985],
-                    color="black", lw=0.9)
-            for xt in tick_keys:            # "differs from each" down-ticks
-                if xt not in (xa, xb):
-                    ax.plot([xt, xt], [y_br * 0.985, y_br], color="black", lw=0.9)
-            ax.text((xa + xb) / 2, y_br + step * 0.12,
-                    f"{fmt_p_pair(p, p_adj)} ({stars(p_adj)})",
-                    ha="center", va="bottom", fontsize=fontsize)
+    _draw_hubs(ax, hubs, vals)
     ax.set_xticks(xs)
     ax.set_xticklabels([f"{ENC_LABEL[e]}\nk={models[exp_key(e)]['k']}"
                         for e in ENCODINGS],
                        rotation=30, ha="right", fontsize=9)
     _finish_padmode(fig, ax,
-                    "Explicit + encoding arms compared against each other "
+                    "Handcrafted + encoding arms compared against each other "
                     "(DeLong, Holm-corrected)",
-                    out_png, [("explicit + encoding", C_EXP)],
+                    out_png, [("handcrafted + encoding", C_EXP)],
+                    footnote=footnote)
+
+
+def plot_exp_emb_ranking(models, famEmbPair, out_png, alpha=ALPHA):
+    """Flat 4 bars, embedding arms compared against each other (pairwise
+    DeLong, Holm within family): ESM-IF / ESM-C / handcrafted+ESM-IF /
+    handcrafted+ESM-C. Hub brackets, same layout as the encodings ranking."""
+    bars = [("emb_esmif_eos_bos_repeat", C_IF, "ESM-IF"),
+            ("emb_esmc300m_win_padtoken", C_C, "ESM-C"),
+            (f"{EXP}_esmif_eos_bos_repeat", C_EXP, "handcrafted + ESM-IF"),
+            (f"{EXP}_esmc300m_win_padtoken", C_EXP, "handcrafted + ESM-C")]
+    xs = list(range(len(bars)))
+    key_to_x = {k: x for x, (k, _c, _l) in enumerate(bars)}
+    vals = [models[k]["auc"] for k, _c, _l in bars]
+    errs = [models[k]["outer_std"] for k, _c, _l in bars]
+    colors = [c for _k, c, _l in bars]
+
+    sig = [pr for pr in famEmbPair if pr["p_adj"] < alpha]
+    hubs = _hub_entries(sig, [k for k, _c, _l in bars], key_to_x)
+
+    best_k = max((k for k, _c, _l in bars), key=lambda k: models[k]["auc"])
+    best_lb = next(l for k, _c, l in bars if k == best_k)
+    ns_n = len(famEmbPair) - len(sig)
+    footnote = (
+        f"best arm: {best_lb} {models[best_k]['auc']:.4f}; "
+        f"{ns_n}/{len(famEmbPair)} pairwise contrasts ns "
+        "(handcrafted_sweep_delong_stats.tsv, family "
+        "explicit_embedding_pairwise)."
+    )
+
+    fig, ax = plt.subplots(figsize=(8.5, 6.2))
+    _padmode_bars(ax, xs, vals, errs, colors)
+    _draw_hubs(ax, hubs, vals)
+    ax.set_xticks(xs)
+    ax.set_xticklabels([lb for _k, _c, lb in bars], rotation=20, ha="right",
+                       fontsize=9)
+    _finish_padmode(fig, ax,
+                    "Embedding arms compared against each other "
+                    "(DeLong, Holm-corrected)",
+                    out_png,
+                    [("embedding", C_IF), ("handcrafted + embedding", C_EXP)],
                     footnote=footnote)
 
 
@@ -447,15 +501,15 @@ def plot_emb_explicit(models, famEmbExp, famEmbExpVsExp, emb_comp, emb_label,
     _padmode_bars(ax, xs, vals, errs, colors)
     _padmode_brackets(ax, pairs, vals)
     ax.set_xticks(xs)
-    ax.set_xticklabels([emb_label, f"explicit + {emb_label}", "explicit features"],
-                       fontsize=10)
+    ax.set_xticklabels([emb_label, f"handcrafted + {emb_label}",
+                        "handcrafted features"], fontsize=10)
     _finish_padmode(fig, ax,
-                    f"Explicit features with {emb_label}: "
-                    f"{emb_label} vs explicit+{emb_label} vs explicit features",
+                    f"Handcrafted features with {emb_label}: "
+                    f"{emb_label} vs handcrafted+{emb_label} vs handcrafted features",
                     out_png,
                     [(emb_label, emb_full),
-                     (f"explicit + {emb_label}", C_EXP),
-                     ("explicit features", C_EXP_FULL)])
+                     (f"handcrafted + {emb_label}", C_EXP),
+                     ("handcrafted features", C_EXP_FULL)])
 
 
 # ── main ────────────────────────────────────────────────────────────────
@@ -555,9 +609,9 @@ def main():
     print(f"Family T3 (three-way vs explicit alone): {len(famT3)} pairs, "
           f"{sum(1 for p in famT3 if p['p_adj'] < ALPHA)} significant")
 
-    # ── E6/E7: explicit+embedding arms (only once the 2 new cluster jobs
+    # ── E6/E7/E8: explicit+embedding arms (only once the 2 new cluster jobs
     #    handcrafted_<emb> have landed; otherwise figures are skipped) ──
-    famEmbExp, famEmbExpVsExp = [], []
+    famEmbExp, famEmbExpVsExp, famEmbPair = [], [], []
     embs_with_exp = [emb for emb, _nm, _c, _ct in EMB_ONLY
                      if f"{EXP}_{emb}" in models]
     for emb in embs_with_exp:
@@ -584,22 +638,42 @@ def main():
               "(handcrafted_esmif_eos_bos_repeat / "
               "handcrafted_esmc300m_win_padtoken)")
 
+    # E8: all 4 embedding arms pairwise (ranking figure)
+    if len(embs_with_exp) == len(EMB_ONLY):
+        emb4 = [f"emb_{emb}" for emb, _nm, _c, _ct in EMB_ONLY] + \
+               [f"{EXP}_{emb}" for emb, _nm, _c, _ct in EMB_ONLY]
+        for i, a in enumerate(emb4):
+            for b in emb4[i + 1:]:
+                auc_a, auc_b, d, se, z, p = delong_full(
+                    y, models[a]["probs"], models[b]["probs"])
+                famEmbPair.append(dict(name_a=a, name_b=b, auc_a=auc_a,
+                                       auc_b=auc_b, delta=d, se=se, z=z, p=p))
+        holm_family(famEmbPair)
+        print(f"Family E8 (embedding-arm pairwise): {len(famEmbPair)} pairs, "
+              f"{sum(1 for p in famEmbPair if p['p_adj'] < ALPHA)} significant")
+
     # ── figures (padmode_choice style) ──
     out_dir = PROJECT_ROOT / "runs" / "handcrafted_sweep" / "plots"
     out_dir.mkdir(parents=True, exist_ok=True)
     plot_effect_on_encodings(models, famExpEnc, famExpAlone,
-                             out_dir / "explicit_effect_on_encodings.png")
+                             out_dir / "handcrafted_effect_on_encodings.png")
     plot_exp_enc_ranking(models, famExpPair,
-                         out_dir / "explicit_encodings_ranking.png")
+                         out_dir / "handcrafted_encodings_ranking.png")
+    if len(embs_with_exp) == len(EMB_ONLY):
+        plot_exp_emb_ranking(models, famEmbPair,
+                             out_dir / "handcrafted_embeddings_ranking.png")
+    else:
+        print("  (skipping handcrafted_embeddings_ranking.png — "
+              "handcrafted+embedding arms not landed yet)")
     for emb, nm, full, _combo in EMB_ONLY:
         if emb in embs_with_exp:
             fe = next(p for p in famEmbExp if p["emb"] == emb)
             fv = next(p for p in famEmbExpVsExp if p["emb"] == emb)
             plot_emb_explicit(models, [fe], [fv], emb, nm, full,
-                              out_dir / f"explicit_effect_on_{nm.lower().replace('-', '')}.png")
+                              out_dir / f"handcrafted_effect_on_{nm.lower().replace('-', '')}.png")
         else:
-            print(f"  (skipping explicit_effect_on_{nm.lower().replace('-', '')}"
-                  ".png — explicit+embedding arm not landed yet)")
+            print(f"  (skipping handcrafted_effect_on_{nm.lower().replace('-', '')}"
+                  ".png — handcrafted+embedding arm not landed yet)")
 
     # ── TSV: every tested pair ──
     res_dir = PROJECT_ROOT / "runs" / "handcrafted_sweep" / "results"
@@ -639,6 +713,15 @@ def main():
                 z=f"{pr['z']:.4f}", p=f"{pr['p']:.3e}",
                 p_adj=f"{pr['p_adj']:.3e}",
                 significant=str(pr["p_adj"] < ALPHA)))
+    for pr in famEmbPair:
+        stat_rows.append(dict(
+            family="explicit_embedding_pairwise", encoding="",
+            embedding="", name_a=pr["name_a"], name_b=pr["name_b"],
+            auc_a=f"{pr['auc_a']:.6f}", auc_b=f"{pr['auc_b']:.6f}",
+            delta=f"{pr['delta']:.6f}", se=f"{pr['se']:.6f}",
+            z=f"{pr['z']:.4f}", p=f"{pr['p']:.3e}",
+            p_adj=f"{pr['p_adj']:.3e}",
+            significant=str(pr["p_adj"] < ALPHA)))
     with open(res_dir / "handcrafted_sweep_delong_stats.tsv", "w",
               newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(stat_rows[0].keys()),
