@@ -319,13 +319,21 @@ def load_all_components(df_split, feat_cfg, pca_mode="flat"):
     # alternate CSVs (df_all_sparse.csv / df_all_blosum50.csv / ...) and are
     # only used when an AA-encoding component is selected.
     AA_ENCODING_COMPONENTS = {
-        "sparse", "blosum50", "blosum62", "blosum80", "kidera", "atchley"
+        "sparse", "blosum50", "blosum62", "blosum80", "kidera", "atchley",
+        "compositional"
     }
     csv_feature_cols = []
     if csv_components:
         selected = {comp["_key"] for comp in csv_components}
         include_structural = "handcrafted" in selected
         include_encoded = bool(selected & AA_ENCODING_COMPONENTS)
+
+        # frac_* columns do not carry a {pos}_ prefix, so they must be
+        # recognised explicitly or they'd be misfiled as structural
+        compositional_cols = set()
+        for _k, _cols in comp_cols_by_key.items():
+            if _k == "compositional":
+                compositional_cols |= _cols
 
         all_feature_cols = get_feature_cols(df.columns)
         numeric_cols = [
@@ -339,6 +347,7 @@ def load_all_components(df_split, feat_cfg, pca_mode="flat"):
         structural_cols = [
             c for c in numeric_cols
             if not any(c.startswith(f"{pos}_") for pos in POSITION_AA_COLS)
+            and c not in compositional_cols
         ]
         encoded_cols = [c for c in numeric_cols if c not in structural_cols]
 
@@ -1354,14 +1363,21 @@ if __name__ == "__main__":
                 print(f"      New columns added: {info['n_new_cols']}")
         print(f"  Total CSV features: {total_csv_features}")
 
-        # Feature breakdown
-        structural_cols = [
+        # Feature breakdown (frac_* has no {pos}_ prefix; counted separately)
+        n_comp = sum(
+            info.get("n_new_cols", 0)
+            for info in component_info["csv_components"]
+            if info["key"] == "compositional"
+        )
+        encoded_cols = [
             c for c in csv_feature_cols
-            if not any(c.startswith(f"{pos}_") for pos in POSITION_AA_COLS)
+            if any(c.startswith(f"{pos}_") for pos in POSITION_AA_COLS)
         ]
-        encoded_cols = [c for c in csv_feature_cols if c not in structural_cols]
-        print(f"    Structural: {len(structural_cols)}")
+        print(f"    Structural: "
+              f"{len(csv_feature_cols) - len(encoded_cols) - n_comp}")
         print(f"    AA-encoded: {len(encoded_cols)}")
+        if n_comp:
+            print(f"    Compositional: {n_comp}")
 
     if component_info["emb_components"]:
         print(f"\n  Embedding components ({len(component_info['emb_components'])}):")
