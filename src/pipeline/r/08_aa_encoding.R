@@ -119,6 +119,49 @@ for (enc in names(ENCODINGS)) {
 }
 
 # =============================================================================
+# COMPOSITIONAL — 21 features: count of each AA (incl. X) across the 29
+# positions / 29. X is a real letter here: pad X in flanks makes
+# frac_X = flank-pad fraction. No NAs expected in position columns.
+# =============================================================================
+
+cat("\n=== COMPOSITIONAL Encoding ===\n")
+
+n_pos <- length(POSITION_COLS)
+comp_mat <- as.matrix(df_raw |> select(all_of(POSITION_COLS)))
+
+comp_features <- map_dfc(AA_ORDER, \(aa) {
+  counts <- rowSums(comp_mat == aa, na.rm = TRUE)
+  tibble(!!paste0("frac_", aa) := counts / n_pos)
+})
+
+# Validation: row sums must equal (non-NA positions) / 29
+row_tot <- rowSums(comp_features)
+na_per_row <- rowSums(is.na(comp_mat))
+expected <- (n_pos - na_per_row) / n_pos
+if (any(abs(row_tot - expected) > 1e-9)) {
+  stop("compositional validation failed: ",
+       sum(abs(row_tot - expected) > 1e-9), " rows have bad sums.")
+}
+cat("Validation passed:", length(AA_ORDER), "features x", nrow(comp_features),
+    "rows; sums match non-NA position fraction.\n")
+
+df_all_comp <- bind_cols(
+  df_raw |> select(all_of(non_position_cols)),
+  comp_features
+)
+write_csv(df_all_comp, "data/processed/df_all_compositional.csv")
+cat("Saved: data/processed/df_all_compositional.csv\n")
+
+# Solo CSV: frac_* + peptide/label keys (keys enable 04_modelling's
+# row-alignment check; they are not model features)
+df_comp_solo <- bind_cols(
+  df_raw |> select(peptide, label),
+  comp_features
+)
+write_csv(df_comp_solo, "data/processed/df_compositional.csv")
+cat("Saved: data/processed/df_compositional.csv\n")
+
+# =============================================================================
 # SANITY CHECK — Anchor positions (HLA-A*02:01)
 # =============================================================================
 
@@ -169,6 +212,10 @@ for (enc in names(ENCODINGS)) {
     enc, n_dims, length(POSITION_COLS) * n_dims, enc, enc
   ))
 }
+cat(sprintf(
+  "%-10s %6d %12d  df_compositional.csv + df_all_compositional.csv\n",
+  "compositional", length(AA_ORDER), length(AA_ORDER)
+))
 
 cat("\nNon-position columns:", length(non_position_cols), "\n")
 cat("df_<enc>.csv: peptide + label keys + encoded position columns only.\n")
@@ -176,3 +223,5 @@ cat("df_all_<enc>.csv: encoded columns + all non-position columns.\n")
 cat("Column naming: {position}_{aa} for sparse/BLOSUMs, {position}_KF*/AF* for\n")
 cat("kidera/atchley, e.g. P2_L, N4_A, P2_KF1, C1_AF3.\n")
 cat("NAs encoded as all-zero vectors; X is a real token (own column/row).\n")
+cat("compositional: frac_<aa> = count of aa across 29 positions / 29\n")
+cat("(X = flank pad, so frac_X is the pad fraction).\n")

@@ -279,6 +279,7 @@ def load_all_components(df_split, feat_cfg, pca_mode="flat"):
 
     # ── Load CSV components ──
     new_col_frames = []      # collect DataFrames to concat at the end
+    comp_cols_by_key = {}    # comp_key -> column names loaded from its CSV
 
     for comp in csv_components:
         comp_key = comp["_key"]
@@ -288,6 +289,7 @@ def load_all_components(df_split, feat_cfg, pca_mode="flat"):
             print(f"\n  Loading CSV component: {comp['display_name']}")
             new_cols_df = load_alternate_csv(csv_path, df)
             new_col_frames.append(new_cols_df)
+            comp_cols_by_key[comp_key] = set(new_cols_df.columns)
 
             component_info["csv_components"].append({
                 "key": comp_key,

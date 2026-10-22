@@ -30,6 +30,8 @@ BLOSUM62_DATA_PATH = DATA_DIR / "df_blosum62.csv"
 BLOSUM80_DATA_PATH = DATA_DIR / "df_blosum80.csv"
 KIDERA_DATA_PATH = DATA_DIR / "df_kidera.csv"
 ATCHLEY_DATA_PATH = DATA_DIR / "df_atchley.csv"
+# Compositional: frac_<aa> = aa count across the 29 positions / 29
+COMPOSITIONAL_DATA_PATH = DATA_DIR / "df_compositional.csv"
 
 # ──────────────────────────────────────────────
 # EMBEDDING PATHS & SCHEMAS
@@ -668,6 +670,11 @@ FEATURE_COMPONENTS = {
         "type": "csv",
         "csv_path": ATCHLEY_DATA_PATH,
     },
+    "compositional": {
+        "display_name": "AA composition (frac over 29 positions)",
+        "type": "csv",
+        "csv_path": COMPOSITIONAL_DATA_PATH,
+    },
     "esmc": {
         "display_name": "ESM-C (600M) context window",
         "type": "embedding",
@@ -877,6 +884,10 @@ FEATURE_SETS = {
     "atchley": {
         "display_name": "Atchley factors AA only",
         "components": ["atchley"],
+    },
+    "compositional": {
+        "display_name": "AA composition only (21 frac features)",
+        "components": ["compositional"],
     },
     "esmc": {
         "display_name": "ESM-C context window only",
@@ -1091,10 +1102,12 @@ FEATURE_SETS = {
 # <enc>_<emb> (encoding + embedding, no structural) and
 # handcrafted_<enc>_<emb> (all three).
 # Existing entries are kept as-is.
-_AA_ENCODINGS = ["sparse", "blosum50", "blosum62", "blosum80", "kidera", "atchley"]
+_AA_ENCODINGS = ["sparse", "blosum50", "blosum62", "blosum80", "kidera", "atchley",
+                 "compositional"]
 _AA_DISPLAY = {
     "sparse": "one-hot", "blosum50": "BLOSUM50", "blosum62": "BLOSUM62",
     "blosum80": "BLOSUM80", "kidera": "Kidera factors", "atchley": "Atchley factors",
+    "compositional": "AA composition",
 }
 _AA_EMB_PAIRS = [
     ("esmif_eos_bos_repeat", "ESM-IF eos/bos-repeat"),
@@ -1264,7 +1277,8 @@ def validate_feature_set(feat_cfg):
     # (same column names, different values)
     aa_encodings = [
         c for c in components
-        if c in ("sparse", "blosum50", "blosum62", "blosum80", "kidera", "atchley")
+        if c in ("sparse", "blosum50", "blosum62", "blosum80", "kidera", "atchley",
+                 "compositional")
     ]
     if len(aa_encodings) > 1:
         raise ValueError(
