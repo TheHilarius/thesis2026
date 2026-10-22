@@ -37,6 +37,11 @@ of pad-fill modes — they all share padtype "zeropad" in PADTYPE_MAP, so
 the arm label is parsed from the component name. Groups:
   ckpt_<tk>             pairwise, padded-subset rows
   ckpt_<tk>_full        pairwise, all rows (DeLong + t only)
+  ckpt_vs_<tk2>         every checkpoint vs each loaded <tk2> arm
+                        (e.g. ESM-IF EOS/BOS-repeat), padded-subset rows;
+                        subset block only when the two toolkits' padded
+                        masks are row-identical (asserted, MPNN==ESM-IF)
+  ckpt_vs_<tk2>_full    same pairs, all rows
 
 No cross-toolkit subset comparisons (masks differ on notfound rows) —
 asserted below. Equivalence is NOT formally tested (TOST dropped: a
@@ -268,6 +273,11 @@ def main():
                 ckpt_fold_full[toolkit][ckpt] = folds
                 print(f"  loaded {toolkit}/{ckpt:<14} {pth.name}")
             else:
+                if args.arm_key == "checkpoint":
+                    # cross-toolkit arms may coexist at several PCA sizes
+                    # (e.g. esmif eos_bos_repeat @60% and @90% EV) — the
+                    # padtype alone would collide, so tag with k
+                    padtype = f"{padtype}@{m_emb.group(2)}"
                 pad_probs[toolkit][padtype] = probs
                 pad_fold_full[toolkit][padtype] = folds
                 print(f"  loaded {toolkit}/{padtype:<14} {pth.name}")
@@ -391,24 +401,51 @@ def main():
             y_, pa, pb, args.B, rng)
         return lo, hi, p, sd
 
-    # ── Campaigns: (group_prefix, arm_probs, arm_fold_full, padded_mask) ──
+    # ── Campaigns: {prefix, probs, folds, padded, pairs, subset} ──
     # padmode families per toolkit; checkpoint family adds ckpt_<tk>[_full]
-    # with arms = train-noise checkpoints on the same toolkit mask.
+    # with arms = train-noise checkpoints on the same toolkit mask; plus
+    # cross-toolkit ckpt_vs_<tk2> pairs (checkpoints vs e.g. ESM-IF's
+    # chosen pad mode) when non-MPNN emb arms are loaded alongside.
     campaigns = [
-        (f"padmode_{tk.replace('-', '').lower()}", pad_probs[tk],
-         pad_fold_full[tk], masks[tk])
+        {"prefix": f"padmode_{tk.replace('-', '').lower()}",
+         "probs": pad_probs[tk], "folds": pad_fold_full[tk],
+         "padded": masks[tk], "pairs": None, "subset": True}
         for tk in sorted(pad_probs) if len(pad_probs[tk]) >= 2]
     if args.arm_key == "checkpoint":
         campaigns += [
-            (f"ckpt_{tk.replace('-', '').lower()}", ckpt_probs[tk],
-             ckpt_fold_full[tk], masks[tk])
+            {"prefix": f"ckpt_{tk.replace('-', '').lower()}",
+             "probs": ckpt_probs[tk], "folds": ckpt_fold_full[tk],
+             "padded": masks[tk], "pairs": None, "subset": True}
             for tk in sorted(ckpt_probs) if len(ckpt_probs[tk]) >= 2]
+        # cross-toolkit: every checkpoint vs every loaded non-MPNN arm
+        for tk in sorted(pad_probs):
+            if not pad_probs[tk] or not any(ckpt_probs.values()):
+                continue
+            for ctk in sorted(ckpt_probs):
+                if not ckpt_probs[ctk]:
+                    continue
+                same_mask = np.array_equal(masks[ctk], masks[tk])
+                if not same_mask:
+                    print(f"  WARN ckpt_vs_{tk}: padded masks differ "
+                          f"({ctk} vs {tk}) — subset block skipped, "
+                          f"full-data only")
+                cross_pairs = [(c, p)
+                               for c in sorted(ckpt_probs[ctk])
+                               for p in sorted(pad_probs[tk])]
+                campaigns.append({
+                    "prefix": f"ckpt_vs_{tk.replace('-', '').lower()}",
+                    "probs": {**ckpt_probs[ctk], **pad_probs[tk]},
+                    "folds": {**ckpt_fold_full[ctk], **pad_fold_full[tk]},
+                    "padded": masks[ctk], "pairs": cross_pairs,
+                    "subset": same_mask})
 
     # ── Smoke: DeLong asserts on one pair, then exit ──
     if args.smoke:
-        prefix, probs_by_arm, _, padded = next(
-            c for c in campaigns if len(c[1]) >= 2)
-        ma, mb = sorted(probs_by_arm)[:2]
+        camp = next(c for c in campaigns if len(c["probs"]) >= 2)
+        prefix, padded = camp["prefix"], camp["padded"]
+        probs_by_arm = camp["probs"]
+        ma, mb = (camp["pairs"] or sorted(
+            (a for a in probs_by_arm), key=str))[:2]
         sub = probs_by_arm[ma][padded], probs_by_arm[mb][padded]
         y_sub = y_full[padded]
         p_d, a_d, b_d, se_d, z_d = delong_p(y_sub, *sub)
@@ -428,41 +465,45 @@ def main():
 
     rows = []
 
-    # ── 1. Pairwise families (padmode_<tk> and/or ckpt_<tk>) ──
-    def run_pair_family(prefix, probs_by_arm, fold_full_by_arm, padded):
+    # ── 1. Pairwise families (padmode_<tk>, ckpt_<tk>, ckpt_vs_<tk2>) ──
+    def run_pair_family(prefix, probs_by_arm, fold_full_by_arm, padded,
+                        pairs=None, subset=True):
         """One family: pairwise DeLong (+bootstrap) on the padded subset
-        and DeLong (+fold t/NB) on all rows; Holm within each block."""
+        and DeLong (+fold t/NB) on all rows; Holm within each block.
+        pairs=None -> all combinations of the arm dict."""
         arms = sorted(probs_by_arm)
-        pairs = list(itertools.combinations(arms, 2))
+        pairs = pairs or list(itertools.combinations(arms, 2))
         fold_sub = {m: fold_subset_aucs(probs_by_arm[m], padded)
                     for m in arms}
         y_sub = y_full[padded]
-        assert len(y_sub) == int(padded.sum())  # within-family matched
+        if subset:
+            assert len(y_sub) == int(padded.sum())  # within-family matched
 
         # 1a. padded-subset: DeLong (primary) + bootstrap + fold t / NB
-        def comp_sub(ma, mb):
-            pa = probs_by_arm[ma][padded]
-            pb = probs_by_arm[mb][padded]
-            p_d, d_a, d_b, se_d, z_d = delong_p(y_sub, pa, pb)
-            lo, hi, p, sd_b = maybe_bootstrap(
-                y_sub, pa, pb, prefix, ma, mb)
-            t, p_t, t_nb, p_nb = fold_t_nb(fold_sub[ma], fold_sub[mb])
-            if (np.isfinite(se_d) and sd_b
-                    and abs(se_d - sd_b) / sd_b > 0.05):
-                print(f"  WARN {prefix} {ma}/{mb}: DeLong SE {se_d:.5f} vs "
-                      f"bootstrap SD {sd_b:.5f} "
-                      f"(ratio {se_d / sd_b:.3f})")
-            row = {
-                "test_group": prefix,
-                "model_a": ma, "model_b": mb,
-                "ci_lo": lo, "ci_hi": hi,
-                "p_value": p, "n_rows": int(padded.sum()),
-                "t_stat": t, "p_ttest": p_t,
-                "t_stat_nb": t_nb, "p_ttest_nb": p_nb,
-            }
-            row.update(delong_fields(d_a, d_b, se_d, z_d, p_d))
-            return row, p, p_t, p_nb, p_d
-        rows.extend(holm_pair_block(pairs, comp_sub))
+        if subset:
+            def comp_sub(ma, mb):
+                pa = probs_by_arm[ma][padded]
+                pb = probs_by_arm[mb][padded]
+                p_d, d_a, d_b, se_d, z_d = delong_p(y_sub, pa, pb)
+                lo, hi, p, sd_b = maybe_bootstrap(
+                    y_sub, pa, pb, prefix, ma, mb)
+                t, p_t, t_nb, p_nb = fold_t_nb(fold_sub[ma], fold_sub[mb])
+                if (np.isfinite(se_d) and sd_b
+                        and abs(se_d - sd_b) / sd_b > 0.05):
+                    print(f"  WARN {prefix} {ma}/{mb}: DeLong SE {se_d:.5f} vs "
+                          f"bootstrap SD {sd_b:.5f} "
+                          f"(ratio {se_d / sd_b:.3f})")
+                row = {
+                    "test_group": prefix,
+                    "model_a": ma, "model_b": mb,
+                    "ci_lo": lo, "ci_hi": hi,
+                    "p_value": p, "n_rows": int(padded.sum()),
+                    "t_stat": t, "p_ttest": p_t,
+                    "t_stat_nb": t_nb, "p_ttest_nb": p_nb,
+                }
+                row.update(delong_fields(d_a, d_b, se_d, z_d, p_d))
+                return row, p, p_t, p_nb, p_d
+            rows.extend(holm_pair_block(pairs, comp_sub))
 
         # 1b. full-data: DeLong on pooled OOF + fold t / NB
         def comp_full(ma, mb):
@@ -483,8 +524,10 @@ def main():
             return row, np.nan, p_t, p_nb, p_d
         rows.extend(holm_pair_block(pairs, comp_full))
 
-    for prefix, probs_by_arm, fold_by_arm, padded in campaigns:
-        run_pair_family(prefix, probs_by_arm, fold_by_arm, padded)
+    for camp in campaigns:
+        run_pair_family(camp["prefix"], camp["probs"], camp["folds"],
+                        camp["padded"], pairs=camp["pairs"],
+                        subset=camp["subset"])
 
     # ── 2. Baseline pairs, full-data ──
     base_modes = [m for m in ("sparse", "blosum", "handcrafted_blosum",

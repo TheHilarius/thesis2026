@@ -2,18 +2,20 @@
 """
 16_mpnn_padmode_plot.py
 ProteinMPNN comparison figures — padmode_choice figure convention:
-AUC-ROC bars + DeLong significance bracket (raw p + Holm p_adj), one
+AUC-ROC bars + DeLong significance brackets (raw p + Holm p_adj), one
 figure for all peptides and a _subset duplicate for padded peptides only.
 
 Campaigns (--campaign):
     padmode  zero-pad vs boundary-repeat @ v_48_020
              -> runs/mpnn_padmode_v48020/plots/mpnn_padmode_auc_roc[_subset]
-    ckpt     4 train-noise checkpoints, all zeropad
-             -> runs/mpnn_ckpt_zeropad/plots/mpnn_ckpt_auc_roc[_subset]
-             bracket spans the top-2 checkpoints by that figure's AUC.
+    ckpt     4 train-noise checkpoints (zeropad) + the ESM-IF comparison
+             arm -> runs/mpnn_ckpt_zeropad/plots/mpnn_ckpt_auc_roc[_subset]
+             Hub brackets: the default checkpoint (bars[0], v48002) vs
+             EVERY other bar; pairs are merged from the ckpt_<tk>[_full]
+             and ckpt_vs_esmif[_full] families of paired_tests.csv.
 
 Single data source: 15_padmode_significance.py's paired_tests.csv (per-arm
-auc + delta + DeLong p/Holm) — bars, bracket and CSV sidecar stay mutually
+auc + delta + DeLong p/Holm) — bars, brackets and CSV sidecar stay mutually
 consistent (no mixing with cv_summary).
 
 Usage:
@@ -47,44 +49,63 @@ import plot_padmode_data_compare as pdp
 
 from config import PROJECT_ROOT  # noqa: E402
 
-# Paul Tol bright (colour-blind safe); green = the MPNN group
+# Paul Tol bright (colour-blind safe); green = MPNN group, blue = ESM-IF
 MPNN_COLOR = "#44AA99"
+ESMIF_COLOR = "#4477AA"
+GROUP_OF_COLOR = {MPNN_COLOR: "ProteinMPNN 90%", ESMIF_COLOR: "ESM-IF"}
 
 # CSV schema: 15_ stores model_a/model_b per pair row -> auc_a/auc_b.
-# Bars: (model key in paired_tests.csv, label, feature-set key, auc column
-# of the single pair row — used by padmode's 2-bar layout).
+# Bars: (model key in paired_tests.csv, label, feature-set key, colour).
 CAMPAIGNS = {
     "padmode": {
         "run": PROJECT_ROOT / "runs" / "mpnn_padmode_v48020",
         "stem": "mpnn_padmode_auc_roc",
-        "groups": [("", "padmode_proteinmpnn_full", "all peptides"),
-                   ("_subset", "padmode_proteinmpnn", "padded peptides only")],
-        "bars": [("zero", "zero-pad", "emb_mpnn_v48020_zeropad"),
-                 ("boundary", "boundary-repeat", "emb_mpnn_v48020_boundary")],
+        # (suffix, [paired_tests.csv groups merged], scope)
+        "groups": [("", ["padmode_proteinmpnn_full"], "all peptides"),
+                   ("_subset", ["padmode_proteinmpnn"],
+                    "padded peptides only")],
+        "bars": [("zero", "zero-pad", "emb_mpnn_v48020_zeropad", MPNN_COLOR),
+                 ("boundary", "boundary-repeat", "emb_mpnn_v48020_boundary",
+                  MPNN_COLOR)],
     },
     "ckpt": {
         "run": PROJECT_ROOT / "runs" / "mpnn_ckpt_zeropad",
         "stem": "mpnn_ckpt_auc_roc",
-        "groups": [("", "ckpt_proteinmpnn_full", "all peptides"),
-                   ("_subset", "ckpt_proteinmpnn", "padded peptides only")],
-        "bars": [("v48002", "v_48_002\n(0.02 Å)", "emb_mpnn_v48002_zeropad"),
-                 ("v48010", "v_48_010\n(0.10 Å)", "emb_mpnn_v48010_zeropad"),
-                 ("v48020", "v_48_020\n(0.20 Å)", "emb_mpnn_v48020_zeropad"),
-                 ("v48030", "v_48_030\n(0.30 Å)", "emb_mpnn_v48030_zeropad")],
+        "groups": [
+            ("", ["ckpt_proteinmpnn_full", "ckpt_vs_esmif_full"],
+             "all peptides"),
+            ("_subset", ["ckpt_proteinmpnn", "ckpt_vs_esmif"],
+             "padded peptides only")],
+        "bars": [
+            ("v48002", "v_48_002\n(0.02 Å)", "emb_mpnn_v48002_zeropad",
+             MPNN_COLOR),
+            ("v48010", "v_48_010\n(0.10 Å)", "emb_mpnn_v48010_zeropad",
+             MPNN_COLOR),
+            ("v48020", "v_48_020\n(0.20 Å)", "emb_mpnn_v48020_zeropad",
+             MPNN_COLOR),
+            ("v48030", "v_48_030\n(0.30 Å)", "emb_mpnn_v48030_zeropad",
+             MPNN_COLOR),
+            ("eos_bos_repeat@4308", "ESM-IF\nEOS/BOS 90%\n(k=4308)",
+             "emb_esmif_eos_bos_repeat", ESMIF_COLOR),
+            ("eos_bos_repeat@632", "ESM-IF\nEOS/BOS 60%\n(k=632)",
+             "emb_esmif_eos_bos_repeat", ESMIF_COLOR)],
     },
 }
 
 
-def load_group(paired_csv: Path, test_group: str, arms: list[str]) -> dict:
-    """One test_group's rows -> per-arm AUCs + per-pair DeLong stats.
+def load_groups(paired_csv: Path, test_groups: list[str], arms: list[str]) -> dict:
+    """Merged view of one figure's test groups -> per-arm AUCs + per-pair
+    DeLong stats.
 
-    AUC per arm is identical in every row it appears in (same pooled OOF
-    vector); taken from the first row, consistency-checked.
+    Within one figure all groups share the same test rows, so an arm's AUC
+    must agree across groups (asserted); pairs from every group merge into
+    one lookup keyed by frozenset of the two arm names.
     """
     arm_auc, pairs = {}, {}
     with open(paired_csv, newline="") as f:
         for r in csv.DictReader(f):
-            if r["test_group"].strip() != test_group:
+            tg = r["test_group"].strip()
+            if tg not in test_groups:
                 continue
             for side in ("a", "b"):
                 arm, auc = r[f"model_{side}"].strip(), float(r[f"auc_{side}"])
@@ -101,42 +122,64 @@ def load_group(paired_csv: Path, test_group: str, arms: list[str]) -> dict:
             }
     missing = [a for a in arms if a not in arm_auc]
     if missing:
-        raise SystemExit(f"{test_group}: no rows for arms {missing} in {paired_csv}")
+        raise SystemExit(f"{test_groups}: no rows for arms {missing} in {paired_csv}")
     return {"auc": arm_auc, "pairs": pairs}
 
 
 def plot_bars(g: dict, bars: list[tuple], title: str, outfile: Path) -> None:
-    """AUC bars + DeLong bracket over the top-2 arms — padmode_choice style."""
-    labels = [lbl for _, lbl, _ in bars]
-    values = [g["auc"][key] for key, _, _ in bars]
+    """AUC bars + hub DeLong brackets (bars[0] vs every other bar) —
+    padmode_choice style: widest span on top, text = raw p + Holm p_adj."""
+    labels = [lbl for _, lbl, _, _ in bars]
+    values = [g["auc"][key] for key, _, _, _ in bars]
 
     x = np.arange(len(bars))
     fig, ax = plt.subplots(figsize=(12, 6.8))
-    ax.bar(x, values, color=MPNN_COLOR, width=0.62,
+    ax.bar(x, values, color=[c for _, _, _, c in bars], width=0.62,
            edgecolor="black", linewidth=0.5)
     for xi, v in zip(x, values):
         ax.text(xi, v + 0.005, f"{v:.3f}", ha="center", va="bottom",
                 fontsize=8)
     ax.set_ylim(0, 1.0)
 
-    # bracket spans the top-2 arms by this figure's AUC (headline pair)
-    order = sorted(range(len(bars)), key=lambda i: -values[i])
-    i_best, i_run = order[:2]
-    pair = g["pairs"][frozenset((bars[i_best][0], bars[i_run][0]))]
+    # hub brackets: bars[0] (default arm) vs every other bar with a pair
+    hub, brackets = 0, []
+    for j in range(1, len(bars)):
+        pair = g["pairs"].get(frozenset((bars[hub][0], bars[j][0])))
+        if pair is not None:
+            brackets.append((j, pair))
+    brackets.sort(key=lambda b: -abs(b[0] - hub))   # widest span on top
     y0 = max(values) * 1.08
-    ax.plot([x[i_best], x[i_best], x[i_run], x[i_run]],
-            [y0 * 0.985, y0, y0, y0 * 0.985],
-            color="black", lw=0.9)
-    star_src = pair["p_adj"] if pair["p_adj"] is not None else pair["p"]
-    ax.text((x[i_best] + x[i_run]) / 2, y0 + max(values) * 0.02,
-            f"{pdp.fmt_p_pair(pair['p'], pair['p_adj'])} ({pdp.stars(star_src)})",
-            ha="center", va="bottom", fontsize=8)
+    lvl_step = min(max(values) * 0.075,
+                   (0.94 - y0 - max(values) * 0.03) / max(len(brackets), 1))
+    for lvl, (j, pair) in enumerate(reversed(brackets)):
+        y_br = y0 + lvl * lvl_step
+        ax.plot([x[hub], x[hub], x[j], x[j]],
+                [y_br * 0.985, y_br, y_br, y_br * 0.985],
+                color="black", lw=0.9)
+        star_src = pair["p_adj"] if pair["p_adj"] is not None else pair["p"]
+        ax.text((x[hub] + x[j]) / 2, y_br + lvl_step * 0.12,
+                f"{pdp.fmt_p_pair(pair['p'], pair['p_adj'])} "
+                f"({pdp.stars(star_src)})",
+                ha="center", va="bottom", fontsize=7.5)
 
     ax.set_xticks(x)
     ax.set_xticklabels(labels, fontsize=9)
     ax.set_ylabel("AUC-ROC")
     ax.set_title(title)
     ax.grid(axis="y", alpha=0.3)
+
+    # divider + legend between colour groups (padmode_choice convention)
+    colors = [c for _, _, _, c in bars]
+    for i in range(1, len(colors)):
+        if colors[i] != colors[i - 1]:
+            ax.axvline(i - 0.5, color="grey", linestyle="--", linewidth=0.8)
+    present = [c for c in GROUP_OF_COLOR if c in colors]
+    if len(present) > 1:
+        handles = [plt.Rectangle((0, 0), 1, 1, facecolor=c, edgecolor="black")
+                   for c in present]
+        ax.legend(handles, [GROUP_OF_COLOR[c] for c in present],
+                  fontsize=11, loc="center left", bbox_to_anchor=(1.01, 0.5),
+                  frameon=False)
 
     fig.tight_layout()
     fig.savefig(outfile, dpi=200, bbox_inches="tight", facecolor="white")
@@ -147,9 +190,9 @@ def plot_bars(g: dict, bars: list[tuple], title: str, outfile: Path) -> None:
     with open(csv_path, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["group", "feature_set", "label", "metric", "value"])
-        for key, lbl, feat in bars:
-            w.writerow(["mpnn", feat, lbl.replace("\n", " "), "auc_roc",
-                        g["auc"][key]])
+        for key, lbl, feat, color in bars:
+            w.writerow([GROUP_OF_COLOR[color], feat, lbl.replace("\n", " "),
+                        "auc_roc", g["auc"][key]])
     print(f"  saved: {csv_path}")
 
 
@@ -158,7 +201,7 @@ def main() -> None:
         description="ProteinMPNN comparison figures (padmode_choice style).")
     ap.add_argument("--campaign", default="padmode", choices=sorted(CAMPAIGNS),
                     help="padmode = zero vs boundary @ v_48_020; "
-                         "ckpt = 4 checkpoints, zeropad")
+                         "ckpt = 4 checkpoints + ESM-IF comparison arm")
     ap.add_argument("--run", default=None,
                     help="override campaign run folder")
     ap.add_argument("--out-dir", default=None,
@@ -173,28 +216,30 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     paired_csv = run_dir / "results" / "paired_tests.csv"
     bars = camp["bars"]
-    arms = [key for key, _, _ in bars]
+    arms = [key for key, _, _, _ in bars]
 
-    groups = [(suffix, scope, load_group(paired_csv, tg, arms))
-              for suffix, tg, scope in camp["groups"]]
-    for (suffix, scope, g), (_, tg, _) in zip(groups, camp["groups"]):
-        auc_str = "  ".join(f"{a}={g['auc'][a]:.5f}" for a in arms)
-        top = sorted(arms, key=lambda a: -g["auc"][a])[:2]
-        pair = g["pairs"][frozenset(top)]
-        print(f"  {tg} (n={pair['n_rows']:,}): {auc_str}  "
-              f"top2={top[0]}/{top[1]} delta={pair['delta']:+.4f} "
-              f"p={pair['p']:.4g} p_adj={pair['p_adj']:.4g}")
+    groups = [(suffix, scope, load_groups(paired_csv, sources, arms),
+               sources)
+              for suffix, sources, scope in camp["groups"]]
+    for (_, scope, g, _), (_, sources, _) in zip(groups, camp["groups"]):
+        auc_str = "  ".join(f"{a}={g['auc'][a]:.4f}" for a in arms)
+        n_rows = next(iter(g["pairs"].values()))["n_rows"]
+        print(f"  {sources} (n={n_rows:,}): {auc_str}")
+        for other in arms[1:]:
+            pair = g["pairs"].get(frozenset((arms[0], other)))
+            if pair:
+                print(f"    {arms[0]} vs {other:<14} delta={pair['delta']:+.4f} "
+                      f"p={pair['p']:.3g} p_adj={pair['p_adj']:.3g}")
     if args.smoke:
         return
 
-    for suffix, scope, g in groups:
-        # n_rows is identical across a group's pair rows (same test rows)
+    for suffix, scope, g, _ in groups:
         n_rows = next(iter(g["pairs"].values()))["n_rows"]
         plot_bars(
             g, bars,
             f"ProteinMPNN — held-out AUC-ROC, {scope}\n"
-            f"nested CV (OOF), n={n_rows:,}; "
-            "DeLong bracket: top-2 arms, raw p + Holm p_adj",
+            f"nested CV (OOF), n={n_rows:,}; DeLong brackets: "
+            f"{bars[0][1].splitlines()[0]} vs each arm, raw p + Holm p_adj",
             out_dir / f"{camp['stem']}{suffix}.png",
         )
     print(f"\n  plots in: {out_dir}")
