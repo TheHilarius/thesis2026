@@ -987,7 +987,8 @@ def train_one_fold(model_cfg, X_train, y_train, X_test, y_test, fold_id):
     is_xgb = model_cfg["model_class"].endswith("XGBClassifier")
     if is_xgb and es_rounds:
         model.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
-        best_iter = getattr(model, "best_iteration_", None)
+        best_iter = getattr(model, "best_iteration_",
+                            getattr(model, "best_iteration", None))
         print(f"    early stopping: rounds={es_rounds}, "
               f"best_iteration={best_iter}")
     else:
