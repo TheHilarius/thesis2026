@@ -1,5 +1,5 @@
 """
-05_cnn_models.py
+05_cnn_models.py:c
 Simplest 1D-CNN for fixed-29 window embeddings. Mirrors MODEL_REGISTRY
 style in config.py (display_name + params dict).
 

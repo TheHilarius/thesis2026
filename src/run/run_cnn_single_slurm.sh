@@ -3,8 +3,8 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=64G
-#SBATCH --time=12:00:00
+#SBATCH --mem=32G
+#SBATCH --time=24:00:00
 #SBATCH --output=logs/cnn_simple_%j.out
 #SBATCH --error=logs/cnn_simple_%j.err
 
@@ -22,6 +22,7 @@ fi
 
 # Hard fail without GPU (login node has no CUDA; GPU node must)
 python -c "import torch; assert torch.cuda.is_available(), 'no CUDA'; print('torch', torch.__version__, 'cuda ok')"
+nvidia-smi  # memory baseline in log for right-sizing --mem later
 
 mkdir -p logs
 export PYTHONUNBUFFERED=1
@@ -41,7 +42,7 @@ python src/pipeline/python/05_cnn_modelling.py \
 
 echo "CNN single run completed."
 
-# Submit with a timestamped run folder (paste on hub1):
-#   RUN="runs/cnn_simple_$(date +%Y%m%d_%H%M)"; mkdir -p "$RUN"/{models,logs/slurm} && sbatch --job-name=cnn_simple --output="$RUN/logs/slurm/%j.out" --error="$RUN/logs/slurm/%j.err" --export=RUN="$RUN",ALL src/run/run_cnn_single_slurm.sh
+# Submit into the fixed campaign folder (paste on hub1):
+#   sbatch --job-name=cnn_simple --output="runs/cnn_cv/logs/slurm/%j.out" --error="runs/cnn_cv/logs/slurm/%j.err" --export=RUN="runs/cnn_cv",ALL src/run/run_cnn_single_slurm.sh
 # Smoke first (2 epochs, then check cv_results JSON):
-#   RUN="runs/cnn_smoke_$(date +%Y%m%d_%H%M)"; mkdir -p "$RUN"/{models,logs/slurm} && sbatch --export=RUN="$RUN",EPOCHS=2,ALL src/run/run_cnn_single_slurm.sh
+#   sbatch --export=RUN="runs/cnn_cv",EPOCHS=2,ALL src/run/run_cnn_single_slurm.sh
