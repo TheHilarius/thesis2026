@@ -21,7 +21,7 @@ esmif_eosrepeat (29x512).
 Outputs (results/tables/):
     dim_variance_<key>.csv       — dim, mean_col_var, global_var, rank
     dim_variance_<key>_top21.json — selected dims, ascending (model order)
-Plus bar plot in results/figures/models/dim_variance/ if matplotlib exists.
+Plus bar plot in <out-root>/plots/ if matplotlib exists.
 """
 
 import argparse
@@ -112,13 +112,16 @@ def main():
                          "mirrors the flat-PCA sweep: "
                          "30,40,50,60,65,70,75,80,85,90,95")
     ap.add_argument("--out-dir", default=None,
-                    help="Output dir (default: results/tables)")
+                    help="CSV/JSON output dir (default: results/tables)")
+    ap.add_argument("--out-root", default="runs/ev_matched_topXvariance_sweep",
+                    help="run folder owning the plots "
+                         "(default: runs/ev_matched_topXvariance_sweep)")
     args = ap.parse_args()
 
     out_dir = Path(args.out_dir) if args.out_dir else (
         PROJECT_ROOT / "results" / "tables")
     out_dir.mkdir(parents=True, exist_ok=True)
-    fig_dir = PROJECT_ROOT / "results" / "figures" / "models" / "dim_variance"
+    fig_dir = PROJECT_ROOT / args.out_root / "plots"
     try:
         import matplotlib
         matplotlib.use("Agg")
