@@ -484,6 +484,9 @@ WINDOW_CHUNK_ROWS = 2048
 # Supervisor test for "flat 29xD PCA loses positional info" — no PCA mixing.
 SIMPLE21_ROWS = 21
 
+# 29x21 test: keep all 29 slots, gather 21 embedding dims (AA-sized).
+SIMPLE21_DIMS = 21
+
 
 def _stream_window_slots(prepared_path, indices):
     """
@@ -504,33 +507,40 @@ def _stream_window_slots(prepared_path, indices):
             yield flat, flatm
 
 
-def concat_window_slots(emb_data, indices, n_slots=None, slots=None):
+def concat_window_slots(emb_data, indices, n_slots=None, slots=None,
+                          dims=None):
     """
     Full flattened (n, window*D) float32 block for `indices` — flat_raw mode.
     Reuses the slot streamer; ALL slots kept (pads carry their raw fill),
     which is exactly what flat PCA would feed minus the rotation.
     n_slots crops to the first n_slots positional slots (simple21 mode).
     slots gathers an explicit slot index list (var21 mode, original order).
+    dims gathers explicit embedding dims from every slot (29x21 mode).
     """
     prepared_path = emb_data["prepared_path"]
     W = emb_data["window"]
     D = emb_data["emb_dim"]
     if slots is not None:
         slots = [int(s) for s in slots]
-        window = len(slots)
+        window, ndim = len(slots), D
+    elif dims is not None:
+        dims = [int(d) for d in dims]
+        window, ndim = W, len(dims)
     else:
-        window = n_slots or W
+        window, ndim = n_slots or W, D
     n = len(indices)
-    out = np.empty((n, window * D), dtype=np.float32)
+    out = np.empty((n, window * ndim), dtype=np.float32)
     cur = 0
     for flat, _flatm in _stream_window_slots(prepared_path, indices):
         w = flat.shape[0] // W
         full = flat.reshape(w, W, D)
         if slots is not None:
             full = full[:, slots, :]
+        elif dims is not None:
+            full = full[:, :, dims]
         elif n_slots is not None:
             full = full[:, :n_slots, :]
-        out[cur:cur + w] = full.reshape(w, window * D)
+        out[cur:cur + w] = full.reshape(w, window * ndim)
         cur += w
     return out
 
@@ -704,8 +714,13 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
                 total_components = int(window * D)   # no PCA — all raw dims
             elif pca_mode == "simple21":
                 slots = emb_data.get("slots")
-                total_components = int((len(slots) if slots is not None
-                                        else SIMPLE21_ROWS) * D)
+                dims = emb_data.get("dims")
+                if dims is not None:
+                    total_components = int(window * len(dims))
+                elif slots is not None:
+                    total_components = int(len(slots) * D)
+                else:
+                    total_components = int(SIMPLE21_ROWS * D)
             else:
                 total_components = int(min(pca_components, window * D))
 
@@ -727,17 +742,22 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
                 ipca = None  # raw features — nothing to transform at predict time
             elif pca_mode == "simple21":
                 slots = emb_data.get("slots")
-                n_show = len(slots) if slots is not None else SIMPLE21_ROWS
+                dims = emb_data.get("dims")
+                if dims is not None:
+                    n_show = f"{window}x{len(dims)} dims"
+                    kw = {"dims": dims}
+                elif slots is not None:
+                    n_show = f"{len(slots)}/{window} slots"
+                    kw = {"slots": slots}
+                else:
+                    n_show = f"first {SIMPLE21_ROWS}/{window} slots"
+                    kw = {"n_slots": SIMPLE21_ROWS}
                 print(f"    {comp_key}: simple21 raw crop (no PCA) "
-                      f"({n_show}/{window} slots, D={D} → {total_components} features)")
+                      f"({n_show}, D={D} → {total_components} features)")
                 X_emb_train = concat_window_slots(
-                    emb_data, train_indices,
-                    n_slots=None if slots is not None else SIMPLE21_ROWS,
-                    slots=slots)
+                    emb_data, train_indices, **kw)
                 X_emb_test = concat_window_slots(
-                    emb_data, test_indices,
-                    n_slots=None if slots is not None else SIMPLE21_ROWS,
-                    slots=slots)
+                    emb_data, test_indices, **kw)
                 ipca = None  # raw crop — nothing to transform at predict time
 
             explained = (ipca.explained_variance_ratio_.sum() * 100
@@ -1115,6 +1135,11 @@ def parse_args():
              "path to 09_slot_variance top-N JSON. Omit = first 21 slots.",
     )
     parser.add_argument(
+        "--dims", type=parse_slots_value, default=None,
+        help="Dim list for --pca-mode simple21 (29x21 test): '0,1,5' or "
+             "path to 10_dim_variance top-N JSON. Keeps all 29 slots.",
+    )
+    parser.add_argument(
         "--pca-mode", type=str, default="flat",
         choices=["flat", "flat_raw", "simple21"],
         help="Window PCA scheme: 'flat' (flatten window*D, PCA across the "
@@ -1193,6 +1218,8 @@ if __name__ == "__main__":
     run_tag += f"_{pca_mode}"
     if args.slots is not None:
         run_tag += "_var21"
+    if args.dims is not None:
+        run_tag += "_dim21"
     if xgb_params_override:
         lr = xgb_params_override.get("learning_rate")
         n_est = xgb_params_override.get("n_estimators")
@@ -1306,6 +1333,29 @@ if __name__ == "__main__":
                 info["raw_dim_desc"] = (
                     f"{len(args.slots)}x{info['emb_dim']} "
                     f"(simple21 var {len(args.slots) * info['emb_dim']})")
+
+    # ── Dims override (29x21: global top-N dim gather, simple21 only) ──
+    if args.dims is not None:
+        if pca_mode != "simple21":
+            raise ValueError("--dims requires --pca-mode simple21")
+        if args.slots is not None:
+            raise ValueError("use only one of --slots / --dims")
+        print(f"  [CLI OVERRIDE] dims: {args.dims}")
+        for comp_key, emb_data in emb_data_dict.items():
+            if emb_data.get("kind") != "windows":
+                continue
+            edim = emb_data["emb_dim"]
+            if (not args.dims or min(args.dims) < 0
+                    or max(args.dims) >= edim):
+                raise ValueError(
+                    f"--dims out of range for D={edim}: {args.dims}")
+            emb_data["dims"] = list(args.dims)
+        for info in component_info["emb_components"]:
+            if info.get("window"):
+                info["pca_total"] = info["window"] * len(args.dims)
+                info["raw_dim_desc"] = (
+                    f"{info['window']}x{len(args.dims)} "
+                    f"(simple21 dim21 {info['window'] * len(args.dims)})")
 
     # Apply PCA override if specified
     if pca_override is not None:
