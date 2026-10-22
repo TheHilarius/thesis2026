@@ -159,6 +159,82 @@ EMBEDDING_SOURCES = {
         "has_row_indices": True,
         "has_start_end": True,
     },
+    # ── Reduced 29x21 prepared windows (dim21 test) ──
+    # Built by 11_reduce_prepared_windows.py --first 21 / --dims <top21 JSON>.
+    # raw_path = the FULL prepared H5 (the reduce script's input), NOT a raw
+    # extraction file — the reducer copies the prepared schema, dim-gathered.
+    "esmc300m_win_padtoken_d21_first": {
+        "display_name": "ESM-C-300M windows (pad-token, first-21 dims)",
+        "kind": "windows",
+        "raw_path": None,
+        "prepared_path": PREPARED_EMBEDDING_DIR / "esmc300m_win_padtoken_prepared_first21.h5",
+        "window_ds": "windows",
+        "pad_mask_ds": "pad_mask",
+        "n_pad_ds": None,
+        "c_pad_ds": None,
+        "status_ds": None,
+        "emb_dim": 21,
+        "window": 29,
+        "pad_mode": "zeropad",
+        "peptide_id_col": "peptide_seqs",
+        "uniprot_id_col": "uniprot_ids",
+        "has_row_indices": False,
+        "has_start_end": False,
+    },
+    "esmc300m_win_padtoken_d21_var": {
+        "display_name": "ESM-C-300M windows (pad-token, var-21 dims)",
+        "kind": "windows",
+        "raw_path": None,
+        "prepared_path": PREPARED_EMBEDDING_DIR / "esmc300m_win_padtoken_prepared_var21.h5",
+        "window_ds": "windows",
+        "pad_mask_ds": "pad_mask",
+        "n_pad_ds": None,
+        "c_pad_ds": None,
+        "status_ds": None,
+        "emb_dim": 21,
+        "window": 29,
+        "pad_mode": "zeropad",
+        "peptide_id_col": "peptide_seqs",
+        "uniprot_id_col": "uniprot_ids",
+        "has_row_indices": False,
+        "has_start_end": False,
+    },
+    "esmif_eosrepeat_d21_first": {
+        "display_name": "ESM-IF1 windows (eos-repeat, first-21 dims)",
+        "kind": "windows",
+        "raw_path": None,
+        "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_eosrepeat_windows_prepared_first21.h5",
+        "window_ds": "windows",
+        "pad_mask_ds": "pad_mask",
+        "n_pad_ds": None,
+        "c_pad_ds": None,
+        "status_ds": None,
+        "emb_dim": 21,
+        "window": 29,
+        "pad_mode": "eosrepeat",
+        "peptide_id_col": "peptide_seqs",
+        "uniprot_id_col": "uniprot_ids",
+        "has_row_indices": False,
+        "has_start_end": False,
+    },
+    "esmif_eosrepeat_d21_var": {
+        "display_name": "ESM-IF1 windows (eos-repeat, var-21 dims)",
+        "kind": "windows",
+        "raw_path": None,
+        "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_eosrepeat_windows_prepared_var21.h5",
+        "window_ds": "windows",
+        "pad_mask_ds": "pad_mask",
+        "n_pad_ds": None,
+        "c_pad_ds": None,
+        "status_ds": None,
+        "emb_dim": 21,
+        "window": 29,
+        "pad_mode": "eosrepeat",
+        "peptide_id_col": "peptide_seqs",
+        "uniprot_id_col": "uniprot_ids",
+        "has_row_indices": False,
+        "has_start_end": False,
+    },
     # ── ESM-C (600M) fixed-29 window embeddings ──
     # Raw HDF5: window_embeddings (N,29,1152) + pad_mask + peptide/uniprot_id/
     # row_indices/fallback_flag. No status/n_pad/c_pad/start/end datasets.
@@ -627,6 +703,31 @@ FEATURE_COMPONENTS = {
         "embedding_key": "esmif_eosrepeat",
         "pca_components": 64,
     },
+    # ── Reduced 29x21 windows (dim21 test; built by 11_reduce_prepared) ──
+    "esmc300m_win_padtoken_d21_first": {
+        "display_name": "ESM-C-300M windows (pad-token, first-21 dims, 29x21)",
+        "type": "embedding_windows",
+        "embedding_key": "esmc300m_win_padtoken_d21_first",
+        "pca_components": 64,
+    },
+    "esmc300m_win_padtoken_d21_var": {
+        "display_name": "ESM-C-300M windows (pad-token, var-21 dims, 29x21)",
+        "type": "embedding_windows",
+        "embedding_key": "esmc300m_win_padtoken_d21_var",
+        "pca_components": 64,
+    },
+    "esmif_eosrepeat_d21_first": {
+        "display_name": "ESM-IF1 windows (eos-repeat, first-21 dims, 29x21)",
+        "type": "embedding_windows",
+        "embedding_key": "esmif_eosrepeat_d21_first",
+        "pca_components": 64,
+    },
+    "esmif_eosrepeat_d21_var": {
+        "display_name": "ESM-IF1 windows (eos-repeat, var-21 dims, 29x21)",
+        "type": "embedding_windows",
+        "embedding_key": "esmif_eosrepeat_d21_var",
+        "pca_components": 64,
+    },
     "esmc_win_zeropad": {
         "display_name": "ESM-C windows (zero-pad, 29x1152)",
         "type": "embedding_windows",
@@ -926,6 +1027,22 @@ FEATURE_SETS = {
     "emb_esmif_eosrepeat": {
         "display_name": "ESM-IF windows only (eos-repeat)",
         "components": ["esmif_eosrepeat"],
+    },
+    "emb_esmc300m_win_padtoken_d21_first": {
+        "display_name": "ESM-C-300M windows only (pad-token, first-21 dims)",
+        "components": ["esmc300m_win_padtoken_d21_first"],
+    },
+    "emb_esmc300m_win_padtoken_d21_var": {
+        "display_name": "ESM-C-300M windows only (pad-token, var-21 dims)",
+        "components": ["esmc300m_win_padtoken_d21_var"],
+    },
+    "emb_esmif_eosrepeat_d21_first": {
+        "display_name": "ESM-IF windows only (eos-repeat, first-21 dims)",
+        "components": ["esmif_eosrepeat_d21_first"],
+    },
+    "emb_esmif_eosrepeat_d21_var": {
+        "display_name": "ESM-IF windows only (eos-repeat, var-21 dims)",
+        "components": ["esmif_eosrepeat_d21_var"],
     },
     # ── ProteinMPNN windows (embedding-only) ──
     "emb_mpnn_v48020_zeropad": {
