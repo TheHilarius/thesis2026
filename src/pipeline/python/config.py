@@ -310,6 +310,13 @@ EMBEDDING_SOURCES = {
         "has_row_indices": True,
         "has_start_end": False,
     },
+    # ── Decided pad modes (thesis decision, Oct 2026, for future agents) ──
+    # ESM-C  -> padtoken       (learned <pad> vector; filler stays into conv)
+    # ESM-IF -> eos_bos_repeat (BOS/EOS copies; filler stays into conv)
+    # Rationale: only ~1600/46617 rows padded (~3.5%), so pads are not the
+    # decision variable. 05 CNN masks post-conv only (no pre-zeroing) and has
+    # no per-mode special-casing. Do not reintroduce pad ablations without
+    # beating the current champion first.
     # ── ESM-C (300M) fixed-29 window embeddings ──
     # Same schema as the 600M windows; emb_dim=960 (d_model of esmc_300m).
     "esmc300m_win_zeropad": {

@@ -17,6 +17,10 @@ CNN_REGISTRY = {
         "display_name": "Simple CNN (1x Conv k=3 + GAP)",
         "params": {"channels": 32, "kernel": 3},
     },
+    "cnn_2layer": {
+        "display_name": "CNN 2-layer (2x Conv k=3 + GAP, receptive field 5)",
+        "params": {"channels": 32, "kernel": 3},
+    },
 }
 
 DEFAULT_CNN_MODEL = "cnn_simple"
@@ -34,6 +38,10 @@ class SimpleCNN(nn.Module):
 
     Per peptide: 29 D-vectors in, 1 logit out. Kernel k=3 looks at
     3 neighbour slots at a time, same weights everywhere.
+
+    Masking is post-conv only: the filler (padtoken / BOS-EOS vectors)
+    stays as-is into the conv, pads are zeroed after conv and excluded
+    from the pool via renormalized mean. No pre-zeroing.
     """
 
     def __init__(self, in_channels, channels=32, kernel=3):
@@ -43,21 +51,44 @@ class SimpleCNN(nn.Module):
         self.relu = nn.ReLU()
         self.fc = nn.Linear(channels, 1)
 
-    def forward(self, x, mask=None):
+    def forward(self, x, mask):
         # x: (N, D, L); mask: (N, L) True=PAD
-        if mask is not None:
-            real = (~mask).float().unsqueeze(1)  # (N, 1, L)
-            x = x * real
         h = self.relu(self.conv(x))  # (N, C, L)
-        if mask is not None:
-            h = h * real
-            denom = real.sum(-1).clamp(min=1.0)  # (N, 1)
-            h = h.sum(-1) / denom  # masked mean over real slots
-        else:
-            h = h.mean(-1)
+        real = (~mask).float().unsqueeze(1)  # (N, 1, L)
+        h = h * real
+        denom = real.sum(-1).clamp(min=1.0)  # (N, 1)
+        h = h.sum(-1) / denom  # masked mean over real slots only
+        return self.fc(h).squeeze(-1)
+
+
+class TwoLayerCNN(nn.Module):
+    """2x Conv1d k=3 + ReLU, receptive field 5, then masked mean + linear.
+
+    Same post-conv-only masking as SimpleCNN. Layer 2 can compare a
+    peptide trigram against flanking trigrams; still translation
+    equivariant, so no explicit peptide-vs-context position signal.
+    """
+
+    def __init__(self, in_channels, channels=32, kernel=3):
+        super().__init__()
+        pad = kernel // 2
+        self.conv1 = nn.Conv1d(in_channels, channels, kernel, padding=pad)
+        self.conv2 = nn.Conv1d(channels, channels, kernel, padding=pad)
+        self.relu = nn.ReLU()
+        self.fc = nn.Linear(channels, 1)
+
+    def forward(self, x, mask):
+        h = self.relu(self.conv1(x))
+        h = self.relu(self.conv2(h))
+        real = (~mask).float().unsqueeze(1)
+        h = h * real
+        denom = real.sum(-1).clamp(min=1.0)
+        h = h.sum(-1) / denom
         return self.fc(h).squeeze(-1)
 
 
 def build_cnn(model_key, in_channels, window=29):
     cfg = get_cnn_config(model_key)["params"]
+    if model_key == "cnn_2layer":
+        return TwoLayerCNN(in_channels, cfg["channels"], cfg["kernel"])
     return SimpleCNN(in_channels, cfg["channels"], cfg["kernel"])
