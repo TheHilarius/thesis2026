@@ -20,9 +20,9 @@ Notes baked into the caption:
 dim21 AUCs are the nested-CV "CROSS-VALIDATION SUMMARY" line
 (mean +/- std over 6 outer iterations) parsed from the flat_raw logs.
 
-Outputs:
-    results/figures/models/dim21/dim21_vs_baselines_auc.png
-    results/figures/models/dim21/dim21_vs_baselines_auc.csv
+Outputs (runs/<runtag>/ per convention, default runtag=simple21_pilot):
+    runs/simple21_pilot/plots/dim21_vs_baselines_auc.png
+    runs/simple21_pilot/plots/dim21_vs_baselines_auc.csv
 
 With --stats-csv (21_dim21_delong.py output) significance brackets are
 drawn above the bars: star per pair from Holm-adjusted paired DeLong
@@ -101,16 +101,28 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     ap.add_argument("--logs-dir", default="runs/simple21_pilot/logs/flat_raw",
                     help="flat_raw log dir with the 4 d21 runs (project root)")
+    ap.add_argument("--runtag", default="simple21_pilot",
+                    help="run folder under runs/ that owns the outputs "
+                         "(default: simple21_pilot)")
     ap.add_argument("--out-prefix", default=None,
-                    help="default: results/figures/models/dim21/dim21_vs_baselines")
+                    help="explicit output prefix; default: "
+                         "runs/<runtag>/plots/dim21_vs_baselines")
     ap.add_argument("--stats-csv", default=None,
                     help="dim21_delong_pairs.tsv from 21_dim21_delong.py — "
-                         "draw significance brackets with stars")
+                         "draw significance brackets with stars. Default: "
+                         "runs/<runtag>/results/dim21_delong_pairs.tsv if it "
+                         "exists (brackets drawn automatically)")
     args = ap.parse_args()
 
     root = PROJECT_ROOT
+    run_dir = root / "runs" / args.runtag
     out_prefix = Path(args.out_prefix) if args.out_prefix else (
-        root / "results" / "figures" / "models" / "dim21" / "dim21_vs_baselines")
+        run_dir / "plots" / "dim21_vs_baselines")
+    stats_csv = args.stats_csv
+    if stats_csv is None:
+        default_stats = run_dir / "results" / "dim21_delong_pairs.tsv"
+        stats_csv = str(default_stats) if default_stats.exists() else None
+        print(f"  stats: {stats_csv or 'none (no --stats-csv, no brackets)'}")
 
     print("Loading baselines ...")
     blosum = load_blosum(root / "runs/encodings_sweep/results/metrics.tsv") \
@@ -165,8 +177,8 @@ def main():
     # ── significance brackets (--stats-csv from 21_dim21_delong.py) ──
     y_ceiling = 0.80
     arm_x = {arm: i for i, (_, v, _, arm) in enumerate(bars) if v is not None}
-    if args.stats_csv:
-        with open(args.stats_csv) as fh:
+    if stats_csv:
+        with open(stats_csv) as fh:
             stats_rows = list(csv.DictReader(fh, delimiter="\t"))
         data_top = max(v[0] + v[1] for _, v, _, _ in bars if v is not None)
         base, step, fam_lvl = data_top + 0.015, 0.016, {}

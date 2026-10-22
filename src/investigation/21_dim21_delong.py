@@ -16,11 +16,12 @@ estimand: paired DeLong on pooled OOF, Holm correction per family).
 Missing arms (jobs still running) -> their pairs are skipped with a
 warning; rerun after all 4 dim21 jobs finish for the full family.
 
-Output: results/tables/dim21_delong_pairs.tsv
+Output: runs/<runtag>/results/dim21_delong_pairs.tsv  (default runtag
+    simple21_pilot; --runtag to override)
     arm_a arm_b auc_a auc_b delta se z p_delong p_holm family star
 
-Then: python src/investigation/20_dim21_barplot.py \
-        --stats-csv results/tables/dim21_delong_pairs.tsv
+Then (brackets picked up automatically):
+    python src/investigation/20_dim21_barplot.py
 """
 
 import argparse
@@ -84,11 +85,14 @@ def star(p):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
+    ap.add_argument("--runtag", default="simple21_pilot",
+                    help="run folder under runs/ that owns the outputs "
+                         "(default: simple21_pilot)")
     ap.add_argument("--out", default=None,
-                    help="default: results/tables/dim21_delong_pairs.tsv")
+                    help="default: runs/<runtag>/results/dim21_delong_pairs.tsv")
     args = ap.parse_args()
     out = Path(args.out) if args.out else (
-        PROJECT_ROOT / "results" / "tables" / "dim21_delong_pairs.tsv")
+        PROJECT_ROOT / "runs" / args.runtag / "results" / "dim21_delong_pairs.tsv")
 
     print("Loading OOF vectors ...")
     data, y_ref = {}, None
