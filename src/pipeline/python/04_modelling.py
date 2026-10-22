@@ -504,23 +504,31 @@ def _stream_window_slots(prepared_path, indices):
             yield flat, flatm
 
 
-def concat_window_slots(emb_data, indices, n_slots=None):
+def concat_window_slots(emb_data, indices, n_slots=None, slots=None):
     """
     Full flattened (n, window*D) float32 block for `indices` — flat_raw mode.
     Reuses the slot streamer; ALL slots kept (pads carry their raw fill),
     which is exactly what flat PCA would feed minus the rotation.
     n_slots crops to the first n_slots positional slots (simple21 mode).
+    slots gathers an explicit slot index list (var21 mode, original order).
     """
     prepared_path = emb_data["prepared_path"]
-    window = n_slots or emb_data["window"]
+    W = emb_data["window"]
     D = emb_data["emb_dim"]
+    if slots is not None:
+        slots = [int(s) for s in slots]
+        window = len(slots)
+    else:
+        window = n_slots or W
     n = len(indices)
     out = np.empty((n, window * D), dtype=np.float32)
     cur = 0
     for flat, _flatm in _stream_window_slots(prepared_path, indices):
-        w = flat.shape[0] // emb_data["window"]
-        full = flat.reshape(w, emb_data["window"], D)
-        if n_slots is not None:
+        w = flat.shape[0] // W
+        full = flat.reshape(w, W, D)
+        if slots is not None:
+            full = full[:, slots, :]
+        elif n_slots is not None:
             full = full[:, :n_slots, :]
         out[cur:cur + w] = full.reshape(w, window * D)
         cur += w
@@ -695,7 +703,9 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
             if pca_mode == "flat_raw":
                 total_components = int(window * D)   # no PCA — all raw dims
             elif pca_mode == "simple21":
-                total_components = int(SIMPLE21_ROWS * D)  # raw first-21 crop
+                slots = emb_data.get("slots")
+                total_components = int((len(slots) if slots is not None
+                                        else SIMPLE21_ROWS) * D)
             else:
                 total_components = int(min(pca_components, window * D))
 
@@ -716,12 +726,18 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
                 X_emb_test = concat_window_slots(emb_data, test_indices)
                 ipca = None  # raw features — nothing to transform at predict time
             elif pca_mode == "simple21":
+                slots = emb_data.get("slots")
+                n_show = len(slots) if slots is not None else SIMPLE21_ROWS
                 print(f"    {comp_key}: simple21 raw crop (no PCA) "
-                      f"(first {SIMPLE21_ROWS}/{window} slots, D={D} → {total_components} features)")
+                      f"({n_show}/{window} slots, D={D} → {total_components} features)")
                 X_emb_train = concat_window_slots(
-                    emb_data, train_indices, n_slots=SIMPLE21_ROWS)
+                    emb_data, train_indices,
+                    n_slots=None if slots is not None else SIMPLE21_ROWS,
+                    slots=slots)
                 X_emb_test = concat_window_slots(
-                    emb_data, test_indices, n_slots=SIMPLE21_ROWS)
+                    emb_data, test_indices,
+                    n_slots=None if slots is not None else SIMPLE21_ROWS,
+                    slots=slots)
                 ipca = None  # raw crop — nothing to transform at predict time
 
             explained = (ipca.explained_variance_ratio_.sum() * 100
@@ -1065,6 +1081,17 @@ def parse_pca_value(value):
     return int(value)
 
 
+def parse_slots_value(value):
+    """Parse --slots: '0,1,5' or path to JSON list / {'slots': [...]}."""
+    if value.endswith(".json"):
+        with open(value) as fh:
+            data = json.load(fh)
+        slots = data["slots"] if isinstance(data, dict) else data
+    else:
+        slots = [int(t) for t in value.split(",") if t.strip() != ""]
+    return sorted({int(s) for s in slots})  # dedup, original order
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="04_modelling: cross-validation + held-out evaluation",
@@ -1081,6 +1108,11 @@ def parse_args():
         "--pca", type=parse_pca_value, default=None,
         help="Override PCA components: int for all embeddings ('13') "
              "or per-embedding dict ('esmc=1,esmif=9')",
+    )
+    parser.add_argument(
+        "--slots", type=parse_slots_value, default=None,
+        help="Slot list for --pca-mode simple21 (var21 test): '0,1,5' or "
+             "path to 09_slot_variance top-N JSON. Omit = first 21 slots.",
     )
     parser.add_argument(
         "--pca-mode", type=str, default="flat",
@@ -1159,6 +1191,8 @@ if __name__ == "__main__":
     else:
         run_tag = f"{model_key}_{features_key}"
     run_tag += f"_{pca_mode}"
+    if args.slots is not None:
+        run_tag += "_var21"
     if xgb_params_override:
         lr = xgb_params_override.get("learning_rate")
         n_est = xgb_params_override.get("n_estimators")
@@ -1251,6 +1285,27 @@ if __name__ == "__main__":
     df, csv_feature_cols, emb_data_dict, component_info = load_all_components(
         df_split, feat_cfg, pca_mode,
     )
+
+    # ── Slots override (var21: global top-N slot gather, simple21 only) ──
+    if args.slots is not None:
+        if pca_mode != "simple21":
+            raise ValueError("--slots requires --pca-mode simple21")
+        print(f"  [CLI OVERRIDE] slots: {args.slots}")
+        for comp_key, emb_data in emb_data_dict.items():
+            if emb_data.get("kind") != "windows":
+                continue
+            window = emb_data["window"]
+            if (not args.slots or min(args.slots) < 0
+                    or max(args.slots) >= window):
+                raise ValueError(
+                    f"--slots out of range for window={window}: {args.slots}")
+            emb_data["slots"] = list(args.slots)
+        for info in component_info["emb_components"]:
+            if info.get("window"):
+                info["pca_total"] = len(args.slots) * info["emb_dim"]
+                info["raw_dim_desc"] = (
+                    f"{len(args.slots)}x{info['emb_dim']} "
+                    f"(simple21 var {len(args.slots) * info['emb_dim']})")
 
     # Apply PCA override if specified
     if pca_override is not None:
