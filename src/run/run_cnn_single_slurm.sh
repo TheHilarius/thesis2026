@@ -5,8 +5,8 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
 #SBATCH --time=24:00:00
-#SBATCH --output=logs/cnn_simple_%j.out
-#SBATCH --error=logs/cnn_simple_%j.err
+#SBATCH --output=runs/cnn_cv/logs/slurm/%j.out
+#SBATCH --error=runs/cnn_cv/logs/slurm/%j.err
 
 set -euo pipefail
 
@@ -30,7 +30,8 @@ export PYTHONUNBUFFERED=1
 MODEL="${MODEL:-cnn_simple}"
 FEAT="${FEAT:-emb_esmc300m_win_padtoken}"
 EPOCHS="${EPOCHS:-20}"
-OUT="${RUN:-.}"
+OUT="${RUN:-runs/cnn_cv}"
+mkdir -p "$OUT/models" "$OUT/logs/slurm" "$OUT/plots"
 
 echo "model=${MODEL} features=${FEAT} epochs=${EPOCHS} out=${OUT}"
 
@@ -42,7 +43,8 @@ python src/pipeline/python/05_cnn_modelling.py \
 
 echo "CNN single run completed."
 
-# Submit into the fixed campaign folder (paste on hub1):
-#   sbatch --job-name=cnn_simple --output="runs/cnn_cv/logs/slurm/%j.out" --error="runs/cnn_cv/logs/slurm/%j.err" --export=RUN="runs/cnn_cv",ALL src/run/run_cnn_single_slurm.sh
-# Smoke first (2 epochs, then check cv_results JSON):
-#   sbatch --export=RUN="runs/cnn_cv",EPOCHS=2,ALL src/run/run_cnn_single_slurm.sh
+# Submit into the fixed campaign folder (paste on hub1).
+# NOTE: create the slurm log dir first -- sbatch will not make it for you:
+#   mkdir -p runs/cnn_cv/logs/slurm && sbatch --export=RUN="runs/cnn_cv",EPOCHS=2,ALL src/run/run_cnn_single_slurm.sh
+# Full run (defaults: cnn_simple, emb_esmc300m_win_padtoken, 20 epochs):
+#   mkdir -p runs/cnn_cv/logs/slurm && sbatch --export=RUN="runs/cnn_cv",ALL src/run/run_cnn_single_slurm.sh
