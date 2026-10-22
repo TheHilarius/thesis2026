@@ -148,3 +148,10 @@ runs/_legacy/*/
 runs/smoketest_*/
 runs/cnn_*/
 runs/**/models/
+runs/**/logs/
+runs/**/data/*.csv
+runs/esmc6b_pca_sweep/
+runs/esmc6b_variance/
+runs/mpnn_ckpt_zeropad/
+runs/simple21_pilot/
+runs/esmc300m_pca_sweep/
