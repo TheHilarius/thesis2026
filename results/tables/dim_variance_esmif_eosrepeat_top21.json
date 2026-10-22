@@ -1,0 +1,27 @@
+{
+ "embedding_key": "esmif_eosrepeat",
+ "metric": "mean per-sample across-position variance, pads masked",
+ "dims": [
+  0,
+  5,
+  8,
+  108,
+  140,
+  166,
+  215,
+  227,
+  249,
+  256,
+  261,
+  264,
+  288,
+  326,
+  411,
+  413,
+  414,
+  446,
+  460,
+  483,
+  504
+ ]
+}

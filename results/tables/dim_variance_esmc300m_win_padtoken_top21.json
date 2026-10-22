@@ -1,0 +1,27 @@
+{
+ "embedding_key": "esmc300m_win_padtoken",
+ "metric": "mean per-sample across-position variance, pads masked",
+ "dims": [
+  23,
+  68,
+  209,
+  212,
+  257,
+  338,
+  438,
+  545,
+  570,
+  573,
+  575,
+  592,
+  617,
+  673,
+  712,
+  724,
+  783,
+  808,
+  826,
+  932,
+  944
+ ]
+}
