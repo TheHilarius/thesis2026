@@ -1,0 +1,8 @@
+bar,auc_roc,std
+BLOSUM50 (609 feat),0.763271,0.004409
+ESM-C-300M flat-PCA 80% (k=2278),0.697263,0.006902
+ESM-C-300M dim21 first-21,0.627100,0.004100
+ESM-C-300M dim21 var-21,0.659200,0.008200
+"ESM-IF eos/bos flat-PCA 60% (k=632, optimal)",0.644814,0.004130
+ESM-IF eosrep dim21 first-21,0.571900,0.002100
+ESM-IF eosrep dim21 var-21,0.626500,0.002700

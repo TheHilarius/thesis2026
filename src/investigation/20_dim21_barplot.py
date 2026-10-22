@@ -23,6 +23,10 @@ dim21 AUCs are the nested-CV "CROSS-VALIDATION SUMMARY" line
 Outputs:
     results/figures/models/dim21/dim21_vs_baselines_auc.png
     results/figures/models/dim21/dim21_vs_baselines_auc.csv
+
+With --stats-csv (21_dim21_delong.py output) significance brackets are
+drawn above the bars: star per pair from Holm-adjusted paired DeLong
+(* p<.05, ** p<.01, *** p<.001, **** p<.0001, ns otherwise).
 """
 
 import argparse
@@ -99,6 +103,9 @@ def main():
                     help="flat_raw log dir with the 4 d21 runs (project root)")
     ap.add_argument("--out-prefix", default=None,
                     help="default: results/figures/models/dim21/dim21_vs_baselines")
+    ap.add_argument("--stats-csv", default=None,
+                    help="dim21_delong_pairs.tsv from 21_dim21_delong.py — "
+                         "draw significance brackets with stars")
     args = ap.parse_args()
 
     root = PROJECT_ROOT
@@ -123,17 +130,17 @@ def main():
         print(f"  {k:<45} {v[0]:.4f} +/- {v[1]:.4f}")
 
     bars = [
-        ("BLOSUM50\n(609 feat)", blosum, "encoding", None),
-        ("ESM-C-300M\nflat-PCA 80%\n(k=2278)", esmc_pca, "esmc_pca", "pca"),
+        ("BLOSUM50\n(609 feat)", blosum, "encoding", "blosum50"),
+        ("ESM-C-300M\nflat-PCA 80%\n(k=2278)", esmc_pca, "esmc_pca", "esmc_pca80"),
         ("ESM-C-300M\ndim21\nfirst-21",
-         dim21.get("emb_esmc300m_win_padtoken_d21_first"), "esmc_dim21", "dim21"),
+         dim21.get("emb_esmc300m_win_padtoken_d21_first"), "esmc_dim21", "esmc_first"),
         ("ESM-C-300M\ndim21\nvar-21",
-         dim21.get("emb_esmc300m_win_padtoken_d21_var"), "esmc_dim21", "dim21"),
-        ("ESM-IF eos/bos\nflat-PCA 60%\n(k=632, optimal)", esmif_pca, "esmif_pca", "pca"),
+         dim21.get("emb_esmc300m_win_padtoken_d21_var"), "esmc_dim21", "esmc_var"),
+        ("ESM-IF eos/bos\nflat-PCA 60%\n(k=632, optimal)", esmif_pca, "esmif_pca", "esmif_pca60"),
         ("ESM-IF eosrep\ndim21\nfirst-21",
-         dim21.get("emb_esmif_eosrepeat_d21_first"), "esmif_dim21", "dim21"),
+         dim21.get("emb_esmif_eosrepeat_d21_first"), "esmif_dim21", "esmif_first"),
         ("ESM-IF eosrep\ndim21\nvar-21",
-         dim21.get("emb_esmif_eosrepeat_d21_var"), "esmif_dim21", "dim21"),
+         dim21.get("emb_esmif_eosrepeat_d21_var"), "esmif_dim21", "esmif_var"),
     ]
 
     fig, ax = plt.subplots(figsize=(11, 5.5))
@@ -153,9 +160,35 @@ def main():
     ax.set_xticks(xs)
     ax.set_xticklabels([b[0] for b in bars if b[1] is not None], fontsize=8.5)
     ax.set_ylabel("AUC-ROC (nested CV, mean +/- std)")
-    ax.set_ylim(0.5, 0.80)
-    ax.axhline(0.5, color="gray", lw=0.8, ls=":")
     ax.grid(axis="y", alpha=0.3)
+
+    # ── significance brackets (--stats-csv from 21_dim21_delong.py) ──
+    y_ceiling = 0.80
+    arm_x = {arm: i for i, (_, v, _, arm) in enumerate(bars) if v is not None}
+    if args.stats_csv:
+        with open(args.stats_csv) as fh:
+            stats_rows = list(csv.DictReader(fh, delimiter="\t"))
+        data_top = max(v[0] + v[1] for _, v, _, _ in bars if v is not None)
+        base, step, fam_lvl = data_top + 0.015, 0.016, {}
+        for r in stats_rows:
+            a, b = r["arm_a"], r["arm_b"]
+            if a not in arm_x or b not in arm_x:
+                print(f"  WARN: stats pair {a}~{b} has no bar — skipped")
+                continue
+            lvl = fam_lvl.get(r["family"], 0)
+            fam_lvl[r["family"]] = lvl + 1
+            if r["family"] == "vs_blosum":      # wide spans drawn highest
+                lvl += 3
+            y = base + lvl * step
+            xa, xb = sorted((arm_x[a], arm_x[b]))
+            ax.plot([xa, xa, xb, xb], [y - 0.004, y, y, y - 0.004],
+                    lw=0.8, color="black")
+            ax.text((xa + xb) / 2, y + 0.002, r["star"],
+                    ha="center", va="bottom", fontsize=9.5)
+            y_ceiling = max(y_ceiling, y + 0.022)
+
+    ax.set_ylim(0.5, y_ceiling)
+    ax.axhline(0.5, color="gray", lw=0.8, ls=":")
     ax.set_title("dim21 (29x21 reduced windows) vs BLOSUM50 and flat-PCA", fontsize=12)
     fig.text(0.5, 0.005,
              "PCA bars = flat window-PCA at the DeLong-confirmed optimal picks (ESM-C 80% EV k=2278; ESM-IF 60% EV k=632). "
