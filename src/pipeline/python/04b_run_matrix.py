@@ -81,9 +81,9 @@ def run_combo(model, features, pca, pca_mode="flat", dry_run=False,
     ]
     if xgb_params and model == "xgb":
         cmd += ["--xgb-params", xgb_params]
-    if (pca is not None and pca_mode != "flat_raw"
+    if (pca is not None and pca_mode not in ("flat_raw", "simple21")
             and str(pca).lower() not in ("none", "")):
-        # flat_raw ignores --pca (all raw dims); "none" = no PCA at all
+        # flat_raw / simple21 ignore --pca (all raw / cropped dims); "none" = no PCA at all
         cmd += ["--pca", str(pca)]
     if out_root and out_root != ".":
         cmd += ["--out-root", out_root]
@@ -283,9 +283,10 @@ def main():
              "E.g. rf:handcrafted_sparse_esmc:1,13,26,66,218,718",
     )
     parser.add_argument(
-        "--pca-mode", type=str, default="flat", choices=["flat", "flat_raw"],
+        "--pca-mode", type=str, default="flat", choices=["flat", "flat_raw", "simple21"],
         help="Window PCA scheme passed to 04_modelling (default: flat). "
-             "'flat_raw' = no PCA, all raw dims (ignores --pca).",
+             "'flat_raw' = no PCA, all raw dims (ignores --pca). "
+             "'simple21' = raw first-21 crop, no PCA (ignores --pca).",
     )
     parser.add_argument(
         "--no-aggregate", action="store_true",
