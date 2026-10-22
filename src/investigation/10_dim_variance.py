@@ -105,6 +105,12 @@ def main():
                     help="Comma-separated EMBEDDING_SOURCES keys")
     ap.add_argument("--top", type=int, default=21,
                     help="Number of dims to select (default: 21)")
+    ap.add_argument("--ev", default=None,
+                    help="Comma list of EV%% thresholds; for each, write a "
+                         "top-X JSON where X = fewest dims reaching that %% of "
+                         "cumulative dim-variance (no PCA). Default ladder "
+                         "mirrors the flat-PCA sweep: "
+                         "30,40,50,60,65,70,75,80,85,90,95")
     ap.add_argument("--out-dir", default=None,
                     help="Output dir (default: results/tables)")
     args = ap.parse_args()
@@ -121,6 +127,9 @@ def main():
         has_mpl = True
     except ImportError:
         has_mpl = False
+
+    if args.ev:
+        args.ev = sorted({int(t) for t in str(args.ev).split(",") if t.strip()})
 
     for key in [k.strip() for k in args.keys.split(",") if k.strip()]:
         path, wds, mds, kind = resolve_h5(key)
@@ -145,6 +154,35 @@ def main():
             "dims": top_dims,
         }, indent=1) + "\n")
         print(f"  wrote {json_path}")
+
+        # ── EV-matched sweep: smallest X whose cumulative dim-variance
+        # reaches each threshold, on the SAME EV ladder the flat-PCA sweep
+        # used (so topX_variance is directly comparable to PCA at that EV,
+        # with no PCA/rotation involved).
+        if args.ev:
+            cum = np.cumsum(mean_cv[order]) / mean_cv.sum()
+            ev_rows = []
+            for thr in args.ev:
+                x = int(np.searchsorted(cum, thr / 100.0) + 1)
+                x = min(x, len(order))
+                dims_x = sorted(int(s) for s in order[:x])
+                share = float(cum[x - 1])
+                ev_path = out_dir / f"dim_variance_{key}_ev{thr}.json"
+                ev_path.write_text(json.dumps({
+                    "embedding_key": key,
+                    "metric": "mean per-sample across-position variance, pads masked",
+                    "ev_pct": thr,
+                    "n_dims": x,
+                    "n_features": 29 * x,
+                    "realised_share": round(share, 4),
+                    "dims": dims_x,
+                }, indent=1) + "\n")
+                ev_rows.append((thr, x, 29 * x, share))
+            print(f"  EV ladder (threshold -> X dims -> 29X features):")
+            for thr, x, nf, share in ev_rows:
+                print(f"    EV {thr:>3d}%  ->  top-{x:<4d} ({nf:>6d} feats, "
+                      f"captures {share*100:.1f}%)")
+            print(f"  wrote {len(ev_rows)} x dim_variance_{key}_ev*.json")
 
         if has_mpl:
             fig, ax = plt.subplots(figsize=(10, 3.5))

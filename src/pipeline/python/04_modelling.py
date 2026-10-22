@@ -1191,7 +1191,7 @@ if __name__ == "__main__":
         run_tag = f"{model_key}_{features_key}"
     run_tag += f"_{pca_mode}"
     if args.dims is not None:
-        run_tag += "_dim21"
+        run_tag += f"_var{len(args.dims)}"
     if xgb_params_override:
         lr = xgb_params_override.get("learning_rate")
         n_est = xgb_params_override.get("n_estimators")
