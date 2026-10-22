@@ -47,12 +47,14 @@ DEFAULT_KEYS = ["esmc300m_win_padtoken", "esmif_eosrepeat"]
 
 def resolve_h5(emb_key):
     """Prepared path preferred (what modelling uses); else raw. Returns
-    (path, window_ds, pad_mask_ds)."""
+    (path, window_ds, pad_mask_ds). Prepared files store the tensor as
+    'windows'/'pad_mask'; raw files use the config dataset names."""
     src = get_embedding_source(emb_key)
     for p in (src.get("prepared_path"), src.get("raw_path")):
         if p is not None and Path(p).exists():
-            return (Path(p), src["window_ds"], src["pad_mask_ds"],
-                    "prepared" if p == src.get("prepared_path") else "raw")
+            if p == src.get("prepared_path"):
+                return (Path(p), "windows", "pad_mask", "prepared")
+            return (Path(p), src["window_ds"], src["pad_mask_ds"], "raw")
     raise FileNotFoundError(
         f"No H5 found for '{emb_key}': "
         f"{src.get('prepared_path')} / {src.get('raw_path')}")
