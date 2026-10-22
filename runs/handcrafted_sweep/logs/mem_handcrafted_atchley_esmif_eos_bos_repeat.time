@@ -1,0 +1,23 @@
+	Command being timed: "python src/pipeline/python/04b_run_matrix.py --pca-mode flat --no-aggregate --out-root runs/handcrafted_sweep --combos xgb,handcrafted_atchley_esmif_eos_bos_repeat,632"
+	User time (seconds): 65470.76
+	System time (seconds): 345.84
+	Percent of CPU this job got: 603%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 3:01:47
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 9097036
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 1122
+	Minor (reclaiming a frame) page faults: 26201069
+	Voluntary context switches: 2646633
+	Involuntary context switches: 244141
+	Swaps: 0
+	File system inputs: 5927008
+	File system outputs: 254864
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

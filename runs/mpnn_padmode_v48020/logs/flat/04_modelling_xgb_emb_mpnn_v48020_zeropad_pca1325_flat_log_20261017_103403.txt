@@ -1,0 +1,635 @@
+================================================================================
+  04_MODELLING -- XGBOOST + PROTEINMPNN V_48_020 ONLY (ZERO-PAD)
+================================================================================
+  Timestamp:       2026-10-17 10:34:03
+  Model key:       xgb
+  Model class:     xgboost.XGBClassifier
+  Feature set:     emb_mpnn_v48020_zeropad (ProteinMPNN v_48_020 only (zero-pad))
+  PCA mode:        flat
+  Components:      ['mpnn_v48020_zeropad']
+  Data path:       /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_with_folds.csv
+  Log path:        runs/mpnn_padmode_v48020/logs/flat/04_modelling_xgb_emb_mpnn_v48020_zeropad_pca1325_flat_log_20261017_103403.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   False
+
+  Model hyperparameters:
+    n_estimators              1000
+    max_depth                 6
+    learning_rate             0.1
+    subsample                 1.0
+    colsample_bytree          1.0
+    min_child_weight          1
+    reg_lambda                1.0
+    reg_alpha                 0.0
+    gamma                     0.0
+    eval_metric               logloss
+    n_jobs                    -1
+    verbosity                 0
+    random_state              42
+================================================================================
+
+Loading split data: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_with_folds.csv
+  Shape: 46617 rows x 105 columns
+  [OK] Fold column validated: [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5)]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+  Loading embedding component: ProteinMPNN v_48_020 windows (zero-pad, 29x128)
+    Loading prepared embeddings: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/embeddings_prepared/mpnn_v48020_zeropad_prepared.h5
+    Loaded (windows): 46617 samples, window=29, dim=128 (tensor streamed lazily)
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  Embedding components (1):
+    [mpnn_v48020_zeropad] ProteinMPNN v_48_020 windows (zero-pad, 29x128)
+      Context dim:    29x128 (flat 3712)
+      After PCA: 1325
+
+  Estimated total features: ~1325
+    CSV:        0
+    Embeddings: 1325 (after PCA)
+
+================================================================================
+PIPELINE READY: ~1325 features, 5 folds, XGBoost
+================================================================================
+
+================================================================================
+NESTED CROSS-VALIDATION
+  Outer iterations: 6 (rotate validation bucket)
+  Inner folds:      5 (per outer iteration)
+  Total models:     30
+================================================================================
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 0/5 (validation bucket = 0)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 1) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31077 rows streamed, 30108 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.1% variance)
+    Total features after concatenation: 1325
+    Train:  31077 samples (pos=14393, neg=16684, ratio=1.159)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1592 (neg=16684, pos=14393)
+    Training XGBoost ...
+    Training time: 132.6s
+    Inner fold 1 AUC: 0.5782 (221.8s)
+
+  ── Inner fold 2/5 (test bucket = 2) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31077 rows streamed, 30140 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.1% variance)
+    Total features after concatenation: 1325
+    Train:  31077 samples (pos=14378, neg=16699, ratio=1.161)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1614 (neg=16699, pos=14378)
+    Training XGBoost ...
+    Training time: 133.4s
+    Inner fold 2 AUC: 0.5647 (220.1s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31078 rows streamed, 30107 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.1% variance)
+    Total features after concatenation: 1325
+    Train:  31078 samples (pos=14392, neg=16686, ratio=1.159)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1594 (neg=16686, pos=14392)
+    Training XGBoost ...
+    Training time: 131.5s
+    Inner fold 3 AUC: 0.5781 (208.8s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31078 rows streamed, 30101 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.1% variance)
+    Total features after concatenation: 1325
+    Train:  31078 samples (pos=14374, neg=16704, ratio=1.162)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1621 (neg=16704, pos=14374)
+    Training XGBoost ...
+    Training time: 131.4s
+    Inner fold 4 AUC: 0.5797 (205.5s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31078 rows streamed, 30132 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.1% variance)
+    Total features after concatenation: 1325
+    Train:  31078 samples (pos=14383, neg=16695, ratio=1.161)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1607 (neg=16695, pos=14383)
+    Training XGBoost ...
+    Training time: 133.0s
+    Inner fold 5 AUC: 0.5770 (200.7s)
+
+  Averaging 5 inner models on validation bucket 0...
+  Outer fold 0 validation (n=7770, pos=3621, neg=4149):
+    AUC-ROC: 0.6028  |  AUC-PR: 0.5566  |  Acc: 0.5749  |  F1: 0.4822  |  MCC: 0.1363
+    Sens: 0.4247  |  Spec: 0.7060  |  PPV: 0.5577  |  NPV: 0.5844
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 1/5 (validation bucket = 1)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31077 rows streamed, 30108 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.1% variance)
+    Total features after concatenation: 1325
+    Train:  31077 samples (pos=14393, neg=16684, ratio=1.159)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1592 (neg=16684, pos=14393)
+    Training XGBoost ...
+    Training time: 132.4s
+    Inner fold 0 AUC: 0.5774 (201.1s)
+
+  ── Inner fold 2/5 (test bucket = 2) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31077 rows streamed, 30129 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.1% variance)
+    Total features after concatenation: 1325
+    Train:  31077 samples (pos=14412, neg=16665, ratio=1.156)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1563 (neg=16665, pos=14412)
+    Training XGBoost ...
+    Training time: 129.8s
+    Inner fold 2 AUC: 0.5737 (199.6s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31078 rows streamed, 30096 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.1% variance)
+    Total features after concatenation: 1325
+    Train:  31078 samples (pos=14426, neg=16652, ratio=1.154)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1543 (neg=16652, pos=14426)
+    Training XGBoost ...
+    Training time: 129.8s
+    Inner fold 3 AUC: 0.5764 (198.7s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31078 rows streamed, 30090 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.1% variance)
+    Total features after concatenation: 1325
+    Train:  31078 samples (pos=14408, neg=16670, ratio=1.157)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1570 (neg=16670, pos=14408)
+    Training XGBoost ...
+    Training time: 130.5s
+    Inner fold 4 AUC: 0.5858 (200.2s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31078 rows streamed, 30121 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.1% variance)
+    Total features after concatenation: 1325
+    Train:  31078 samples (pos=14417, neg=16661, ratio=1.156)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1556 (neg=16661, pos=14417)
+    Training XGBoost ...
+    Training time: 130.9s
+    Inner fold 5 AUC: 0.5723 (201.3s)
+
+  Averaging 5 inner models on validation bucket 1...
+  Outer fold 1 validation (n=7770, pos=3587, neg=4183):
+    AUC-ROC: 0.6053  |  AUC-PR: 0.5530  |  Acc: 0.5779  |  F1: 0.4838  |  MCC: 0.1400
+    Sens: 0.4285  |  Spec: 0.7060  |  PPV: 0.5555  |  NPV: 0.5902
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 2/5 (validation bucket = 2)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31077 rows streamed, 30140 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.1% variance)
+    Total features after concatenation: 1325
+    Train:  31077 samples (pos=14378, neg=16699, ratio=1.161)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1614 (neg=16699, pos=14378)
+    Training XGBoost ...
+    Training time: 131.4s
+    Inner fold 0 AUC: 0.5749 (200.2s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31077 rows streamed, 30129 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.1% variance)
+    Total features after concatenation: 1325
+    Train:  31077 samples (pos=14412, neg=16665, ratio=1.156)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1563 (neg=16665, pos=14412)
+    Training XGBoost ...
+    Training time: 132.4s
+    Inner fold 1 AUC: 0.5796 (205.3s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31078 rows streamed, 30128 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.2% variance)
+    Total features after concatenation: 1325
+    Train:  31078 samples (pos=14411, neg=16667, ratio=1.157)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1565 (neg=16667, pos=14411)
+    Training XGBoost ...
+    Training time: 130.3s
+    Inner fold 3 AUC: 0.5773 (200.2s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31078 rows streamed, 30122 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.2% variance)
+    Total features after concatenation: 1325
+    Train:  31078 samples (pos=14393, neg=16685, ratio=1.159)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1592 (neg=16685, pos=14393)
+    Training XGBoost ...
+    Training time: 130.8s
+    Inner fold 4 AUC: 0.5888 (200.9s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31078 rows streamed, 30153 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.2% variance)
+    Total features after concatenation: 1325
+    Train:  31078 samples (pos=14402, neg=16676, ratio=1.158)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1579 (neg=16676, pos=14402)
+    Training XGBoost ...
+    Training time: 132.9s
+    Inner fold 5 AUC: 0.5761 (202.4s)
+
+  Averaging 5 inner models on validation bucket 2...
+  Outer fold 2 validation (n=7770, pos=3602, neg=4168):
+    AUC-ROC: 0.5856  |  AUC-PR: 0.5412  |  Acc: 0.5618  |  F1: 0.4756  |  MCC: 0.1088
+    Sens: 0.4287  |  Spec: 0.6768  |  PPV: 0.5341  |  NPV: 0.5782
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 3/5 (validation bucket = 3)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31078 rows streamed, 30107 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.1% variance)
+    Total features after concatenation: 1325
+    Train:  31078 samples (pos=14392, neg=16686, ratio=1.159)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1594 (neg=16686, pos=14392)
+    Training XGBoost ...
+    Training time: 130.5s
+    Inner fold 0 AUC: 0.5776 (200.9s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31078 rows streamed, 30096 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.1% variance)
+    Total features after concatenation: 1325
+    Train:  31078 samples (pos=14426, neg=16652, ratio=1.154)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1543 (neg=16652, pos=14426)
+    Training XGBoost ...
+    Training time: 131.5s
+    Inner fold 1 AUC: 0.5804 (200.3s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31078 rows streamed, 30128 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.2% variance)
+    Total features after concatenation: 1325
+    Train:  31078 samples (pos=14411, neg=16667, ratio=1.157)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1565 (neg=16667, pos=14411)
+    Training XGBoost ...
+    Training time: 130.8s
+    Inner fold 2 AUC: 0.5623 (199.8s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31079 rows streamed, 30089 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.2% variance)
+    Total features after concatenation: 1325
+    Train:  31079 samples (pos=14407, neg=16672, ratio=1.157)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1572 (neg=16672, pos=14407)
+    Training XGBoost ...
+    Training time: 132.7s
+    Inner fold 4 AUC: 0.5764 (201.2s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31079 rows streamed, 30120 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.1% variance)
+    Total features after concatenation: 1325
+    Train:  31079 samples (pos=14416, neg=16663, ratio=1.156)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1559 (neg=16663, pos=14416)
+    Training XGBoost ...
+    Training time: 131.1s
+    Inner fold 5 AUC: 0.5787 (198.8s)
+
+  Averaging 5 inner models on validation bucket 3...
+  Outer fold 3 validation (n=7769, pos=3588, neg=4181):
+    AUC-ROC: 0.6037  |  AUC-PR: 0.5609  |  Acc: 0.5819  |  F1: 0.4946  |  MCC: 0.1492
+    Sens: 0.4429  |  Spec: 0.7013  |  PPV: 0.5599  |  NPV: 0.5946
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 4/5 (validation bucket = 4)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31078 rows streamed, 30101 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.1% variance)
+    Total features after concatenation: 1325
+    Train:  31078 samples (pos=14374, neg=16704, ratio=1.162)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1621 (neg=16704, pos=14374)
+    Training XGBoost ...
+    Training time: 131.0s
+    Inner fold 0 AUC: 0.5717 (201.7s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31078 rows streamed, 30090 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.1% variance)
+    Total features after concatenation: 1325
+    Train:  31078 samples (pos=14408, neg=16670, ratio=1.157)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1570 (neg=16670, pos=14408)
+    Training XGBoost ...
+    Training time: 131.5s
+    Inner fold 1 AUC: 0.5751 (200.6s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31078 rows streamed, 30122 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.2% variance)
+    Total features after concatenation: 1325
+    Train:  31078 samples (pos=14393, neg=16685, ratio=1.159)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1592 (neg=16685, pos=14393)
+    Training XGBoost ...
+    Training time: 130.8s
+    Inner fold 2 AUC: 0.5580 (199.6s)
+
+  ── Inner fold 4/5 (test bucket = 3) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31079 rows streamed, 30089 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.2% variance)
+    Total features after concatenation: 1325
+    Train:  31079 samples (pos=14407, neg=16672, ratio=1.157)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1572 (neg=16672, pos=14407)
+    Training XGBoost ...
+    Training time: 127.7s
+    Inner fold 3 AUC: 0.5764 (196.7s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31079 rows streamed, 30114 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.2% variance)
+    Total features after concatenation: 1325
+    Train:  31079 samples (pos=14398, neg=16681, ratio=1.159)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1586 (neg=16681, pos=14398)
+    Training XGBoost ...
+    Training time: 127.5s
+    Inner fold 5 AUC: 0.5790 (195.6s)
+
+  Averaging 5 inner models on validation bucket 4...
+  Outer fold 4 validation (n=7769, pos=3606, neg=4163):
+    AUC-ROC: 0.6093  |  AUC-PR: 0.5641  |  Acc: 0.5803  |  F1: 0.4899  |  MCC: 0.1466
+    Sens: 0.4343  |  Spec: 0.7067  |  PPV: 0.5619  |  NPV: 0.5905
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 5/5 (validation bucket = 5)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31078 rows streamed, 30132 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.1% variance)
+    Total features after concatenation: 1325
+    Train:  31078 samples (pos=14383, neg=16695, ratio=1.161)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1607 (neg=16695, pos=14383)
+    Training XGBoost ...
+    Training time: 129.8s
+    Inner fold 0 AUC: 0.5797 (189.9s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31078 rows streamed, 30121 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.1% variance)
+    Total features after concatenation: 1325
+    Train:  31078 samples (pos=14417, neg=16661, ratio=1.156)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1556 (neg=16661, pos=14417)
+    Training XGBoost ...
+    Training time: 131.5s
+    Inner fold 1 AUC: 0.5747 (191.9s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31078 rows streamed, 30153 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.2% variance)
+    Total features after concatenation: 1325
+    Train:  31078 samples (pos=14402, neg=16676, ratio=1.158)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1579 (neg=16676, pos=14402)
+    Training XGBoost ...
+    Training time: 130.8s
+    Inner fold 2 AUC: 0.5647 (190.8s)
+
+  ── Inner fold 4/5 (test bucket = 3) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31079 rows streamed, 30120 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.1% variance)
+    Total features after concatenation: 1325
+    Train:  31079 samples (pos=14416, neg=16663, ratio=1.156)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1559 (neg=16663, pos=14416)
+    Training XGBoost ...
+    Training time: 129.1s
+    Inner fold 3 AUC: 0.5817 (189.3s)
+
+  ── Inner fold 5/5 (test bucket = 4) ──
+Embedding components loaded: dict_keys(['mpnn_v48020_zeropad'])
+    mpnn_v48020_zeropad: fitting flattened-window PCA (window=29, D=128, k=1325) ...
+      window PCA (flat) fit: 31079 rows streamed, 30114 fully-real rows kept (k=1325 over 3712 dims)
+    mpnn_v48020_zeropad: window PCA 3712 → k=1325 (1325 features) (90.2% variance)
+    Total features after concatenation: 1325
+    Train:  31079 samples (pos=14398, neg=16681, ratio=1.159)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 1325
+    scale_pos_weight (auto) = 1.1586 (neg=16681, pos=14398)
+    Training XGBoost ...
+    Training time: 129.3s
+    Inner fold 4 AUC: 0.5778 (189.7s)
+
+  Averaging 5 inner models on validation bucket 5...
+  Outer fold 5 validation (n=7769, pos=3597, neg=4172):
+    AUC-ROC: 0.6011  |  AUC-PR: 0.5623  |  Acc: 0.5730  |  F1: 0.4794  |  MCC: 0.1307
+    Sens: 0.4245  |  Spec: 0.7011  |  PPV: 0.5505  |  NPV: 0.5856
+
+================================================================================
+NESTED CV RESULTS (mean ± std across 6 outer iterations)
+================================================================================
+
+================================================================================
+CROSS-VALIDATION SUMMARY (mean +/- std)
+================================================================================
+  auc_roc         0.6013 +/- 0.0075    [0.6028  0.6053  0.5856  0.6037  0.6093  0.6011]
+  auc_pr          0.5563 +/- 0.0077    [0.5566  0.5530  0.5412  0.5609  0.5641  0.5623]
+  accuracy        0.5750 +/- 0.0066    [0.5749  0.5779  0.5618  0.5819  0.5803  0.5730]
+  f1              0.4842 +/- 0.0063    [0.4822  0.4838  0.4756  0.4946  0.4899  0.4794]
+  mcc             0.1353 +/- 0.0133    [0.1363  0.1400  0.1088  0.1492  0.1466  0.1307]
+  sensitivity     0.4306 +/- 0.0064    [0.4247  0.4285  0.4287  0.4429  0.4343  0.4245]
+  specificity     0.6996 +/- 0.0104    [0.7060  0.7060  0.6768  0.7013  0.7067  0.7011]
+  ppv             0.5532 +/- 0.0093    [0.5577  0.5555  0.5341  0.5599  0.5619  0.5505]
+  npv             0.5873 +/- 0.0053    [0.5844  0.5902  0.5782  0.5946  0.5905  0.5856]
+
+================================================================================
+PER-OUTER-FOLD VALIDATION METRICS
+================================================================================
+  Outer   auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
+  -----------------------------------------------------------------------------------------------------------------------------
+  0       0.6028       0.5566       0.5749       0.4822       0.1363       0.4247       0.7060       0.5577       0.5844       
+  1       0.6053       0.5530       0.5779       0.4838       0.1400       0.4285       0.7060       0.5555       0.5902       
+  2       0.5856       0.5412       0.5618       0.4756       0.1088       0.4287       0.6768       0.5341       0.5782       
+  3       0.6037       0.5609       0.5819       0.4946       0.1492       0.4429       0.7013       0.5599       0.5946       
+  4       0.6093       0.5641       0.5803       0.4899       0.1466       0.4343       0.7067       0.5619       0.5905       
+  5       0.6011       0.5623       0.5730       0.4794       0.1307       0.4245       0.7011       0.5505       0.5856       
+  -----------------------------------------------------------------------------------------------------------------------------
+  mean    0.6013       0.5563       0.5750       0.4842       0.1353       0.4306       0.6996       0.5532       0.5873       
+  std     0.0075       0.0077       0.0066       0.0063       0.0133       0.0064       0.0104       0.0093       0.0053       
+
+================================================================================
+AVERAGED FEATURE IMPORTANCE ACROSS ALL 30 INNER MODELS
+================================================================================
+  Rank   Feature                                           Mean Imp          Std
+  -----------------------------------------------------------------------------
+  1      mpnn_v48020_zeropad_PC011                         0.001400     0.000101
+  2      mpnn_v48020_zeropad_PC008                         0.001347     0.000160
+  3      mpnn_v48020_zeropad_PC003                         0.001342     0.000145
+  4      mpnn_v48020_zeropad_PC015                         0.001271     0.000139
+  5      mpnn_v48020_zeropad_PC009                         0.001141     0.000074
+  6      mpnn_v48020_zeropad_PC064                         0.001035     0.000133
+  7      mpnn_v48020_zeropad_PC041                         0.001025     0.000178
+  8      mpnn_v48020_zeropad_PC004                         0.000997     0.000201
+  9      mpnn_v48020_zeropad_PC005                         0.000987     0.000110
+  10     mpnn_v48020_zeropad_PC042                         0.000983     0.000211
+  11     mpnn_v48020_zeropad_PC012                         0.000966     0.000152
+  12     mpnn_v48020_zeropad_PC007                         0.000957     0.000082
+  13     mpnn_v48020_zeropad_PC002                         0.000956     0.000064
+  14     mpnn_v48020_zeropad_PC101                         0.000940     0.000109
+  15     mpnn_v48020_zeropad_PC019                         0.000939     0.000129
+  16     mpnn_v48020_zeropad_PC048                         0.000937     0.000134
+  17     mpnn_v48020_zeropad_PC031                         0.000927     0.000172
+  18     mpnn_v48020_zeropad_PC102                         0.000925     0.000177
+  19     mpnn_v48020_zeropad_PC066                         0.000920     0.000112
+  20     mpnn_v48020_zeropad_PC071                         0.000907     0.000134
+  21     mpnn_v48020_zeropad_PC105                         0.000900     0.000179
+  22     mpnn_v48020_zeropad_PC147                         0.000897     0.000114
+  23     mpnn_v48020_zeropad_PC069                         0.000896     0.000171
+  24     mpnn_v48020_zeropad_PC073                         0.000890     0.000176
+  25     mpnn_v48020_zeropad_PC010                         0.000889     0.000162
+  26     mpnn_v48020_zeropad_PC054                         0.000889     0.000093
+  27     mpnn_v48020_zeropad_PC107                         0.000886     0.000185
+  28     mpnn_v48020_zeropad_PC043                         0.000883     0.000201
+  29     mpnn_v48020_zeropad_PC146                         0.000882     0.000177
+  30     mpnn_v48020_zeropad_PC014                         0.000880     0.000098
+
+Results saved: runs/mpnn_padmode_v48020/models/flat/cv_results_xgb_emb_mpnn_v48020_zeropad_pca1325_flat_20261017_103403.json
+Feature names saved: runs/mpnn_padmode_v48020/models/flat/xgb_emb_mpnn_v48020_zeropad_pca1325_flat_feature_names.json
+
+================================================================================
+RUN SUMMARY (NESTED CV)
+================================================================================
+  Total runtime:      6168.2s (102.8 min)
+  Nested CV time:     6166.5s (102.8 min)
+  Model:              XGBoost (xgb)
+  Feature set:        ProteinMPNN v_48_020 only (zero-pad) (emb_mpnn_v48020_zeropad)
+  Components:         ['mpnn_v48020_zeropad']
+  Scaling:            no
+  Features (final):   1325
+    mpnn_v48020_zeropad PCA:       1325
+  Outer iterations:   6
+  Inner folds:        5
+  Total models:       30
+  Val AUC-ROC:        0.6013 ± 0.0075
+  Val MCC:            0.1353 ± 0.0133
+  Models dir:         runs/mpnn_padmode_v48020/models/flat/
+  Results file:       runs/mpnn_padmode_v48020/models/flat/cv_results_xgb_emb_mpnn_v48020_zeropad_pca1325_flat_20261017_103403.json
+  Feature names:      runs/mpnn_padmode_v48020/models/flat/xgb_emb_mpnn_v48020_zeropad_pca1325_flat_feature_names.json
+  Log file:           runs/mpnn_padmode_v48020/logs/flat/04_modelling_xgb_emb_mpnn_v48020_zeropad_pca1325_flat_log_20261017_103403.txt
+  Completed:          2026-10-17 12:16:52
+================================================================================

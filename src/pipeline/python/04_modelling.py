@@ -379,6 +379,9 @@ def load_all_components(df_split, feat_cfg, pca_mode="flat"):
             if pca_mode == "flat_raw":
                 pca_total = window * emb_dim          # no PCA — all raw dims
                 raw_dim_desc = f"{window}x{emb_dim} (flat_raw {window * emb_dim})"
+            elif pca_mode == "simple21":
+                pca_total = SIMPLE21_ROWS * emb_dim   # raw first-21 crop, no PCA
+                raw_dim_desc = f"{SIMPLE21_ROWS}x{emb_dim} (simple21 {SIMPLE21_ROWS * emb_dim})"
             else:  # flat
                 pca_total = int(pca_components)
                 raw_dim_desc = f"{window}x{emb_dim} (flat {window * emb_dim})"
@@ -477,6 +480,10 @@ def get_context_matrix(emb_data, indices):
 
 WINDOW_CHUNK_ROWS = 2048
 
+# simple21emb: raw crop of the first 21 positional slots (order preserved).
+# Supervisor test for "flat 29xD PCA loses positional info" — no PCA mixing.
+SIMPLE21_ROWS = 21
+
 
 def _stream_window_slots(prepared_path, indices):
     """
@@ -497,22 +504,26 @@ def _stream_window_slots(prepared_path, indices):
             yield flat, flatm
 
 
-def concat_window_slots(emb_data, indices):
+def concat_window_slots(emb_data, indices, n_slots=None):
     """
     Full flattened (n, window*D) float32 block for `indices` — flat_raw mode.
     Reuses the slot streamer; ALL slots kept (pads carry their raw fill),
     which is exactly what flat PCA would feed minus the rotation.
+    n_slots crops to the first n_slots positional slots (simple21 mode).
     """
     prepared_path = emb_data["prepared_path"]
-    window = emb_data["window"]
+    window = n_slots or emb_data["window"]
     D = emb_data["emb_dim"]
     n = len(indices)
     out = np.empty((n, window * D), dtype=np.float32)
     cur = 0
     for flat, _flatm in _stream_window_slots(prepared_path, indices):
-        c = flat.shape[0] // window
-        out[cur:cur + c] = flat.reshape(c, window * D)
-        cur += c
+        w = flat.shape[0] // emb_data["window"]
+        full = flat.reshape(w, emb_data["window"], D)
+        if n_slots is not None:
+            full = full[:, :n_slots, :]
+        out[cur:cur + w] = full.reshape(w, window * D)
+        cur += w
     return out
 
 
@@ -683,6 +694,8 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
 
             if pca_mode == "flat_raw":
                 total_components = int(window * D)   # no PCA — all raw dims
+            elif pca_mode == "simple21":
+                total_components = int(SIMPLE21_ROWS * D)  # raw first-21 crop
             else:
                 total_components = int(min(pca_components, window * D))
 
@@ -702,6 +715,14 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
                 X_emb_train = concat_window_slots(emb_data, train_indices)
                 X_emb_test = concat_window_slots(emb_data, test_indices)
                 ipca = None  # raw features — nothing to transform at predict time
+            elif pca_mode == "simple21":
+                print(f"    {comp_key}: simple21 raw crop (no PCA) "
+                      f"(first {SIMPLE21_ROWS}/{window} slots, D={D} → {total_components} features)")
+                X_emb_train = concat_window_slots(
+                    emb_data, train_indices, n_slots=SIMPLE21_ROWS)
+                X_emb_test = concat_window_slots(
+                    emb_data, test_indices, n_slots=SIMPLE21_ROWS)
+                ipca = None  # raw crop — nothing to transform at predict time
 
             explained = (ipca.explained_variance_ratio_.sum() * 100
                          if hasattr(ipca, "explained_variance_ratio_") else 100.0)
@@ -715,6 +736,12 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
             elif pca_mode == "flat_raw":
                 print(f"    {comp_key}: flat-raw features "
                       f"{window}x{D} → {total_components} (no PCA, 100% by definition)")
+                feature_names.extend(
+                    window_feature_names_flat(comp_key, total_components)
+                )
+            elif pca_mode == "simple21":
+                print(f"    {comp_key}: simple21 features "
+                      f"{SIMPLE21_ROWS}x{D} → {total_components} (no PCA, 100% by definition)")
                 feature_names.extend(
                     window_feature_names_flat(comp_key, total_components)
                 )
@@ -1057,10 +1084,11 @@ def parse_args():
     )
     parser.add_argument(
         "--pca-mode", type=str, default="flat",
-        choices=["flat", "flat_raw"],
+        choices=["flat", "flat_raw", "simple21"],
         help="Window PCA scheme: 'flat' (flatten window*D, PCA across the "
-             "full window, default), or 'flat_raw' (flatten window*D, NO PCA "
-             "— all raw dims; low mem)",
+             "full window, default), 'flat_raw' (flatten window*D, NO PCA "
+             "— all raw dims; low mem), or 'simple21' (raw first-21 slots, "
+             "no PCA — positional crop test)",
     )
     parser.add_argument(
         "--C", type=float, default=None,

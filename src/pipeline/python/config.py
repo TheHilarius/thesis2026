@@ -141,6 +141,24 @@ EMBEDDING_SOURCES = {
         "has_row_indices": True,
         "has_start_end": True,
     },
+    "esmif_eosrepeat": {
+        "display_name": "ESM-IF1 windows (eos-repeat)",
+        "kind": "windows",
+        "raw_path": EMBEDDING_DIR / "esm-if_test_eosrepeat.h5",
+        "prepared_path": PREPARED_EMBEDDING_DIR / "esmif_eosrepeat_windows_prepared.h5",
+        "window_ds": "window_if_struct",
+        "pad_mask_ds": "pad_mask",
+        "n_pad_ds": "n_pad",
+        "c_pad_ds": "c_pad",
+        "status_ds": "status",
+        "emb_dim": 512,
+        "window": 29,
+        "pad_mode": "eosrepeat",
+        "peptide_id_col": "peptide_ids",
+        "uniprot_id_col": "uniprot_ids",
+        "has_row_indices": True,
+        "has_start_end": True,
+    },
     # ── ESM-C (600M) fixed-29 window embeddings ──
     # Raw HDF5: window_embeddings (N,29,1152) + pad_mask + peptide/uniprot_id/
     # row_indices/fallback_flag. No status/n_pad/c_pad/start/end datasets.
@@ -603,6 +621,12 @@ FEATURE_COMPONENTS = {
         "embedding_key": "esmif_eos_bos_repeat",
         "pca_components": 64,
     },
+    "esmif_eosrepeat": {
+        "display_name": "ESM-IF1 windows (eos-repeat, 29x512)",
+        "type": "embedding_windows",
+        "embedding_key": "esmif_eosrepeat",
+        "pca_components": 64,
+    },
     "esmc_win_zeropad": {
         "display_name": "ESM-C windows (zero-pad, 29x1152)",
         "type": "embedding_windows",
@@ -898,6 +922,10 @@ FEATURE_SETS = {
     "emb_esmif_eos_bos_repeat": {
         "display_name": "ESM-IF windows only (eos/bos-repeat)",
         "components": ["esmif_eos_bos_repeat"],
+    },
+    "emb_esmif_eosrepeat": {
+        "display_name": "ESM-IF windows only (eos-repeat)",
+        "components": ["esmif_eosrepeat"],
     },
     # ── ProteinMPNN windows (embedding-only) ──
     "emb_mpnn_v48020_zeropad": {

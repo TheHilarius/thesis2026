@@ -1,0 +1,615 @@
+================================================================================
+  04_MODELLING -- XGBOOST + STRUCTURAL + KIDERA FACTORS
+================================================================================
+  Timestamp:       2026-10-20 10:28:14
+  Model key:       xgb
+  Model class:     xgboost.XGBClassifier
+  Feature set:     handcrafted_kidera (Structural + Kidera factors)
+  PCA mode:        flat
+  Components:      ['handcrafted', 'kidera']
+  Data path:       /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_with_folds.csv
+  Log path:        runs/handcrafted_sweep/logs/flat/04_modelling_xgb_handcrafted_kidera_flat_log_20261020_102814.txt
+  CV folds (k):    5
+  Held-out bucket: 5
+  Random state:    42
+  Needs scaling:   False
+
+  Model hyperparameters:
+    n_estimators              1000
+    max_depth                 6
+    learning_rate             0.1
+    subsample                 1.0
+    colsample_bytree          1.0
+    min_child_weight          1
+    reg_lambda                1.0
+    reg_alpha                 0.0
+    gamma                     0.0
+    eval_metric               logloss
+    n_jobs                    -1
+    verbosity                 0
+    random_state              42
+================================================================================
+
+Loading split data: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_all_with_folds.csv
+  Shape: 46617 rows x 105 columns
+  [OK] Fold column validated: [np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4), np.int64(5)]
+
+================================================================================
+LOADING FEATURE COMPONENTS
+================================================================================
+
+  Loading CSV component: Kidera factors AA encoding
+    Loading: df_kidera.csv
+    Shape: 46617 rows x 292 columns
+    [OK] Alignment verified
+    New columns: 290
+
+  Merged 290 new columns → 46617 rows x 397 columns
+  Excluded 2 non-numeric feature column(s)
+
+================================================================================
+COMPONENT SUMMARY
+================================================================================
+
+  CSV components (2):
+    [handcrafted] Structural features
+      Source: split_data (built-in)
+    [kidera] Kidera factors AA encoding
+      Source: /net/kvasir/pool/projects1/thesis_s204692_s204581/thesis2026/data/processed/df_kidera.csv
+      New columns added: 290
+  Total CSV features: 346
+    Structural: 56
+    AA-encoded: 290
+
+  Estimated total features: ~346
+    CSV:        346
+    Embeddings: 0 (after PCA)
+
+================================================================================
+PIPELINE READY: ~346 features, 5 folds, XGBoost
+================================================================================
+
+================================================================================
+NESTED CROSS-VALIDATION
+  Outer iterations: 6 (rotate validation bucket)
+  Inner folds:      5 (per outer iteration)
+  Total models:     30
+================================================================================
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 0/5 (validation bucket = 0)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 1) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31077 samples (pos=14393, neg=16684, ratio=1.159)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 346
+    scale_pos_weight (auto) = 1.1592 (neg=16684, pos=14393)
+    Training XGBoost ...
+    Training time: 14.6s
+    Inner fold 1 AUC: 0.7360 (16.1s)
+
+  ── Inner fold 2/5 (test bucket = 2) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31077 samples (pos=14378, neg=16699, ratio=1.161)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 346
+    scale_pos_weight (auto) = 1.1614 (neg=16699, pos=14378)
+    Training XGBoost ...
+    Training time: 14.1s
+    Inner fold 2 AUC: 0.7423 (14.9s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31078 samples (pos=14392, neg=16686, ratio=1.159)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 346
+    scale_pos_weight (auto) = 1.1594 (neg=16686, pos=14392)
+    Training XGBoost ...
+    Training time: 14.2s
+    Inner fold 3 AUC: 0.7495 (15.0s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31078 samples (pos=14374, neg=16704, ratio=1.162)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 346
+    scale_pos_weight (auto) = 1.1621 (neg=16704, pos=14374)
+    Training XGBoost ...
+    Training time: 14.6s
+    Inner fold 4 AUC: 0.7420 (15.3s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31078 samples (pos=14383, neg=16695, ratio=1.161)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 346
+    scale_pos_weight (auto) = 1.1607 (neg=16695, pos=14383)
+    Training XGBoost ...
+    Training time: 14.4s
+    Inner fold 5 AUC: 0.7435 (15.0s)
+
+  Averaging 5 inner models on validation bucket 0...
+  Outer fold 0 validation (n=7770, pos=3621, neg=4149):
+    AUC-ROC: 0.7553  |  AUC-PR: 0.7261  |  Acc: 0.6858  |  F1: 0.6562  |  MCC: 0.3674
+    Sens: 0.6435  |  Spec: 0.7228  |  PPV: 0.6695  |  NPV: 0.6991
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 1/5 (validation bucket = 1)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31077 samples (pos=14393, neg=16684, ratio=1.159)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 346
+    scale_pos_weight (auto) = 1.1592 (neg=16684, pos=14393)
+    Training XGBoost ...
+    Training time: 14.4s
+    Inner fold 0 AUC: 0.7290 (15.2s)
+
+  ── Inner fold 2/5 (test bucket = 2) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31077 samples (pos=14412, neg=16665, ratio=1.156)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 346
+    scale_pos_weight (auto) = 1.1563 (neg=16665, pos=14412)
+    Training XGBoost ...
+    Training time: 14.1s
+    Inner fold 2 AUC: 0.7406 (14.7s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31078 samples (pos=14426, neg=16652, ratio=1.154)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 346
+    scale_pos_weight (auto) = 1.1543 (neg=16652, pos=14426)
+    Training XGBoost ...
+    Training time: 14.2s
+    Inner fold 3 AUC: 0.7444 (14.8s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31078 samples (pos=14408, neg=16670, ratio=1.157)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 346
+    scale_pos_weight (auto) = 1.1570 (neg=16670, pos=14408)
+    Training XGBoost ...
+    Training time: 14.3s
+    Inner fold 4 AUC: 0.7462 (14.9s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31078 samples (pos=14417, neg=16661, ratio=1.156)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 346
+    scale_pos_weight (auto) = 1.1556 (neg=16661, pos=14417)
+    Training XGBoost ...
+    Training time: 14.4s
+    Inner fold 5 AUC: 0.7471 (15.0s)
+
+  Averaging 5 inner models on validation bucket 1...
+  Outer fold 1 validation (n=7770, pos=3587, neg=4183):
+    AUC-ROC: 0.7583  |  AUC-PR: 0.7175  |  Acc: 0.6907  |  F1: 0.6555  |  MCC: 0.3758
+    Sens: 0.6373  |  Spec: 0.7366  |  PPV: 0.6747  |  NPV: 0.7031
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 2/5 (validation bucket = 2)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31077 samples (pos=14378, neg=16699, ratio=1.161)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 346
+    scale_pos_weight (auto) = 1.1614 (neg=16699, pos=14378)
+    Training XGBoost ...
+    Training time: 14.2s
+    Inner fold 0 AUC: 0.7404 (15.0s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31077 samples (pos=14412, neg=16665, ratio=1.156)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 346
+    scale_pos_weight (auto) = 1.1563 (neg=16665, pos=14412)
+    Training XGBoost ...
+    Training time: 14.1s
+    Inner fold 1 AUC: 0.7350 (14.8s)
+
+  ── Inner fold 3/5 (test bucket = 3) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31078 samples (pos=14411, neg=16667, ratio=1.157)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 346
+    scale_pos_weight (auto) = 1.1565 (neg=16667, pos=14411)
+    Training XGBoost ...
+    Training time: 14.4s
+    Inner fold 3 AUC: 0.7454 (15.0s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31078 samples (pos=14393, neg=16685, ratio=1.159)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 346
+    scale_pos_weight (auto) = 1.1592 (neg=16685, pos=14393)
+    Training XGBoost ...
+    Training time: 14.1s
+    Inner fold 4 AUC: 0.7441 (14.8s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31078 samples (pos=14402, neg=16676, ratio=1.158)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 346
+    scale_pos_weight (auto) = 1.1579 (neg=16676, pos=14402)
+    Training XGBoost ...
+    Training time: 14.3s
+    Inner fold 5 AUC: 0.7436 (15.0s)
+
+  Averaging 5 inner models on validation bucket 2...
+  Outer fold 2 validation (n=7770, pos=3602, neg=4168):
+    AUC-ROC: 0.7611  |  AUC-PR: 0.7207  |  Acc: 0.6941  |  F1: 0.6669  |  MCC: 0.3842
+    Sens: 0.6605  |  Spec: 0.7231  |  PPV: 0.6734  |  NPV: 0.7114
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 3/5 (validation bucket = 3)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31078 samples (pos=14392, neg=16686, ratio=1.159)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 346
+    scale_pos_weight (auto) = 1.1594 (neg=16686, pos=14392)
+    Training XGBoost ...
+    Training time: 13.7s
+    Inner fold 0 AUC: 0.7452 (14.5s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31078 samples (pos=14426, neg=16652, ratio=1.154)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 346
+    scale_pos_weight (auto) = 1.1543 (neg=16652, pos=14426)
+    Training XGBoost ...
+    Training time: 13.9s
+    Inner fold 1 AUC: 0.7412 (14.4s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31078 samples (pos=14411, neg=16667, ratio=1.157)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 346
+    scale_pos_weight (auto) = 1.1565 (neg=16667, pos=14411)
+    Training XGBoost ...
+    Training time: 13.5s
+    Inner fold 2 AUC: 0.7463 (14.1s)
+
+  ── Inner fold 4/5 (test bucket = 4) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31079 samples (pos=14407, neg=16672, ratio=1.157)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 346
+    scale_pos_weight (auto) = 1.1572 (neg=16672, pos=14407)
+    Training XGBoost ...
+    Training time: 13.8s
+    Inner fold 4 AUC: 0.7478 (14.5s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31079 samples (pos=14416, neg=16663, ratio=1.156)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 346
+    scale_pos_weight (auto) = 1.1559 (neg=16663, pos=14416)
+    Training XGBoost ...
+    Training time: 14.0s
+    Inner fold 5 AUC: 0.7424 (14.7s)
+
+  Averaging 5 inner models on validation bucket 3...
+  Outer fold 3 validation (n=7769, pos=3588, neg=4181):
+    AUC-ROC: 0.7652  |  AUC-PR: 0.7208  |  Acc: 0.7025  |  F1: 0.6717  |  MCC: 0.4002
+    Sens: 0.6589  |  Spec: 0.7400  |  PPV: 0.6850  |  NPV: 0.7165
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 4/5 (validation bucket = 4)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31078 samples (pos=14374, neg=16704, ratio=1.162)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 346
+    scale_pos_weight (auto) = 1.1621 (neg=16704, pos=14374)
+    Training XGBoost ...
+    Training time: 14.4s
+    Inner fold 0 AUC: 0.7397 (15.2s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31078 samples (pos=14408, neg=16670, ratio=1.157)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 346
+    scale_pos_weight (auto) = 1.1570 (neg=16670, pos=14408)
+    Training XGBoost ...
+    Training time: 14.2s
+    Inner fold 1 AUC: 0.7458 (14.8s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31078 samples (pos=14393, neg=16685, ratio=1.159)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 346
+    scale_pos_weight (auto) = 1.1592 (neg=16685, pos=14393)
+    Training XGBoost ...
+    Training time: 14.4s
+    Inner fold 2 AUC: 0.7411 (14.9s)
+
+  ── Inner fold 4/5 (test bucket = 3) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31079 samples (pos=14407, neg=16672, ratio=1.157)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 346
+    scale_pos_weight (auto) = 1.1572 (neg=16672, pos=14407)
+    Training XGBoost ...
+    Training time: 13.9s
+    Inner fold 3 AUC: 0.7464 (14.5s)
+
+  ── Inner fold 5/5 (test bucket = 5) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31079 samples (pos=14398, neg=16681, ratio=1.159)
+    Test:    7769 samples (pos=3597, neg=4172, ratio=1.160)
+    Features: 346
+    scale_pos_weight (auto) = 1.1586 (neg=16681, pos=14398)
+    Training XGBoost ...
+    Training time: 13.8s
+    Inner fold 5 AUC: 0.7468 (14.5s)
+
+  Averaging 5 inner models on validation bucket 4...
+  Outer fold 4 validation (n=7769, pos=3606, neg=4163):
+    AUC-ROC: 0.7647  |  AUC-PR: 0.7294  |  Acc: 0.6958  |  F1: 0.6694  |  MCC: 0.3879
+    Sens: 0.6633  |  Spec: 0.7240  |  PPV: 0.6755  |  NPV: 0.7129
+
+════════════════════════════════════════════════════════════════════════════════
+  OUTER FOLD 5/5 (validation bucket = 5)
+════════════════════════════════════════════════════════════════════════════════
+
+  ── Inner fold 1/5 (test bucket = 0) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31078 samples (pos=14383, neg=16695, ratio=1.161)
+    Test:    7770 samples (pos=3621, neg=4149, ratio=1.146)
+    Features: 346
+    scale_pos_weight (auto) = 1.1607 (neg=16695, pos=14383)
+    Training XGBoost ...
+    Training time: 13.6s
+    Inner fold 0 AUC: 0.7325 (14.4s)
+
+  ── Inner fold 2/5 (test bucket = 1) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31078 samples (pos=14417, neg=16661, ratio=1.156)
+    Test:    7770 samples (pos=3587, neg=4183, ratio=1.166)
+    Features: 346
+    scale_pos_weight (auto) = 1.1556 (neg=16661, pos=14417)
+    Training XGBoost ...
+    Training time: 13.9s
+    Inner fold 1 AUC: 0.7365 (14.5s)
+
+  ── Inner fold 3/5 (test bucket = 2) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31078 samples (pos=14402, neg=16676, ratio=1.158)
+    Test:    7770 samples (pos=3602, neg=4168, ratio=1.157)
+    Features: 346
+    scale_pos_weight (auto) = 1.1579 (neg=16676, pos=14402)
+    Training XGBoost ...
+    Training time: 13.6s
+    Inner fold 2 AUC: 0.7397 (14.3s)
+
+  ── Inner fold 4/5 (test bucket = 3) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31079 samples (pos=14416, neg=16663, ratio=1.156)
+    Test:    7769 samples (pos=3588, neg=4181, ratio=1.165)
+    Features: 346
+    scale_pos_weight (auto) = 1.1559 (neg=16663, pos=14416)
+    Training XGBoost ...
+    Training time: 13.7s
+    Inner fold 3 AUC: 0.7438 (14.3s)
+
+  ── Inner fold 5/5 (test bucket = 4) ──
+    CSV features: 346 columns (imputation skipped — NaN passed natively)
+    CSV features: 346 columns
+Embedding components loaded: dict_keys([])
+    Total features after concatenation: 346
+    Train:  31079 samples (pos=14398, neg=16681, ratio=1.159)
+    Test:    7769 samples (pos=3606, neg=4163, ratio=1.154)
+    Features: 346
+    scale_pos_weight (auto) = 1.1586 (neg=16681, pos=14398)
+    Training XGBoost ...
+    Training time: 13.6s
+    Inner fold 4 AUC: 0.7456 (14.2s)
+
+  Averaging 5 inner models on validation bucket 5...
+  Outer fold 5 validation (n=7769, pos=3597, neg=4172):
+    AUC-ROC: 0.7643  |  AUC-PR: 0.7278  |  Acc: 0.6966  |  F1: 0.6637  |  MCC: 0.3882
+    Sens: 0.6466  |  Spec: 0.7397  |  PPV: 0.6817  |  NPV: 0.7083
+
+================================================================================
+NESTED CV RESULTS (mean ± std across 6 outer iterations)
+================================================================================
+
+================================================================================
+CROSS-VALIDATION SUMMARY (mean +/- std)
+================================================================================
+  auc_roc         0.7615 +/- 0.0037    [0.7553  0.7583  0.7611  0.7652  0.7647  0.7643]
+  auc_pr          0.7237 +/- 0.0043    [0.7261  0.7175  0.7207  0.7208  0.7294  0.7278]
+  accuracy        0.6943 +/- 0.0052    [0.6858  0.6907  0.6941  0.7025  0.6958  0.6966]
+  f1              0.6639 +/- 0.0062    [0.6562  0.6555  0.6669  0.6717  0.6694  0.6637]
+  mcc             0.3839 +/- 0.0103    [0.3674  0.3758  0.3842  0.4002  0.3879  0.3882]
+  sensitivity     0.6517 +/- 0.0097    [0.6435  0.6373  0.6605  0.6589  0.6633  0.6466]
+  specificity     0.7310 +/- 0.0078    [0.7228  0.7366  0.7231  0.7400  0.7240  0.7397]
+  ppv             0.6766 +/- 0.0052    [0.6695  0.6747  0.6734  0.6850  0.6755  0.6817]
+  npv             0.7085 +/- 0.0059    [0.6991  0.7031  0.7114  0.7165  0.7129  0.7083]
+
+================================================================================
+PER-OUTER-FOLD VALIDATION METRICS
+================================================================================
+  Outer   auc_roc      auc_pr       accuracy     f1           mcc          sensitivity  specificity  ppv          npv          
+  -----------------------------------------------------------------------------------------------------------------------------
+  0       0.7553       0.7261       0.6858       0.6562       0.3674       0.6435       0.7228       0.6695       0.6991       
+  1       0.7583       0.7175       0.6907       0.6555       0.3758       0.6373       0.7366       0.6747       0.7031       
+  2       0.7611       0.7207       0.6941       0.6669       0.3842       0.6605       0.7231       0.6734       0.7114       
+  3       0.7652       0.7208       0.7025       0.6717       0.4002       0.6589       0.7400       0.6850       0.7165       
+  4       0.7647       0.7294       0.6958       0.6694       0.3879       0.6633       0.7240       0.6755       0.7129       
+  5       0.7643       0.7278       0.6966       0.6637       0.3882       0.6466       0.7397       0.6817       0.7083       
+  -----------------------------------------------------------------------------------------------------------------------------
+  mean    0.7615       0.7237       0.6943       0.6639       0.3839       0.6517       0.7310       0.6766       0.7085       
+  std     0.0037       0.0043       0.0052       0.0062       0.0103       0.0097       0.0078       0.0052       0.0059       
+
+================================================================================
+AVERAGED FEATURE IMPORTANCE ACROSS ALL 30 INNER MODELS
+================================================================================
+  Rank   Feature                                           Mean Imp          Std
+  -----------------------------------------------------------------------------
+  1      C1_KF4                                            0.007510     0.000424
+  2      P9_KF2                                            0.007309     0.000610
+  3      P5_KF4                                            0.007211     0.000639
+  4      P2_KF8                                            0.006841     0.001357
+  5      N1_KF1                                            0.006220     0.000706
+  6      P8_KF4                                            0.006125     0.000540
+  7      P3_KF1                                            0.005651     0.000358
+  8      P6_KF3                                            0.005535     0.000284
+  9      P9_KF9                                            0.005402     0.000981
+  10     P6_KF4                                            0.005308     0.000278
+  11     P2_KF2                                            0.005193     0.001423
+  12     P5_KF1                                            0.005112     0.000383
+  13     P6_KF1                                            0.004990     0.000227
+  14     P7_KF3                                            0.004987     0.000257
+  15     P9_KF7                                            0.004981     0.000519
+  16     P9_KF5                                            0.004837     0.001246
+  17     P2_KF1                                            0.004795     0.001171
+  18     P5_KF3                                            0.004773     0.000299
+  19     P9_KF8                                            0.004736     0.000607
+  20     N2_KF1                                            0.004733     0.000481
+  21     N3_KF1                                            0.004647     0.000173
+  22     N2_KF4                                            0.004591     0.000284
+  23     n_flank_len_real                                  0.004560     0.001437
+  24     P7_KF4                                            0.004531     0.000358
+  25     C1_KF3                                            0.004476     0.000286
+  26     P2_KF9                                            0.004380     0.000675
+  27     P4_KF4                                            0.004380     0.000319
+  28     P9_KF10                                           0.004338     0.000560
+  29     P9_KF6                                            0.004326     0.000982
+  30     P7_KF2                                            0.004315     0.000342
+
+Results saved: runs/handcrafted_sweep/models/flat/cv_results_xgb_handcrafted_kidera_flat_20261020_102814.json
+Feature names saved: runs/handcrafted_sweep/models/flat/xgb_handcrafted_kidera_flat_feature_names.json
+
+================================================================================
+RUN SUMMARY (NESTED CV)
+================================================================================
+  Total runtime:      454.6s (7.6 min)
+  Nested CV time:     451.0s (7.5 min)
+  Model:              XGBoost (xgb)
+  Feature set:        Structural + Kidera factors (handcrafted_kidera)
+  Components:         ['handcrafted', 'kidera']
+  Scaling:            no
+  Features (final):   346
+    CSV features:     346
+  Outer iterations:   6
+  Inner folds:        5
+  Total models:       30
+  Val AUC-ROC:        0.7615 ± 0.0037
+  Val MCC:            0.3839 ± 0.0103
+  Models dir:         runs/handcrafted_sweep/models/flat/
+  Results file:       runs/handcrafted_sweep/models/flat/cv_results_xgb_handcrafted_kidera_flat_20261020_102814.json
+  Feature names:      runs/handcrafted_sweep/models/flat/xgb_handcrafted_kidera_flat_feature_names.json
+  Log file:           runs/handcrafted_sweep/logs/flat/04_modelling_xgb_handcrafted_kidera_flat_log_20261020_102814.txt
+  Completed:          2026-10-20 10:35:48
+================================================================================

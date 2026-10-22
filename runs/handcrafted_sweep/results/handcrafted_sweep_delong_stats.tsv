@@ -1,0 +1,64 @@
+family	encoding	embedding	name_a	name_b	auc_a	auc_b	delta	se	z	p	p_adj	significant
+explicit_vs_encoding	sparse		handcrafted_sparse	sparse	0.743375	0.740906	0.002469	0.001127	2.1920	2.838e-02	2.838e-02	True
+explicit_vs_encoding	blosum50		handcrafted_blosum50	blosum50	0.766513	0.763254	0.003259	0.000923	3.5328	4.112e-04	1.234e-03	True
+explicit_vs_encoding	blosum62		handcrafted_blosum62	blosum62	0.766103	0.761215	0.004888	0.000936	5.2234	1.757e-07	1.054e-06	True
+explicit_vs_encoding	blosum80		handcrafted_blosum80	blosum80	0.765749	0.762749	0.003000	0.000918	3.2685	1.081e-03	2.162e-03	True
+explicit_vs_encoding	kidera		handcrafted_kidera	kidera	0.761426	0.756658	0.004768	0.000917	5.2005	1.988e-07	1.054e-06	True
+explicit_vs_encoding	atchley		handcrafted_atchley	atchley	0.753208	0.748775	0.004433	0.000979	4.5300	5.898e-06	2.359e-05	True
+explicit_vs_explicit_alone	sparse		handcrafted_sparse	handcrafted	0.743375	0.566626	0.176750	0.003038	58.1842	0.000e+00	0.000e+00	True
+explicit_vs_explicit_alone	blosum50		handcrafted_blosum50	handcrafted	0.766513	0.566626	0.199887	0.003061	65.2958	0.000e+00	0.000e+00	True
+explicit_vs_explicit_alone	blosum62		handcrafted_blosum62	handcrafted	0.766103	0.566626	0.199477	0.003067	65.0313	0.000e+00	0.000e+00	True
+explicit_vs_explicit_alone	blosum80		handcrafted_blosum80	handcrafted	0.765749	0.566626	0.199124	0.003070	64.8611	0.000e+00	0.000e+00	True
+explicit_vs_explicit_alone	kidera		handcrafted_kidera	handcrafted	0.761426	0.566626	0.194800	0.003090	63.0479	0.000e+00	0.000e+00	True
+explicit_vs_explicit_alone	atchley		handcrafted_atchley	handcrafted	0.753208	0.566626	0.186582	0.003083	60.5153	0.000e+00	0.000e+00	True
+three_way_vs_enc_emb	sparse	esmif_eos_bos_repeat	handcrafted_sparse_esmif_eos_bos_repeat	sparse_esmif_eos_bos_repeat	0.730941	0.729167	0.001774	0.000793	2.2365	2.532e-02	2.141e-01	False
+three_way_vs_enc_emb	sparse	esmc300m_win_padtoken	handcrafted_sparse_esmc300m_win_padtoken	sparse_esmc300m_win_padtoken	0.739123	0.739026	0.000097	0.000768	0.1264	8.994e-01	1.000e+00	False
+three_way_vs_enc_emb	blosum50	esmif_eos_bos_repeat	handcrafted_blosum50_esmif_eos_bos_repeat	blosum50_esmif_eos_bos_repeat	0.757703	0.755342	0.002361	0.000691	3.4155	6.367e-04	7.004e-03	True
+three_way_vs_enc_emb	blosum50	esmc300m_win_padtoken	handcrafted_blosum50_esmc300m_win_padtoken	blosum50_esmc300m_win_padtoken	0.762680	0.761052	0.001628	0.000685	2.3772	1.744e-02	1.744e-01	False
+three_way_vs_enc_emb	blosum62	esmif_eos_bos_repeat	handcrafted_blosum62_esmif_eos_bos_repeat	blosum62_esmif_eos_bos_repeat	0.756331	0.755100	0.001231	0.000701	1.7554	7.919e-02	5.543e-01	False
+three_way_vs_enc_emb	blosum62	esmc300m_win_padtoken	handcrafted_blosum62_esmc300m_win_padtoken	blosum62_esmc300m_win_padtoken	0.761984	0.761195	0.000789	0.000683	1.1558	2.478e-01	9.910e-01	False
+three_way_vs_enc_emb	blosum80	esmif_eos_bos_repeat	handcrafted_blosum80_esmif_eos_bos_repeat	blosum80_esmif_eos_bos_repeat	0.759408	0.756595	0.002813	0.000690	4.0791	4.521e-05	5.426e-04	True
+three_way_vs_enc_emb	blosum80	esmc300m_win_padtoken	handcrafted_blosum80_esmc300m_win_padtoken	blosum80_esmc300m_win_padtoken	0.762520	0.761363	0.001158	0.000670	1.7278	8.403e-02	5.543e-01	False
+three_way_vs_enc_emb	kidera	esmif_eos_bos_repeat	handcrafted_kidera_esmif_eos_bos_repeat	kidera_esmif_eos_bos_repeat	0.755278	0.754816	0.000462	0.000690	0.6690	5.035e-01	1.000e+00	False
+three_way_vs_enc_emb	kidera	esmc300m_win_padtoken	handcrafted_kidera_esmc300m_win_padtoken	kidera_esmc300m_win_padtoken	0.761678	0.761188	0.000491	0.000666	0.7368	4.613e-01	1.000e+00	False
+three_way_vs_enc_emb	atchley	esmif_eos_bos_repeat	handcrafted_atchley_esmif_eos_bos_repeat	atchley_esmif_eos_bos_repeat	0.747582	0.745920	0.001662	0.000735	2.2605	2.379e-02	2.141e-01	False
+three_way_vs_enc_emb	atchley	esmc300m_win_padtoken	handcrafted_atchley_esmc300m_win_padtoken	atchley_esmc300m_win_padtoken	0.753891	0.752917	0.000974	0.000713	1.3649	1.723e-01	8.615e-01	False
+three_way_vs_explicit_enc	sparse	esmif_eos_bos_repeat	handcrafted_sparse_esmif_eos_bos_repeat	handcrafted_sparse	0.730941	0.743375	-0.012435	0.001583	-7.8547	4.007e-15	4.808e-14	True
+three_way_vs_explicit_enc	sparse	esmc300m_win_padtoken	handcrafted_sparse_esmc300m_win_padtoken	handcrafted_sparse	0.739123	0.743375	-0.004252	0.001722	-2.4698	1.352e-02	5.407e-02	False
+three_way_vs_explicit_enc	blosum50	esmif_eos_bos_repeat	handcrafted_blosum50_esmif_eos_bos_repeat	handcrafted_blosum50	0.757703	0.766513	-0.008810	0.001312	-6.7139	1.895e-11	1.895e-10	True
+three_way_vs_explicit_enc	blosum50	esmc300m_win_padtoken	handcrafted_blosum50_esmc300m_win_padtoken	handcrafted_blosum50	0.762680	0.766513	-0.003833	0.001447	-2.6490	8.072e-03	4.036e-02	True
+three_way_vs_explicit_enc	blosum62	esmif_eos_bos_repeat	handcrafted_blosum62_esmif_eos_bos_repeat	handcrafted_blosum62	0.756331	0.766103	-0.009772	0.001325	-7.3746	1.649e-13	1.814e-12	True
+three_way_vs_explicit_enc	blosum62	esmc300m_win_padtoken	handcrafted_blosum62_esmc300m_win_padtoken	handcrafted_blosum62	0.761984	0.766103	-0.004119	0.001449	-2.8417	4.488e-03	2.693e-02	True
+three_way_vs_explicit_enc	blosum80	esmif_eos_bos_repeat	handcrafted_blosum80_esmif_eos_bos_repeat	handcrafted_blosum80	0.759408	0.765749	-0.006342	0.001302	-4.8689	1.122e-06	1.010e-05	True
+three_way_vs_explicit_enc	blosum80	esmc300m_win_padtoken	handcrafted_blosum80_esmc300m_win_padtoken	handcrafted_blosum80	0.762520	0.765749	-0.003229	0.001437	-2.2474	2.461e-02	7.384e-02	False
+three_way_vs_explicit_enc	kidera	esmif_eos_bos_repeat	handcrafted_kidera_esmif_eos_bos_repeat	handcrafted_kidera	0.755278	0.761426	-0.006148	0.001271	-4.8391	1.304e-06	1.043e-05	True
+three_way_vs_explicit_enc	kidera	esmc300m_win_padtoken	handcrafted_kidera_esmc300m_win_padtoken	handcrafted_kidera	0.761678	0.761426	0.000253	0.001399	0.1805	8.568e-01	1.000e+00	False
+three_way_vs_explicit_enc	atchley	esmif_eos_bos_repeat	handcrafted_atchley_esmif_eos_bos_repeat	handcrafted_atchley	0.747582	0.753208	-0.005626	0.001398	-4.0251	5.694e-05	3.986e-04	True
+three_way_vs_explicit_enc	atchley	esmc300m_win_padtoken	handcrafted_atchley_esmc300m_win_padtoken	handcrafted_atchley	0.753891	0.753208	0.000683	0.001550	0.4405	6.596e-01	1.000e+00	False
+three_way_vs_explicit	sparse	esmif_eos_bos_repeat	handcrafted_sparse_esmif_eos_bos_repeat	handcrafted	0.730941	0.566626	0.164315	0.003155	52.0742	0.000e+00	0.000e+00	True
+three_way_vs_explicit	sparse	esmc300m_win_padtoken	handcrafted_sparse_esmc300m_win_padtoken	handcrafted	0.739123	0.566626	0.172497	0.003132	55.0726	0.000e+00	0.000e+00	True
+three_way_vs_explicit	blosum50	esmif_eos_bos_repeat	handcrafted_blosum50_esmif_eos_bos_repeat	handcrafted	0.757703	0.566626	0.191077	0.003121	61.2190	0.000e+00	0.000e+00	True
+three_way_vs_explicit	blosum50	esmc300m_win_padtoken	handcrafted_blosum50_esmc300m_win_padtoken	handcrafted	0.762680	0.566626	0.196054	0.003111	63.0181	0.000e+00	0.000e+00	True
+three_way_vs_explicit	blosum62	esmif_eos_bos_repeat	handcrafted_blosum62_esmif_eos_bos_repeat	handcrafted	0.756331	0.566626	0.189705	0.003124	60.7269	0.000e+00	0.000e+00	True
+three_way_vs_explicit	blosum62	esmc300m_win_padtoken	handcrafted_blosum62_esmc300m_win_padtoken	handcrafted	0.761984	0.566626	0.195358	0.003114	62.7418	0.000e+00	0.000e+00	True
+three_way_vs_explicit	blosum80	esmif_eos_bos_repeat	handcrafted_blosum80_esmif_eos_bos_repeat	handcrafted	0.759408	0.566626	0.192782	0.003123	61.7392	0.000e+00	0.000e+00	True
+three_way_vs_explicit	blosum80	esmc300m_win_padtoken	handcrafted_blosum80_esmc300m_win_padtoken	handcrafted	0.762520	0.566626	0.195895	0.003113	62.9252	0.000e+00	0.000e+00	True
+three_way_vs_explicit	kidera	esmif_eos_bos_repeat	handcrafted_kidera_esmif_eos_bos_repeat	handcrafted	0.755278	0.566626	0.188652	0.003129	60.2904	0.000e+00	0.000e+00	True
+three_way_vs_explicit	kidera	esmc300m_win_padtoken	handcrafted_kidera_esmc300m_win_padtoken	handcrafted	0.761678	0.566626	0.195053	0.003121	62.5061	0.000e+00	0.000e+00	True
+three_way_vs_explicit	atchley	esmif_eos_bos_repeat	handcrafted_atchley_esmif_eos_bos_repeat	handcrafted	0.747582	0.566626	0.180956	0.003128	57.8440	0.000e+00	0.000e+00	True
+three_way_vs_explicit	atchley	esmc300m_win_padtoken	handcrafted_atchley_esmc300m_win_padtoken	handcrafted	0.753891	0.566626	0.187265	0.003116	60.1001	0.000e+00	0.000e+00	True
+explicit_pairwise	sparse	blosum50	handcrafted_sparse	handcrafted_blosum50	0.743375	0.766513	-0.023138	0.001132	-20.4337	8.387e-93	1.258e-91	True
+explicit_pairwise	sparse	blosum62	handcrafted_sparse	handcrafted_blosum62	0.743375	0.766103	-0.022728	0.001129	-20.1318	3.882e-90	5.435e-89	True
+explicit_pairwise	sparse	blosum80	handcrafted_sparse	handcrafted_blosum80	0.743375	0.765749	-0.022374	0.001157	-19.3308	2.955e-83	3.842e-82	True
+explicit_pairwise	sparse	kidera	handcrafted_sparse	handcrafted_kidera	0.743375	0.761426	-0.018050	0.001181	-15.2788	1.059e-52	1.270e-51	True
+explicit_pairwise	sparse	atchley	handcrafted_sparse	handcrafted_atchley	0.743375	0.753208	-0.009832	0.001218	-8.0727	6.876e-16	5.501e-15	True
+explicit_pairwise	blosum50	blosum62	handcrafted_blosum50	handcrafted_blosum62	0.766513	0.766103	0.000410	0.000671	0.6113	5.410e-01	1.000e+00	False
+explicit_pairwise	blosum50	blosum80	handcrafted_blosum50	handcrafted_blosum80	0.766513	0.765749	0.000764	0.000693	1.1021	2.704e-01	8.113e-01	False
+explicit_pairwise	blosum50	kidera	handcrafted_blosum50	handcrafted_kidera	0.766513	0.761426	0.005087	0.000958	5.3083	1.107e-07	6.640e-07	True
+explicit_pairwise	blosum50	atchley	handcrafted_blosum50	handcrafted_atchley	0.766513	0.753208	0.013305	0.001065	12.4934	8.115e-36	8.927e-35	True
+explicit_pairwise	blosum62	blosum80	handcrafted_blosum62	handcrafted_blosum80	0.766103	0.765749	0.000353	0.000686	0.5151	6.065e-01	1.000e+00	False
+explicit_pairwise	blosum62	kidera	handcrafted_blosum62	handcrafted_kidera	0.766103	0.761426	0.004677	0.000950	4.9241	8.474e-07	4.237e-06	True
+explicit_pairwise	blosum62	atchley	handcrafted_blosum62	handcrafted_atchley	0.766103	0.753208	0.012895	0.001076	11.9809	4.475e-33	4.475e-32	True
+explicit_pairwise	blosum80	kidera	handcrafted_blosum80	handcrafted_kidera	0.765749	0.761426	0.004324	0.000945	4.5743	4.778e-06	1.911e-05	True
+explicit_pairwise	blosum80	atchley	handcrafted_blosum80	handcrafted_atchley	0.765749	0.753208	0.012542	0.001090	11.5105	1.168e-30	1.051e-29	True
+explicit_pairwise	kidera	atchley	handcrafted_kidera	handcrafted_atchley	0.761426	0.753208	0.008218	0.001059	7.7569	8.700e-15	6.090e-14	True
