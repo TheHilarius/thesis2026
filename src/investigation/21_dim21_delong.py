@@ -79,8 +79,8 @@ def load_oof(pattern: Path):
 
 
 def star(p):
-    return "****" if p < 1e-4 else "***" if p < 1e-3 else "**" if p < 1e-2 \
-        else "*" if p < 0.05 else "ns"
+    """Thesis convention (same as 15_/pca_sweep figures)."""
+    return "***" if p < 0.001 else "**" if p < 0.01 else "*" if p < 0.05 else "ns"
 
 
 def main():

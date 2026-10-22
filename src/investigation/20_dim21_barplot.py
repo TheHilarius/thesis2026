@@ -24,9 +24,13 @@ Outputs (runs/<runtag>/ per convention, default runtag=simple21_pilot):
     runs/simple21_pilot/plots/dim21_vs_baselines_auc.png
     runs/simple21_pilot/plots/dim21_vs_baselines_auc.csv
 
-With --stats-csv (21_dim21_delong.py output) significance brackets are
-drawn above the bars: star per pair from Holm-adjusted paired DeLong
-(* p<.05, ** p<.01, *** p<.001, **** p<.0001, ns otherwise).
+With --stats-csv (21_dim21_delong.py output, auto-detected from
+runs/<runtag>/results/) significance brackets are drawn above the bars
+from Holm-adjusted paired DeLong, thesis star convention
+(* p<.05, ** p<.01, *** p<.001, ns).
+
+Bar colors follow the PCA-sweep figures (pca_sweep_AUC_delong_
+comparison.py): ESM-C-300M #EE6677, ESM-IF #4477AA, BLOSUM50 #BBBBBB.
 """
 
 import argparse
@@ -42,6 +46,7 @@ from config import PROJECT_ROOT  # noqa: E402
 import matplotlib  # noqa: E402
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib.patches import Patch  # noqa: E402
 
 # fallback values if the sweep TSVs are absent (verified 2026-10-22)
 FALLBACK = {
@@ -51,11 +56,9 @@ FALLBACK = {
 }
 
 COLORS = {
-    "encoding": "#BBBBBB",          # padmode palette: AA encoding grey
-    "esmc_pca": "#85C1E9",
-    "esmc_dim21": "#2E86C1",
-    "esmif_pca": "#A9CCE3",
-    "esmif_dim21": "#17A589",
+    "encoding": "#BBBBBB",   # BLOSUM50 / AA encoding grey (pca-sweep refs)
+    "esmc": "#EE6677",       # ESM-C-300M — pca_sweep_AUC_delong_comparison
+    "esmif": "#4477AA",      # ESM-IF — pca_sweep_AUC_delong_comparison
 }
 
 AUC_RE = re.compile(r"auc_roc\s+([\d.]+)\s+\+/-\s+([\d.]+)")
@@ -142,17 +145,17 @@ def main():
         print(f"  {k:<45} {v[0]:.4f} +/- {v[1]:.4f}")
 
     bars = [
-        ("BLOSUM50\n(609 feat)", blosum, "encoding", "blosum50"),
-        ("ESM-C-300M\nflat-PCA 80%\n(k=2278)", esmc_pca, "esmc_pca", "esmc_pca80"),
-        ("ESM-C-300M\ndim21\nfirst-21",
-         dim21.get("emb_esmc300m_win_padtoken_d21_first"), "esmc_dim21", "esmc_first"),
-        ("ESM-C-300M\ndim21\nvar-21",
-         dim21.get("emb_esmc300m_win_padtoken_d21_var"), "esmc_dim21", "esmc_var"),
-        ("ESM-IF eos/bos\nflat-PCA 60%\n(k=632, optimal)", esmif_pca, "esmif_pca", "esmif_pca60"),
-        ("ESM-IF eosrep\ndim21\nfirst-21",
-         dim21.get("emb_esmif_eosrepeat_d21_first"), "esmif_dim21", "esmif_first"),
-        ("ESM-IF eosrep\ndim21\nvar-21",
-         dim21.get("emb_esmif_eosrepeat_d21_var"), "esmif_dim21", "esmif_var"),
+        ("BLOSUM50", blosum, "encoding", "blosum50"),
+        ("PCA 80%\n(k=2278)", esmc_pca, "esmc", "esmc_pca80"),
+        ("first21",
+         dim21.get("emb_esmc300m_win_padtoken_d21_first"), "esmc", "esmc_first"),
+        ("top21\nvariance",
+         dim21.get("emb_esmc300m_win_padtoken_d21_var"), "esmc", "esmc_var"),
+        ("PCA 60%\n(k=632)", esmif_pca, "esmif", "esmif_pca60"),
+        ("first21",
+         dim21.get("emb_esmif_eosrepeat_d21_first"), "esmif", "esmif_first"),
+        ("top21\nvariance",
+         dim21.get("emb_esmif_eosrepeat_d21_var"), "esmif", "esmif_var"),
     ]
 
     fig, ax = plt.subplots(figsize=(11, 5.5))
@@ -170,12 +173,15 @@ def main():
 
     xs = [i for i, (_, v, _, _) in enumerate(bars) if v is not None]
     ax.set_xticks(xs)
-    ax.set_xticklabels([b[0] for b in bars if b[1] is not None], fontsize=8.5)
+    ax.set_xticklabels([b[0] for b in bars if b[1] is not None], fontsize=9)
     ax.set_ylabel("AUC-ROC (nested CV, mean +/- std)")
     ax.grid(axis="y", alpha=0.3)
 
     # ── significance brackets (--stats-csv from 21_dim21_delong.py) ──
-    y_ceiling = 0.80
+    # vs_blosum pairs stay in the TSV but are not drawn: BLOSUM50 differs
+    # from every embedding arm by 0.10-0.14 AUC — stating the obvious
+    # clutters the figure.
+    SKIP_FAMILIES = {"vs_blosum"}
     arm_x = {arm: i for i, (_, v, _, arm) in enumerate(bars) if v is not None}
     if stats_csv:
         with open(stats_csv) as fh:
@@ -184,33 +190,34 @@ def main():
         base, step, fam_lvl = data_top + 0.015, 0.016, {}
         for r in stats_rows:
             a, b = r["arm_a"], r["arm_b"]
+            if r["family"] in SKIP_FAMILIES:
+                continue
             if a not in arm_x or b not in arm_x:
                 print(f"  WARN: stats pair {a}~{b} has no bar — skipped")
                 continue
             lvl = fam_lvl.get(r["family"], 0)
             fam_lvl[r["family"]] = lvl + 1
-            if r["family"] == "vs_blosum":      # wide spans drawn highest
-                lvl += 3
             y = base + lvl * step
             xa, xb = sorted((arm_x[a], arm_x[b]))
             ax.plot([xa, xa, xb, xb], [y - 0.004, y, y, y - 0.004],
                     lw=0.8, color="black")
             ax.text((xa + xb) / 2, y + 0.002, r["star"],
                     ha="center", va="bottom", fontsize=9.5)
-            y_ceiling = max(y_ceiling, y + 0.022)
 
-    ax.set_ylim(0.5, y_ceiling)
+    ax.set_ylim(0, 1)
     ax.axhline(0.5, color="gray", lw=0.8, ls=":")
+    ax.legend(handles=[
+        Patch(facecolor=COLORS["encoding"], label="BLOSUM50"),
+        Patch(facecolor=COLORS["esmc"], label="ESM-C-300M padtoken"),
+        Patch(facecolor=COLORS["esmif"], label="ESM-IF (eos/bos PCA, eosrepeat dim21)"),
+    ], loc="upper right", fontsize=8, framealpha=0.9)
     ax.set_title("dim21 (29x21 reduced windows) vs BLOSUM50 and flat-PCA", fontsize=12)
-    fig.text(0.5, 0.005,
-             "PCA bars = flat window-PCA at the DeLong-confirmed optimal picks (ESM-C 80% EV k=2278; ESM-IF 60% EV k=632). "
-             "ESM-IF PCA = eos/bos-repeat; dim21 ESM-IF = eosrepeat.",
-             ha="center", fontsize=7.5, color="dimgray")
-    fig.tight_layout(rect=(0, 0.02, 1, 1))
+    fig.tight_layout()
 
     out_prefix.parent.mkdir(parents=True, exist_ok=True)
     png = Path(str(out_prefix) + "_auc.png")
-    fig.savefig(png, dpi=150)
+    fig.savefig(png, dpi=150, bbox_inches="tight")
+    plt.close(fig)
     csvp = Path(str(out_prefix) + "_auc.csv")
     with open(csvp, "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=["bar", "auc_roc", "std"])
@@ -218,6 +225,18 @@ def main():
         w.writerows(rows)
     print(f"  wrote {png}")
     print(f"  wrote {csvp}")
+
+    # Caption text lives in the figure caption (not burned into the PNG).
+    print("\n" + "=" * 60)
+    print("  CAPTION (paste below the figure):")
+    print("=" * 60)
+    print("PCA bars = flat window-PCA at the DeLong-confirmed optimal picks "
+          "(ESM-C-300M 80% EV, k=2278; ESM-IF 60% EV, k=632). ESM-IF PCA bar "
+          "is EOS/BOS-repeat; dim21 ESM-IF is eosrepeat. Brackets show paired "
+          "DeLong on pooled OOF, Holm-adjusted within family "
+          "(*** p<0.001). dim21 = 29 positions x 21 dims (609 features); "
+          "first21 = dims 0-20, top21 variance = 21 highest-variance dims.")
+    print("=" * 60)
 
 
 if __name__ == "__main__":
