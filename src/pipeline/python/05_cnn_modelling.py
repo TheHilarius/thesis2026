@@ -17,7 +17,10 @@ Outputs (mirrors 04):
     <out-root>/logs/cnn/05_cnn_modelling_<run_tag>_log_<ts>.txt
     <out-root>/models/cnn/cv_results_<run_tag>_<ts>.json
     <out-root>/models/cnn/<run_tag>_outer<o>_inner<i>.pt  (all 30, best flagged in JSON)
-    <out-root>/plots/learning_curves_<run_tag>_<ts>.png (+ .csv)
+    <out-root>/plots/learning_curves_<run_tag>_<ts>.png (+ .csv + _meta.json)
+
+Plotting lives in 05_plotting.py (called via subprocess each run; also
+runnable standalone to re-plot any old curves CSV).
 """
 import sys
 import os
@@ -28,6 +31,7 @@ if SRC_DIR not in sys.path:
 import argparse
 import csv
 import json
+import subprocess
 import time
 from datetime import datetime
 from pathlib import Path
@@ -184,47 +188,11 @@ def write_curves_csv(path, curves):
     with open(path, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["outer", "inner", "epoch", "train_loss", "val_auc"])
-        for o, inners in sorted(curves.items()):
-            for i, h in sorted(inners.items()):
+        for o in sorted(curves, key=int):
+            for i in sorted(curves[o], key=int):
+                h = curves[o][i]
                 for e, (tl, va) in enumerate(zip(h["train_loss"], h["val_auc"]), 1):
                     w.writerow([o, i, e, f"{tl:.6f}", f"{va:.6f}"])
-
-
-def plot_curves_png(path, curves):
-    """One combined PNG: all 30 faint + mean+/-std. Skipped if no matplotlib."""
-    try:
-        import matplotlib
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-    except ImportError:
-        print("  (matplotlib missing — PNG skipped, CSV kept)")
-        return None
-    max_ep = max(len(h["val_auc"]) for inners in curves.values() for h in inners.values())
-    fig, ax = plt.subplots(1, 2, figsize=(12, 4.5))
-    for key, lab in (("val_auc", "val AUC"), ("train_loss", "train loss")):
-        arr = np.full((sum(len(v) for v in curves.values()), max_ep), np.nan)
-        r = 0
-        for inners in curves.values():
-            for h in inners.values():
-                s = h[key]
-                arr[r, :len(s)] = s
-                ax[0 if key == "val_auc" else 1].plot(range(1, len(s) + 1), s,
-                                                     alpha=0.25, linewidth=1)
-                r += 1
-        mean = np.nanmean(arr, axis=0)
-        std = np.nanstd(arr, axis=0)
-        a = ax[0 if key == "val_auc" else 1]
-        ep = np.arange(1, max_ep + 1)
-        a.plot(ep, mean, linewidth=2.5, label="mean")
-        a.fill_between(ep, mean - std, mean + std, alpha=0.25, label="+/-std")
-        a.set_xlabel("epoch")
-        a.set_ylabel(lab)
-        a.legend(fontsize=8)
-    fig.suptitle("CNN learning curves: 30 inner models (6 outer x 5 inner)")
-    fig.tight_layout()
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
-    return str(path)
 
 
 def parse_args():
@@ -307,7 +275,7 @@ if __name__ == "__main__":
     print(f"\n{'=' * 80}\nNESTED CROSS-VALIDATION  6 outer x 5 inner = 30 models\n{'=' * 80}")
     buckets = list(range(N_CV_FOLDS + 1))
     outer_val_metrics, outer_val_predictions = [], {}
-    curves, best_inner = {}, {}
+    curves, best_inner, bucket_stats = {}, {}, {}
     fold_times, n_params = [], None
     t_nested_start = time.time()
 
@@ -349,6 +317,8 @@ if __name__ == "__main__":
                   f"ep={len(hist['val_auc'])} ({fold_times[-1]}s)")
         best_inner[str(outer)] = {"bucket": best_i_o, "best_val_auc": round(best_auc_o, 4)}
         y_ou = labels[np.where(folds == outer)[0]].astype(int)
+        bucket_stats[str(outer)] = {"n": int(len(y_ou)),
+                                    "pos_pct": round(float(y_ou.mean() * 100), 1)}
         avg = np.mean(inner_probs, axis=0)
         m = compute_metrics(y_ou, avg)
         outer_val_metrics.append(m)
@@ -368,10 +338,24 @@ if __name__ == "__main__":
         print(f"  {metric:<15} {s['mean']:.4f} +/- {s['std']:.4f}    [{vals}]")
 
     curves_csv = plot_dir / f"learning_curves_{run_tag}_{ts}.csv"
-    write_curves_csv(curves_csv, {o: {i: h for i, h in inn.items()} for o, inn in curves.items()})
-    curves_png = plot_curves_png(plot_dir / f"learning_curves_{run_tag}_{ts}.png", curves)
-    print(f"  curves CSV: {curves_csv}")
-    print(f"  curves PNG: {curves_png if curves_png else '(skipped, no matplotlib)'}")
+    write_curves_csv(curves_csv, curves)
+    meta = {"title": f"{cnn_cfg['display_name']} + {feat_cfg['display_name']} "
+                     f"({args.model}, {args.features})",
+            "buckets": bucket_stats}
+    meta_path = plot_dir / f"learning_curves_{run_tag}_{ts}_meta.json"
+    with open(meta_path, "w") as f:
+        json.dump(meta, f, indent=2)
+    curves_png = plot_dir / f"learning_curves_{run_tag}_{ts}.png"
+    try:
+        subprocess.run([sys.executable, str(Path(SRC_DIR) / "05_plotting.py"),
+                        "--csv", str(curves_csv), "--png", str(curves_png),
+                        "--meta", str(meta_path), "--title", meta["title"]],
+                       check=True, capture_output=True, text=True)
+        print(f"  curves: {curves_csv} + {curves_png}")
+    except Exception as e:
+        print(f"  WARNING: plotting failed ({e}); CSV + meta kept, re-plot standalone:")
+        print(f"    python 05_plotting.py --csv {curves_csv} --png {curves_png} --meta {meta_path}")
+        curves_png = None
 
     t_results = time.time()
     peak_gpu_gb = (torch.cuda.max_memory_allocated() / 1e9
@@ -395,7 +379,10 @@ if __name__ == "__main__":
                       "random_state": args.seed},
            "cv_summary": summary, "outer_val_metrics": outer_val_metrics,
            "outer_val_predictions": outer_val_predictions,
-           "best_inner_per_outer": best_inner, "learning_curves": curves}
+           "best_inner_per_outer": best_inner, "learning_curves": curves,
+           "curves_csv": str(curves_csv),
+           "curves_png": str(curves_png) if curves_png else None,
+           "curves_meta": str(meta_path)}
     results_path = model_dir / f"cv_results_{run_tag}_{ts}.json"
     with open(results_path, "w") as f:
         json.dump(out, f, indent=2)
