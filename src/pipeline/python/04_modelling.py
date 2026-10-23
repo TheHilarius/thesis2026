@@ -418,6 +418,11 @@ def load_all_components(df_split, feat_cfg, pca_mode="flat",
                 pca_total = window * VARFOLD_DEFAULT_TOP_N
                 raw_dim_desc = (f"{window}x{emb_dim} (varfold top"
                                 f"{VARFOLD_DEFAULT_TOP_N}, fold-nested)")
+            elif pca_mode == "autoencoder":
+                # placeholder; --ae-latent fixes it in main
+                pca_total = window * AE_DEFAULT_LATENT
+                raw_dim_desc = (f"{window}x{emb_dim} (1x1-conv AE latent"
+                                f"{AE_DEFAULT_LATENT}, fold-nested)")
             else:  # flat
                 pca_total = int(pca_components)
                 raw_dim_desc = f"{window}x{emb_dim} (flat {window * emb_dim})"
@@ -526,6 +531,9 @@ DIMSELECT_DEFAULT_TOP_N = 50
 
 # varfold placeholder: real N comes from --top-n (patched in main).
 VARFOLD_DEFAULT_TOP_N = 21
+
+# autoencoder placeholder: real latent comes from --ae-latent (patched in main).
+AE_DEFAULT_LATENT = 64
 
 
 def _stream_window_slots(prepared_path, indices):
@@ -897,6 +905,10 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
             elif pca_mode == "varfold":
                 # placeholder; set after train-only ranking in the branch below
                 total_components = int(window * D)
+            elif pca_mode == "autoencoder":
+                ae_cfg = emb_data.get("autoencoder")
+                latent = (ae_cfg["latent"] if ae_cfg else AE_DEFAULT_LATENT)
+                total_components = int(window * latent)
             else:
                 total_components = int(min(pca_components, window * D))
 
@@ -993,6 +1005,34 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
                 # uses, so the existing predict path (sel_dims) replays
                 # exactly these dims on validation/held-out
                 fold_artifacts.setdefault("dimselect_dims", {})[comp_key] = dims
+            elif pca_mode == "autoencoder":
+                ae_cfg = emb_data.get("autoencoder")
+                if ae_cfg is None:
+                    raise ValueError(
+                        "autoencoder requires --ae-latent (wired in main)")
+                ae = importlib.import_module("13_autoencoder_windows")
+                print(f"    {comp_key}: training 1x1-conv bottleneck AE "
+                      f"(D={D} → latent={ae_cfg['latent']}, fold-nested) ...")
+                t_ae = time.time()
+                encoder, ae_log = ae.train_encoder(
+                    emb_data, train_indices, latent=ae_cfg["latent"],
+                    epochs=ae_cfg["epochs"], lr=ae_cfg["lr"],
+                )
+                print(f"    {comp_key}: AE fit in {time.time() - t_ae:.1f}s "
+                      f"(epochs_run={ae_log['epochs_run']}, "
+                      f"best_epoch={ae_log['best_epoch']}, "
+                      f"val masked-MSE={ae_log['best_val_masked_mse']:.4f}, "
+                      f"train_rows={ae_log['train_rows']})")
+                total_components = int(window * ae_cfg["latent"])
+                X_emb_train = ae.encode_block(
+                    encoder, emb_data, train_indices
+                ).reshape(len(train_indices), total_components)
+                X_emb_test = ae.encode_block(
+                    encoder, emb_data, test_indices
+                ).reshape(len(test_indices), total_components)
+                # fitted encoder rides the pca_dict artifact slot;
+                # _transform_embeddings duck-types it via encode_indices
+                ipca = encoder
 
             explained = (ipca.explained_variance_ratio_.sum() * 100
                          if hasattr(ipca, "explained_variance_ratio_") else 100.0)
@@ -1029,6 +1069,16 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
                 feature_names.extend(
                     f"{comp_key}_pos{p:02d}_dim{d:03d}"
                     for p in range(window) for d in dims
+                )
+            elif pca_mode == "autoencoder":
+                latent = total_components // window
+                print(f"    {comp_key}: autoencoder features "
+                      f"{window}x{latent} → {total_components} "
+                      f"(1x1-conv bottleneck, fold-nested)")
+                # layout matches encode_block reshape: pos-major, latent asc
+                feature_names.extend(
+                    f"{comp_key}_pos{p:02d}_z{i:03d}"
+                    for p in range(window) for i in range(latent)
                 )
 
             fold_artifacts["pca_dict"][comp_key] = ipca
@@ -1217,6 +1267,11 @@ def _transform_embeddings(emb_data, indices, pca_obj, sel_dims=None):
                 emb_data, indices,
                 dims=sel_dims if sel_dims is not None
                 else emb_data.get("dims"))
+        if hasattr(pca_obj, "encode_indices"):
+            # autoencoder replay: fold's fitted encoder (13_autoencoder_
+            # windows.TrainedEncoder) — same encode+flatten as fit time
+            block = pca_obj.encode_indices(emb_data, indices)
+            return block.reshape(block.shape[0], -1)
         k = int(getattr(pca_obj, "n_components_", pca_obj.n_components))
         return transform_window_block_flat(emb_data, indices, pca_obj, k)
     X_emb = get_context_matrix(emb_data, indices)
@@ -1408,14 +1463,31 @@ def parse_args():
     )
     parser.add_argument(
         "--pca-mode", type=str, default="flat",
-        choices=["flat", "flat_raw", "simple21", "dimselect", "varfold"],
-        help="Window PCA scheme: 'flat' (flatten window*D, PCA across the "
-             "full window, default), 'flat_raw' (flatten window*D, NO PCA "
+        choices=["flat", "flat_raw", "simple21", "dimselect", "varfold",
+                 "autoencoder"],
+        help="Window reduction scheme: 'flat' (flatten window*D, PCA across "
+             "the full window, default), 'flat_raw' (flatten window*D, NO PCA "
              "— all raw dims; low mem), 'simple21' (29x21 dim gather, "
              "no PCA — positional test, requires --dims), 'dimselect' "
              "(per-dim supervised screening, top-N dims raw; requires "
-             "--top-n; see 12_dim_screening.py), or 'varfold' (fold-nested "
-             "variance ranking, top-N dims raw; requires --top-n)",
+             "--top-n; see 12_dim_screening.py), 'varfold' (fold-nested "
+             "variance ranking, top-N dims raw; requires --top-n), or "
+             "'autoencoder' (1x1-conv bottleneck AE, fold-nested; requires "
+             "--ae-latent; see 13_autoencoder_windows.py)",
+    )
+    parser.add_argument(
+        "--ae-latent", type=int, default=None, dest="ae_latent",
+        help="Latent dim d for --pca-mode autoencoder (features = 29 x d). "
+             "Encoder trained fold-nested on train rows only (no leakage).",
+    )
+    parser.add_argument(
+        "--ae-epochs", type=int, default=15, dest="ae_epochs",
+        help="Max AE training epochs (early stop patience 3 on a 10%% "
+             "train slice; default 15).",
+    )
+    parser.add_argument(
+        "--ae-lr", type=float, default=1e-3, dest="ae_lr",
+        help="AE AdamW learning rate (default 1e-3).",
     )
     parser.add_argument(
         "--pool", type=str, default=None,
@@ -1552,6 +1624,8 @@ if __name__ == "__main__":
         run_tag += f"_top{args.top_n}_{args.screen_model}"
     if pca_mode == "varfold":
         run_tag += f"_top{args.top_n}"
+    if pca_mode == "autoencoder":
+        run_tag += f"_lat{args.ae_latent}"
     if xgb_params_override:
         lr = xgb_params_override.get("learning_rate")
         n_est = xgb_params_override.get("n_estimators")
@@ -1723,6 +1797,34 @@ if __name__ == "__main__":
                 info["raw_dim_desc"] = (
                     f"{info['window']}xD variance-ranked (varfold top"
                     f"{args.top_n} = {info['window'] * args.top_n})")
+
+    # ── Autoencoder wiring (fold-nested 1x1-conv bottleneck) ──
+    if pca_mode == "autoencoder":
+        if args.ae_latent is None or args.ae_latent < 1:
+            raise ValueError("--pca-mode autoencoder requires --ae-latent d")
+        print(f"  [AUTOENCODER] latent={args.ae_latent}, "
+              f"epochs={args.ae_epochs}, lr={args.ae_lr} "
+              f"(trained fold-nested on train rows only)")
+        for comp_key, emb_data in emb_data_dict.items():
+            if emb_data.get("kind") != "windows":
+                raise ValueError(
+                    "autoencoder supports window embeddings only "
+                    f"(component '{comp_key}' is '{emb_data.get('kind')}')")
+            if args.ae_latent >= emb_data["emb_dim"]:
+                raise ValueError(
+                    f"--ae-latent {args.ae_latent} >= D={emb_data['emb_dim']} "
+                    f"({comp_key}) — latent must shrink")
+            emb_data["autoencoder"] = {
+                "latent": int(args.ae_latent),
+                "epochs": int(args.ae_epochs),
+                "lr": float(args.ae_lr),
+            }
+        for info in component_info["emb_components"]:
+            if info.get("window"):
+                info["pca_total"] = info["window"] * args.ae_latent
+                info["raw_dim_desc"] = (
+                    f"{info['window']}xD 1x1-conv AE latent"
+                    f"{args.ae_latent} (= {info['window'] * args.ae_latent})")
 
     # Apply PCA override if specified
     if pca_override is not None:
