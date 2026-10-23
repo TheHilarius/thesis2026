@@ -934,8 +934,12 @@ def _transform_embeddings(emb_data, indices, pca_obj):
     """
     if emb_data.get("kind") == "windows":
         if pca_obj is None:
-            # flat_raw — features were raw at fit time; identical at predict time
-            return concat_window_slots(emb_data, indices)
+            # flat_raw / simple21 — features were raw at fit time; identical
+            # at predict time. simple21 must re-apply the same dims gather
+            # used at training (emb_data["dims"] from --dims), otherwise the
+            # full window comes back and predict crashes on shape mismatch.
+            return concat_window_slots(emb_data, indices,
+                                       dims=emb_data.get("dims"))
         k = int(getattr(pca_obj, "n_components_", pca_obj.n_components))
         return transform_window_block_flat(emb_data, indices, pca_obj, k)
     X_emb = get_context_matrix(emb_data, indices)
