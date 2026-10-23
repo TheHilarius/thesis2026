@@ -12,11 +12,11 @@ set -euo pipefail
 
 cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")/../..}"
 
-if [ -f "env_esmif_server/bin/activate" ]; then
-    source env_esmif_server/bin/activate
-    echo "Activated env_esmif_server"
+if [ -f "env_esmc_server/bin/activate" ]; then
+    source env_esmc_server/bin/activate
+    echo "Activated env_esmc_server"
 else
-    echo "ERROR: No venv at env_esmif_server/bin/activate"
+    echo "ERROR: No venv at env_esmc_server/bin/activate"
     exit 1
 fi
 
