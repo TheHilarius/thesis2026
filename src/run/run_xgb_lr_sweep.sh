@@ -6,10 +6,10 @@
 # re-usable: same seed/folds/defaults -> identical result, do not rerun.
 #
 # Submit (interactive shell, repo root on hub1):
-#   bash src/run/run_xgb_lr_sweep.sh --submit --out runs/xgb_lr_blosum50 \
+#   bash src/run/run_xgb_lr_sweep.sh --submit --out runs/xgb_early_stop_auc \
 #     --features blosum50 \
-#     --variant 0.1:2500 --variant 0.05:1000 --variant 0.05:2500 \
-#     --variant 0.025:1000 --variant 0.025:2500
+#     --variant 0.1:5000 --variant 0.05:5000 --variant 0.01:5000
+#   --metric auc|logloss selects the early-stopping metric (default: auc).
 #
 # Solo-embedding arms (later, one feature at a time):
 #   bash src/run/run_xgb_lr_sweep.sh --submit --out runs/xgb_lr_esmc_padtoken \
@@ -37,6 +37,7 @@ if [[ "${1:-}" == "--submit" ]]; then
     FEATURES="blosum50"
     PCA=""
     HOURS="2"
+    METRIC="auc"
     VARIANTS=()
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -44,23 +45,29 @@ if [[ "${1:-}" == "--submit" ]]; then
             --features) FEATURES="$2"; shift 2 ;;
             --pca)      PCA="$2"; shift 2 ;;
             --hours)    HOURS="$2"; shift 2 ;;
+            --metric)   METRIC="$2"; shift 2
+                        case "$METRIC" in
+                            auc|logloss) ;;
+                            *) echo "--metric must be auc or logloss" >&2
+                               exit 1 ;;
+                        esac ;;
             --variant)  shift; while [[ $# -gt 0 && "$1" != --* ]]; do
                             VARIANTS+=("$1"); shift; done ;;
             *) echo "unknown arg $1" >&2; exit 1 ;;
         esac
     done
     [[ -n "$OUT_ROOT" && ${#VARIANTS[@]} -gt 0 ]] || {
-        echo "usage: --submit --out DIR [--features F] [--pca N] [--hours H] --variant lr:n_est ..." >&2
+        echo "usage: --submit --out DIR [--features F] [--pca N] [--hours H] [--metric auc|logloss] --variant lr:n_est ..." >&2
         exit 1; }
     mkdir -p "$OUT_ROOT"/{models/flat,logs/slurm,results}
     for spec in "${VARIANTS[@]}"; do
         IFS=: read -r lr nest <<< "$spec"
         tag="lr${lr//./p}n${nest}"
-        echo "submit $FEATURES pca=${PCA:-None} $tag (${HOURS}h) -> $OUT_ROOT"
+        echo "submit $FEATURES pca=${PCA:-None} $tag metric=$METRIC (${HOURS}h) -> $OUT_ROOT"
         sbatch --job-name="xgb_${tag}" --time="${HOURS}:00:00" \
             --output="$OUT_ROOT/logs/slurm/${tag}_%j.out" \
             --error="$OUT_ROOT/logs/slurm/${tag}_%j.err" \
-            --export=ALL,LR="$lr",NEST="$nest",FEATURES="$FEATURES",PCA="$PCA",OUT_ROOT="$OUT_ROOT" \
+            --export=ALL,LR="$lr",NEST="$nest",FEATURES="$FEATURES",PCA="$PCA",OUT_ROOT="$OUT_ROOT",METRIC="$METRIC" \
             "$0"
     done
     echo "submitted ${#VARIANTS[@]} jobs; squeue -u \$USER -n xgb_ to monitor"
@@ -71,15 +78,16 @@ fi
 : "${LR:?LR env missing}"; : "${NEST:?NEST env missing}"
 : "${FEATURES:?FEATURES env missing}"; : "${OUT_ROOT:?}"
 PCA="${PCA:-}"
+METRIC="${METRIC:-auc}"   # early-stopping metric; default auc (metric we report)
 cd "$REPO"
 . env_esmc_server/bin/activate
 export PYTHONUNBUFFERED=1
 mkdir -p "$OUT_ROOT"/{models/flat,logs/slurm,results}
 
-echo "xgb lr=$LR n_estimators=$NEST features=$FEATURES pca=${PCA:-None} out=$OUT_ROOT  ($(date))"
+echo "xgb lr=$LR n_estimators=$NEST metric=$METRIC features=$FEATURES pca=${PCA:-None} out=$OUT_ROOT  ($(date))"
 CMD=(python src/pipeline/python/04_modelling.py
      --model xgb --features "$FEATURES"
-     --xgb-params "{\"learning_rate\": $LR, \"n_estimators\": $NEST, \"early_stopping_rounds\": 50}"
+     --xgb-params "{\"learning_rate\": $LR, \"n_estimators\": $NEST, \"early_stopping_rounds\": 50, \"eval_metric\": \"$METRIC\"}"
      --out-root "$OUT_ROOT")
 [[ -n "$PCA" ]] && CMD+=(--pca "$PCA")
 "${CMD[@]}"
