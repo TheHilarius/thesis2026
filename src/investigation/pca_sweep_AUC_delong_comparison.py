@@ -18,12 +18,6 @@ Per campaign emits (into <campaign>/plots/), --refs both (default):
     pca_sweep_auc_line.png              clean log-x line + markers,
                                         baselines, no p-values
     pca_sweep_auc_line_nobaselines.png  same without baselines
-    pca_sweep_auc_roi.png               ROI band figure: k's inside
-                                        cfg['roi_ev'] only, stacked
-                                        bracket band per candidate anchor
-                                        (cfg['anchor_sets']) with
-                                        p (p_adj) labels
-    pca_sweep_auc_roi_nobaselines.png   same without baselines
     pca_sweep_runtime.png               core-hours per k (log-y),
                                         fold-seconds paired t-test vs the
                                         best-AUC reference k; peak memory
@@ -31,9 +25,12 @@ Per campaign emits (into <campaign>/plots/), --refs both (default):
     pca_sweep_results.csv               per-k metrics + runtime
                                         (maxrss=NA except live-measured
                                         points)
-    pca_sweep_delong.csv                all pairwise + vs-anchor + vs-best
-                                        DeLong tests, Holm-adjusted per
-                                        family
+    pca_sweep_delong.csv                every pairwise DeLong test in the
+                                        campaign (all_pairs, vs_anchor,
+                                        vs_best), Holm-adjusted per family;
+                                        columns campaign, family, family_m,
+                                        k1, ev1, k2, ev2, auc1, auc2,
+                                        delta, z, p, p_adj
 
 All figures: title "PCA dimension sweep: <campaign>" (runtime: "Compute
 cost by PCA dimensionality: ..."), x = "Number of PCs" with ticks
@@ -100,8 +97,6 @@ CAMPAIGNS = {
         "color": "#4477AA",
         "title": "ESM-IF EOS/BOS-repeat",
         "anchor": 4308,
-        "roi_ev": (40, 85),          # ROI band figure: 40-85% EV
-        "anchor_sets": [632, 850, 1143],  # 60 / 65 / 70% EV candidates
         "anchor_json": (PROJECT_ROOT / "runs" / "padmode_choice" /
                         "models" / "flat" /
                         "cv_results_xgb_emb_esmif_eos_bos_repeat_pca4308_flat_20261008_032609.json"),
@@ -117,24 +112,22 @@ CAMPAIGNS = {
         "models": PROJECT_ROOT / "runs" / "esmc300m_pca_sweep" / "models" / "flat",
         "out": PROJECT_ROOT / "runs" / "esmc300m_pca_sweep" / "plots",
         "ladder": [7, 29, 96, 291, 507, 856, 1403,
-                   2278, 3663, 5883, 9854],
+                   2278, 3663, 5883, 9854, 17909],
         "ev": {7: 30, 29: 40, 96: 50, 291: 60, 507: 65, 856: 70,
                1403: 75, 2278: 80, 3663: 85, 5883: 90, 9854: 95,
                17909: 99},
-        "pending": [17909],  # k=17909 (99% EV) still running (job 83438)
         "mask": "ESM-C",
         "color": "#EE6677",
         "title": "ESM-C-300M pad-token",
         "anchor": 5883,
-        "roi_ev": (70, 95),          # ROI band figure: 70-95% EV
-        "anchor_sets": [1403, 2278, 3663],  # 75 / 80 / 85% EV candidates
         "anchor_json": None,  # in-ladder
         "wall_h": {7: 2.584, 29: 2.914, 96: 3.051, 291: 3.351,
                    507: 4.124, 856: 4.769, 1403: 7.711,
                    2278: 14.484, 3663: 9.557, 5883: 13.513,
-                   9854: 27.545},
+                   9854: 27.545, 17909: 61.434},
         "cores": {7: 8, 29: 8, 96: 8, 291: 8, 507: 8, 856: 8,
-                  1403: 12, 2278: 12, 3663: 12, 5883: 12, 9854: 12},
+                  1403: 12, 2278: 12, 3663: 12, 5883: 12,
+                  9854: 12, 17909: 12},
     },
 }
 
@@ -309,7 +302,8 @@ def _check_label_overlaps(fig, tag=""):
     """Print any overlapping rendered text bboxes (cheap layout self-check)."""
     fig.canvas.draw()
     r = fig.canvas.get_renderer()
-    texts = [t for t in fig.texts + [t for ax in fig.axes for t in ax.texts]]
+    texts = [t for t in fig.texts
+             + [t for ax in fig.axes for t in ax.texts + [ax.title]]]
     boxes = []
     for t in texts:
         s = t.get_text().strip()
@@ -337,10 +331,10 @@ def _tick_label(cfg, k, pending):
 
 
 def _finish(fig, ax, title, out_png):
-    """Suptitle only — no in-figure caption text (thesis captions live
-    outside the plots)."""
-    fig.suptitle(title, fontsize=12, y=0.97)
-    fig.tight_layout(rect=(0, 0, 1, 0.95))
+    """Title sits directly above the axes (6 pt pad) — no in-figure caption
+    text (thesis captions live outside the plots)."""
+    ax.set_title(title, fontsize=12, pad=6)
+    fig.tight_layout()
     _check_label_overlaps(fig, tag=out_png.stem)
     fig.savefig(out_png, dpi=200, bbox_inches="tight", facecolor="white")
     plt.close(fig)
@@ -417,77 +411,6 @@ def plot_auc(cfg, models, refs, pairs_vs_ref, out_png, ref_k,
 
     _finish(fig, ax, f"PCA dimension sweep: {cfg['title']}", out_png)
     print(f"  ({len(sig)} bracket(s) vs k={ref_k})")
-
-
-def plot_auc_roi(cfg, models, refs, families, out_png, alpha=0.05):
-    """Option-B band figure: ROI bars only, hatched candidate anchors, and
-    one stacked bracket band per anchor (every ROI k vs that anchor,
-    nested by distance so nothing crosses). Bracket label =
-    'p=… (p_adj=…)'. `families` maps anchor_k -> [pair dicts]."""
-    lo, hi = cfg["roi_ev"]
-    anchors = sorted(families)
-    roi = [k for k in sorted(models) if lo <= cfg["ev"][k] <= hi]
-    pos = {k: i for i, k in enumerate(roi)}
-    pooled = np.array([models[k]["auc"] for k in roi])
-    ostd = np.array([np.std(models[k]["outer"], ddof=1) for k in roi])
-
-    fig, ax = plt.subplots(figsize=(9, 5.5))
-
-    bars = ax.bar(pos.values(), pooled, yerr=ostd, color=cfg["color"],
-                  alpha=0.85, capsize=3, edgecolor="white", lw=0.5, zorder=3)
-    for k, bar in zip(roi, bars):
-        if k in anchors:
-            bar.set_hatch("//")
-            bar.set_edgecolor("0.2")
-    for i, k in enumerate(roi):
-        ax.text(i, pooled[i] + ostd[i] + 0.008, f"{pooled[i]:.4f}",
-                ha="center", va="bottom", fontsize=7.5, zorder=5,
-                bbox=dict(fc="white", ec="none", alpha=0.75, pad=0.6))
-
-    draw_reference_lines(ax, refs, min_sep=0.06)
-
-    # ---- stacked bracket bands, one per anchor; SIG-ONLY brackets -----
-    h, step, gap, band_gap = 0.010, 0.038, 0.07, 0.07
-    ref_top = max(refs.values(), default=0.0)
-    base = max((pooled + ostd).max() + 0.04, ref_top + 0.04) + 2 * h
-    cursor = base
-    for a in anchors:
-        a_i = pos[a]
-        pairs = [pr for pr in families[a] if pr["p_adj"] < alpha]
-        if not pairs:
-            continue
-        pairs = sorted(pairs, key=lambda pr: abs(pos[pr["k1"]] - a_i))
-        left = [pr for pr in pairs if pos[pr["k1"]] < a_i]
-        right = [pr for pr in pairs if pos[pr["k1"]] > a_i]
-        n_lv = max(len(left), len(right), 1)
-        band_mid = cursor + (n_lv - 1) * step / 2
-        for side, sign in ((left, -1), (right, +1)):
-            for lvl, pr in enumerate(side):
-                y = cursor + lvl * step
-                x0, x1 = float(pos[pr["k1"]]), a_i + sign * gap
-                draw_bracket(ax, x0, x1, y, _sig_label(pr), h,
-                             fontsize=6.5)
-        ax.text(-0.06, band_mid, f"vs {cfg['ev'][a]}%",
-                transform=ax.get_yaxis_transform(), rotation=90,
-                ha="center", va="center", fontsize=7, color="0.3")
-        cursor += n_lv * step + band_gap
-
-    ax.set_ylim(0, max(cursor, 1.0) - band_gap + 0.03)
-    ax.set_yticks(np.arange(0, 1.01, 0.2))
-    ax.set_xticks(list(pos.values()))
-    ax.set_xticklabels([_tick_label(cfg, k, set()) for k in roi],
-                       fontsize=7.5, rotation=35, ha="right",
-                       rotation_mode="anchor")
-    for lab, k in zip(ax.get_xticklabels(), roi):
-        if k in anchors:
-            lab.set_fontweight("bold")
-    ax.set_xlabel("Number of PCs")
-    ax.set_ylabel("Held-out AUC")
-    ax.grid(True, axis="y", alpha=0.3)
-    title = (f"PCA dimension sweep: {cfg['title']} "
-             f"({lo}-{hi}% EV, candidate anchors)")
-    _finish(fig, ax, title, out_png)
-    print(f"  (ROI {lo}-{hi}%, anchors {anchors})")
 
 
 def plot_line(cfg, models, refs, out_png, ref_k, rot=35):
@@ -631,15 +554,9 @@ def main():
         assert not missing, f"{name}: missing k {sorted(missing)}"
         found = {k: v for k, v in found.items() if k in known}
 
-        # AUCs + per-outer-fold subset AUCs (fold masks from fold_vec)
+        # pooled AUC only; per-k fold SD is computed from outer below
         for k, m in found.items():
             m["auc"] = roc_auc_score(y, m["probs"])
-            m["auc_subset"] = roc_auc_score(y[mask], m["probs"][mask])
-            m["outer_subset"] = []
-            for fi in range(6):
-                sel = (fold_vec == fi) & mask
-                m["outer_subset"].append(
-                    roc_auc_score(y[sel], m["probs"][sel]))
 
         # DeLong families
         ladder = cfg["ladder"]
@@ -662,46 +579,18 @@ def main():
                                             found[best_k]["probs"])
                 fam_best.append(dict(family="vs_best", k1=k, k2=best_k,
                                  auc1=ya, auc2=yb, delta=d, z=z, p=p))
-        # subset all-pairs + vs-anchor
-        fam_sub, fam_sub_anchor = [], []
-        for i, a in enumerate(ladder):
-            for b in ladder[i + 1:]:
-                ya, yb, d, z, p = delong_p(y[mask], found[a]["probs"][mask],
-                                            found[b]["probs"][mask])
-                fam_sub.append(dict(family="subset_all_pairs", k1=a, k2=b,
-                                    auc1=ya, auc2=yb, delta=d, z=z, p=p))
-            if a != anchor:
-                ya, yb, d, z, p = delong_p(y[mask], found[a]["probs"][mask],
-                                            found[anchor]["probs"][mask])
-                fam_sub_anchor.append(dict(family="subset_vs_anchor", k1=a,
-                                           k2=anchor, auc1=ya, auc2=yb,
-                                           delta=d, z=z, p=p))
 
         fam_all = holm_family(fam_all)
         fam_anchor = holm_family(fam_anchor)
         fam_best = holm_family(fam_best)
-        fam_sub = holm_family(fam_sub)
-        fam_sub_anchor = holm_family(fam_sub_anchor)
-        all_pairs.extend(fam_all + fam_anchor + fam_best + fam_sub + fam_sub_anchor)
-
-        # ROI band figure: DeLong vs each candidate anchor, Holm within
-        # that anchor's family (family name vs_anchor{k})
-        roi_families = {}
-        if "anchor_sets" in cfg:
-            lo, hi = cfg["roi_ev"]
-            roi_ks = [k for k in sorted(found) if lo <= cfg["ev"][k] <= hi]
-            for a in cfg["anchor_sets"]:
-                fam_a = []
-                for k in roi_ks:
-                    if k == a:
-                        continue
-                    ya, yb, d, z, p = delong_p(y, found[k]["probs"],
-                                                found[a]["probs"])
-                    fam_a.append(dict(family=f"vs_anchor{a}", k1=k, k2=a,
-                                      auc1=ya, auc2=yb, delta=d, z=z, p=p))
-                fam_a = holm_family(fam_a)
-                roi_families[a] = fam_a
-                all_pairs.extend(fam_a)
+        # stamp campaign + family size + EV% so the CSV is self-describing
+        for fam in (fam_all, fam_anchor, fam_best):
+            for pr in fam:
+                pr["campaign"] = name
+                pr["family_m"] = len(fam)
+                pr["ev1"] = cfg["ev"][pr["k1"]]
+                pr["ev2"] = cfg["ev"][pr["k2"]]
+        all_pairs.extend(fam_all + fam_anchor + fam_best)
 
         # runtime NB t-tests vs the same reference the AUC figure uses
         # (best-AUC k, per user: t-test anchor = AUC anchor)
@@ -729,8 +618,6 @@ def main():
                 is_anchor=(k == anchor), auc_pooled=m["auc"],
                 auc_outer_mean=float(np.mean(m["outer"])),
                 auc_outer_std=float(np.std(m["outer"], ddof=1)),
-                auc_subset_pooled=m["auc_subset"],
-                auc_subset_outer_std=float(np.std(m["outer_subset"], ddof=1)),
                 fold_seconds_mean=float(np.mean(m["fold_seconds"])),
                 wall_h=cfg["wall_h"][k], cores=cfg["cores"][k],
                 core_h=round(cfg["wall_h"][k] * cfg["cores"][k], 2),
@@ -743,8 +630,6 @@ def main():
                 is_anchor=True, auc_pooled=m["auc"],
                 auc_outer_mean=float(np.mean(m["outer"])),
                 auc_outer_std=float(np.std(m["outer"], ddof=1)),
-                auc_subset_pooled=m["auc_subset"],
-                auc_subset_outer_std=float(np.std(m["outer_subset"], ddof=1)),
                 fold_seconds_mean=float(np.mean(m["fold_seconds"])),
                 wall_h=cfg["wall_h"][anchor], cores=cfg["cores"][anchor],
                 core_h=round(cfg["wall_h"][anchor] * cfg["cores"][anchor], 2),
@@ -765,15 +650,15 @@ def main():
             plot_line(cfg, found, rmap,
                       cfg["out"] / f"pca_sweep_auc_line{suffix}.png",
                       ref_k=best_k)
-            if roi_families:
-                plot_auc_roi(cfg, found, rmap, roi_families,
-                             cfg["out"] / f"pca_sweep_auc_roi{suffix}.png")
         plot_runtime(cfg, {k: found[k] for k in ladder}, t_rows,
                      cfg["out"] / "pca_sweep_runtime.png", ref_k=best_k)
-        # stale subset figure from earlier versions — remove
-        stale = cfg["out"] / "pca_sweep_auc_subset.png"
-        if stale.exists():
-            stale.unlink()
+        # figures from retired code paths — remove on every run
+        for stale_name in ("pca_sweep_auc_subset.png",
+                           "pca_sweep_auc_roi.png",
+                           "pca_sweep_auc_roi_nobaselines.png"):
+            stale = cfg["out"] / stale_name
+            if stale.exists():
+                stale.unlink()
 
         with open(cfg["out"] / "pca_sweep_runtime_t.csv", "w") as fh:
             fh.write("k,mean_fold_seconds_k,mean_fold_seconds_ref,t,p_nb\n")
@@ -789,7 +674,11 @@ def main():
     res_dir = PROJECT_ROOT / "runs" / "pca_sweep_delong"
     res_dir.mkdir(parents=True, exist_ok=True)
     pd.DataFrame(all_results).to_csv(res_dir / "pca_sweep_results.csv", index=False)
-    pd.DataFrame(all_pairs).to_csv(res_dir / "pca_sweep_delong.csv", index=False)
+    DELONG_COLS = ["campaign", "family", "family_m", "k1", "ev1",
+                   "k2", "ev2", "auc1", "auc2", "delta", "z", "p", "p_adj"]
+    ddf = pd.DataFrame(all_pairs)[DELONG_COLS]
+    ddf = ddf.sort_values(["campaign", "family", "k1", "k2"])
+    ddf.to_csv(res_dir / "pca_sweep_delong.csv", index=False)
     print(f"\nCombined CSVs -> {res_dir}/pca_sweep_results.csv, "
           f"{res_dir}/pca_sweep_delong.csv")
     print("\nOPTIMUM-PC VERDICTS:")
