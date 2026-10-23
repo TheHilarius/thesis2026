@@ -1,0 +1,4 @@
+arm_a	arm_b	auc_a	auc_b	delta	se	z	p_delong	p_holm	family	star
+compositional	blosum50	0.579365	0.763254	-0.183889	0.003042	-60.4541	0.000e+00	0.000e+00	compositional	***
+handcrafted_compositional	blosum50	0.604698	0.763254	-0.158556	0.003012	-52.6366	0.000e+00	0.000e+00	compositional	***
+compositional	handcrafted_compositional	0.579365	0.604698	-0.025333	0.002600	-9.7446	1.946e-22	1.946e-22	compositional	***

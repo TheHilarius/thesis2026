@@ -1,0 +1,3 @@
+bar,n_features,auc_roc,std
+compositional,21,0.579421,0.006070
+BLOSUM50,609,0.763271,0.004409
