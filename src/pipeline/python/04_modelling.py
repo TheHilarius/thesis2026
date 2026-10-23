@@ -393,6 +393,11 @@ def load_all_components(df_split, feat_cfg, pca_mode="flat"):
             elif pca_mode == "simple21":
                 pca_total = window * SIMPLE21_DIMS  # placeholder; --dims fixes it
                 raw_dim_desc = f"{window}x{SIMPLE21_DIMS} (simple21 dim21)"
+            elif pca_mode == "dimselect":
+                # placeholder; --top-n fixes it in main
+                pca_total = window * DIMSELECT_DEFAULT_TOP_N
+                raw_dim_desc = (f"{window}x{emb_dim} (dimselect top"
+                                f"{DIMSELECT_DEFAULT_TOP_N})")
             else:  # flat
                 pca_total = int(pca_components)
                 raw_dim_desc = f"{window}x{emb_dim} (flat {window * emb_dim})"
@@ -493,6 +498,9 @@ WINDOW_CHUNK_ROWS = 2048
 
 # 29x21 test: keep all 29 slots, gather 21 embedding dims (AA-sized).
 SIMPLE21_DIMS = 21
+
+# dimselect placeholder: real N comes from --top-n (patched in main).
+DIMSELECT_DEFAULT_TOP_N = 50
 
 
 def _stream_window_slots(prepared_path, indices):
@@ -716,6 +724,9 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
                     raise ValueError(
                         "simple21 requires --dims (global top-N dim list)")
                 total_components = int(window * len(dims))
+            elif pca_mode == "dimselect":
+                # placeholder; set after screening inside the branch below
+                total_components = int(window * D)
             else:
                 total_components = int(min(pca_components, window * D))
 
@@ -747,6 +758,36 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
                 X_emb_test = concat_window_slots(
                     emb_data, test_indices, dims=dims)
                 ipca = None  # raw gather — nothing to transform at predict time
+            elif pca_mode == "dimselect":
+                ds_cfg = emb_data.get("dimselect")
+                if ds_cfg is None:
+                    raise ValueError(
+                        "dimselect requires --top-n (wired in main)")
+                dimscreen = importlib.import_module("12_dim_screening")
+                folds_train = df.iloc[train_indices][FOLD_COL].values
+                ranking = dimscreen.screen_dims(
+                    emb_data["prepared_path"], train_indices, y_train,
+                    folds_train, ds_cfg["screen_model"],
+                    cache_dir=ds_cfg["cache_dir"],
+                    cache_key=(f"{comp_key}__excl{excl_bucket}"
+                               f"__test{fold_id}__{ds_cfg['screen_model']}"),
+                    n_jobs=ds_cfg["n_jobs"],
+                    tag=f"{comp_key} excl={excl_bucket} test={fold_id}",
+                )
+                # rank by discriminative AUC (inverted dims count); keep
+                # original ascending dim order for the gathered block
+                dims = (ranking.nlargest(ds_cfg["top_n"], "auc_disc")
+                        ["dim"].sort_values().tolist())
+                total_components = int(window * len(dims))
+                print(f"    {comp_key}: dimselect top-{len(dims)} dims "
+                      f"(screen={ds_cfg['screen_model']}, fold-nested) "
+                      f"→ {total_components} raw features")
+                X_emb_train = concat_window_slots(
+                    emb_data, train_indices, dims=dims)
+                X_emb_test = concat_window_slots(
+                    emb_data, test_indices, dims=dims)
+                ipca = None  # raw screened gather — no transform
+                fold_artifacts.setdefault("dimselect_dims", {})[comp_key] = dims
 
             explained = (ipca.explained_variance_ratio_.sum() * 100
                          if hasattr(ipca, "explained_variance_ratio_") else 100.0)
@@ -766,6 +807,12 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
             elif pca_mode == "simple21":
                 print(f"    {comp_key}: simple21 features "
                       f"{window}x{total_components // window} → {total_components} (no PCA, 100% by definition)")
+                feature_names.extend(
+                    window_feature_names_flat(comp_key, total_components)
+                )
+            elif pca_mode == "dimselect":
+                print(f"    {comp_key}: dimselect features "
+                      f"{window}x{total_components // window} → {total_components} (raw screened dims, no PCA)")
                 feature_names.extend(
                     window_feature_names_flat(comp_key, total_components)
                 )
@@ -878,7 +925,9 @@ def prepare_held_out(df, csv_feature_cols, emb_data_dict, model_cfg, fold_artifa
     # ── Embedding features ──
     for comp_key, emb_data in emb_data_dict.items():
         pca_obj = fold_artifacts["pca_dict"][comp_key]
-        X_emb = _transform_embeddings(emb_data, ho_indices, pca_obj)
+        sel_dims = (fold_artifacts.get("dimselect_dims") or {}).get(comp_key)
+        X_emb = _transform_embeddings(emb_data, ho_indices, pca_obj,
+                                      sel_dims=sel_dims)
         parts.append(X_emb)
 
     X_ho = np.concatenate(parts, axis=1)
@@ -916,7 +965,11 @@ def prepare_validation(df, csv_feature_cols, emb_data_dict, model_cfg,
     # ── Embedding features ──
     for comp_key, emb_data in emb_data_dict.items():
         pca_obj = fold_artifacts["pca_dict"][comp_key]
-        X_emb = _transform_embeddings(emb_data, val_indices, pca_obj)
+        # dimselect: the fold-specific screened dims live in THIS fold's
+        # artifacts (emb_data["dims"] is simple21-only and shared/global)
+        sel_dims = (fold_artifacts.get("dimselect_dims") or {}).get(comp_key)
+        X_emb = _transform_embeddings(emb_data, val_indices, pca_obj,
+                                      sel_dims=sel_dims)
         parts.append(X_emb)
 
     X_val = np.concatenate(parts, axis=1)
@@ -927,19 +980,23 @@ def prepare_validation(df, csv_feature_cols, emb_data_dict, model_cfg,
     return X_val, y_val, val_indices
 
 
-def _transform_embeddings(emb_data, indices, pca_obj):
+def _transform_embeddings(emb_data, indices, pca_obj, sel_dims=None):
     """
     Transform the single context embedding through its fitted PCA
     (legacy), or stream window slots through the fitted window PCA.
     """
     if emb_data.get("kind") == "windows":
         if pca_obj is None:
-            # flat_raw / simple21 — features were raw at fit time; identical
-            # at predict time. simple21 must re-apply the same dims gather
-            # used at training (emb_data["dims"] from --dims), otherwise the
-            # full window comes back and predict crashes on shape mismatch.
-            return concat_window_slots(emb_data, indices,
-                                       dims=emb_data.get("dims"))
+            # flat_raw / simple21 / dimselect — features were raw at fit
+            # time; identical at predict time. simple21 must re-apply the
+            # same dims gather used at training (emb_data["dims"] from
+            # --dims), otherwise the full window comes back and predict
+            # crashes on shape mismatch. dimselect passes its fold-specific
+            # screened dims explicitly (sel_dims).
+            return concat_window_slots(
+                emb_data, indices,
+                dims=sel_dims if sel_dims is not None
+                else emb_data.get("dims"))
         k = int(getattr(pca_obj, "n_components_", pca_obj.n_components))
         return transform_window_block_flat(emb_data, indices, pca_obj, k)
     X_emb = get_context_matrix(emb_data, indices)
@@ -1131,11 +1188,37 @@ def parse_args():
     )
     parser.add_argument(
         "--pca-mode", type=str, default="flat",
-        choices=["flat", "flat_raw", "simple21"],
+        choices=["flat", "flat_raw", "simple21", "dimselect"],
         help="Window PCA scheme: 'flat' (flatten window*D, PCA across the "
              "full window, default), 'flat_raw' (flatten window*D, NO PCA "
-             "— all raw dims; low mem), or 'simple21' (29x21 dim gather, "
-             "no PCA — positional test, requires --dims)",
+             "— all raw dims; low mem), 'simple21' (29x21 dim gather, "
+             "no PCA — positional test, requires --dims), or 'dimselect' "
+             "(per-dim supervised screening, top-N dims raw; requires "
+             "--top-n; see 12_dim_screening.py)",
+    )
+    parser.add_argument(
+        "--top-n", type=int, default=None, dest="top_n",
+        help="Keep top-N screened dims for --pca-mode dimselect "
+             "(features = 29 x N; screening is fold-nested/leak-free, "
+             "cached per fold).",
+    )
+    parser.add_argument(
+        "--screen-model", type=str, default="xgb",
+        choices=["xgb", "lr_l2"], dest="screen_model",
+        help="Tiny per-dim screener for --pca-mode dimselect "
+             "(small XGB or LR-l2; both rankers comparable post-hoc).",
+    )
+    parser.add_argument(
+        "--screen-cache-dir", type=str, default=None,
+        dest="screen_cache_dir",
+        help="Cache dir for per-fold dim rankings. Default: "
+             "<out-root>/screening. Share one dir across an N-sweep so "
+             "rankings are computed once per (embedding, fold, model).",
+    )
+    parser.add_argument(
+        "--screen-jobs", type=int, default=12, dest="screen_jobs",
+        help="joblib workers for the per-dim screening loop "
+             "(default 12; screening models themselves are single-core).",
     )
     parser.add_argument(
         "--C", type=float, default=None,
@@ -1208,6 +1291,8 @@ if __name__ == "__main__":
     run_tag += f"_{pca_mode}"
     if args.dims is not None:
         run_tag += f"_var{len(args.dims)}"
+    if pca_mode == "dimselect":
+        run_tag += f"_top{args.top_n}_{args.screen_model}"
     if xgb_params_override:
         lr = xgb_params_override.get("learning_rate")
         n_est = xgb_params_override.get("n_estimators")
@@ -1323,6 +1408,37 @@ if __name__ == "__main__":
                 info["raw_dim_desc"] = (
                     f"{info['window']}x{len(args.dims)} "
                     f"(simple21 dim21 {info['window'] * len(args.dims)})")
+
+    # ── Dimselect wiring (per-dim supervised screening, fold-nested) ──
+    if pca_mode == "dimselect":
+        if args.top_n is None or args.top_n < 1:
+            raise ValueError("--pca-mode dimselect requires --top-n N")
+        screen_cache = (Path(args.screen_cache_dir)
+                        if args.screen_cache_dir
+                        else out_base / "screening")
+        print(f"  [DIMSELECT] top-n={args.top_n}, "
+              f"screen={args.screen_model}, cache={screen_cache}")
+        for comp_key, emb_data in emb_data_dict.items():
+            if emb_data.get("kind") != "windows":
+                raise ValueError(
+                    "dimselect supports window embeddings only "
+                    f"(component '{comp_key}' is '{emb_data.get('kind')}')")
+            if args.top_n > emb_data["emb_dim"]:
+                raise ValueError(
+                    f"--top-n {args.top_n} > D={emb_data['emb_dim']} "
+                    f"({comp_key})")
+            emb_data["dimselect"] = {
+                "top_n": int(args.top_n),
+                "screen_model": args.screen_model,
+                "cache_dir": str(screen_cache),
+                "n_jobs": int(args.screen_jobs),
+            }
+        for info in component_info["emb_components"]:
+            if info.get("window"):
+                info["pca_total"] = info["window"] * args.top_n
+                info["raw_dim_desc"] = (
+                    f"{info['window']}xD screened (dimselect top"
+                    f"{args.top_n} = {info['window'] * args.top_n})")
 
     # Apply PCA override if specified
     if pca_override is not None:
