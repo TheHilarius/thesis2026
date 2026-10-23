@@ -61,8 +61,8 @@ DELONG_TSV = (PROJECT_ROOT / "runs" / "xgb_early_stop_auc" / "results" /
               "delong_vs_baseline.tsv")
 
 # Paul Tol bright (colour-blind safe) — same scheme as plot_padmode_data_compare
-GROUP_COLORS = {"baseline": "#BBBBBB", "es_ll": "#4477AA",
-                "es_auc": "#EE6677", "fixed": "#CCBB44"}
+GROUP_COLORS = {"baseline": "#BBBBBB", "es_ll": "#9ACD32",
+                "es_auc": "#32CD32", "fixed": "#CCBB44"}
 GROUP_LABELS = {"baseline": "Fixed budget (baseline)",
                 "es_ll": "Early stop — logloss",
                 "es_auc": "Early stop — AUC",
