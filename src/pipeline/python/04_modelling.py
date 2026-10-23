@@ -413,6 +413,11 @@ def load_all_components(df_split, feat_cfg, pca_mode="flat",
                 pca_total = window * DIMSELECT_DEFAULT_TOP_N
                 raw_dim_desc = (f"{window}x{emb_dim} (dimselect top"
                                 f"{DIMSELECT_DEFAULT_TOP_N})")
+            elif pca_mode == "varfold":
+                # placeholder; --top-n fixes it in main
+                pca_total = window * VARFOLD_DEFAULT_TOP_N
+                raw_dim_desc = (f"{window}x{emb_dim} (varfold top"
+                                f"{VARFOLD_DEFAULT_TOP_N}, fold-nested)")
             else:  # flat
                 pca_total = int(pca_components)
                 raw_dim_desc = f"{window}x{emb_dim} (flat {window * emb_dim})"
@@ -519,6 +524,9 @@ SIMPLE21_DIMS = 21
 # dimselect placeholder: real N comes from --top-n (patched in main).
 DIMSELECT_DEFAULT_TOP_N = 50
 
+# varfold placeholder: real N comes from --top-n (patched in main).
+VARFOLD_DEFAULT_TOP_N = 21
+
 
 def _stream_window_slots(prepared_path, indices):
     """
@@ -566,6 +574,39 @@ def concat_window_slots(emb_data, indices, dims=None):
         out[cur:cur + w] = full.reshape(w, W * ndim)
         cur += w
     return out
+
+
+def variance_rank_dims(prepared_path, indices):
+    """
+    Per-dim variance ranking over `indices` ONLY (fold-nested, leakage-free).
+
+    Same metric as 10_dim_variance.py rank_dims: per sample, variance of each
+    dim across the 29 positional slots (pad slots excluded via pad_mask,
+    samples with <=1 real slot skipped), averaged over samples. Streams the
+    H5 in chunks; `indices` must be an increasing subset of 0..N-1.
+
+    Returns mean_col_var (D,) float64.
+    """
+    with h5py.File(prepared_path, "r") as f:
+        W = f["windows"]
+        M = f["pad_mask"]
+        d = W.shape[2]
+        col_var_sum = np.zeros(d, dtype=np.float64)
+        col_var_cnt = 0
+        for i0 in range(0, len(indices), WINDOW_CHUNK_ROWS):
+            idx = indices[i0:i0 + WINDOW_CHUNK_ROWS]
+            block = W[idx].astype(np.float64)     # (c, window, D)
+            mblock = M[idx].astype(bool)          # (c, window) True=pad
+            real = (~mblock).astype(np.float64)
+            n_real = real.sum(axis=1, keepdims=True)   # (c, 1)
+            ok = (n_real[:, 0] > 1)
+            s = (block * real[:, :, None]).sum(axis=1)          # (c, D)
+            ss = ((block ** 2) * real[:, :, None]).sum(axis=1)  # (c, D)
+            mean = s / np.maximum(n_real, 1)
+            var = ss / np.maximum(n_real, 1) - mean ** 2
+            col_var_sum += np.where(ok[:, None], var, 0.0).sum(axis=0)
+            col_var_cnt += int(ok.sum())
+    return col_var_sum / max(col_var_cnt, 1)
 
 
 def fit_window_pca_flat(emb_data, indices, k):
@@ -853,6 +894,9 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
             elif pca_mode == "dimselect":
                 # placeholder; set after screening inside the branch below
                 total_components = int(window * D)
+            elif pca_mode == "varfold":
+                # placeholder; set after train-only ranking in the branch below
+                total_components = int(window * D)
             else:
                 total_components = int(min(pca_components, window * D))
 
@@ -914,6 +958,41 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
                     emb_data, test_indices, dims=dims)
                 ipca = None  # raw screened gather — no transform
                 fold_artifacts.setdefault("dimselect_dims", {})[comp_key] = dims
+            elif pca_mode == "varfold":
+                vf_cfg = emb_data.get("varfold")
+                if vf_cfg is None:
+                    raise ValueError(
+                        "varfold requires --top-n (wired in main)")
+                # fold-nested selection: the ranking sees ONLY train rows —
+                # leakage-free counterpart of global simple21 --dims
+                scores = variance_rank_dims(
+                    emb_data["prepared_path"], train_indices)
+                order = np.argsort(-scores)
+                dims = sorted(int(d) for d in order[:vf_cfg["top_n"]])
+                # Jaccard diagnostic vs the GLOBAL top-N (same metric over
+                # all rows, computed once per run) — report only; the global
+                # set is never used to build features
+                if emb_data.get("_varfold_global_rank") is None:
+                    emb_data["_varfold_global_rank"] = np.argsort(
+                        -variance_rank_dims(
+                            emb_data["prepared_path"],
+                            np.arange(emb_data["n_samples"], dtype=np.int64)))
+                gtop = set(int(d) for d in
+                           emb_data["_varfold_global_rank"][:vf_cfg["top_n"]])
+                jac = len(gtop & set(dims)) / len(gtop | set(dims))
+                total_components = int(window * len(dims))
+                print(f"    {comp_key}: varfold top-{len(dims)} "
+                      f"(train-only, fold-nested) → {total_components} raw "
+                      f"features | Jaccard vs global top-N = {jac:.3f}")
+                X_emb_train = concat_window_slots(
+                    emb_data, train_indices, dims=dims)
+                X_emb_test = concat_window_slots(
+                    emb_data, test_indices, dims=dims)
+                ipca = None  # raw gather — no transform at predict time
+                # fold-selected dims ride the same artifact slot dimselect
+                # uses, so the existing predict path (sel_dims) replays
+                # exactly these dims on validation/held-out
+                fold_artifacts.setdefault("dimselect_dims", {})[comp_key] = dims
 
             explained = (ipca.explained_variance_ratio_.sum() * 100
                          if hasattr(ipca, "explained_variance_ratio_") else 100.0)
@@ -941,6 +1020,15 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
                       f"{window}x{total_components // window} → {total_components} (raw screened dims, no PCA)")
                 feature_names.extend(
                     window_feature_names_flat(comp_key, total_components)
+                )
+            elif pca_mode == "varfold":
+                print(f"    {comp_key}: varfold features "
+                      f"{window}x{total_components // window} → {total_components} "
+                      f"(raw variance-ranked dims, no PCA)")
+                # layout matches concat_window_slots: pos-major, dims ascending
+                feature_names.extend(
+                    f"{comp_key}_pos{p:02d}_dim{d:03d}"
+                    for p in range(window) for d in dims
                 )
 
             fold_artifacts["pca_dict"][comp_key] = ipca
@@ -1320,13 +1408,14 @@ def parse_args():
     )
     parser.add_argument(
         "--pca-mode", type=str, default="flat",
-        choices=["flat", "flat_raw", "simple21", "dimselect"],
+        choices=["flat", "flat_raw", "simple21", "dimselect", "varfold"],
         help="Window PCA scheme: 'flat' (flatten window*D, PCA across the "
              "full window, default), 'flat_raw' (flatten window*D, NO PCA "
              "— all raw dims; low mem), 'simple21' (29x21 dim gather, "
-             "no PCA — positional test, requires --dims), or 'dimselect' "
+             "no PCA — positional test, requires --dims), 'dimselect' "
              "(per-dim supervised screening, top-N dims raw; requires "
-             "--top-n; see 12_dim_screening.py)",
+             "--top-n; see 12_dim_screening.py), or 'varfold' (fold-nested "
+             "variance ranking, top-N dims raw; requires --top-n)",
     )
     parser.add_argument(
         "--pool", type=str, default=None,
@@ -1346,9 +1435,9 @@ def parse_args():
     )
     parser.add_argument(
         "--top-n", type=int, default=None, dest="top_n",
-        help="Keep top-N screened dims for --pca-mode dimselect "
-             "(features = 29 x N; screening is fold-nested/leak-free, "
-             "cached per fold).",
+        help="Keep top-N dims for --pca-mode dimselect (screened, fold-"
+             "nested/cached) or varfold (variance-ranked, fold-nested/"
+             "leak-free, recomputed per fold). Features = 29 x N.",
     )
     parser.add_argument(
         "--screen-model", type=str, default="xgb",
@@ -1461,6 +1550,8 @@ if __name__ == "__main__":
         run_tag += f"_var{len(args.dims)}"
     if pca_mode == "dimselect":
         run_tag += f"_top{args.top_n}_{args.screen_model}"
+    if pca_mode == "varfold":
+        run_tag += f"_top{args.top_n}"
     if xgb_params_override:
         lr = xgb_params_override.get("learning_rate")
         n_est = xgb_params_override.get("n_estimators")
@@ -1608,6 +1699,29 @@ if __name__ == "__main__":
                 info["pca_total"] = info["window"] * args.top_n
                 info["raw_dim_desc"] = (
                     f"{info['window']}xD screened (dimselect top"
+                    f"{args.top_n} = {info['window'] * args.top_n})")
+
+    # ── Varfold wiring (fold-nested unsupervised variance ranking) ──
+    if pca_mode == "varfold":
+        if args.top_n is None or args.top_n < 1:
+            raise ValueError("--pca-mode varfold requires --top-n N")
+        print(f"  [VARFOLD] top-n={args.top_n} "
+              f"(train-only variance ranking, recomputed per fold)")
+        for comp_key, emb_data in emb_data_dict.items():
+            if emb_data.get("kind") != "windows":
+                raise ValueError(
+                    "varfold supports window embeddings only "
+                    f"(component '{comp_key}' is '{emb_data.get('kind')}')")
+            if args.top_n > emb_data["emb_dim"]:
+                raise ValueError(
+                    f"--top-n {args.top_n} > D={emb_data['emb_dim']} "
+                    f"({comp_key})")
+            emb_data["varfold"] = {"top_n": int(args.top_n)}
+        for info in component_info["emb_components"]:
+            if info.get("window"):
+                info["pca_total"] = info["window"] * args.top_n
+                info["raw_dim_desc"] = (
+                    f"{info['window']}xD variance-ranked (varfold top"
                     f"{args.top_n} = {info['window'] * args.top_n})")
 
     # Apply PCA override if specified

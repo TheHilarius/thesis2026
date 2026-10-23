@@ -71,7 +71,7 @@ DEFAULT_COMBOS = [
 
 
 def run_combo(model, features, pca, pca_mode="flat", dry_run=False,
-              out_root=None, xgb_params=None, dims=None,
+              out_root=None, xgb_params=None, dims=None, top_n=None,
               pool=None, pool_mask="masked"):
     """Run one 04_modelling.py invocation."""
     cmd = [
@@ -82,14 +82,17 @@ def run_combo(model, features, pca, pca_mode="flat", dry_run=False,
     ]
     if dims:
         cmd += ["--dims", str(dims)]
+    if top_n is not None:
+        cmd += ["--top-n", str(top_n)]
     if pool:
         cmd += ["--pool", str(pool), "--pool-mask", str(pool_mask)]
     if xgb_params and model == "xgb":
         cmd += ["--xgb-params", xgb_params]
     if (pca is not None and pool is None
-            and pca_mode not in ("flat_raw", "simple21")
+            and pca_mode not in ("flat_raw", "simple21", "varfold")
             and str(pca).lower() not in ("none", "")):
-        # flat_raw / simple21 ignore --pca (all raw / cropped dims); "none" = no PCA at all
+        # flat_raw / simple21 / varfold ignore --pca (raw / gathered dims);
+        # "none" = no PCA at all
         cmd += ["--pca", str(pca)]
     if out_root and out_root != ".":
         cmd += ["--out-root", out_root]
@@ -320,10 +323,12 @@ def main():
              "real slots only) or 'naive' (all 29 slots).",
     )
     parser.add_argument(
-        "--pca-mode", type=str, default="flat", choices=["flat", "flat_raw", "simple21"],
+        "--pca-mode", type=str, default="flat",
+        choices=["flat", "flat_raw", "simple21", "dimselect", "varfold"],
         help="Window PCA scheme passed to 04_modelling (default: flat). "
              "'flat_raw' = no PCA, all raw dims (ignores --pca). "
-             "'simple21' = raw first-21 crop, no PCA (ignores --pca).",
+             "'simple21' = raw dim gather (ignores --pca). "
+             "'dimselect'/'varfold' = fold-nested top-N dims (needs --top-n).",
     )
     parser.add_argument(
         "--no-aggregate", action="store_true",
@@ -349,6 +354,11 @@ def main():
         help="Dim list forwarded as --dims to 04_modelling.py "
              "(simple21 29x21 test): '0,1,5' or path to top-N JSON. "
              "Requires --pca-mode simple21.",
+    )
+    parser.add_argument(
+        "--top-n", type=int, default=None, dest="top_n",
+        help="Top-N forwarded as --top-n to 04_modelling.py — required "
+             "for --pca-mode dimselect and varfold (features = 29 x N).",
     )
     parser.add_argument(
         "--write-readme-only", action="store_true",
@@ -444,7 +454,7 @@ def main():
         ok = run_combo(model, features, pca, pca_mode=args.pca_mode,
                        dry_run=args.dry_run, out_root=args.out_root,
                        xgb_params=args.xgb_params,
-                       dims=args.dims)
+                       dims=args.dims, top_n=args.top_n)
         if ok:
             successes += 1
         else:
