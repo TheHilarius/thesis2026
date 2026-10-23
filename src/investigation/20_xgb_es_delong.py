@@ -48,6 +48,7 @@ BASELINE = (PROJECT_ROOT / "runs" / "encodings_sweep" / "models" / "flat" /
 RUNS = {
     "es_auc": PROJECT_ROOT / "runs" / "xgb_early_stop_auc" / "models" / "flat",
     "es_ll": PROJECT_ROOT / "runs" / "xgb_early_stop_logloss" / "models" / "flat",
+    "fixed_low": PROJECT_ROOT / "runs" / "xgb_fixed_lowlr" / "models" / "flat",
 }
 OUT_TSV = (PROJECT_ROOT / "runs" / "xgb_early_stop_auc" / "results" /
            "delong_vs_baseline.tsv")
