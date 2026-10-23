@@ -71,7 +71,8 @@ DEFAULT_COMBOS = [
 
 
 def run_combo(model, features, pca, pca_mode="flat", dry_run=False,
-              out_root=None, xgb_params=None, dims=None):
+              out_root=None, xgb_params=None, dims=None,
+              pool=None, pool_mask="masked"):
     """Run one 04_modelling.py invocation."""
     cmd = [
         sys.executable, str(MODELING_SCRIPT),
@@ -81,9 +82,12 @@ def run_combo(model, features, pca, pca_mode="flat", dry_run=False,
     ]
     if dims:
         cmd += ["--dims", str(dims)]
+    if pool:
+        cmd += ["--pool", str(pool), "--pool-mask", str(pool_mask)]
     if xgb_params and model == "xgb":
         cmd += ["--xgb-params", xgb_params]
-    if (pca is not None and pca_mode not in ("flat_raw", "simple21")
+    if (pca is not None and pool is None
+            and pca_mode not in ("flat_raw", "simple21")
             and str(pca).lower() not in ("none", "")):
         # flat_raw / simple21 ignore --pca (all raw / cropped dims); "none" = no PCA at all
         cmd += ["--pca", str(pca)]
@@ -91,9 +95,11 @@ def run_combo(model, features, pca, pca_mode="flat", dry_run=False,
         cmd += ["--out-root", out_root]
 
     label = f"{model} x {features}"
-    if pca is not None:
+    if pca is not None and pool is None:
         label += f" (pca={pca})"
     label += f" [{pca_mode}]"
+    if pool:
+        label += f" pool={pool}/{pool_mask}"
 
     print(f"\n{'_' * 60}")
     print(f"  RUNNING: {label}")
@@ -129,6 +135,16 @@ def expand_pca_sweep(spec):
             combos.append((model, features,
                            int(p) if p.lstrip("-").isdigit() else p))
     return combos
+
+
+def expand_pool_sweep(spec):
+    """Expand 'model:feature_set:pool1,pool2,...' into combos.
+
+    Returns (model, features, None-pca, pool) tuples.
+    """
+    model, features, pool_list = spec.split(":")
+    return [(model.strip(), features.strip(), None, p.strip())
+            for p in pool_list.split(",") if p.strip()]
 
 
 def aggregate_results(start_time, combos, pca_mode="flat", dry_run=False,
@@ -285,6 +301,25 @@ def main():
              "E.g. rf:handcrafted_sparse_esmc:1,13,26,66,218,718",
     )
     parser.add_argument(
+        "--pool-sweep", nargs="*", default=None, dest="pool_sweep",
+        help="Pool sweep: model:feature_set:pool1,pool2,... (repeatable, "
+             "no PCA on pooled output). "
+             "E.g. xgb:emb_esmc300m_win_padtoken:mean,median,max,min,"
+             "mean_max,mean_median,mean_std",
+    )
+    parser.add_argument(
+        "--pool", type=str, default=None,
+        help="Single pool method applied to all --combos "
+             "(mean|median|max|min|mean_max|mean_median|mean_std). "
+             "Omit = flat-window behavior.",
+    )
+    parser.add_argument(
+        "--pool-mask", type=str, default="masked",
+        choices=["masked", "naive"],
+        help="Pooling mask for --pool / --pool-sweep: 'masked' (default, "
+             "real slots only) or 'naive' (all 29 slots).",
+    )
+    parser.add_argument(
         "--pca-mode", type=str, default="flat", choices=["flat", "flat_raw", "simple21"],
         help="Window PCA scheme passed to 04_modelling (default: flat). "
              "'flat_raw' = no PCA, all raw dims (ignores --pca). "
@@ -361,10 +396,14 @@ def main():
         )
         return
 
-    combos = []
+    combos = []          # (model, features, pca) — PCA path
+    pool_combos = []     # (model, features, pca=None, pool) — pool path
     if args.pca_sweep:
         for spec in args.pca_sweep:
             combos.extend(expand_pca_sweep(spec))
+    if args.pool_sweep:
+        for spec in args.pool_sweep:
+            pool_combos.extend(expand_pool_sweep(spec))
     if args.combos:
         for spec in args.combos:
             parts = spec.split(",")
@@ -377,13 +416,20 @@ def main():
             elif pca.isdigit():
                 pca = int(pca)
             combos.append((model, features, pca))
-    if not combos:
+    if not combos and not pool_combos:
         combos = DEFAULT_COMBOS
+
+    # Single --pool applies to every --combos entry (pool path).
+    if args.pool and combos:
+        pool_combos.extend((m, f, None, args.pool) for m, f, _ in combos)
+        combos = []
+    pool_mask = args.pool_mask
 
     print("=" * 60)
     print("  MODEL MATRIX RUNNER")
     print("=" * 60)
-    print(f"  Combos: {len(combos)}")
+    print(f"  Combos: {len(combos) + len(pool_combos)}"
+          + (f" (pool={pool_mask})" if pool_combos else ""))
     print(f"  Start:  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     if args.dry_run:
         print(f"  MODE:   DRY RUN")
@@ -399,6 +445,15 @@ def main():
                        dry_run=args.dry_run, out_root=args.out_root,
                        xgb_params=args.xgb_params,
                        dims=args.dims)
+        if ok:
+            successes += 1
+        else:
+            failures += 1
+    for model, features, _pca, pool in pool_combos:
+        ok = run_combo(model, features, None, pca_mode=args.pca_mode,
+                       dry_run=args.dry_run, out_root=args.out_root,
+                       xgb_params=args.xgb_params,
+                       dims=args.dims, pool=pool, pool_mask=pool_mask)
         if ok:
             successes += 1
         else:
@@ -420,11 +475,13 @@ def main():
                                      out_root=args.out_root)
         if out_path is not None and args.out_root:
             table = [(m, f, str(p)) for m, f, p in combos]
+            table += [(m, f, f"pool={pl}/{pool_mask}")
+                      for m, f, _, pl in pool_combos]
             write_run_readme(
                 args.out_root,
                 start_time.strftime("%Y-%m-%d %H:%M:%S"),
                 [f"pca_mode: {args.pca_mode}",
-                 f"combos: {len(combos)} "
+                 f"combos: {len(combos) + len(pool_combos)} "
                  f"(success {successes} / failed {failures})",
                  f"total wall time: {t_end - t_start:.1f}s",
                  f"aggregate table: {out_path}",

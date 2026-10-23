@@ -259,7 +259,8 @@ def resolve_components(feat_cfg):
     return csv_components, emb_components
 
 
-def load_all_components(df_split, feat_cfg, pca_mode="flat"):
+def load_all_components(df_split, feat_cfg, pca_mode="flat",
+                          pool=None, pool_mask="masked"):
     """
     Load everything required by the feature set.
 
@@ -382,12 +383,26 @@ def load_all_components(df_split, feat_cfg, pca_mode="flat"):
 
         emb_data["pca_components"] = pca_components
         emb_data["pca_mode"] = pca_mode
+        emb_data["pool"] = pool
+        emb_data["pool_mask"] = pool_mask
         emb_data_dict[comp_key] = emb_data
+
+        if pool is not None and emb_data.get("kind") != "windows":
+            raise ValueError(
+                f"--pool '{pool}' requires window embeddings, but "
+                f"component '{comp_key}' is legacy (kind="
+                f"{emb_data.get('kind')}). Pooling is windows-only."
+            )
 
         emb_dim = emb_data["emb_dim"]
         if emb_data.get("kind") == "windows":
             window = emb_data["window"]
-            if pca_mode == "flat_raw":
+            if pool is not None:
+                mult = 2 if pool in ("mean_max", "mean_median", "mean_std") else 1
+                pca_total = mult * emb_dim       # no PCA — pooled dims
+                raw_dim_desc = (f"{window}x{emb_dim} "
+                                f"(pool-{pool} {pool_mask} {pca_total})")
+            elif pca_mode == "flat_raw":
                 pca_total = window * emb_dim          # no PCA — all raw dims
                 raw_dim_desc = f"{window}x{emb_dim} (flat_raw {window * emb_dim})"
             elif pca_mode == "simple21":
@@ -416,6 +431,8 @@ def load_all_components(df_split, feat_cfg, pca_mode="flat"):
             "pca_components": pca_components,
             "pca_total": pca_total,
             "pca_mode": pca_mode,
+            "pool": pool,
+            "pool_mask": pool_mask,
         })
 
     return df, csv_feature_cols, emb_data_dict, component_info
@@ -634,6 +651,94 @@ def window_feature_names_flat(comp_key, k):
 
 
 # ──────────────────────────────────────────────
+# 6c. WINDOW POOLING (kind == "windows", no PCA)
+# ──────────────────────────────────────────────
+#
+# Pooled embeddings collapse the 29-slot window to one (or two) D-dim
+# vectors per sample: mean / median / max / min over slots, or a concat
+# of two (mean+max, mean+median, mean+std). Standalone chunked reader —
+# deliberately NOT reusing _stream_window_slots (different mask semantics).
+# No PCA is fitted on pooled output; it goes straight to the model.
+#
+# pool_mask="masked" (default): reduce over real slots only (pad_mask False).
+#   Fully-padded fallback rows (no real slot) use all slots.
+# pool_mask="naive": reduce over all 29 slots including filler.
+
+POOL_METHODS = ("mean", "median", "max", "min",
+                "mean_max", "mean_median", "mean_std")
+POOL_MASKS = ("masked", "naive")
+POOL_CHUNK_ROWS = 2048
+
+
+def _pool_reduce(work, pool):
+    """Reduce a (c, W, D) float64 block (pads already NaN or absent).
+
+    Returns list of one (single) or two (concat) (c, D) arrays.
+    """
+    if pool == "mean":
+        return [np.nanmean(work, axis=1)]
+    if pool == "median":
+        return [np.nanmedian(work, axis=1)]
+    if pool == "max":
+        return [np.nanmax(work, axis=1)]
+    if pool == "min":
+        return [np.nanmin(work, axis=1)]
+    if pool == "mean_max":
+        return [np.nanmean(work, axis=1), np.nanmax(work, axis=1)]
+    if pool == "mean_median":
+        return [np.nanmean(work, axis=1), np.nanmedian(work, axis=1)]
+    if pool == "mean_std":
+        return [np.nanmean(work, axis=1), np.nanstd(work, axis=1)]
+    raise ValueError(f"Unknown pool method '{pool}'. Valid: {POOL_METHODS}")
+
+
+def pool_window_block(emb_data, indices, pool, pool_mask="masked"):
+    """Pool window rows to (n, D) or (n, 2D) float64 for `indices`.
+
+    `indices` must be increasing (h5py requirement) — guaranteed by all
+    callers (boolean-mask subsets of df order).
+    """
+    if pool not in POOL_METHODS:
+        raise ValueError(f"Unknown pool method '{pool}'. Valid: {POOL_METHODS}")
+    prepared_path = emb_data["prepared_path"]
+    D = emb_data["emb_dim"]
+    two = pool in ("mean_max", "mean_median", "mean_std")
+    n = len(indices)
+    out = np.empty((n, 2 * D if two else D), dtype=np.float64)
+    cur = 0
+    with h5py.File(prepared_path, "r") as f:
+        Wd = f["windows"]
+        M = f["pad_mask"] if pool_mask == "masked" else None
+        for i0 in range(0, n, POOL_CHUNK_ROWS):
+            idx = indices[i0:i0 + POOL_CHUNK_ROWS]
+            block = Wd[idx].astype(np.float64)   # (c, W, D)
+            c = block.shape[0]
+            if M is not None:
+                m = M[idx].astype(bool)          # True = padded slot
+                full = m.all(axis=1)             # no real slot at all
+                work = np.where(m[..., None], np.nan, block)
+                if full.any():
+                    work[full] = block[full]     # fallback: all slots
+            else:
+                work = block
+            parts = _pool_reduce(work, pool)
+            out[cur:cur + c] = (np.concatenate(parts, axis=1)
+                                if len(parts) == 2 else parts[0])
+            cur += c
+    return out
+
+
+def pool_feature_names(comp_key, pool, D):
+    """Pooled feature names (order matches pool_window_block columns)."""
+    if pool in ("mean_max", "mean_median", "mean_std"):
+        second = pool.split("_")[1]
+        names = ([f"{comp_key}_pool-mean_d{d + 1:04d}" for d in range(D)]
+                 + [f"{comp_key}_pool-{second}_d{d + 1:04d}" for d in range(D)])
+        return names
+    return [f"{comp_key}_pool-{pool}_d{d + 1:04d}" for d in range(D)]
+
+
+# ──────────────────────────────────────────────
 # 7. UNIFIED FOLD PREPARATION (composable)
 # ──────────────────────────────────────────────
 
@@ -715,6 +820,27 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
             window = emb_data["window"]
             D = emb_data["emb_dim"]
             pca_mode = emb_data.get("pca_mode", "flat")
+            pool = emb_data.get("pool")
+
+            if pool is not None:
+                # ── Pooled path: reduce to (N, D)/(N, 2D), NO PCA ──
+                mask = emb_data.get("pool_mask", "masked")
+                print(f"    {comp_key}: pooling '{pool}' ({mask}) "
+                      f"(window={window}, D={D}) ...")
+                X_emb_train = pool_window_block(
+                    emb_data, train_indices, pool, mask)
+                X_emb_test = pool_window_block(
+                    emb_data, test_indices, pool, mask)
+                ipca = None  # pooled — nothing to transform at predict time
+                total_components = X_emb_train.shape[1]
+                print(f"    {comp_key}: pool-{pool} ({mask}) "
+                      f"{window}x{D} → {total_components} features (no PCA)")
+                feature_names.extend(
+                    pool_feature_names(comp_key, pool, D))
+                fold_artifacts["pca_dict"][comp_key] = ipca
+                parts_train.append(X_emb_train)
+                parts_test.append(X_emb_test)
+                continue
 
             if pca_mode == "flat_raw":
                 total_components = int(window * D)   # no PCA — all raw dims
@@ -984,8 +1110,14 @@ def _transform_embeddings(emb_data, indices, pca_obj, sel_dims=None):
     """
     Transform the single context embedding through its fitted PCA
     (legacy), or stream window slots through the fitted window PCA.
+    Pooled window embeddings (emb_data["pool"] set) bypass PCA entirely.
     """
     if emb_data.get("kind") == "windows":
+        if emb_data.get("pool") is not None:
+            # pooled — identical reduce at predict time
+            return pool_window_block(
+                emb_data, indices, emb_data["pool"],
+                emb_data.get("pool_mask", "masked"))
         if pca_obj is None:
             # flat_raw / simple21 / dimselect — features were raw at fit
             # time; identical at predict time. simple21 must re-apply the
@@ -1197,6 +1329,22 @@ def parse_args():
              "--top-n; see 12_dim_screening.py)",
     )
     parser.add_argument(
+        "--pool", type=str, default=None,
+        choices=["mean", "median", "max", "min",
+                 "mean_max", "mean_median", "mean_std"],
+        help="Pool window slots to one (or two) D-dim vectors per sample "
+             "BEFORE modelling, with NO PCA (e.g. --pool mean). "
+             "Omit = current flat-window behavior. "
+             "Incompatible with --pca / non-flat --pca-mode.",
+    )
+    parser.add_argument(
+        "--pool-mask", type=str, default="masked",
+        choices=["masked", "naive"],
+        help="Pooling mask: 'masked' (default) reduces over real slots "
+             "only (pad_mask); 'naive' reduces over all 29 slots "
+             "including filler. Requires --pool.",
+    )
+    parser.add_argument(
         "--top-n", type=int, default=None, dest="top_n",
         help="Keep top-N screened dims for --pca-mode dimselect "
              "(features = 29 x N; screening is fold-nested/leak-free, "
@@ -1250,6 +1398,22 @@ if __name__ == "__main__":
     model_key = args.model
     features_key = args.features
     pca_mode = args.pca_mode
+    pool = args.pool
+    pool_mask = args.pool_mask
+
+    if pool is not None:
+        if args.pca is not None:
+            raise ValueError("--pool is incompatible with --pca "
+                             "(pooled embeddings use no PCA)")
+        if pca_mode != "flat":
+            raise ValueError("--pool is incompatible with "
+                             f"--pca-mode {pca_mode} (use default flat)")
+        if args.dims is not None or args.top_n is not None:
+            raise ValueError("--pool is incompatible with "
+                             "--dims / --top-n")
+        print(f"  [CLI OVERRIDE] pool: {pool} ({pool_mask})")
+    elif args.pool_mask != "masked":
+        raise ValueError("--pool-mask requires --pool")
 
     validate_config()
     model_cfg = get_model_config(model_key)
@@ -1289,6 +1453,10 @@ if __name__ == "__main__":
     else:
         run_tag = f"{model_key}_{features_key}"
     run_tag += f"_{pca_mode}"
+    if pool is not None:
+        run_tag += f"_pool{pool}"
+        if pool_mask != "masked":
+            run_tag += f"_{pool_mask}"
     if args.dims is not None:
         run_tag += f"_var{len(args.dims)}"
     if pca_mode == "dimselect":
@@ -1334,6 +1502,8 @@ if __name__ == "__main__":
     print(f"  Model class:     {model_cfg['model_class']}")
     print(f"  Feature set:     {features_key} ({feat_display})")
     print(f"  PCA mode:        {pca_mode}")
+    print(f"  Pool:            {pool if pool is not None else '-'}"
+          + (f" ({pool_mask})" if pool is not None else ""))
     print(f"  Components:      {feat_cfg['components']}")
     print(f"  Data path:       {SPLIT_DATA_PATH}")
     print(f"  Log path:        {LOG_PATH}")
@@ -1383,7 +1553,7 @@ if __name__ == "__main__":
     print("=" * 80)
 
     df, csv_feature_cols, emb_data_dict, component_info = load_all_components(
-        df_split, feat_cfg, pca_mode,
+        df_split, feat_cfg, pca_mode, pool=pool, pool_mask=pool_mask,
     )
 
     # ── Dims override (29x21: global top-N dim gather, simple21 only) ──
@@ -1712,6 +1882,8 @@ if __name__ == "__main__":
             "random_state": RANDOM_STATE,
             "needs_scaling": model_cfg["needs_scaling"],
             "pca_mode": pca_mode,
+            "pool": pool,
+            "pool_mask": pool_mask,
             "hyperparameters": {k: str(v)
                                 for k, v in model_cfg["params"].items()},
             "n_features": n_features_final,
