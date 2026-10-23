@@ -281,7 +281,7 @@ def delta_figure(arms):
 def simulated_stop(curve, metric, patience=50):
     """Mirror xgboost ES: first round with no improvement for `patience`
     rounds; returns (stop_round, best_round). curve aligned to round 1..n."""
-    improve = np.less if metric == "auc" else np.greater
+    improve = np.greater if metric == "auc" else np.less
     best_r, best_v = 1, curve[0]
     for i, v in enumerate(curve[1:], start=2):
         if improve(v, best_v):
@@ -344,9 +344,16 @@ def curves_figure():
         ax.plot(rounds, cout, color="#EE6677", lw=1.6, label=outer_label)
         ax.axvline(best_r, color="black", linestyle="--", lw=1.2)
         ax.scatter([best_r], [cin[best_r - 1]], color="black", zorder=5, s=30)
+        # text in axes-fraction coords so annotations never collide with
+        # the title, legend, or each other (marker stays in data coords)
+        if metric == "auc":
+            es_txt, out_txt = (0.03, 0.80), (0.45, 0.10)
+        else:
+            es_txt, out_txt = (0.02, 0.45), (0.50, 0.18)
         ax.annotate(f"ES rolls back here\n(round {best_r})",
                     xy=(best_r, cin[best_r - 1]),
-                    xytext=(best_r + 90, cin[best_r - 1]),
+                    xycoords="data", xytext=es_txt,
+                    textcoords="axes fraction",
                     fontsize=8.5,
                     arrowprops=dict(arrowstyle="->", lw=0.9))
         ax.scatter([outer_best_r], [cout[outer_best_r - 1]],
@@ -354,8 +361,8 @@ def curves_figure():
                    edgecolor="black", linewidth=0.5)
         ax.annotate(f"outer optimum\n(round {outer_best_r})",
                     xy=(outer_best_r, cout[outer_best_r - 1]),
-                    xytext=(outer_best_r - 330, cout[outer_best_r - 1]
-                            + (0.006 if metric == "auc" else -0.008)),
+                    xycoords="data", xytext=out_txt,
+                    textcoords="axes fraction",
                     fontsize=8.5,
                     arrowprops=dict(arrowstyle="->", lw=0.9))
         ax.set_xlabel("Boosting round")
