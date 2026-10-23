@@ -38,6 +38,8 @@ if [[ "${1:-}" == "--submit" ]]; then
     PCA=""
     HOURS="2"
     METRIC="auc"
+    NAME_PFX="xgb_"
+    ES="1"
     VARIANTS=()
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -51,6 +53,8 @@ if [[ "${1:-}" == "--submit" ]]; then
                             *) echo "--metric must be auc or logloss" >&2
                                exit 1 ;;
                         esac ;;
+            --name)     NAME_PFX="$2"; shift 2 ;;
+            --no-es)    ES="0"; shift ;;
             --variant)  shift; while [[ $# -gt 0 && "$1" != --* ]]; do
                             VARIANTS+=("$1"); shift; done ;;
             *) echo "unknown arg $1" >&2; exit 1 ;;
@@ -64,10 +68,10 @@ if [[ "${1:-}" == "--submit" ]]; then
         IFS=: read -r lr nest <<< "$spec"
         tag="lr${lr//./p}n${nest}"
         echo "submit $FEATURES pca=${PCA:-None} $tag metric=$METRIC (${HOURS}h) -> $OUT_ROOT"
-        sbatch --job-name="xgb_${tag}" --time="${HOURS}:00:00" \
+        sbatch --job-name="${NAME_PFX}${lr}" --time="${HOURS}:00:00" \
             --output="$OUT_ROOT/logs/slurm/${tag}_%j.out" \
             --error="$OUT_ROOT/logs/slurm/${tag}_%j.err" \
-            --export=ALL,LR="$lr",NEST="$nest",FEATURES="$FEATURES",PCA="$PCA",OUT_ROOT="$OUT_ROOT",METRIC="$METRIC" \
+            --export=ALL,LR="$lr",NEST="$nest",FEATURES="$FEATURES",PCA="$PCA",OUT_ROOT="$OUT_ROOT",METRIC="$METRIC",ES="$ES" \
             "$0"
     done
     echo "submitted ${#VARIANTS[@]} jobs; squeue -u \$USER -n xgb_ to monitor"
@@ -79,15 +83,21 @@ fi
 : "${FEATURES:?FEATURES env missing}"; : "${OUT_ROOT:?}"
 PCA="${PCA:-}"
 METRIC="${METRIC:-auc}"   # early-stopping metric; default auc (metric we report)
+ES="${ES:-1}"             # ES=0 -> fixed budget, no early_stopping_rounds
 cd "$REPO"
 . env_esmc_server/bin/activate
 export PYTHONUNBUFFERED=1
 mkdir -p "$OUT_ROOT"/{models/flat,logs/slurm,results}
 
-echo "xgb lr=$LR n_estimators=$NEST metric=$METRIC features=$FEATURES pca=${PCA:-None} out=$OUT_ROOT  ($(date))"
+echo "xgb lr=$LR n_estimators=$NEST es=$ES metric=$METRIC features=$FEATURES pca=${PCA:-None} out=$OUT_ROOT  ($(date))"
+if [[ "$ES" == "0" ]]; then
+    PARAMS="{\"learning_rate\": $LR, \"n_estimators\": $NEST}"
+else
+    PARAMS="{\"learning_rate\": $LR, \"n_estimators\": $NEST, \"early_stopping_rounds\": 50, \"eval_metric\": \"$METRIC\"}"
+fi
 CMD=(python src/pipeline/python/04_modelling.py
      --model xgb --features "$FEATURES"
-     --xgb-params "{\"learning_rate\": $LR, \"n_estimators\": $NEST, \"early_stopping_rounds\": 50, \"eval_metric\": \"$METRIC\"}"
+     --xgb-params "$PARAMS"
      --out-root "$OUT_ROOT")
 [[ -n "$PCA" ]] && CMD+=(--pca "$PCA")
 "${CMD[@]}"
