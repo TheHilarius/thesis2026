@@ -16,13 +16,17 @@
 #   bash src/run/run_encodings_sweep.sh --submit --out runs/encodings_sweep --arm \
 #     sparse:None:4:8:1  blosum50:None:4:8:1  blosum62:None:4:8:1 \
 #     blosum80:None:4:8:1  kidera:None:4:8:1  atchley:None:4:8:1
-# then embedding arms (--arm spec = feature:pca:cpus:memGB:hours):
+# then embedding arms (--arm spec = feature:pca:cpus:memGB:hours; the
+# feature must be the COMBINED features_key, pca = bare PC count):
 #   bash src/run/run_encodings_sweep.sh --submit --out runs/encodings_sweep --arm \
-#     sparse:esmif_eos_bos_repeat=632:12:32:4 \
-#     blosum50:esmif_eos_bos_repeat=632:12:32:4  ... (6 total)
+#     sparse_esmif_eos_bos_repeat:632:12:32:4 \
+#     blosum50_esmif_eos_bos_repeat:632:12:32:4  ... (6 total)
 #   bash src/run/run_encodings_sweep.sh --submit --out runs/encodings_sweep --arm \
-#     sparse:esmc300m_win_padtoken=2278:12:48:6 \
-#     blosum50:esmc300m_win_padtoken=2278:12:48:6  ... (6 total)
+#     sparse_esmc300m_win_padtoken:2278:12:48:6 \
+#     blosum50_esmc300m_win_padtoken:2278:12:48:6  ... (6 total)
+# pca token "full" = no PCA, all raw dims (flat_raw mode):
+#   bash src/run/run_encodings_sweep.sh --submit --out runs/esmif_eos_sweep --arm \
+#     emb_esmif_eos_bos_repeat:full:12:48:144
 #SBATCH --job-name=enc_sweep
 #SBATCH --partition=cpu
 #SBATCH --cpus-per-task=12
@@ -77,8 +81,12 @@ TIME_FILE="$OUT_ROOT/logs/mem_${FEATURE}.time"
 echo "feature=$FEATURE pca=$PCA out=$OUT_ROOT  ($(date))"
 
 # Peak RSS per run (exact, kernel high-water mark) + whole-job cgroup peak.
+# PCA token "full" = flat_raw (no PCA, all raw dims; --pca ignored by 04b).
+PMODE=flat
+if [[ "$PCA" == "full" ]]; then PMODE=flat_raw; PCA=none; fi
+echo "mode=$PMODE"
 /usr/bin/time -v -o "$TIME_FILE" \
-    python src/pipeline/python/04b_run_matrix.py --pca-mode flat --no-aggregate \
+    python src/pipeline/python/04b_run_matrix.py --pca-mode "$PMODE" --no-aggregate \
         --out-root "$OUT_ROOT" --combos "xgb,${FEATURE},${PCA}"
 
 cg=$(awk -F: '$1=="0"{print $3}' /proc/self/cgroup)
