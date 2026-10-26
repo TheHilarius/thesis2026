@@ -7,6 +7,10 @@ Two figures (one per pool mask):
     runs/<runtag>/plots/pool_masked_auc.png
     runs/<runtag>/plots/pool_naive_auc.png
 
+NOTE: masked and naive pooling proved near-identical, so naive is the
+standard from now on. Only the naive figure is drawn (filenames keep
+the pool_naive_auc names).
+
 Bars per figure (left to right):
     BLOSUM50 (609 feat)                        — encodings_sweep
     ESM-C-300M flat-PCA 80% (k=2278)           — pca_sweep_delong (optimal+best)
@@ -120,19 +124,22 @@ def load_blosum(path: Path):
     return None
 
 
-def draw_figure(mask, pool_vals, blosum, esmc_pca, esmif_pca, png, csvp):
-    bars = [("BLOSUM50", blosum, "encoding", False)]
-    for emb, pca_val, pca_label in (("esmc", esmc_pca, "PCA 80%\n(k=2278)"),
-                                    ("esmif", esmif_pca, "PCA 60%\n(k=632)")):
+def draw_figure(pool_vals, blosum, esmc_pca, esmif_pca, png, csvp,
+                stats_csv=None):
+    bars = [("BLOSUM50", blosum, "encoding", False, "blosum50")]
+    for emb, pca_val, pca_label, pca_arm in (
+            ("esmc", esmc_pca, "PCA 80%\n(k=2278)", "esmc_pca80"),
+            ("esmif", esmif_pca, "PCA 60%\n(k=632)", "esmif_pca60")):
         feat = EMB_FEATURE[emb]
-        bars.append((pca_label, pca_val, emb, True))
+        bars.append((pca_label, pca_val, emb, True, pca_arm))
         for pool in POOL_ORDER:
-            val = pool_vals.get((mask, feat, pool))
-            bars.append((POOL_LABEL[pool], val, emb, False))
+            val = pool_vals.get(("naive", feat, pool))
+            bars.append((POOL_LABEL[pool], val, emb, False,
+                         f"{emb}_{pool}"))
 
     fig, ax = plt.subplots(figsize=(14, 5.5))
     rows = []
-    for i, (label, val, color, hatched) in enumerate(bars):
+    for i, (label, val, color, hatched, _arm) in enumerate(bars):
         if val is None:
             print(f"  WARN: missing result for bar {label!r} — skipped")
             continue
@@ -153,6 +160,30 @@ def draw_figure(mask, pool_vals, blosum, esmc_pca, esmif_pca, png, csvp):
     ax.grid(axis="y", alpha=0.3)
     ax.set_ylim(0, 1)
     ax.axhline(0.5, color="gray", lw=0.8, ls=":")
+
+    # ── significance brackets (--stats-csv from 23_pool_delong.py) ──
+    # families are per-embedding (pool ~ PCA anchor); all drawn.
+    arm_x = {arm: i for i, (_, v, _, _, arm) in enumerate(bars)
+             if v is not None}
+    if stats_csv:
+        with open(stats_csv) as fh:
+            stats_rows = list(csv.DictReader(fh, delimiter="\t"))
+        data_top = max(v[0] + v[1] for _, v, _, _, _ in bars if v is not None)
+        base, step, fam_lvl = data_top + 0.015, 0.016, {}
+        for r in stats_rows:
+            a, b = r["arm_a"], r["arm_b"]
+            if a not in arm_x or b not in arm_x:
+                print(f"  WARN: stats pair {a}~{b} has no bar — skipped")
+                continue
+            lvl = fam_lvl.get(r["family"], 0)
+            fam_lvl[r["family"]] = lvl + 1
+            y = base + lvl * step
+            xa, xb = sorted((arm_x[a], arm_x[b]))
+            ax.plot([xa, xa, xb, xb], [y - 0.004, y, y, y - 0.004],
+                    lw=0.8, color="black")
+            ax.text((xa + xb) / 2, y + 0.002, r["star"],
+                    ha="center", va="bottom", fontsize=9.5)
+
     ax.legend(handles=[
         Patch(facecolor=COLORS["encoding"], label="BLOSUM50"),
         Patch(facecolor=COLORS["esmc"], label="ESM-C-300M padtoken"),
@@ -160,7 +191,7 @@ def draw_figure(mask, pool_vals, blosum, esmc_pca, esmif_pca, png, csvp):
         Patch(facecolor="white", hatch="///",
               label="flat-PCA (no pooling)"),
     ], loc="lower right", fontsize=8, framealpha=0.9)
-    ax.set_title(f"pooled windows vs BLOSUM50 and flat-PCA ({mask})",
+    ax.set_title("pooled windows (naive) vs BLOSUM50 and flat-PCA",
                  fontsize=12)
     fig.tight_layout()
 
@@ -181,12 +212,22 @@ def main():
                     help="run folder under runs/ owning inputs+outputs")
     ap.add_argument("--models-dir", default=None,
                     help="explicit models dir; default runs/<runtag>/models/flat")
+    ap.add_argument("--stats-csv", default=None,
+                    help="pool_delong_pairs.tsv from 23_pool_delong.py — "
+                         "draw significance brackets with stars. Default: "
+                         "runs/<runtag>/results/pool_delong_pairs.tsv if it "
+                         "exists (brackets drawn automatically)")
     args = ap.parse_args()
 
     root = PROJECT_ROOT
     run_dir = root / "runs" / args.runtag
     models_dir = Path(args.models_dir) if args.models_dir else (
         run_dir / "models" / "flat")
+    stats_csv = args.stats_csv
+    if stats_csv is None:
+        default_stats = run_dir / "results" / "pool_delong_pairs.tsv"
+        stats_csv = str(default_stats) if default_stats.exists() else None
+        print(f"  stats: {stats_csv or 'none (no --stats-csv, no brackets)'}")
 
     print("Loading baselines ...")
     blosum = load_blosum(root / "runs/encodings_sweep/results/metrics.tsv") \
@@ -211,10 +252,10 @@ def main():
     results_dir = run_dir / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    for mask in ("masked", "naive"):
-        draw_figure(mask, pool_vals, blosum, esmc_pca, esmif_pca,
-                    plots_dir / f"pool_{mask}_auc.png",
-                    plots_dir / f"pool_{mask}_auc.csv")
+    draw_figure(pool_vals, blosum, esmc_pca, esmif_pca,
+                plots_dir / "pool_naive_auc.png",
+                plots_dir / "pool_naive_auc.csv",
+                stats_csv=stats_csv)
 
     agg = results_dir / "pool_auc_all.csv"
     with open(agg, "w", newline="") as fh:
@@ -232,9 +273,9 @@ def main():
     print("=" * 60)
     print("Pooled-window XGB AUC-ROC (nested CV, mean +/- std over 6 outer "
           "iterations). Pooling collapses the 29-slot window to one (or two) "
-          "D-dim vectors per sample with no PCA. Masked = reduce over real "
-          "slots only (pad_mask); naive = reduce over all 29 slots including "
-          "filler. PCA bars = flat window-PCA at the DeLong-confirmed picks "
+          "D-dim vectors per sample with no PCA (naive pooling over all 29 "
+          "slots; masked proved near-identical). PCA bars = flat window-PCA "
+          "at the DeLong-confirmed picks "
           "(ESM-C-300M 80% EV, k=2278; ESM-IF 60% EV, k=632), hatched. "
           "BLOSUM50 (0.763) = xgb one-hot baseline (encodings_sweep).")
     print("=" * 60)
