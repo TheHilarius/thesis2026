@@ -3,7 +3,7 @@
 Simplest 1D-CNN for fixed-29 window embeddings. Mirrors MODEL_REGISTRY
 style in config.py (display_name + params dict).
 
-Input convention: (N, D, L=29) float32, mask (N, L) bool where True = PAD.
+Input convention: (N, D, L=29) float32. Naive GAP over all 29 slots.
 """
 
 try:
@@ -34,14 +34,15 @@ def get_cnn_config(model_key):
 
 
 class SimpleCNN(nn.Module):
-    """One Conv1d over L=29 + ReLU + masked mean + linear.
+    """One Conv1d over L=29 + ReLU + naive mean + linear.
 
     Per peptide: 29 D-vectors in, 1 logit out. Kernel k=3 looks at
     3 neighbour slots at a time, same weights everywhere.
 
-    Masking is post-conv only: the filler (padtoken / BOS-EOS vectors)
-    stays as-is into the conv, pads are zeroed after conv and excluded
-    from the pool via renormalized mean. No pre-zeroing.
+    Naive GAP: plain mean over all 29 slots, no pad mask. The filler
+    (padtoken / BOS-EOS vectors) stays in the average. Justified
+    because only ~3.5% rows have any pads, and a masked vs naive
+    comparison showed identical performance.
     """
 
     def __init__(self, in_channels, channels=32, kernel=3):
@@ -51,20 +52,17 @@ class SimpleCNN(nn.Module):
         self.relu = nn.ReLU()
         self.fc = nn.Linear(channels, 1)
 
-    def forward(self, x, mask):
-        # x: (N, D, L); mask: (N, L) True=PAD
+    def forward(self, x):
+        # x: (N, D, L)
         h = self.relu(self.conv(x))  # (N, C, L)
-        real = (~mask).float().unsqueeze(1)  # (N, 1, L)
-        h = h * real
-        denom = real.sum(-1).clamp(min=1.0)  # (N, 1)
-        h = h.sum(-1) / denom  # masked mean over real slots only
+        h = h.mean(-1)  # naive mean over all slots
         return self.fc(h).squeeze(-1)
 
 
 class TwoLayerCNN(nn.Module):
-    """2x Conv1d k=3 + ReLU, receptive field 5, then masked mean + linear.
+    """2x Conv1d k=3 + ReLU, receptive field 5, then naive mean + linear.
 
-    Same post-conv-only masking as SimpleCNN. Layer 2 can compare a
+    Same naive GAP as SimpleCNN. Layer 2 can compare a
     peptide trigram against flanking trigrams; still translation
     equivariant, so no explicit peptide-vs-context position signal.
     """
@@ -77,13 +75,10 @@ class TwoLayerCNN(nn.Module):
         self.relu = nn.ReLU()
         self.fc = nn.Linear(channels, 1)
 
-    def forward(self, x, mask):
+    def forward(self, x):
         h = self.relu(self.conv1(x))
         h = self.relu(self.conv2(h))
-        real = (~mask).float().unsqueeze(1)
-        h = h * real
-        denom = real.sum(-1).clamp(min=1.0)
-        h = h.sum(-1) / denom
+        h = h.mean(-1)
         return self.fc(h).squeeze(-1)
 
 

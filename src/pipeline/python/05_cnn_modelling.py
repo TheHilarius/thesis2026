@@ -11,7 +11,9 @@ val-AUC histories are logged for every inner model + one combined PNG.
 
 Usage:
     python 05_cnn_modelling.py --model cnn_simple --features emb_esmc300m_win_padtoken
-    python 05_cnn_modelling.py --model cnn_simple --features emb_esmif_eos_bos_repeat --mask-mode nomask
+    python 05_cnn_modelling.py --model cnn_simple --features emb_esmif_eos_bos_repeat
+
+Pooling is naive GAP over all 29 slots (no pad mask).
 
 Outputs (mirrors 04):
     <out-root>/logs/cnn/05_cnn_modelling_<run_tag>_log_<ts>.txt
@@ -114,8 +116,8 @@ def resolve_window_ds(h5, preferred):
 class WindowDataset(Dataset):
     """On-demand H5 reads: rows streamed per batch, never full (N,29,D) in RAM."""
 
-    def __init__(self, h5_path, ds_name, mask_name, idx, labels):
-        self.h5_path, self.ds_name, self.mask_name = h5_path, ds_name, mask_name
+    def __init__(self, h5_path, ds_name, idx, labels):
+        self.h5_path, self.ds_name = h5_path, ds_name
         self.idx, self.labels = np.asarray(idx), np.asarray(labels, dtype=np.float32)
         self._h5 = None
 
@@ -127,11 +129,7 @@ class WindowDataset(Dataset):
             self._h5 = h5py.File(self.h5_path, "r")
         r = int(self.idx[i])
         x = self._h5[self.ds_name][r].astype(np.float32).T  # (29,D)->(D,29)
-        if self.mask_name in self._h5:
-            m = self._h5[self.mask_name][r].astype(bool)
-        else:
-            m = np.zeros(x.shape[1], dtype=bool)
-        return torch.from_numpy(x), torch.from_numpy(m), torch.tensor(self.labels[i])
+        return torch.from_numpy(x), torch.tensor(self.labels[i])
 
 
 def train_one_inner(model, train_loader, val_loader, device, lr, epochs, patience, seed):
@@ -146,10 +144,10 @@ def train_one_inner(model, train_loader, val_loader, device, lr, epochs, patienc
     for _ in range(epochs):
         model.train()
         tot, n = 0.0, 0
-        for xb, mb, yb in train_loader:
-            xb, mb, yb = xb.to(device), mb.to(device), yb.to(device)
+        for xb, yb in train_loader:
+            xb, yb = xb.to(device), yb.to(device)
             opt.zero_grad()
-            loss = loss_fn(model(xb, mb), yb)
+            loss = loss_fn(model(xb), yb)
             loss.backward()
             opt.step()
             tot += loss.item() * len(xb)
@@ -158,8 +156,8 @@ def train_one_inner(model, train_loader, val_loader, device, lr, epochs, patienc
         model.eval()
         ps, ys = [], []
         with torch.no_grad():
-            for xb, mb, yb in val_loader:
-                ps += torch.sigmoid(model(xb.to(device), mb.to(device))).cpu().tolist()
+            for xb, yb in val_loader:
+                ps += torch.sigmoid(model(xb.to(device))).cpu().tolist()
                 ys += yb.tolist()
         auc = roc_auc_score(ys, ps)
         hist["val_auc"].append(auc)
@@ -178,8 +176,8 @@ def train_one_inner(model, train_loader, val_loader, device, lr, epochs, patienc
 def predict_probs(model, loader, device):
     model.eval()
     ps, ys = [], []
-    for xb, mb, yb in loader:
-        ps += torch.sigmoid(model(xb.to(device), mb.to(device))).cpu().tolist()
+    for xb, yb in loader:
+        ps += torch.sigmoid(model(xb.to(device))).cpu().tolist()
         ys += yb.tolist()
     return np.asarray(ys), np.asarray(ps)
 
@@ -224,7 +222,7 @@ if __name__ == "__main__":
     comp = get_feature_component(emb_keys[0])
     src = get_embedding_source(comp["embedding_key"])
     h5_path = str(src["prepared_path"])
-    prefer_ds, mask_name = src["window_ds"], src["pad_mask_ds"]
+    prefer_ds = src["window_ds"]
 
     if not Path(h5_path).exists():
         print(f"FATAL: prepared H5 missing: {h5_path}")
@@ -237,10 +235,6 @@ if __name__ == "__main__":
         labels, folds = f["labels"][:], f["folds"][:]
         emb_dim = int(f.attrs.get("emb_dim", 0)) or int(f[ds_name].shape[2])
         window = int(f.attrs.get("window", 29))
-        pad_mask_all = f[mask_name][:] if mask_name in f else None
-    n_pad_rows = int((pad_mask_all.any(axis=1)).sum()) if pad_mask_all is not None else 0
-    mean_pads = float(pad_mask_all.sum(axis=1).mean()) if pad_mask_all is not None else 0.0
-    del pad_mask_all
 
     run_tag = f"{args.model}_{args.features}_cnn"
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -260,10 +254,8 @@ if __name__ == "__main__":
     print(f"  05_CNN_MODELLING -- {cnn_cfg['display_name'].upper()} + {args.features.upper()}")
     print("=" * 80)
     print(f"  Timestamp:       {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"  H5: {h5_path}\n  ds={ds_name} mask={mask_name} (post-conv GAP, always on)")
+    print(f"  H5: {h5_path}\n  ds={ds_name} (naive GAP over all 29, no mask)")
     print(f"  N={len(labels)} D={emb_dim} window={window} folds={sorted(map(int, np.unique(folds)))}")
-    print(f"  padded rows: {n_pad_rows}/{len(labels)} ({n_pad_rows / len(labels) * 100:.1f}%), "
-          f"mean pads/row: {mean_pads:.2f}")
     device = "cuda" if torch.cuda.is_available() else "cpu"
     if device == "cuda":
         torch.cuda.reset_peak_memory_stats()
@@ -289,9 +281,9 @@ if __name__ == "__main__":
             t1 = time.time()
             tr_idx = np.where((folds != outer) & (folds != inner))[0]
             va_idx = np.where(folds == inner)[0]
-            tl = DataLoader(WindowDataset(h5_path, ds_name, mask_name, tr_idx, labels[tr_idx]),
+            tl = DataLoader(WindowDataset(h5_path, ds_name, tr_idx, labels[tr_idx]),
                             batch_size=args.batch_size, shuffle=True)
-            vl = DataLoader(WindowDataset(h5_path, ds_name, mask_name, va_idx, labels[va_idx]),
+            vl = DataLoader(WindowDataset(h5_path, ds_name, va_idx, labels[va_idx]),
                             batch_size=args.batch_size)
             net = build_cnn(args.model, emb_dim, window)
             if n_params is None:
@@ -306,7 +298,7 @@ if __name__ == "__main__":
                 best_auc_o, best_i_o = bauc, inner
             # predict outer bucket now (model in memory, then save + free)
             ou_idx = np.where(folds == outer)[0]
-            ol = DataLoader(WindowDataset(h5_path, ds_name, mask_name, ou_idx, labels[ou_idx]),
+            ol = DataLoader(WindowDataset(h5_path, ds_name, ou_idx, labels[ou_idx]),
                             batch_size=args.batch_size)
             _, op = predict_probs(net, ol, device)
             inner_probs.append(op)
@@ -370,12 +362,10 @@ if __name__ == "__main__":
            "components": feat_cfg["components"],
            "config": {"n_outer_folds": N_CV_FOLDS + 1, "n_inner_folds": N_CV_FOLDS,
                       "total_models": (N_CV_FOLDS + 1) * N_CV_FOLDS,
-                      "mask": "post-conv GAP (always on)", "epochs": args.epochs,
+                      "mask": "naive GAP (no mask)", "epochs": args.epochs,
                       "batch_size": args.batch_size, "lr": args.lr, "patience": args.patience,
                       "hyperparameters": cnn_cfg["params"], "n_params": n_params,
                       "emb_dim": emb_dim, "window": window, "device": device,
-                      "n_padded_rows": n_pad_rows,
-                      "mean_pads_per_row": round(mean_pads, 3),
                       "random_state": args.seed},
            "cv_summary": summary, "outer_val_metrics": outer_val_metrics,
            "outer_val_predictions": outer_val_predictions,
