@@ -1,0 +1,17 @@
+arm_a	arm_b	auc_a	auc_b	delta	se	z	p_delong	p_holm	family	star	note
+esmc_vf21	esmc_global21	0.659268	0.659268	0.000000	0.000000	0.0000	1.000e+00	1.000e+00	esmc	ns	
+esmc_vf21	esmc_pca60	0.659268	0.673487	-0.014219	0.002041	-6.9677	3.222e-12	1.611e-11	esmc	***	
+esmc_vf21	esmc_pca90	0.659268	0.688517	-0.029249	0.002173	-13.4600	2.688e-41	2.151e-40	esmc	***	
+esmc_vf21	esmc_dimselect	0.659268	0.678378	-0.019110	0.001768	-10.8107	3.064e-27	2.145e-26	esmc	***	
+esmc_vf50	esmc_global21	0.676354	0.659268	0.017085	0.001600	10.6769	1.306e-26	7.834e-26	esmc	***	
+esmc_vf50	esmc_pca60	0.676354	0.673487	0.002867	0.001897	1.5110	1.308e-01	3.924e-01	esmc	ns	
+esmc_vf50	esmc_pca90	0.676354	0.688517	-0.012164	0.001979	-6.1476	7.864e-10	3.146e-09	esmc	***	
+esmc_vf50	esmc_dimselect	0.676354	0.678378	-0.002025	0.001689	-1.1987	2.307e-01	4.613e-01	esmc	ns	
+esmif_vf21	esmif_global21	0.626542	0.626542	0.000000	0.000000	0.0000	1.000e+00	1.000e+00	esmif	ns	
+esmif_vf21	esmif_pca60	0.626542	0.644835	-0.018293	0.002283	-8.0141	1.110e-15	7.768e-15	esmif	***	eos_bos_repeat embedding (not eosrepeat)
+esmif_vf21	esmif_pca90	0.626542	0.632841	-0.006299	0.002460	-2.5607	1.045e-02	3.134e-02	esmif	*	eos_bos_repeat embedding (not eosrepeat)
+esmif_vf21	esmif_dimselect	0.626542	0.643910	-0.017368	0.002031	-8.5536	1.193e-17	9.547e-17	esmif	***	eos_bos_repeat embedding (not eosrepeat)
+esmif_vf50	esmif_global21	0.633766	0.626542	0.007224	0.001773	4.0738	4.625e-05	1.850e-04	esmif	***	
+esmif_vf50	esmif_pca60	0.633766	0.644835	-0.011069	0.002069	-5.3509	8.752e-08	4.376e-07	esmif	***	eos_bos_repeat embedding (not eosrepeat)
+esmif_vf50	esmif_pca90	0.633766	0.632841	0.000925	0.002260	0.4094	6.822e-01	1.000e+00	esmif	ns	eos_bos_repeat embedding (not eosrepeat)
+esmif_vf50	esmif_dimselect	0.633766	0.643910	-0.010144	0.001794	-5.6541	1.567e-08	9.402e-08	esmif	***	eos_bos_repeat embedding (not eosrepeat)
