@@ -49,6 +49,8 @@ RUNS = {
     "es_auc": PROJECT_ROOT / "runs" / "xgb_early_stop_auc" / "models" / "flat",
     "es_ll": PROJECT_ROOT / "runs" / "xgb_early_stop_logloss" / "models" / "flat",
     "fixed_low": PROJECT_ROOT / "runs" / "xgb_fixed_lowlr" / "models" / "flat",
+    "fixed_grid": PROJECT_ROOT / "runs" / "xgb_fixed_grid" / "models" / "flat",
+    "n_budget": PROJECT_ROOT / "runs" / "xgb_n_estimators_sweep" / "models" / "flat",
 }
 OUT_TSV = (PROJECT_ROOT / "runs" / "xgb_early_stop_auc" / "results" /
            "delong_vs_baseline.tsv")
@@ -146,10 +148,13 @@ def load_arm(path, fold_vec, y, group):
     probs = reconstruct(res, fold_vec, y, tag)
     m_lr = re.search(r"xgblr([\dp]+)n", tag)
     lr = float(m_lr.group(1).replace("p", ".")) if m_lr else None
+    m_n = re.search(r"n(\d+)", tag)
+    nest = int(m_n.group(1)) if m_n else None
     return {
         "key": tag,
         "group": group,
         "lr": lr,
+        "nest": nest,
         "probs": probs,
         "auc": float(roc_auc_score(y, probs)),
     }
@@ -177,7 +182,9 @@ def main():
         auc_a, auc_b, delta, se, z, p = delong_full(
             y, a["probs"], base["probs"])
         rows.append({
-            "arm": f"{a['group']}_lr{a['lr']}",
+            "arm": (f"{a['group']}_lr{a['lr']}_n{a['nest']}"
+                    if a["group"] == "n_budget"
+                    else f"{a['group']}_lr{a['lr']}"),
             "group": a["group"],
             "lr": a["lr"],
             "auc_baseline": auc_b,

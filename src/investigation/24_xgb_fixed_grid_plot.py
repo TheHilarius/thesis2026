@@ -74,7 +74,7 @@ def load_stars():
     return {str(r["arm"]): str(r["sig"]) for _, r in df.iterrows()}
 
 
-def bar_figure(rows, stars, star_prefix, fname, xlabel):
+def bar_figure(rows, stars, star_prefix, fname, xlabel, star_by_n=False):
     """Padmode-style bars: 0-1 y-axis, dashed baseline, value+star labels."""
     n = len(rows)
     x = np.arange(n)
@@ -90,7 +90,9 @@ def bar_figure(rows, stars, star_prefix, fname, xlabel):
     for xi, v, e, r in zip(x, vals, errs, rows):
         lab = f"{v:.4f}"
         if not r.get("is_base"):
-            star = stars.get(f"{star_prefix}{r['lr'] if 'lr' in star_prefix else r['n']}", "")
+            key = (f"{star_prefix}_n{r['n']}" if star_by_n
+                   else f"{star_prefix}{r['lr']}")
+            star = stars.get(key, "")
             if star:
                 lab += f"\n{star}"
         ax.text(xi, v + e + 0.015, lab, ha="center", va="bottom",
@@ -162,7 +164,7 @@ def nbud_figure(stars):
         r["label"] = f"0.1\n/{r['n']}"
     rows.insert(0, base)
     bar_figure(rows, stars, "n_budget_lr0.1", "fixed_grid_n_bars.png",
-               "n_estimators, learning rate = 0.1")
+               "n_estimators, learning rate = 0.1", star_by_n=True)
 
 
 def main():

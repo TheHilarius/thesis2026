@@ -15,16 +15,21 @@ Per campaign emits (into <campaign>/plots/), --refs both (default):
                                         from the best-AUC reference k),
                                         BLOSUM50 + Sparse baseline lines
     pca_sweep_auc_full_nobaselines.png  same without the baseline lines
+    pca_sweep_auc_full_nobaselines_withfull.png
+                                        same, plus the raw full-dim
+                                        (flat_raw) arm as a darker hatched
+                                        bar with a vs-best bracket;
+                                        display-only (CSVs/verdicts
+                                        unchanged)
     pca_sweep_auc_line.png              clean log-x line + markers,
                                         baselines, no p-values
     pca_sweep_auc_line_nobaselines.png  same without baselines
-    pca_sweep_runtime.png               core-hours per k (log-y),
-                                        fold-seconds paired t-test vs the
-                                        best-AUC reference k; peak memory
-                                        was NOT recorded (JobAcctGather=none)
+    pca_sweep_runtime.png               core-hours per k (log-y; wall
+                                        hours in the bar labels; raw
+                                        full-dim arm included), fold-
+                                        seconds paired t-test vs the
+                                        best-AUC reference k
     pca_sweep_results.csv               per-k metrics + runtime
-                                        (maxrss=NA except live-measured
-                                        points)
     pca_sweep_delong.csv                every pairwise DeLong test in the
                                         campaign (all_pairs, vs_anchor,
                                         vs_best), Holm-adjusted per family;
@@ -107,6 +112,13 @@ CAMPAIGNS = {
         "cores": {47: 8, 176: 8, 345: 8, 632: 8, 850: 8, 1143: 8,
                   1548: 12, 2125: 12, 2974: 12, 6700: 12,
                   11243: 12, 4308: 12},
+        # full-dim (flat_raw, no PCA) arm — drawn only in the _withfull
+        # figure variant; NOT part of the ladder CSVs/verdicts
+        "full": {"k": 14848, "label": "Raw ESM-IF",
+                 "json": (PROJECT_ROOT / "runs" / "esmif_eos_sweep" /
+                          "models" / "flat_raw" /
+                          "cv_results_xgb_emb_esmif_eos_bos_repeat_flat_raw_20261023_194336.json"),
+                 "wall_h": 27.39, "cores": 12},
     },
     "esmc300m_pca_sweep": {
         "models": PROJECT_ROOT / "runs" / "esmc300m_pca_sweep" / "models" / "flat",
@@ -128,6 +140,11 @@ CAMPAIGNS = {
         "cores": {7: 8, 29: 8, 96: 8, 291: 8, 507: 8, 856: 8,
                   1403: 12, 2278: 12, 3663: 12, 5883: 12,
                   9854: 12, 17909: 12},
+        "full": {"k": 27840, "label": "Raw ESM-C",
+                 "json": (PROJECT_ROOT / "runs" / "esmc300m_pca_sweep" /
+                          "models" / "flat_raw" /
+                          "cv_results_xgb_emb_esmc300m_win_padtoken_flat_raw_20261023_194337.json"),
+                 "wall_h": 29.83, "cores": 12},
     },
 }
 
@@ -326,6 +343,8 @@ def _check_label_overlaps(fig, tag=""):
 
 
 def _tick_label(cfg, k, pending):
+    if cfg.get("full", {}).get("k") == k:
+        return f"{k} ({cfg['full']['label']})"
     tag = " pending" if k in pending else ""
     return f"{k} ({cfg['ev'][k]}%{tag})"
 
@@ -341,15 +360,22 @@ def _finish(fig, ax, title, out_png):
     print(f"  Saved: {out_png}")
 
 
+def _shade(hex_color, f=0.65):
+    """Darken hex_color toward black by factor f (full-dim arm styling)."""
+    r, g, b = (int(hex_color[i:i + 2], 16) for i in (1, 3, 5))
+    return f"#{int(r * f):02X}{int(g * f):02X}{int(b * f):02X}"
+
+
 def plot_auc(cfg, models, refs, pairs_vs_ref, out_png, ref_k,
-             alpha=0.05, min_delta=0.0):
+             alpha=0.05, min_delta=0.0, special_k=None):
     """Pooled AUC ± outer-fold std bars, brackets to the reference ONLY for
     k's significantly different from it (pairs_vs_ref = vs_best family).
-    cfg['pending'] k's (results not in yet) get an empty ghost slot."""
+    cfg['pending'] k's (results not in yet) get an empty ghost slot.
+    special_k (full-dim arm) gets a darker hatched bar so it reads as a
+    different feature regime, not another ladder point."""
     ks = sorted(models)
     pending = sorted(cfg.get("pending", []))
     ref_i = ks.index(ref_k)
-    pos = np.arange(len(ks))
     pooled = np.array([models[k]["auc"] for k in ks])
     ostd = np.array([np.std(models[k]["outer"], ddof=1) for k in ks])
 
@@ -369,8 +395,15 @@ def plot_auc(cfg, models, refs, pairs_vs_ref, out_png, ref_k,
 
     fig, ax = plt.subplots(figsize=(8, 5))
 
-    ax.bar(pos, pooled, yerr=ostd, color=cfg["color"], alpha=0.85,
-           capsize=3, edgecolor="white", lw=0.5, zorder=3)
+    for i, k in enumerate(ks):
+        if k == special_k:
+            ax.bar(i, pooled[i], yerr=ostd[i], color=_shade(cfg["color"]),
+                   alpha=0.95, capsize=3, edgecolor="black", lw=0.8,
+                   hatch="//", zorder=3)
+        else:
+            ax.bar(i, pooled[i], yerr=ostd[i], color=cfg["color"],
+                   alpha=0.85, capsize=3, edgecolor="white", lw=0.5,
+                   zorder=3)
     for i in range(len(ks)):
         ax.text(i, pooled[i] + ostd[i] + 0.015, f"{pooled[i]:.4f}",
                 ha="center", va="bottom", fontsize=8, zorder=5,
@@ -455,29 +488,38 @@ def plot_line(cfg, models, refs, out_png, ref_k, rot=35):
     _finish(fig, ax, f"PCA dimension sweep: {cfg['title']}", out_png)
 
 
-def plot_runtime(cfg, models, t_rows, out_png, ref_k):
-    """Core-hours per k (log-y); fold-seconds t-test annotation and hatched
-    bar reference the same k the AUC figure uses (best-AUC k)."""
+def plot_runtime(cfg, models, t_rows, out_png, ref_k, special_k=None):
+    """Core-hours per k (log-y); the per-bar label also shows wall hours.
+    Fold-seconds t-test annotation and hatched bar reference the same k the
+    AUC figure uses (best-AUC k). special_k (raw full-dim arm) gets a
+    darker hatched bar."""
     ks = sorted(models)
     pending = sorted(cfg.get("pending", []))
     core_h = [cfg["wall_h"][k] * cfg["cores"][k] for k in ks]
+    wall_h = [cfg["wall_h"][k] for k in ks]
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(11, 5))
     bars = ax.bar([str(k) for k in ks], core_h, color=cfg["color"],
                   alpha=0.85)
     for k, bar in zip(ks, bars):
         if k == ref_k:
             bar.set_hatch("//")
             bar.set_edgecolor("0.2")
+        if k == special_k:
+            bar.set_color(_shade(cfg["color"]))
+            bar.set_alpha(0.95)
+            bar.set_hatch("//")
+            bar.set_edgecolor("black")
     ax.set_yscale("log")
+    ax.set_ylim(top=max(core_h) * 4)   # headroom for the 3-line labels
     ax.set_ylabel("Core-hours (nested CV, full data)")
     ax.set_xlabel("Number of PCs")
     for i, k in enumerate(ks):
         tr = next((t for t in t_rows if t["k"] == k), None)
-        txt = f"{core_h[i]:.1f}h"
+        txt = f"{core_h[i]:.1f} core-h\n{wall_h[i]:.1f} h wall"
         if tr is not None and k != ref_k:
             txt += f"\np={tr['p']:.2g}"
-        ax.text(i, core_h[i], txt, ha="center", va="bottom", fontsize=7)
+        ax.text(i, core_h[i], txt, ha="center", va="bottom", fontsize=6.5)
     tick_ks = ks + pending
     ax.set_xticks(range(len(tick_ks)))
     ax.set_xticklabels([_tick_label(cfg, k, set(pending)) for k in tick_ks],
@@ -621,7 +663,6 @@ def main():
                 fold_seconds_mean=float(np.mean(m["fold_seconds"])),
                 wall_h=cfg["wall_h"][k], cores=cfg["cores"][k],
                 core_h=round(cfg["wall_h"][k] * cfg["cores"][k], 2),
-                maxrss="NA",
                 optimal=(k == verdict_k), best=(k == best_k)))
         if anchor not in ladder:
             m = found[anchor]
@@ -633,7 +674,7 @@ def main():
                 fold_seconds_mean=float(np.mean(m["fold_seconds"])),
                 wall_h=cfg["wall_h"][anchor], cores=cfg["cores"][anchor],
                 core_h=round(cfg["wall_h"][anchor] * cfg["cores"][anchor], 2),
-                maxrss="NA", optimal=False, best=False))
+                optimal=False, best=False))
 
         # figures: bars (with brackets vs best-AUC k) + clean line,
         # with and without baseline reference lines (--refs)
@@ -650,8 +691,49 @@ def main():
             plot_line(cfg, found, rmap,
                       cfg["out"] / f"pca_sweep_auc_line{suffix}.png",
                       ref_k=best_k)
-        plot_runtime(cfg, {k: found[k] for k in ladder}, t_rows,
-                     cfg["out"] / "pca_sweep_runtime.png", ref_k=best_k)
+
+        # full-dim (flat_raw, 100% EV) arm — display-only variant figure;
+        # CSVs, verdicts and the other figures keep the ladder unchanged.
+        # Brackets: vs_best Holm recomputed over ladder+full (m=13) on
+        # COPIES of the pair dicts so the CSV family keeps its m=12 values.
+        full_cfg = cfg.get("full")
+        rt_models = {k: found[k] for k in ladder}
+        special_k = None
+        if full_cfg and Path(full_cfg["json"]).exists():
+            fk = full_cfg["k"]
+            fm = load_model(full_cfg["json"], fold_vec, y,
+                            Path(full_cfg["json"]).name)
+            fm["auc"] = roc_auc_score(y, fm["probs"])
+            found_full = dict(found)
+            found_full[fk] = fm
+            ya, yb, d, z, p = delong_p(y, fm["probs"],
+                                        found[best_k]["probs"])
+            fam_best_full = holm_family(
+                [dict(pr) for pr in fam_best] +
+                [dict(family="vs_best", k1=fk, k2=best_k, auc1=ya, auc2=yb,
+                      delta=d, z=z, p=p)])
+            print(f"  raw arm ({full_cfg['label']}) k={fk}: "
+                  f"AUC {fm['auc']:.4f} "
+                  f"(vs best ladder k={best_k} {found[best_k]['auc']:.4f}: "
+                  f"delta={d:+.4f}, p_adj={fam_best_full[-1]['p_adj']:.3g})")
+            plot_auc(cfg, found_full, {}, fam_best_full,
+                     cfg["out"] /
+                     "pca_sweep_auc_full_nobaselines_withfull.png",
+                     ref_k=best_k, special_k=fk)
+            # raw arm joins the runtime figure + its own fold-seconds test
+            cfg["wall_h"][fk] = full_cfg["wall_h"]
+            cfg["cores"][fk] = full_cfg["cores"]
+            rt_models[fk] = fm
+            special_k = fk
+            ma, mb, t_stat, p_t = fold_t_nb(fm["fold_seconds"],
+                                            found[best_k]["fold_seconds"])
+            t_rows.append(dict(k=fk, mean_k=ma, mean_ref=mb, t=t_stat, p=p_t))
+        else:
+            print("  (withfull variant skipped — no flat_raw JSON found)")
+
+        plot_runtime(cfg, rt_models, t_rows,
+                     cfg["out"] / "pca_sweep_runtime.png", ref_k=best_k,
+                     special_k=special_k)
         # figures from retired code paths — remove on every run
         for stale_name in ("pca_sweep_auc_subset.png",
                            "pca_sweep_auc_roi.png",
