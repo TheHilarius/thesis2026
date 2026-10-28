@@ -155,3 +155,7 @@ runs/esmc6b_variance/
 runs/mpnn_ckpt_zeropad/
 runs/simple21_pilot/
 runs/esmc300m_pca_sweep/
+
+# Run artifacts: models/ hold multi-GB OOF dumps; plots/ + results/ stay tracked
+runs/*/models/
+runs/*/logs/

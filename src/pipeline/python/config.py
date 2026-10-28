@@ -39,6 +39,15 @@ COMPOSITIONAL_DATA_PATH = DATA_DIR / "df_compositional.csv"
 EMBEDDING_DIR = PROJECT_ROOT / "data" / "processed" / "embeddings"
 PREPARED_EMBEDDING_DIR = DATA_DIR / "embeddings_prepared"
 
+# Default homemade (top-variance) reduction rung per embedding feature
+# key — used by --vardims (04_modelling / 04b_run_matrix) when no explicit
+# EV is given. Dim lists: results/tables/dim_variance_<key>_ev<N>.json.
+# Chosen rungs are DeLong-tied with the unreduced raw embedding ceiling.
+DEFAULT_VAR_EV = {
+    "esmc300m_win_padtoken": 80,   # 643 dims, 18,647 feats (raw 0.7040, ns)
+    "esmif_eosrepeat": 65,         # 260 dims, 7,540 feats  (raw 0.6498, ns)
+}
+
 EMBEDDING_SOURCES = {
     "esmc": {
         "display_name": "ESM-C (600M) context window",

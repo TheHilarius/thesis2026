@@ -37,11 +37,12 @@ import pickle
 from pathlib import Path
 
 from config import (
-    SPLIT_DATA_PATH, LOG_DIR, MODEL_DIR,
+    SPLIT_DATA_PATH, LOG_DIR, MODEL_DIR, PROJECT_ROOT,
     N_CV_FOLDS, HELD_OUT_INDEX,
     PEPTIDE_COL, LABEL_COL, FOLD_COL,
-    POSITION_AA_COLS, EMBEDDING_REGIONS,
+    POSITION_AA_COLS, EMBEDDING_REGIONS, EMBEDDING_SOURCES,
     RANDOM_STATE, DEFAULT_MODEL, DEFAULT_FEATURE_SET,
+    DEFAULT_VAR_EV,
     get_feature_cols, get_model_config,
     get_feature_set_config, get_feature_component,
     get_embedding_source, validate_config, validate_feature_set,
@@ -405,7 +406,7 @@ def load_all_components(df_split, feat_cfg, pca_mode="flat",
             elif pca_mode == "flat_raw":
                 pca_total = window * emb_dim          # no PCA — all raw dims
                 raw_dim_desc = f"{window}x{emb_dim} (flat_raw {window * emb_dim})"
-            elif pca_mode == "simple21":
+            elif pca_mode in ("simple21", "vardims"):
                 pca_total = window * SIMPLE21_DIMS  # placeholder; --dims fixes it
                 raw_dim_desc = f"{window}x{SIMPLE21_DIMS} (simple21 dim21)"
             elif pca_mode == "dimselect":
@@ -893,11 +894,11 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
 
             if pca_mode == "flat_raw":
                 total_components = int(window * D)   # no PCA — all raw dims
-            elif pca_mode == "simple21":
+            elif pca_mode in ("simple21", "vardims"):
                 dims = emb_data.get("dims")
                 if dims is None:
                     raise ValueError(
-                        "simple21 requires --dims (global top-N dim list)")
+                        f"{pca_mode} requires --dims (global top-N dim list)")
                 total_components = int(window * len(dims))
             elif pca_mode == "dimselect":
                 # placeholder; set after screening inside the branch below
@@ -928,12 +929,12 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
                 X_emb_train = concat_window_slots(emb_data, train_indices)
                 X_emb_test = concat_window_slots(emb_data, test_indices)
                 ipca = None  # raw features — nothing to transform at predict time
-            elif pca_mode == "simple21":
+            elif pca_mode in ("simple21", "vardims"):
                 dims = emb_data.get("dims")
                 if dims is None:
                     raise ValueError(
-                        "simple21 requires --dims (global top-N dim list)")
-                print(f"    {comp_key}: simple21 dim gather (no PCA) "
+                        f"{pca_mode} requires --dims (global top-N dim list)")
+                print(f"    {comp_key}: {pca_mode} dim gather (no PCA) "
                       f"({window}x{len(dims)} dims → {total_components} features)")
                 X_emb_train = concat_window_slots(
                     emb_data, train_indices, dims=dims)
@@ -1049,8 +1050,8 @@ def prepare_fold(df, csv_feature_cols, emb_data_dict, model_cfg, fold_id,
                 feature_names.extend(
                     window_feature_names_flat(comp_key, total_components)
                 )
-            elif pca_mode == "simple21":
-                print(f"    {comp_key}: simple21 features "
+            elif pca_mode in ("simple21", "vardims"):
+                print(f"    {comp_key}: {pca_mode} features "
                       f"{window}x{total_components // window} → {total_components} (no PCA, 100% by definition)")
                 feature_names.extend(
                     window_feature_names_flat(comp_key, total_components)
@@ -1462,6 +1463,18 @@ def parse_args():
              "path to 10_dim_variance top-N JSON. Keeps all 29 slots.",
     )
     parser.add_argument(
+        "--vardims", type=str, nargs="?", const="default", default=None,
+        dest="vardims",
+        help="Homemade top-variance dim selection (NOT a PCA mode): keeps "
+             "the X raw dims with the highest cumulative across-position "
+             "variance at all 29 slots (features = 29 x X, no rotation). "
+             "Value: 'default' = per-embedding EV rung from "
+             "config.DEFAULT_VAR_EV (esmc300m_win_padtoken=80, "
+             "esmif_eosrepeat=65), an EV rung integer ('90'), or a path to "
+             "a 10_dim_variance *_ev*.json. Replaces --pca / --pca-mode / "
+             "--dims / --top-n (mutually exclusive).",
+    )
+    parser.add_argument(
         "--pca-mode", type=str, default="flat",
         choices=["flat", "flat_raw", "simple21", "dimselect", "varfold",
                  "autoencoder"],
@@ -1572,6 +1585,8 @@ if __name__ == "__main__":
         if args.dims is not None or args.top_n is not None:
             raise ValueError("--pool is incompatible with "
                              "--dims / --top-n")
+        if args.vardims is not None:
+            raise ValueError("--pool is incompatible with --vardims")
         print(f"  [CLI OVERRIDE] pool: {pool} ({pool_mask})")
     elif args.pool_mask != "masked":
         raise ValueError("--pool-mask requires --pool")
@@ -1580,6 +1595,60 @@ if __name__ == "__main__":
     model_cfg = get_model_config(model_key)
     feat_cfg = get_feature_set_config(features_key)
     validate_feature_set(feat_cfg)
+
+    # ── Homemade top-variance selection (--vardims; NOT a PCA mode) ──
+    # Resolves the frozen per-dim variance ranking (10_dim_variance.py)
+    # and routes the feature build through the proven raw-dim gather path.
+    vardims_ev = None
+    if args.vardims is not None:
+        if args.pca is not None:
+            raise ValueError("--vardims replaces PCA — "
+                             "do not combine with --pca")
+        if pca_mode != "flat":
+            raise ValueError("--vardims replaces PCA — "
+                             f"do not combine with --pca-mode {pca_mode}")
+        if args.dims is not None or args.top_n is not None:
+            raise ValueError("--vardims is exclusive with --dims / --top-n")
+        emb_comps = [c for c in feat_cfg["components"]
+                     if c in EMBEDDING_SOURCES]
+        if len(emb_comps) != 1:
+            raise ValueError(
+                "--vardims needs exactly one embedding component, got "
+                f"{feat_cfg['components']}")
+        key = emb_comps[0]
+        tables_dir = PROJECT_ROOT / "results" / "tables"
+        if args.vardims == "default":
+            if key not in DEFAULT_VAR_EV:
+                raise ValueError(
+                    f"--vardims has no default EV for {key}; pass an "
+                    f"explicit rung, e.g. --vardims 80")
+            ev = int(DEFAULT_VAR_EV[key])
+            ev_json = tables_dir / f"dim_variance_{key}_ev{ev}.json"
+        elif args.vardims.endswith(".json"):
+            ev_json = Path(args.vardims)
+            ev = None
+        else:
+            try:
+                ev = int(args.vardims)
+            except ValueError:
+                raise ValueError(
+                    "--vardims expects 'default', an EV rung integer "
+                    f"('80'), or a JSON path — got {args.vardims!r}")
+            ev_json = tables_dir / f"dim_variance_{key}_ev{ev}.json"
+        if not ev_json.exists():
+            raise ValueError(
+                f"[VARDIMS] missing {ev_json} — generate it first:\n"
+                f"  python src/investigation/10_dim_variance.py "
+                f"--keys {key} --ev {ev if ev is not None else '30,...'}")
+        vardims_data = json.loads(ev_json.read_text())
+        args.dims = sorted(int(d) for d in vardims_data["dims"])
+        vardims_ev = (vardims_data.get("ev_pct") or ev or "custom")
+        pca_mode = "vardims"
+        args.pca_mode = "vardims"
+        print(f"  [VARDIMS] {key} ev{vardims_ev} -> {len(args.dims)} dims "
+              f"({29 * len(args.dims)} feats, realised "
+              f"{vardims_data.get('realised_share', float('nan'))}) "
+              f"from {ev_json.name}")
 
     # ── PCA override ──
     pca_override = args.pca
@@ -1619,7 +1688,10 @@ if __name__ == "__main__":
         if pool_mask != "masked":
             run_tag += f"_{pool_mask}"
     if args.dims is not None:
-        run_tag += f"_var{len(args.dims)}"
+        if pca_mode == "vardims":
+            run_tag += f"_ev{vardims_ev}_var{len(args.dims)}"
+        else:
+            run_tag += f"_var{len(args.dims)}"
     if pca_mode == "dimselect":
         run_tag += f"_top{args.top_n}_{args.screen_model}"
     if pca_mode == "varfold":
@@ -1721,12 +1793,13 @@ if __name__ == "__main__":
         df_split, feat_cfg, pca_mode, pool=pool, pool_mask=pool_mask,
     )
 
-    # ── Dims override (29x21: global top-N dim gather, simple21 only) ──
-    if pca_mode == "simple21" and args.dims is None:
-        raise ValueError("--pca-mode simple21 requires --dims")
+    # ── Dims override (global top-N dim gather; simple21/vardims) ──
+    if pca_mode in ("simple21", "vardims") and args.dims is None:
+        raise ValueError(f"--pca-mode {pca_mode} requires --dims")
     if args.dims is not None:
-        if pca_mode != "simple21":
-            raise ValueError("--dims requires --pca-mode simple21")
+        if pca_mode not in ("simple21", "vardims"):
+            raise ValueError("--dims requires --pca-mode simple21 "
+                             "(or use --vardims)")
         print(f"  [CLI OVERRIDE] dims: {args.dims}")
         for comp_key, emb_data in emb_data_dict.items():
             if emb_data.get("kind") != "windows":
@@ -1742,7 +1815,8 @@ if __name__ == "__main__":
                 info["pca_total"] = info["window"] * len(args.dims)
                 info["raw_dim_desc"] = (
                     f"{info['window']}x{len(args.dims)} "
-                    f"(simple21 dim21 {info['window'] * len(args.dims)})")
+                    f"({pca_mode} gather, "
+                    f"{info['window'] * len(args.dims)} features)")
 
     # ── Dimselect wiring (per-dim supervised screening, fold-nested) ──
     if pca_mode == "dimselect":

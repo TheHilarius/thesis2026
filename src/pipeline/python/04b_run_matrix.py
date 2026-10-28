@@ -72,7 +72,7 @@ DEFAULT_COMBOS = [
 
 def run_combo(model, features, pca, pca_mode="flat", dry_run=False,
               out_root=None, xgb_params=None, dims=None, top_n=None,
-              pool=None, pool_mask="masked"):
+              pool=None, pool_mask="masked", vardims=None):
     """Run one 04_modelling.py invocation."""
     cmd = [
         sys.executable, str(MODELING_SCRIPT),
@@ -80,6 +80,8 @@ def run_combo(model, features, pca, pca_mode="flat", dry_run=False,
         "--features", features,
         "--pca-mode", pca_mode,
     ]
+    if vardims:
+        cmd += ["--vardims", str(vardims)]
     if dims:
         cmd += ["--dims", str(dims)]
     if top_n is not None:
@@ -100,7 +102,7 @@ def run_combo(model, features, pca, pca_mode="flat", dry_run=False,
     label = f"{model} x {features}"
     if pca is not None and pool is None:
         label += f" (pca={pca})"
-    label += f" [{pca_mode}]"
+    label += f" [{'vardims=' + str(vardims) if vardims else pca_mode}]"
     if pool:
         label += f" pool={pool}/{pool_mask}"
 
@@ -356,6 +358,17 @@ def main():
              "Requires --pca-mode simple21.",
     )
     parser.add_argument(
+        "--vardims", type=str, nargs="?", const="default", default=None,
+        dest="vardims",
+        help="Homemade top-variance dim selection (NOT a PCA mode) "
+             "forwarded to 04_modelling.py: 'default' = per-embedding EV "
+             "rung from config.DEFAULT_VAR_EV (esmc300m_win_padtoken=80, "
+             "esmif_eosrepeat=65), an EV rung integer ('90'), or a path "
+             "to a 10_dim_variance *_ev*.json. Results aggregate under "
+             "models/vardims/. Exclusive with --pca-mode/--pca/--dims/"
+             "--top-n.",
+    )
+    parser.add_argument(
         "--top-n", type=int, default=None, dest="top_n",
         help="Top-N forwarded as --top-n to 04_modelling.py — required "
              "for --pca-mode dimselect and varfold (features = 29 x N).",
@@ -367,6 +380,24 @@ def main():
              "Use after array grids finish (they run with --no-aggregate).",
     )
     args = parser.parse_args()
+
+    if args.vardims is not None:
+        if args.pca_mode != "flat":
+            parser.error("--vardims replaces PCA — "
+                         f"do not combine with --pca-mode {args.pca_mode}")
+        if args.pca_sweep:
+            parser.error("--vardims replaces PCA — "
+                         "do not combine with --pca-sweep")
+        for spec in (args.combos or []):
+            parts = spec.split(",")
+            if len(parts) >= 3 and parts[2].strip().lower() not in (
+                    "none", ""):
+                parser.error("--vardims replaces PCA — combo pca slot must "
+                             f"be None: {spec}")
+        if args.dims is not None or args.top_n is not None:
+            parser.error("--vardims is exclusive with --dims / --top-n")
+        if args.pool is not None:
+            parser.error("--vardims is exclusive with --pool")
 
     if args.write_readme_only:
         if not args.out_root:
@@ -450,11 +481,13 @@ def main():
 
     successes = 0
     failures = 0
+    mode_label = "vardims" if args.vardims else args.pca_mode
     for model, features, pca in combos:
         ok = run_combo(model, features, pca, pca_mode=args.pca_mode,
                        dry_run=args.dry_run, out_root=args.out_root,
                        xgb_params=args.xgb_params,
-                       dims=args.dims, top_n=args.top_n)
+                       dims=args.dims, top_n=args.top_n,
+                       vardims=args.vardims)
         if ok:
             successes += 1
         else:
@@ -481,7 +514,7 @@ def main():
     print(f"  Runtime:  {t_end - t_start:.1f}s ({total_minutes:.1f} min)")
 
     if not args.dry_run and not args.no_aggregate:
-        out_path = aggregate_results(start_time, combos, pca_mode=args.pca_mode,
+        out_path = aggregate_results(start_time, combos, pca_mode=mode_label,
                                      out_root=args.out_root)
         if out_path is not None and args.out_root:
             table = [(m, f, str(p)) for m, f, p in combos]
@@ -490,12 +523,13 @@ def main():
             write_run_readme(
                 args.out_root,
                 start_time.strftime("%Y-%m-%d %H:%M:%S"),
-                [f"pca_mode: {args.pca_mode}",
+                [f"{'reduction' if args.vardims else 'pca_mode'}: "
+                 f"{mode_label}",
                  f"combos: {len(combos) + len(pool_combos)} "
                  f"(success {successes} / failed {failures})",
                  f"total wall time: {t_end - t_start:.1f}s",
                  f"aggregate table: {out_path}",
-                 f"per-run artifacts: models/{args.pca_mode}/"],
+                 f"per-run artifacts: models/{mode_label}/"],
                 ["model", "features", "pca"],
                 table,
             )
