@@ -1,34 +1,31 @@
 #!/usr/bin/env python3
 """
-22_pool_barplot.py — AUC-ROC barplots: pooled windows vs BLOSUM50 and the
-best flat-PCA points from the PCA sweeps.
+22_pool_barplot.py — AUC-ROC barplot: pooled ESM-C windows vs BLOSUM50 and
+the cumulative-variance anchor (topX 643 dims at 80% EV).
 
-Two figures (one per pool mask):
-    runs/<runtag>/plots/pool_masked_auc.png
+One figure (naive pool mask):
     runs/<runtag>/plots/pool_naive_auc.png
 
 NOTE: masked and naive pooling proved near-identical, so naive is the
 standard from now on. Only the naive figure is drawn (filenames keep
 the pool_naive_auc names).
 
-Bars per figure (left to right):
+Bars (left to right):
     BLOSUM50 (609 feat)                        — encodings_sweep
-    ESM-C-300M flat-PCA 80% (k=2278)           — pca_sweep_delong (optimal+best)
+    ESM-C-300M cumulative variance 80% (643 dims, hatched, no pooling)
+                                               — ev_matched_topXvariance_sweep
     ESM-C-300M pooled x7 (mean/median/max/min/mean_max/mean_median/mean_std)
-    ESM-IF flat-PCA 60% (k=632)                — pca_sweep_delong (optimal)
-    ESM-IF pooled x7 (same seven)
 
 Pool AUCs are the nested-CV means (cv_summary.auc_roc) parsed from the
 pool-grid cv_results JSONs (runs/<runtag>/models/flat/cv_results_*.json).
 
 Bar colors follow the PCA-sweep figures (pca_sweep_AUC_delong_
-comparison.py): ESM-C-300M #EE6677, ESM-IF #4477AA, BLOSUM50 #BBBBBB.
-Flat-PCA baseline bars are hatched to separate them from pool bars.
+comparison.py): ESM-C-300M #EE6677, BLOSUM50 #BBBBBB.
+The cumulative-variance anchor bar is hatched to separate it from pool bars.
 
 Outputs (default runtag=pool_xgb):
-    runs/pool_xgb/plots/pool_masked_auc.png (+ .csv)
     runs/pool_xgb/plots/pool_naive_auc.png (+ .csv)
-    runs/pool_xgb/results/pool_auc_all.csv (28-row aggregate table)
+    runs/pool_xgb/results/pool_auc_all.csv (aggregate table, all pool arms found)
 """
 
 import argparse
@@ -49,14 +46,12 @@ from matplotlib.patches import Patch  # noqa: E402
 # fallback values if the sweep files are absent
 FALLBACK = {
     "blosum50": (0.7633, 0.0044),
-    "esmc300m_pca80": (0.6973, 0.0069),
-    "esmif_pca60": (0.6448, 0.0041),
+    "esmc_var643": (0.701727, 0.004966),
 }
 
 COLORS = {
     "encoding": "#BBBBBB",   # BLOSUM50 / AA encoding grey (pca-sweep refs)
     "esmc": "#EE6677",       # ESM-C-300M — pca_sweep_AUC_delong_comparison
-    "esmif": "#4477AA",      # ESM-IF — pca_sweep_AUC_delong_comparison
 }
 
 POOL_ORDER = ["mean", "median", "max", "min",
@@ -70,10 +65,9 @@ POOL_LABEL = {
     "mean_median": "mean+med",
     "mean_std": "mean+std",
 }
-EMB_ORDER = ["esmc", "esmif"]
+EMB_ORDER = ["esmc"]
 EMB_FEATURE = {
     "esmc": "emb_esmc300m_win_padtoken",
-    "esmif": "emb_esmif_eos_bos_repeat",
 }
 
 
@@ -114,6 +108,27 @@ def load_delong_pick(path: Path, campaign: str, k: str):
     return None
 
 
+def load_var_anchor():
+    """(auc_mean, auc_std) for the 643-dim cumulative-variance anchor.
+
+    Reads cv_summary.auc_roc straight from the newest var643 JSON
+    (same source 26_ev_variance_vs_pca.py uses); None if absent.
+    """
+    pat = (PROJECT_ROOT / "runs" / "ev_matched_topXvariance_sweep"
+           / "models" / "simple21")
+    files = sorted(pat.glob(
+        "cv_results_xgb_emb_esmc300m_win_padtoken_simple21_var643_*.json")) \
+        if pat.exists() else []
+    if not files:
+        return None
+    try:
+        with open(files[-1]) as fh:
+            summ = json.load(fh)["cv_summary"]["auc_roc"]
+        return (float(summ["mean"]), float(summ.get("std", 0.0)))
+    except (OSError, ValueError, KeyError):
+        return None
+
+
 def load_blosum(path: Path):
     if not path.exists():
         return None
@@ -124,18 +139,16 @@ def load_blosum(path: Path):
     return None
 
 
-def draw_figure(pool_vals, blosum, esmc_pca, esmif_pca, png, csvp,
+def draw_figure(pool_vals, blosum, esmc_var, png, csvp,
                 stats_csv=None):
     bars = [("BLOSUM50", blosum, "encoding", False, "blosum50")]
-    for emb, pca_val, pca_label, pca_arm in (
-            ("esmc", esmc_pca, "PCA 80%\n(k=2278)", "esmc_pca80"),
-            ("esmif", esmif_pca, "PCA 60%\n(k=632)", "esmif_pca60")):
-        feat = EMB_FEATURE[emb]
-        bars.append((pca_label, pca_val, emb, True, pca_arm))
-        for pool in POOL_ORDER:
-            val = pool_vals.get(("naive", feat, pool))
-            bars.append((POOL_LABEL[pool], val, emb, False,
-                         f"{emb}_{pool}"))
+    feat = EMB_FEATURE["esmc"]
+    bars.append(("cumulative variance 80%\n(643 dims)", esmc_var, "esmc",
+                 True, "esmc_var643"))
+    for pool in POOL_ORDER:
+        val = pool_vals.get(("naive", feat, pool))
+        bars.append((POOL_LABEL[pool], val, "esmc", False,
+                     f"esmc_{pool}"))
 
     fig, ax = plt.subplots(figsize=(14, 5.5))
     rows = []
@@ -162,7 +175,7 @@ def draw_figure(pool_vals, blosum, esmc_pca, esmif_pca, png, csvp,
     ax.axhline(0.5, color="gray", lw=0.8, ls=":")
 
     # ── significance brackets (--stats-csv from 23_pool_delong.py) ──
-    # families are per-embedding (pool ~ PCA anchor); all drawn.
+    # family is esmc (pool ~ variance anchor); all drawn.
     arm_x = {arm: i for i, (_, v, _, _, arm) in enumerate(bars)
              if v is not None}
     if stats_csv:
@@ -187,11 +200,10 @@ def draw_figure(pool_vals, blosum, esmc_pca, esmif_pca, png, csvp,
     ax.legend(handles=[
         Patch(facecolor=COLORS["encoding"], label="BLOSUM50"),
         Patch(facecolor=COLORS["esmc"], label="ESM-C-300M padtoken"),
-        Patch(facecolor=COLORS["esmif"], label="ESM-IF eos/bos-repeat"),
         Patch(facecolor="white", hatch="///",
-              label="flat-PCA (no pooling)"),
+              label="topX-variance (no pooling)"),
     ], loc="lower right", fontsize=8, framealpha=0.9)
-    ax.set_title("pooled windows (naive) vs BLOSUM50 and flat-PCA",
+    ax.set_title("pooled ESM-C windows (naive) vs BLOSUM50 and cumulative variance",
                  fontsize=12)
     fig.tight_layout()
 
@@ -232,14 +244,9 @@ def main():
     print("Loading baselines ...")
     blosum = load_blosum(root / "runs/encodings_sweep/results/metrics.tsv") \
         or FALLBACK["blosum50"]
-    delong = root / "runs/pca_sweep_delong/pca_sweep_results.csv"
-    esmc_pca = load_delong_pick(delong, "esmc300m_pca_sweep", "2278") \
-        or FALLBACK["esmc300m_pca80"]
-    esmif_pca = load_delong_pick(delong, "esmif_eos_sweep", "632") \
-        or FALLBACK["esmif_pca60"]
+    esmc_var = load_var_anchor() or FALLBACK["esmc_var643"]
     print(f"  blosum50       {blosum[0]:.4f} +/- {blosum[1]:.4f}")
-    print(f"  esmc300m PCA   {esmc_pca[0]:.4f} +/- {esmc_pca[1]:.4f}  (k=2278, 80%)")
-    print(f"  esmif PCA      {esmif_pca[0]:.4f} +/- {esmif_pca[1]:.4f}  (k=632, 60%, optimal)")
+    print(f"  esmc var643  {esmc_var[0]:.4f} +/- {esmc_var[1]:.4f}  (643 dims, 80% EV)")
 
     print(f"Loading pool JSONs from {models_dir} ...")
     pool_vals = load_pool_jsons(models_dir)
@@ -252,7 +259,7 @@ def main():
     results_dir = run_dir / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    draw_figure(pool_vals, blosum, esmc_pca, esmif_pca,
+    draw_figure(pool_vals, blosum, esmc_var,
                 plots_dir / "pool_naive_auc.png",
                 plots_dir / "pool_naive_auc.csv",
                 stats_csv=stats_csv)
@@ -274,9 +281,9 @@ def main():
     print("Pooled-window XGB AUC-ROC (nested CV, mean +/- std over 6 outer "
           "iterations). Pooling collapses the 29-slot window to one (or two) "
           "D-dim vectors per sample with no PCA (naive pooling over all 29 "
-          "slots; masked proved near-identical). PCA bars = flat window-PCA "
-          "at the DeLong-confirmed picks "
-          "(ESM-C-300M 80% EV, k=2278; ESM-IF 60% EV, k=632), hatched. "
+          "slots; masked proved near-identical). Variance bar = topX "
+          "cumulative-variance selection (643 raw ESM-C dims at 80% EV, "
+          "no rotation, hatched). "
           "BLOSUM50 (0.763) = xgb one-hot baseline (encodings_sweep).")
     print("=" * 60)
 

@@ -3,12 +3,11 @@
 23_pool_delong.py — paired DeLong tests for the pool barplot.
 
 Compares pooled nested-CV OOF predictions (cv_results_*.json,
-outer_val_predictions) between the pool bars of 22_pool_barplot and
-their flat-PCA anchor, separately per embedding:
+outer_val_predictions) between the ESM-C pool bars of 22_pool_barplot
+and their cumulative-variance anchor (topX 643 dims at 80% EV):
 
     families (Holm within family):
-      esmc     esmc_<pool> ~ esmc_pca80  (7 pairs, one per pool method)
-      esmif    esmif_<pool> ~ esmif_pca60 (7 pairs, one per pool method)
+      esmc     esmc_<pool> ~ esmc_var643  (7 pairs, one per pool method)
 
 DeLong implementation reused from 15_padmode_significance.py (same
 estimand: paired DeLong on pooled OOF, Holm correction per family).
@@ -53,15 +52,10 @@ ARMS = {
     **{f"esmc_{p}": R / "pool_xgb/models/flat" /
         f"cv_results_xgb_emb_esmc300m_win_padtoken_flat_pool{p}_naive_*.json"
         for p in POOLS},
-    **{f"esmif_{p}": R / "pool_xgb/models/flat" /
-        f"cv_results_xgb_emb_esmif_eos_bos_repeat_flat_pool{p}_naive_*.json"
-        for p in POOLS},
-    "esmc_pca80": R / "esmc300m_pca_sweep/models/flat/cv_results_xgb_emb_esmc300m_win_padtoken_pca2278_flat_*.json",
-    "esmif_pca60": R / "esmif_eos_sweep/models/flat/cv_results_xgb_emb_esmif_eos_bos_repeat_pca632_flat_*.json",
+    "esmc_var643": R / "ev_matched_topXvariance_sweep/models/simple21/cv_results_xgb_emb_esmc300m_win_padtoken_simple21_var643_*.json",
 }
 FAMILIES = {
-    "esmc": [(f"esmc_{p}", "esmc_pca80") for p in POOLS],
-    "esmif": [(f"esmif_{p}", "esmif_pca60") for p in POOLS],
+    "esmc": [(f"esmc_{p}", "esmc_var643") for p in POOLS],
 }
 
 
@@ -101,7 +95,7 @@ def main():
     pool_dir = PROJECT_ROOT / "runs" / args.runtag / "models" / "flat"
     for name, pat in list(arms.items()):
         if name.startswith(("esmc_", "esmif_")) and name not in (
-                "esmc_pca80", "esmif_pca60"):
+                "esmc_var643",):
             arms[name] = pool_dir / pat.name
 
     print("Loading OOF vectors ...")
