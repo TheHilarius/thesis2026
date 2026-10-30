@@ -499,24 +499,17 @@ row_sums <- c(
 p1 <- ggplot(df_cm, aes(x = Predicted, y = Actual, fill = quad)) +
   geom_tile(colour = "white", linewidth = 2) +
   geom_text(aes(label = display), size = 5, fontface = "bold", colour = "white") +
-  scale_fill_manual(values = quad_colours,
-                    labels = c("TP" = "True Pos.", "TN" = "True Neg.",
-                               "FP" = "False Pos.", "FN" = "False Neg.")) +
+  scale_fill_manual(values = quad_colours) +
   scale_x_discrete(position = "top", sec.axis = dup_axis(name = NULL, labels = col_sums)) +
   scale_y_discrete(sec.axis = dup_axis(name = NULL, labels = row_sums)) +
   labs(
-    title    = "9-mer Peptide Binders: NetMHCpan vs IEDB",
-    subtitle = paste0(
-      "HLA-A*02:01  |  9-mers only  |  Binder threshold: Rank < 2%\n",
-      "Sensitivity: ", round(sensitivity * 100, 1), "%  |  ",
-      "Precision: ",   round(precision  * 100, 1), "%  |  ",
-      "F1: ",          round(f1, 3)),
+    title    = "How accurately does NetMHCpan identify true binders?",
+    subtitle = "Evaluating HLA-A*02:01 9-mers at a 2% rank threshold",
     x = "NetMHCpan Prediction", y = "", fill = NULL
   ) +
   theme_bw(base_size = 13) +
   theme(
-    legend.position    = "bottom",
-    legend.box.margin  = margin(r = 80),
+    legend.position    = "none",
     plot.title         = element_text(margin = margin(l = 20, b = 5)),
     plot.subtitle      = element_text(size = 10, colour = "grey40", margin = margin(l = 20, b = 10)),
     axis.text          = element_text(size = 12, face = "bold"),
@@ -532,6 +525,12 @@ p1 <- ggplot(df_cm, aes(x = Predicted, y = Actual, fill = quad)) +
 df_positives <- df_overlap |>
   distinct(peptide, uniprot_id, start, end, .keep_all = TRUE) |>
   mutate(label = 1)
+
+# Fixed variant: restrict negative pool to proteins with >=1 TP positive,
+# so no sampled negative comes from a protein absent among the positives
+# (715 orphan proteins otherwise: every IEDB epitope there was an FN).
+df_netmhcpan_only_fixed <- df_netmhcpan_only |>
+  semi_join(df_positives, by = "uniprot_id")
 
 #  Affinity bias check 
 # If positives (IEDB-confirmed) have systematically lower EL ranks than negatives
@@ -795,6 +794,18 @@ bind_rows(
 # Build final dataset (Option C: 25 bins) 
 df_negatives <- sample_bin_matched(df_positives, df_netmhcpan_only, CHOSEN_N_BINS, seed = RANDOM_SEED)
 
+# Fixed variant: same rank-matched sampling from the positive-protein-only pool
+df_negatives_fixed <- sample_bin_matched(df_positives, df_netmhcpan_only_fixed,
+                                         CHOSEN_N_BINS, seed = RANDOM_SEED)
+df_combined_fixed <- bind_rows(df_positives, df_negatives_fixed) |>
+  select(-any_of(c("hla", "binder", "rank_bin")))
+# Invariant: every negative's protein must appear among the positives
+stopifnot(!any(setdiff(unique(df_negatives_fixed$uniprot_id),
+                       unique(df_positives$uniprot_id))))
+write_csv(df_combined_fixed,
+          "data/processed/df_combined_pos_and_neg_remove715negonly.csv")
+cat("Saved fixed dataset to data/processed/df_combined_pos_and_neg_remove715negonly.csv\n")
+
 cat("\n=== Chosen Configuration: Option C ===\n")
 cat("Bins:    ", CHOSEN_N_BINS, "\n")
 cat("Negatives:", scales::comma(nrow(df_negatives)), "\n")
@@ -830,18 +841,16 @@ df_rank_post <- bind_rows(
 p2b <- ggplot(df_rank_post, aes(x = rank, fill = label)) +
   geom_density(alpha = 0.5, colour = "black", linewidth = 0.3) +
   scale_fill_manual(values = c("Positive (TP)"      = "#2ecc71",
-                               "Negative (matched)" = "#3498db")) +
+                               "Negative (matched)" = "#e74c3c")) +
   geom_vline(xintercept = 0.5, linetype = "dashed", colour = "grey40", linewidth = 0.5) +
   annotate("text", x = 0.5, y = Inf, label = "SB threshold (0.5%)",
            vjust = 2, hjust = -0.05, size = 3, colour = "grey40") +
   annotate("text", x = 1.5, y = Inf,
            label = paste0("KS D = ", round(ks_after$statistic, 4)),
-           vjust = 1.5, size = 5, fontface = "bold", colour = "#3498db") +
+           vjust = 1.5, size = 5, fontface = "bold", colour = "#e74c3c") +
   labs(
-    title    = "Affinity Bias Check: NetMHCpan EL Rank Distribution (After Matching)",
-    subtitle = paste0("9-mers  |  HLA-A*02:01  |  25 bins  |  KS D = ",
-                      round(ks_after$statistic, 4),
-                      " (distributions well matched)"),
+    title    = "Did rank-matching eliminate the EL rank bias?",
+    subtitle = "HLA-A*02:01 9-mers after 25-bin matching",
     x = "NetMHCpan EL Rank (%)", y = "Density", fill = NULL
   ) +
   theme_bw(base_size = 13) +

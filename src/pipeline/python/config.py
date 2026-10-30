@@ -4,11 +4,26 @@ Shared configuration for the MHC-I processing prediction pipeline.
 """
 
 from pathlib import Path
+import os
 
 # ──────────────────────────────────────────────
 # PROJECT ROOT
 # ──────────────────────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+# ──────────────────────────────────────────────
+# DATASET VARIANT (A/B testing; unset = current behavior)
+# THESIS_VARIANT=remove715negonly redirects every per-dataset path
+# (raw/split/encoding CSVs, prepared embedding H5s) to *_<variant> files.
+# Raw embedding H5s are shared — the prepare step aligns them to the split.
+# ──────────────────────────────────────────────
+VARIANT = os.environ.get("THESIS_VARIANT") or None
+
+
+def _variant(path: Path) -> Path:
+    if not VARIANT:
+        return path
+    return path.with_name(f"{path.stem}_{VARIANT}{path.suffix}")
 
 # ──────────────────────────────────────────────
 # PATHS
@@ -18,20 +33,20 @@ LOG_DIR = PROJECT_ROOT / "logs"
 MODEL_DIR = PROJECT_ROOT / "models"
 FIGURES_DIR = PROJECT_ROOT / "results" / "figures" / "models"
 
-RAW_DATA_PATH = DATA_DIR / "df_all.csv"
-SPLIT_DATA_PATH = DATA_DIR / "df_all_with_folds.csv"
+RAW_DATA_PATH = _variant(DATA_DIR / "df_all.csv")
+SPLIT_DATA_PATH = _variant(DATA_DIR / "df_all_with_folds.csv")
 
 # Alternate CSVs with encoded positional AA columns
 # df_<enc>.csv: peptide+label keys + encoded cols only (used by modelling)
 # df_all_<enc>.csv: encoded + all non-position cols (for R/analyses)
-SPARSE_DATA_PATH = DATA_DIR / "df_sparse.csv"
-BLOSUM50_DATA_PATH = DATA_DIR / "df_blosum50.csv"
-BLOSUM62_DATA_PATH = DATA_DIR / "df_blosum62.csv"
-BLOSUM80_DATA_PATH = DATA_DIR / "df_blosum80.csv"
-KIDERA_DATA_PATH = DATA_DIR / "df_kidera.csv"
-ATCHLEY_DATA_PATH = DATA_DIR / "df_atchley.csv"
+SPARSE_DATA_PATH = _variant(DATA_DIR / "df_sparse.csv")
+BLOSUM50_DATA_PATH = _variant(DATA_DIR / "df_blosum50.csv")
+BLOSUM62_DATA_PATH = _variant(DATA_DIR / "df_blosum62.csv")
+BLOSUM80_DATA_PATH = _variant(DATA_DIR / "df_blosum80.csv")
+KIDERA_DATA_PATH = _variant(DATA_DIR / "df_kidera.csv")
+ATCHLEY_DATA_PATH = _variant(DATA_DIR / "df_atchley.csv")
 # Compositional: frac_<aa> = aa count across the 29 positions / 29
-COMPOSITIONAL_DATA_PATH = DATA_DIR / "df_compositional.csv"
+COMPOSITIONAL_DATA_PATH = _variant(DATA_DIR / "df_compositional.csv")
 
 # ──────────────────────────────────────────────
 # EMBEDDING PATHS & SCHEMAS
@@ -576,6 +591,12 @@ EMBEDDING_SOURCES = {
         "has_start_end": False,
     },
 }
+
+# Variant redirect for prepared H5s only — raw H5s are shared (the prepare
+# step aligns raw embeddings to the variant split and bakes labels+folds in).
+for _src in EMBEDDING_SOURCES.values():
+    if "prepared_path" in _src:
+        _src["prepared_path"] = _variant(_src["prepared_path"])
 
 EMBEDDING_REGIONS = ["context_emb"]
 
