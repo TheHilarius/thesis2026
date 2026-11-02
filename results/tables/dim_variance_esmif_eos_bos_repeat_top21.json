@@ -1,5 +1,5 @@
 {
- "embedding_key": "esmif_eosrepeat",
+ "embedding_key": "esmif_eos_bos_repeat",
  "metric": "mean per-sample across-position variance, pads masked",
  "dims": [
   0,
