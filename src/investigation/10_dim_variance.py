@@ -16,7 +16,7 @@ Pads are masked via pad_mask (fill values would corrupt the ranking).
 
 Inputs: prepared window H5s (fallback: raw), resolved via config
 EMBEDDING_SOURCES, e.g. esmc300m_win_padtoken (29x960),
-esmif_eosrepeat (29x512).
+esmif_eos_bos_repeat (29x512).
 
 Outputs (results/tables/):
     dim_variance_<key>.csv       — dim, mean_col_var, global_var, rank
@@ -44,7 +44,7 @@ from config import (
 )
 
 CHUNK = 512
-DEFAULT_KEYS = ["esmc300m_win_padtoken", "esmif_eosrepeat"]
+DEFAULT_KEYS = ["esmc300m_win_padtoken", "esmif_eos_bos_repeat"]
 
 
 def resolve_h5(emb_key):

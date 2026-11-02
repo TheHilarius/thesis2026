@@ -363,7 +363,8 @@ def main():
         help="Homemade top-variance dim selection (NOT a PCA mode) "
              "forwarded to 04_modelling.py: 'default' = per-embedding EV "
              "rung from config.DEFAULT_VAR_EV (esmc300m_win_padtoken=80, "
-             "esmif_eosrepeat=65), an EV rung integer ('90'), or a path "
+             "esmif_eos_bos_repeat=65), an EV rung integer ('90'), or a "
+             "path "
              "to a 10_dim_variance *_ev*.json. Results aggregate under "
              "models/vardims/. Exclusive with --pca-mode/--pca/--dims/"
              "--top-n.",

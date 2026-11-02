@@ -1470,7 +1470,8 @@ def parse_args():
              "variance at all 29 slots (features = 29 x X, no rotation). "
              "Value: 'default' = per-embedding EV rung from "
              "config.DEFAULT_VAR_EV (esmc300m_win_padtoken=80, "
-             "esmif_eosrepeat=65), an EV rung integer ('90'), or a path to "
+             "esmif_eos_bos_repeat=65), an EV rung integer ('90'), or a "
+             "path to "
              "a 10_dim_variance *_ev*.json. Replaces --pca / --pca-mode / "
              "--dims / --top-n (mutually exclusive).",
     )
