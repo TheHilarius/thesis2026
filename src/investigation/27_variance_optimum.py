@@ -41,11 +41,16 @@ import matplotlib.pyplot as plt  # noqa: E402
 R = PROJECT_ROOT / "runs"
 EVS = [30, 40, 50, 60, 65, 70, 75, 80, 85, 90]
 
-FAM = {  # emb_key -> (campaign, family color, raw token, raw tick label)
-    "esmc300m_win_padtoken": ("esmc300m_pca_sweep", "#EE6677",
-                              "esmc300m_win_padtoken", "Raw ESM-C"),
-    "esmif_eosrepeat": ("esmif_eos_sweep", "#4477AA",
-                        "esmif_eos_bos_repeat", "Raw ESM-IF"),
+FAM = {  # emb_key -> (campaign, family color, raw token, raw tick label,
+         #              variance-arm glob template {key},{ev},{X})
+    "esmc300m_win_padtoken": (
+        "esmc300m_pca_sweep", "#EE6677", "esmc300m_win_padtoken",
+        "Raw ESM-C",
+        "models/simple21/cv_results_xgb_emb_{key}_simple21_var{X}_*.json"),
+    "esmif_eos_bos_repeat": (
+        "esmif_eos_sweep", "#4477AA", "esmif_eos_bos_repeat",
+        "Raw ESM-IF",
+        "models/vardims/cv_results_xgb_emb_{key}_vardims_ev{ev}_var{X}_*.json"),
 }
 
 
@@ -87,7 +92,7 @@ def main():
 
     tsv_rows = []
 
-    for key, (campaign, color, raw_tok, raw_label) in FAM.items():
+    for key, (campaign, color, raw_tok, raw_label, var_tmpl) in FAM.items():
         print(f"\n=== {key} ===")
         # ── variance arms: EV ladder -> X dims -> cv_results JSON ──
         arms = []  # (ev, x, mean, std, path)
@@ -98,8 +103,8 @@ def main():
                 print(f"  WARN: missing {ej.name} — rung skipped")
                 continue
             n_dims = json.loads(ej.read_text())["n_dims"]
-            hits = sorted((root / "models" / "simple21").glob(
-                f"cv_results_xgb_emb_{key}_simple21_var{n_dims}_*.json"))
+            hits = sorted(root.glob(
+                var_tmpl.format(key=key, ev=ev, X=n_dims)))
             if not hits:
                 print(f"  WARN: no cv_results for var{n_dims} (ev{ev})")
                 continue
@@ -210,7 +215,7 @@ def main():
         ax.set_ylabel("AUC-ROC (nested CV, mean +/- std)")
         ax.grid(axis="y", alpha=0.3)
         title = ("ESM-C-300M padtoken" if key.startswith("esmc")
-                 else "ESM-IF (variance: eosrepeat, raw: eos/bos-repeat)")
+                 else "ESM-IF (eos/bos-repeat)")
         ax.set_title(f"{title} — variance-dim sweep vs raw ceiling",
                      fontsize=11, pad=6)
         fig.tight_layout()
@@ -236,8 +241,8 @@ def main():
           "threshold (30-90%); features = 29*X (all positions kept, no "
           "rotation). The hatched dark bar is the raw window embedding "
           "without reduction (29*D features = 100% EV, the ceiling arm; "
-          "ESM-IF pad mode eos/bos-repeat vs eosrepeat for the variance "
-          "arms - same rows and folds). Bars: nested-CV outer mean +/- "
+          "all ESM-IF arms run on eos/bos-repeat). Bars: nested-CV outer "
+          "mean +/- "
           "std, XGB on 46,617 windows. Brackets: paired DeLong on pooled "
           "OOF of each rung vs the raw arm, Holm-adjusted over the "
           "10-rung family; only significant rungs are bracketed (ns "

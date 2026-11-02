@@ -6,19 +6,18 @@ brackets (dim21/padmode style).
 Bars (12, left to right), per embedding family:
     global21, varfold21, varfold50, dimselect50, flat-PCA60, flat-PCA90
 Values read from the arms' cv_results JSONs (cv_summary.auc_roc.mean/std);
-brackets + stars from runs/varfold_pilot/results/varfold_delong_pairs.tsv
+brackets + stars from runs/varfold_pilot_eosbos/results/varfold_delong_pairs.tsv
 (24_varfold_delong.py output, Holm-adjusted, thesis star convention).
 
 NOTES baked into the terminal caption (not the PNG):
   - varfold21 == global21 by construction here: fold-nested ranking gave
     Jaccard 1.000 vs global in all 240 fold-rankings (selection stable).
-  - ESM-IF dimselect/PCA arms run on eos/bos-repeat; varfold/global on
-    eosrepeat (same rows/folds, different pad-mode embedding).
+  - all ESM-IF arms run on eos/bos-repeat (varfold/global21 redone 2026-10-30).
 
 Style: ESM-C #EE6677 / ESM-IF #4477AA (pca-sweep colors), y-axis 0-1,
 chance line at 0.5, short labels, value labels, DeLong brackets stacked.
 
-Output: runs/varfold_pilot/plots/varfold_vs_refs_auc.{png,csv}
+Output: runs/varfold_pilot_eosbos/plots/varfold_vs_refs_auc.{png,csv}
 """
 
 import argparse
@@ -39,6 +38,12 @@ from matplotlib.patches import Patch  # noqa: E402
 R = PROJECT_ROOT / "runs"
 COLORS = {"esmc": "#EE6677", "esmif": "#4477AA"}
 
+# tag collision: both dim21_eosbos jobs wrote tag simple21_var21 — the var21
+# (global variance top-21) job is the 20261030 run, first21 is 20261029.
+D21_BOS_VAR21 = ("dim21_eosbos/models/simple21/"
+                 "cv_results_xgb_emb_esmif_eos_bos_repeat_simple21_var21_"
+                 "20261030_011132.json")
+
 ARMS = {  # arm -> (glob, short label)
     "esmc_global21": ("simple21_pilot/models/flat_raw/"
                       "cv_results_*_esmc300m_win_padtoken_d21_var_flat_raw_*.json",
@@ -49,25 +54,23 @@ ARMS = {  # arm -> (glob, short label)
     "esmc_vf50": ("varfold_pilot/models/varfold/"
                   "cv_results_*_esmc300m_win_padtoken_varfold_top50_*.json",
                   "varfold50"),
-    "esmc_dimselect": ("dimselect_sweep/models/*/cv_results_*esmc300m*dimselect*"
-                       "top50*xgb*.json", "dimselect50"),
+    "esmc_dimselect": ("**/dimselect_sweep/models/*/cv_results_*esmc300m"
+                       "*dimselect*top50*xgb*.json", "dimselect50"),
     "esmc_pca60": ("esmc300m_pca_sweep/models/flat/"
                    "cv_results_*_esmc300m_win_padtoken_pca291_*.json",
                    "PCA60\n(k=291)"),
     "esmc_pca90": ("esmc300m_pca_sweep/models/flat/"
                    "cv_results_*_esmc300m_win_padtoken_pca5883_*.json",
                    "PCA90\n(k=5883)"),
-    "esmif_global21": ("simple21_pilot/models/flat_raw/"
-                       "cv_results_*_esmif_eosrepeat_d21_var_flat_raw_*.json",
-                       "global21"),
-    "esmif_vf21": ("varfold_pilot/models/varfold/"
-                   "cv_results_*_esmif_eosrepeat_varfold_top21_*.json",
+    "esmif_global21": (D21_BOS_VAR21, "global21"),
+    "esmif_vf21": ("varfold_pilot_eosbos/models/varfold/"
+                   "cv_results_*_esmif_eos_bos_repeat_varfold_top21_*.json",
                    "varfold21"),
-    "esmif_vf50": ("varfold_pilot/models/varfold/"
-                   "cv_results_*_esmif_eosrepeat_varfold_top50_*.json",
+    "esmif_vf50": ("varfold_pilot_eosbos/models/varfold/"
+                   "cv_results_*_esmif_eos_bos_repeat_varfold_top50_*.json",
                    "varfold50"),
-    "esmif_dimselect": ("dimselect_sweep/models/*/cv_results_*esmif*dimselect*"
-                        "top50*xgb*.json", "dimselect50"),
+    "esmif_dimselect": ("**/dimselect_sweep/models/*/cv_results_*esmif"
+                        "*dimselect*top50*xgb*.json", "dimselect50"),
     "esmif_pca60": ("esmif_eos_sweep/models/flat/"
                     "cv_results_*_esmif_eos_bos_repeat_pca632_*.json",
                     "PCA60\n(k=632)"),
@@ -93,16 +96,18 @@ def load_arm(rel_glob):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     ap.add_argument("--pairs", default=None,
-                    help="varfold_delong_pairs.tsv (default: runs/varfold_pilot/"
-                         "results/varfold_delong_pairs.tsv)")
+                    help="varfold_delong_pairs.tsv (default: "
+                         "runs/varfold_pilot_eosbos/results/"
+                         "varfold_delong_pairs.tsv)")
     ap.add_argument("--out-prefix", default=None,
-                    help="default: runs/varfold_pilot/plots/varfold_vs_refs")
+                    help="default: runs/varfold_pilot_eosbos/plots/"
+                         "varfold_vs_refs")
     args = ap.parse_args()
 
     pairs_tsv = Path(args.pairs) if args.pairs else (
-        R / "varfold_pilot" / "results" / "varfold_delong_pairs.tsv")
+        R / "varfold_pilot_eosbos" / "results" / "varfold_delong_pairs.tsv")
     out_prefix = Path(args.out_prefix) if args.out_prefix else (
-        R / "varfold_pilot" / "plots" / "varfold_vs_refs")
+        R / "varfold_pilot_eosbos" / "plots" / "varfold_vs_refs")
 
     print("Loading arms ...")
     vals, rows = {}, []
@@ -159,8 +164,7 @@ def main():
     ax.axhline(0.5, color="gray", lw=0.8, ls=":")
     ax.legend(handles=[
         Patch(facecolor=COLORS["esmc"], label="ESM-C-300M padtoken"),
-        Patch(facecolor=COLORS["esmif"],
-              label="ESM-IF (dimselect/PCA eos-bos, others eosrepeat)"),
+        Patch(facecolor=COLORS["esmif"], label="ESM-IF (eos/bos-repeat)"),
     ], loc="upper left", fontsize=8, framealpha=0.9)
     ax.set_title("varfold (fold-nested variance dims) vs global/PCA/dimselect",
                  fontsize=12)
@@ -186,8 +190,8 @@ def main():
           "29 positions (29 x N features, no PCA). global21 = same ranking "
           "computed once on all rows (simple21 --dims var21). dimselect50 = "
           "fold-nested supervised per-dim XGB screening (top-50). PCA60/90 = "
-          "flat window-PCA at 60/90% EV. ESM-IF dimselect/PCA arms run on "
-          "eos/bos-repeat; varfold/global arms on eosrepeat. Brackets: paired "
+          "flat window-PCA at 60/90% EV. All ESM-IF arms run on eos/bos-repeat. "
+          "Brackets: paired "
           "DeLong on pooled OOF, Holm-adjusted within family "
           "(* p<.05, ** p<.01, *** p<.001). Fold-nested vs global selection "
           "was identical (Jaccard 1.000 across 240 fold-rankings).")

@@ -8,21 +8,23 @@ Bars (left to right):
     ESM-C-300M padtoken flat-PCA 80% (k=2278) — pca_sweep_delong (optimal)
     ESM-C-300M dim21 first-21 / var-21        — runs/*/logs/flat_raw
     ESM-IF eos/bos flat-PCA 60% (k=632)       — pca_sweep_delong (optimal)
-    ESM-IF eosrepeat dim21 first-21 / var-21  — runs/*/logs/flat_raw
+    ESM-IF eos/bos dim21 first-21 / var-21    — runs/dim21_eosbos (redo)
 
 Notes baked into the caption:
   * PCA bars are the DeLong-confirmed optimal picks (60% EV k=632 for
     ESM-IF, 80% EV k=2278 for ESM-C-300M), campaigns esmif_eos_sweep /
     esmc300m_pca_sweep.
-  * the PCA bar is eos/bos-repeat while the dim21 bars are eosrepeat —
-    different pad-mode embeddings, labels say so.
+  * every ESM-IF arm runs on eos/bos-repeat (dim21 redone 2026-10-30).
 
-dim21 AUCs are the nested-CV "CROSS-VALIDATION SUMMARY" line
+ESM-C dim21 AUCs are the nested-CV "CROSS-VALIDATION SUMMARY" line
 (mean +/- std over 6 outer iterations) parsed from the flat_raw logs.
+ESM-IF dim21 AUCs read cv_results JSONs from runs/dim21_eosbos — both
+jobs share tag simple21_var21, so they are selected by job timestamp
+(first21 = 20261029_235831, var21 = 20261030_011132).
 
-Outputs (runs/<runtag>/ per convention, default runtag=simple21_pilot):
-    runs/simple21_pilot/plots/dim21_vs_baselines_auc.png
-    runs/simple21_pilot/plots/dim21_vs_baselines_auc.csv
+Outputs (runs/<runtag>/ per convention, default runtag=dim21_eosbos):
+    runs/dim21_eosbos/plots/dim21_vs_baselines_auc.png
+    runs/dim21_eosbos/plots/dim21_vs_baselines_auc.csv
 
 With --stats-csv (21_dim21_delong.py output, auto-detected from
 runs/<runtag>/results/) significance brackets are drawn above the bars
@@ -35,6 +37,7 @@ comparison.py): ESM-C-300M #EE6677, ESM-IF #4477AA, BLOSUM50 #BBBBBB.
 
 import argparse
 import csv
+import json
 import re
 import sys
 from pathlib import Path
@@ -79,6 +82,28 @@ def load_dim21(logs_dir: Path):
     return out
 
 
+# tag collision: both dim21_eosbos jobs wrote tag simple21_var21 — select by
+# job timestamp (first21 = dims 0-20 run 186385, var21 = variance run 186386).
+D21_ESMIF = {
+    "emb_esmif_eos_bos_repeat_first21":
+        "dim21_eosbos/models/simple21/"
+        "cv_results_xgb_emb_esmif_eos_bos_repeat_simple21_var21_20261029_235831.json",
+    "emb_esmif_eos_bos_repeat_var21":
+        "dim21_eosbos/models/simple21/"
+        "cv_results_xgb_emb_esmif_eos_bos_repeat_simple21_var21_20261030_011132.json",
+}
+
+
+def load_cv_json(rel: str):
+    """(auc_mean, auc_std) from a cv_results JSON's cv_summary."""
+    p = PROJECT_ROOT / "runs" / rel
+    if not p.exists():
+        print(f"  WARN: missing {p.name} — bar skipped")
+        return None
+    s = json.loads(p.read_text())["cv_summary"]["auc_roc"]
+    return float(s["mean"]), float(s["std"])
+
+
 def load_delong_pick(path: Path, campaign: str, k: str):
     """(auc_outer_mean, auc_outer_std) from pca_sweep_results.csv."""
     if not path.exists():
@@ -103,10 +128,11 @@ def load_blosum(path: Path):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     ap.add_argument("--logs-dir", default="runs/simple21_pilot/logs/flat_raw",
-                    help="flat_raw log dir with the 4 d21 runs (project root)")
-    ap.add_argument("--runtag", default="simple21_pilot",
+                    help="flat_raw log dir with the ESM-C d21 runs (ESM-IF "
+                         "dim21 comes from runs/dim21_eosbos JSONs)")
+    ap.add_argument("--runtag", default="dim21_eosbos",
                     help="run folder under runs/ that owns the outputs "
-                         "(default: simple21_pilot)")
+                         "(default: dim21_eosbos)")
     ap.add_argument("--out-prefix", default=None,
                     help="explicit output prefix; default: "
                          "runs/<runtag>/plots/dim21_vs_baselines")
@@ -153,9 +179,11 @@ def main():
          dim21.get("emb_esmc300m_win_padtoken_d21_var"), "esmc", "esmc_var"),
         ("PCA 60%\n(k=632)", esmif_pca, "esmif", "esmif_pca60"),
         ("first21",
-         dim21.get("emb_esmif_eosrepeat_d21_first"), "esmif", "esmif_first"),
+         load_cv_json(D21_ESMIF["emb_esmif_eos_bos_repeat_first21"]),
+         "esmif", "esmif_first"),
         ("top21\nvariance",
-         dim21.get("emb_esmif_eosrepeat_d21_var"), "esmif", "esmif_var"),
+         load_cv_json(D21_ESMIF["emb_esmif_eos_bos_repeat_var21"]),
+         "esmif", "esmif_var"),
     ]
 
     fig, ax = plt.subplots(figsize=(11, 5.5))
@@ -209,7 +237,7 @@ def main():
     ax.legend(handles=[
         Patch(facecolor=COLORS["encoding"], label="BLOSUM50"),
         Patch(facecolor=COLORS["esmc"], label="ESM-C-300M padtoken"),
-        Patch(facecolor=COLORS["esmif"], label="ESM-IF (eos/bos PCA, eosrepeat dim21)"),
+        Patch(facecolor=COLORS["esmif"], label="ESM-IF (eos/bos-repeat)"),
     ], loc="upper right", fontsize=8, framealpha=0.9)
     ax.set_title("dim21 (29x21 reduced windows) vs BLOSUM50 and flat-PCA", fontsize=12)
     fig.tight_layout()
@@ -231,8 +259,8 @@ def main():
     print("  CAPTION (paste below the figure):")
     print("=" * 60)
     print("PCA bars = flat window-PCA at the DeLong-confirmed optimal picks "
-          "(ESM-C-300M 80% EV, k=2278; ESM-IF 60% EV, k=632). ESM-IF PCA bar "
-          "is EOS/BOS-repeat; dim21 ESM-IF is eosrepeat. Brackets show paired "
+          "(ESM-C-300M 80% EV, k=2278; ESM-IF 60% EV, k=632). All ESM-IF "
+          "arms are eos/bos-repeat. Brackets show paired "
           "DeLong on pooled OOF, Holm-adjusted within family "
           "(*** p<0.001). dim21 = 29 positions x 21 dims (609 features); "
           "first21 = dims 0-20, top21 variance = 21 highest-variance dims.")

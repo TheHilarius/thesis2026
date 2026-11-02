@@ -17,11 +17,11 @@ Missing arms (jobs still running) -> their pairs are skipped with a
 warning; rerun after all 4 dim21 jobs finish for the full family.
 
 Output: runs/<runtag>/results/dim21_delong_pairs.tsv  (default runtag
-    simple21_pilot; --runtag to override)
+    dim21_eosbos; --runtag to override)
     arm_a arm_b auc_a auc_b delta se z p_delong p_holm family star
 
 Then (brackets picked up automatically):
-    python src/investigation/20_dim21_barplot.py
+    python src/investigation/20_dim21_barplot.py --runtag dim21_eosbos
 """
 
 import argparse
@@ -45,11 +45,13 @@ sys.modules["p15"] = _p15
 _spec.loader.exec_module(_p15)
 
 R = PROJECT_ROOT / "runs"
+# tag collision: both dim21_eosbos jobs wrote tag simple21_var21 — first21
+# (dims 0-20) is the 20261029 run, var21 (variance ranking) is 20261030.
 ARMS = {
     "esmc_first": R / "simple21_pilot/models/flat_raw/cv_results_xgb_emb_esmc300m_win_padtoken_d21_first_flat_raw_*.json",
     "esmc_var":   R / "simple21_pilot/models/flat_raw/cv_results_xgb_emb_esmc300m_win_padtoken_d21_var_flat_raw_*.json",
-    "esmif_first": R / "simple21_pilot/models/flat_raw/cv_results_xgb_emb_esmif_eosrepeat_d21_first_flat_raw_*.json",
-    "esmif_var":  R / "simple21_pilot/models/flat_raw/cv_results_xgb_emb_esmif_eosrepeat_d21_var_flat_raw_*.json",
+    "esmif_first": R / "dim21_eosbos/models/simple21/cv_results_xgb_emb_esmif_eos_bos_repeat_simple21_var21_20261029_235831.json",
+    "esmif_var":  R / "dim21_eosbos/models/simple21/cv_results_xgb_emb_esmif_eos_bos_repeat_simple21_var21_20261030_011132.json",
     "esmc_pca80": R / "esmc300m_pca_sweep/models/flat/cv_results_xgb_emb_esmc300m_win_padtoken_pca2278_flat_*.json",
     "esmif_pca60": R / "esmif_eos_sweep/models/flat/cv_results_xgb_emb_esmif_eos_bos_repeat_pca632_flat_*.json",
     "blosum50":   R / "encodings_sweep/models/flat/cv_results_xgb_blosum50_flat_*.json",
@@ -85,9 +87,9 @@ def star(p):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
-    ap.add_argument("--runtag", default="simple21_pilot",
+    ap.add_argument("--runtag", default="dim21_eosbos",
                     help="run folder under runs/ that owns the outputs "
-                         "(default: simple21_pilot)")
+                         "(default: dim21_eosbos)")
     ap.add_argument("--out", default=None,
                     help="default: runs/<runtag>/results/dim21_delong_pairs.tsv")
     args = ap.parse_args()

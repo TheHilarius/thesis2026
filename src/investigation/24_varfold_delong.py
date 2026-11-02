@@ -5,9 +5,10 @@
 Arms (globs; missing arms are skipped with a warning so the script can be
 re-run as campaigns land):
 
-    varfold      runs/varfold_pilot/models/varfold/cv_results_*_varfold_top{N}_*.json
-    global21     runs/simple21_pilot/models/flat_raw/*_d21_var_flat_raw_*.json
-                 (global top-21 variance dims, physical reduced files)
+    varfold      esmc: runs/varfold_pilot/models/varfold/cv_results_*_varfold_top{N}_*.json
+                 esmif: runs/varfold_pilot_eosbos/models/varfold/ (eos/bos-repeat redo)
+    global21     esmc: runs/simple21_pilot/models/flat_raw/*_d21_var_flat_raw_*.json
+                 esmif: runs/dim21_eosbos (eos/bos-repeat redo, var21 job)
     pca60/90     esmc: pca_sweep esmc300m k=291/5883 (60/90% EV)
                  esmif: esmif_eos_sweep k=632 (60% EV) / k=4308 (90% EV, searched)
     dimselect    recursive search: runs/**/cv_results_*dimselect*.json
@@ -20,11 +21,10 @@ Alignment: identical cross-campaign checks as 21_dim21_delong.py — OOF
 fold-concat in numeric fold order, y_true must be byte-equal across arms;
 mismatch aborts with the offending arm named (never forced).
 
-KNOWN ARM MISMATCH (carried in the `note` column): ESM-IF PCA and dimselect
-reference arms run on eos/bos-repeat, varfold/global21 on eosrepeat — same
-rows/folds, different pad-mode embedding. ESM-C arms are all padtoken.
+All ESM-IF arms run on eos/bos-repeat (varfold/global21 redone 2026-10-30
+in varfold_pilot_eosbos/dim21_eosbos; PCA/dimselect already were).
 
-Output: runs/varfold_pilot/results/varfold_delong_pairs.tsv
+Output: runs/varfold_pilot_eosbos/results/varfold_delong_pairs.tsv
 """
 
 import argparse
@@ -57,6 +57,13 @@ load_oof, star = _d21.load_oof, _d21.star
 
 R = PROJECT_ROOT / "runs"
 VF = "varfold_pilot/models/varfold/cv_results_xgb_emb_{}_varfold_top{}_*.json"
+VF_BOS = ("varfold_pilot_eosbos/models/varfold/"
+          "cv_results_xgb_emb_{}_varfold_top{}_*.json")
+# tag collision: both dim21_eosbos jobs wrote tag simple21_var21 — the var21
+# (global variance top-21) job is the 20261030 run, first21 is 20261029.
+D21_BOS_VAR21 = ("dim21_eosbos/models/simple21/"
+                 "cv_results_xgb_emb_esmif_eos_bos_repeat_simple21_var21_"
+                 "20261030_011132.json")
 
 ARMS = {
     # ESM-C-300M padtoken
@@ -68,11 +75,10 @@ ARMS = {
                    "cv_results_xgb_emb_esmc300m_win_padtoken_pca291_flat_*.json"],
     "esmc_pca90": ["esmc300m_pca_sweep/models/flat/"
                    "cv_results_xgb_emb_esmc300m_win_padtoken_pca5883_flat_*.json"],
-    # ESM-IF (eos/bos-repeat for PCA refs — see note column)
-    "esmif_vf21": [VF.format("esmif_eosrepeat", 21)],
-    "esmif_vf50": [VF.format("esmif_eosrepeat", 50)],
-    "esmif_global21": ["simple21_pilot/models/flat_raw/"
-                       "cv_results_xgb_emb_esmif_eosrepeat_d21_var_flat_raw_*.json"],
+    # ESM-IF (all eos/bos-repeat)
+    "esmif_vf21": [VF_BOS.format("esmif_eos_bos_repeat", 21)],
+    "esmif_vf50": [VF_BOS.format("esmif_eos_bos_repeat", 50)],
+    "esmif_global21": [D21_BOS_VAR21],
     "esmif_pca60": ["esmif_eos_sweep/models/flat/"
                     "cv_results_xgb_emb_esmif_eos_bos_repeat_pca632_flat_*.json"],
     "esmif_pca90": ["esmif_eos_sweep/models/flat/"
@@ -90,11 +96,7 @@ FAMILIES = {
     "esmc": [(f"esmc_vf{n}", f"esmc_{r}") for n in (21, 50) for r in REFS],
     "esmif": [(f"esmif_vf{n}", f"esmif_{r}") for n in (21, 50) for r in REFS],
 }
-NOTES = {
-    "esmif_pca60": "eos_bos_repeat embedding (not eosrepeat)",
-    "esmif_pca90": "eos_bos_repeat embedding (not eosrepeat)",
-    "esmif_dimselect": "eos_bos_repeat embedding (not eosrepeat)",
-}
+NOTES = {}  # every esmif arm is eos/bos-repeat — no padmode mismatch left
 
 
 def find_json(rel):
@@ -109,11 +111,11 @@ def find_json(rel):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     ap.add_argument("--out", default=None,
-                    help="default: runs/varfold_pilot/results/"
+                    help="default: runs/varfold_pilot_eosbos/results/"
                          "varfold_delong_pairs.tsv")
     args = ap.parse_args()
     out = Path(args.out) if args.out else (
-        R / "varfold_pilot" / "results" / "varfold_delong_pairs.tsv")
+        R / "varfold_pilot_eosbos" / "results" / "varfold_delong_pairs.tsv")
 
     print("Loading OOF vectors ...")
     data, y_ref = {}, None

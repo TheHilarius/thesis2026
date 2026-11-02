@@ -13,10 +13,15 @@ the 10-rung family per embedding, thesis star convention (* p<.05, ** p<.01,
 *** p<.001, ns).
 
 Sources:
-    variance  runs/ev_matched_topXvariance_sweep/models/simple21/cv_results
-              *_simple21_var{X}_*.json  (X = n_dims from dim_variance ev JSON)
+    variance  esmc: runs/ev_matched_topXvariance_sweep/models/simple21/
+                    cv_results_*_simple21_var{X}_*.json
+              esmif: runs/ev_matched_topXvariance_sweep/models/vardims/
+                    cv_results_*_vardims_ev{ev}_var{X}_*.json  (eos/bos-repeat)
+              (X = n_dims from dim_variance ev JSON)
     PCA       campaign rows in runs/pca_sweep_delong/pca_sweep_results.csv
               resolved to their cv_results JSONs (esmif 90% = padmode_choice)
+
+All ESM-IF arms run on eos/bos-repeat (variance arm redone 2026-10-30).
 
 NOTE on comparability (kept in terminal caption): the EV ladder matches
 labels, not budgets — PCA's EV comes from the covariance spectrum (rotation,
@@ -63,11 +68,16 @@ _p15 = _load("p15", SRC_DIR / "15_padmode_significance.py")
 _d21 = _load("d21", SRC_DIR / "21_dim21_delong.py")
 load_oof, star = _d21.load_oof, _d21.star
 
-FAM = {  # emb_key -> (pca campaign, family color, pca feature token)
-    "esmc300m_win_padtoken": ("esmc300m_pca_sweep", "#EE6677",
-                              "esmc300m_win_padtoken"),
-    "esmif_eosrepeat": ("esmif_eos_sweep", "#4477AA",
-                        "esmif_eos_bos_repeat"),
+FAM = {  # emb_key -> (pca campaign, family color, pca feature token,
+         #              variance-arm glob template {key},{ev},{X})
+    "esmc300m_win_padtoken": (
+        "esmc300m_pca_sweep", "#EE6677", "esmc300m_win_padtoken",
+        "ev_matched_topXvariance_sweep/models/simple21/"
+        "cv_results_xgb_emb_{key}_simple21_var{X}_*.json"),
+    "esmif_eos_bos_repeat": (
+        "esmif_eos_sweep", "#4477AA", "esmif_eos_bos_repeat",
+        "ev_matched_topXvariance_sweep/models/vardims/"
+        "cv_results_xgb_emb_{key}_vardims_ev{ev}_var{X}_*.json"),
 }
 
 
@@ -106,7 +116,7 @@ def main():
 
     delong_rows, csv_rows = [], []
 
-    for key, (campaign, color, pca_tok) in FAM.items():
+    for key, (campaign, color, pca_tok, var_tmpl) in FAM.items():
         print(f"\n=== {key} ===")
         # ── resolve arms: per EV, one variance JSON + one PCA JSON ──
         arms = {}  # ev -> {"var": (path, mean, std, n_dims), "pca": (...)}
@@ -116,12 +126,11 @@ def main():
                 print(f"  WARN: missing {ej.name} — rung skipped")
                 continue
             n_dims = json.loads(ej.read_text())["n_dims"]
-            vp = resolve_json([f"ev_matched_topXvariance_sweep/models/simple21/"
-                               f"cv_results_xgb_emb_{key}_simple21_var{n_dims}_*.json"])
+            vp = resolve_json([var_tmpl.format(key=key, ev=ev, X=n_dims)])
             kk = pca_k(campaign).get(ev)
             pats = ([f"{campaign}/models/flat/"
                      f"cv_results_xgb_emb_{pca_tok}_pca{kk}_*.json"]
-                    if ev != 90 or key != "esmif_eosrepeat"
+                    if ev != 90 or key != "esmif_eos_bos_repeat"
                     else ["padmode_choice/models/flat/"
                           "cv_results_xgb_emb_esmif_eos_bos_repeat_pca4308_*.json",
                           f"{campaign}/models/flat/"
@@ -219,7 +228,7 @@ def main():
         ax.grid(axis="y", alpha=0.3)
         ax.legend(loc="upper left", fontsize=8, framealpha=0.9)
         title = ("ESM-C-300M padtoken" if key.startswith("esmc")
-                 else "ESM-IF (PCA: eos/bos-repeat, variance: eosrepeat)")
+                 else "ESM-IF (eos/bos-repeat)")
         ax.set_title(f"{title} — dim selection vs rotation at matched EV",
                      fontsize=11)
         fig.tight_layout()
@@ -259,9 +268,8 @@ def main():
           "concentration per component) while the selection EV sums "
           "individual dim variances (covariance ignored), so equal EV% "
           "never implies equal feature counts. Ticks: number of raw dims "
-          "selected at that threshold (EV% in parentheses). ESM-IF pad "
-          "mode: PCA arm on eos/bos-repeat, variance arm on eosrepeat "
-          "(same rows/folds).")
+          "selected at that threshold (EV% in parentheses). All ESM-IF "
+          "arms run on eos/bos-repeat.")
     print("=" * 60)
 
 
