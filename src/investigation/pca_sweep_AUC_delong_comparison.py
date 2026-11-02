@@ -21,6 +21,12 @@ Per campaign emits (into <campaign>/plots/), --refs both (default):
                                         bar with a vs-best bracket;
                                         display-only (CSVs/verdicts
                                         unchanged)
+    pca_sweep_auc_full_withfull_baselines.png
+                                        same as ..._nobaselines_withfull but
+                                        with BLOSUM50 + Sparse as solid grey
+                                        bars right of a dashed divider,
+                                        plus a feature-family legend
+                                        (display-only)
     pca_sweep_auc_line.png              clean log-x line + markers,
                                         baselines, no p-values
     pca_sweep_auc_line_nobaselines.png  same without baselines
@@ -39,7 +45,7 @@ Per campaign emits (into <campaign>/plots/), --refs both (default):
 
 All figures: title "PCA dimension sweep: <campaign>" (runtime: "Compute
 cost by PCA dimensionality: ..."), x = "Number of PCs" with ticks
-"k (EV%)", y = "Held-out AUC".  No in-figure captions — thesis figure
+"k (EV%)", y = "CV-AUC".  No in-figure captions — thesis figure
 captions live outside the plots.
 
 Reference k (hatched bar / open marker / bold tick / t-test) = best-AUC
@@ -367,12 +373,15 @@ def _shade(hex_color, f=0.65):
 
 
 def plot_auc(cfg, models, refs, pairs_vs_ref, out_png, ref_k,
-             alpha=0.05, min_delta=0.0, special_k=None):
+             alpha=0.05, min_delta=0.0, special_k=None, ref_bars=None):
     """Pooled AUC ± outer-fold std bars, brackets to the reference ONLY for
     k's significantly different from it (pairs_vs_ref = vs_best family).
     cfg['pending'] k's (results not in yet) get an empty ghost slot.
     special_k (full-dim arm) gets a darker hatched bar so it reads as a
-    different feature regime, not another ladder point."""
+    different feature regime, not another ladder point.
+    ref_bars (name -> model dict with auc/outer): baseline encodings drawn
+    as grey bars right of a dashed divider, after ladder + pending slots
+    (display-only, no brackets vs the ladder)."""
     ks = sorted(models)
     pending = sorted(cfg.get("pending", []))
     ref_i = ks.index(ref_k)
@@ -393,7 +402,7 @@ def plot_auc(cfg, models, refs, pairs_vs_ref, out_png, ref_k,
     base = max((pooled + ostd).max() + 0.05, ref_top + 0.04) + h
     y_top = max(1.0, base + (n_levels - 1) * step + 0.5 * step + 0.045)
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(10, 5) if ref_bars else (8, 5))
 
     for i, k in enumerate(ks):
         if k == special_k:
@@ -417,6 +426,33 @@ def plot_auc(cfg, models, refs, pairs_vs_ref, out_png, ref_k,
         ax.text(xi, 0.175, "pending", rotation=90, ha="center", va="center",
                 fontsize=7.5, color="0.5")
 
+    # baseline encoding bars (BLOSUM50, Sparse) after a group divider —
+    # both solid Tol-grey (matching the reference-line convention);
+    # distinguished by their tick labels
+    n_ladder = len(ks) + len(pending)
+    if ref_bars:
+        ax.axvline(n_ladder - 0.5, color="grey", ls="--", lw=0.8, zorder=3)
+        for j, (rname, r) in enumerate(ref_bars.items()):
+            xi = n_ladder + j
+            rstd = float(np.std(r["outer"], ddof=1))
+            ax.bar(xi, r["auc"], yerr=rstd, color=REF_STYLE.get(
+                       rname, {}).get("color", "#BBBBBB"),
+                   alpha=0.85, capsize=3, edgecolor="white", lw=0.5,
+                   zorder=3)
+            ax.text(xi, r["auc"] + rstd + 0.015, f"{r['auc']:.4f}",
+                    ha="center", va="bottom", fontsize=8, zorder=5,
+                    bbox=dict(fc="white", ec="none", alpha=0.75, pad=0.8))
+        # feature-family key: ladder/raw = <model> embedding, grey = AA encodings
+        from matplotlib.patches import Patch
+        ax.legend(
+            handles=[Patch(facecolor=cfg["color"], alpha=0.85,
+                           edgecolor="white", lw=0.5),
+                     Patch(facecolor="#BBBBBB", alpha=0.85,
+                           edgecolor="white", lw=0.5)],
+            labels=[cfg["title"], "AA encoding"],
+            loc="upper left", fontsize=9, frameon=True, framealpha=0.9,
+            edgecolor="0.6")
+
     draw_reference_lines(ax, refs, min_sep=0.06)
 
     for side, sign in ((left, -1), (right, +1)):
@@ -431,15 +467,17 @@ def plot_auc(cfg, models, refs, pairs_vs_ref, out_png, ref_k,
     ax.set_ylim(0, y_top)
     ax.set_yticks(np.arange(0, 1.01, 0.2))
     tick_ks = ks + pending
-    ax.set_xticks(np.arange(len(tick_ks)))
-    ax.set_xticklabels([_tick_label(cfg, k, set(pending)) for k in tick_ks],
-                       fontsize=7.5, rotation=35, ha="right",
-                       rotation_mode="anchor")
+    n_ticks = len(tick_ks) + (len(ref_bars) if ref_bars else 0)
+    ax.set_xticks(np.arange(n_ticks))
+    ax.set_xticklabels(
+        [_tick_label(cfg, k, set(pending)) for k in tick_ks]
+        + (list(ref_bars) if ref_bars else []),
+        fontsize=7.5, rotation=35, ha="right", rotation_mode="anchor")
     for lab, k in zip(ax.get_xticklabels(), tick_ks):
         if k in pending:
             lab.set_color("0.5")
     ax.set_xlabel("Number of PCs")
-    ax.set_ylabel("Held-out AUC")
+    ax.set_ylabel("CV-AUC")
     ax.grid(True, axis="y", alpha=0.3)
 
     _finish(fig, ax, f"PCA dimension sweep: {cfg['title']}", out_png)
@@ -482,7 +520,7 @@ def plot_line(cfg, models, refs, out_png, ref_k, rot=35):
                 (pending[-1] if pending else ks[-1]) * 1.6)
     ax.set_ylim(0, 1)
     ax.set_xlabel("Number of PCs")
-    ax.set_ylabel("Held-out AUC")
+    ax.set_ylabel("CV-AUC")
     ax.grid(True, alpha=0.3)
     ax.legend(fontsize=8, loc="lower left", frameon=False)
     _finish(fig, ax, f"PCA dimension sweep: {cfg['title']}", out_png)
@@ -720,6 +758,14 @@ def main():
                      cfg["out"] /
                      "pca_sweep_auc_full_nobaselines_withfull.png",
                      ref_k=best_k, special_k=fk)
+            # NEW display-only variant: raw arm + baseline encoding BARS
+            # (BLOSUM50, Sparse right of a divider). Existing figures and
+            # CSVs/verdicts stay byte-identical.
+            if refs_mode in ("both", "with"):
+                plot_auc(cfg, found_full, {}, fam_best_full,
+                         cfg["out"] /
+                         "pca_sweep_auc_full_withfull_baselines.png",
+                         ref_k=best_k, special_k=fk, ref_bars=refs)
             # raw arm joins the runtime figure + its own fold-seconds test
             cfg["wall_h"][fk] = full_cfg["wall_h"]
             cfg["cores"][fk] = full_cfg["cores"]

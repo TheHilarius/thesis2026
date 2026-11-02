@@ -212,7 +212,7 @@ def main():
             + [raw_label],
             fontsize=8, rotation=35, ha="right", rotation_mode="anchor")
         ax.set_xlabel("raw dims selected by cumulative variance (EV threshold)")
-        ax.set_ylabel("AUC-ROC (nested CV, mean +/- std)")
+        ax.set_ylabel("CV-AUC")
         ax.grid(axis="y", alpha=0.3)
         title = ("ESM-C-300M padtoken" if key.startswith("esmc")
                  else "ESM-IF (eos/bos-repeat)")
