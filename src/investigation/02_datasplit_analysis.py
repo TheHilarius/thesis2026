@@ -10,20 +10,27 @@ import sys
 import os
 
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
+PIPELINE_DIR = os.path.join(SRC_DIR, "..", "pipeline", "python")
+if PIPELINE_DIR not in sys.path:
+    sys.path.insert(0, PIPELINE_DIR)
 if SRC_DIR not in sys.path:
     sys.path.insert(0, SRC_DIR)
 
 import pandas as pd
 import numpy as np
 from datetime import datetime
+from pathlib import Path
 
 from config import (
-    SPLIT_DATA_PATH, LOG_DIR,
+    DATA_DIR, SPLIT_DATA_PATH, LOG_DIR,
     N_CV_FOLDS, HELD_OUT_INDEX,
-    LABEL_COL, FOLD_COL,
+    LABEL_COL, FOLD_COL, PEPTIDE_COL,
     METADATA_COLS, POSITION_AA_COLS,
     get_feature_cols, validate_config,
 )
+
+CLUSTER_MAP_PATH = DATA_DIR / "cluster_map_peptide.csv"
+FOLD_AUDIT_OUT = "results/tables/fold_audit_cluster.csv"
 
 
 # ──────────────────────────────────────────────
@@ -363,7 +370,174 @@ def report_nan_per_fold(df, feature_cols):
 
 
 # ──────────────────────────────────────────────
-# 10. MAIN
+# 10. FOLD-DIFFICULTY AUDIT (cluster-preserving permutation null)
+# ──────────────────────────────────────────────
+
+def load_cluster_map():
+    """
+    Load the peptide -> homology-cluster map built by 29_build_cluster_map.py.
+    Returns None (with instructions) if the file does not exist yet.
+    """
+    if not CLUSTER_MAP_PATH.exists():
+        print(f"\n{'=' * 80}")
+        print("FOLD-DIFFICULTY AUDIT -- SKIPPED")
+        print("=" * 80)
+        print(f"  Cluster map not found: {CLUSTER_MAP_PATH}")
+        print(f"  Build it once with:")
+        print(f"    python src/investigation/29_build_cluster_map.py")
+        return None
+    cmap = pd.read_csv(CLUSTER_MAP_PATH)
+    print(f"\n  Loaded cluster map: {len(cmap)} peptides, "
+          f"{cmap['cluster_id'].nunique()} clusters")
+    return cmap
+
+
+def _fold_stats_from_assignment(assign_idx, folds, w_rows, w_pos, w_size):
+    """
+    Compute per-fold stats for one cluster->fold assignment.
+
+    assign_idx : int array, fold position (0..len(folds)-1) per cluster
+    Returns dict stat -> array over folds.
+    """
+    k = len(folds)
+    rows = np.bincount(assign_idx, weights=w_rows, minlength=k)
+    pos = np.bincount(assign_idx, weights=w_pos, minlength=k)
+    ncl = np.bincount(assign_idx, minlength=k).astype(float)
+    upep = np.bincount(assign_idx, weights=w_size, minlength=k)
+    largest = np.zeros(k)
+    for fi in range(k):
+        m = assign_idx == fi
+        largest[fi] = w_rows[m].max() if m.any() else 0.0
+    with np.errstate(divide="ignore", invalid="ignore"):
+        stats = {
+            "rows": rows,
+            "pos_pct": np.where(rows > 0, pos / rows * 100, np.nan),
+            "dup_frac": np.where(rows > 0, 1.0 - upep / rows, np.nan),
+            "n_clusters": ncl,
+            "mean_cl_size": np.where(ncl > 0, upep / ncl, np.nan),
+            "largest_share": np.where(rows > 0, largest / rows * 100, np.nan),
+        }
+    return stats
+
+
+def report_fold_difficulty_audit(df, cmap, n_perm=1000, seed=42):
+    """
+    Per-fold difficulty audit with a cluster-preserving permutation null.
+
+    Null: each homology cluster is independently re-dealt to a CV fold with
+    probability = that fold's observed row share (so expected fold sizes
+    match). Whole clusters move together, preserving homology structure.
+    Held-out fold is reported observed-only and excluded from the null.
+
+    Writes FOLD_AUDIT_OUT (results/tables/fold_audit_cluster.csv).
+    """
+    print(f"\n{'=' * 80}")
+    print("FOLD-DIFFICULTY AUDIT (cluster-preserving permutation null)")
+    print("=" * 80)
+
+    cv_folds = [f for f in range(N_CV_FOLDS) if f != HELD_OUT_INDEX]
+    k = len(cv_folds)
+    fold_pos = {f: i for i, f in enumerate(cv_folds)}
+
+    # -- Per-cluster table (CV folds only for the null) --
+    rows = df[[PEPTIDE_COL, LABEL_COL, FOLD_COL]].merge(
+        cmap[["peptide", "cluster_id", "cluster_size"]],
+        left_on=PEPTIDE_COL, right_on="peptide", how="left",
+    )
+    if rows["cluster_id"].isna().any():
+        missing = rows.loc[rows["cluster_id"].isna(), PEPTIDE_COL].nunique()
+        print(f"  WARNING: {missing} peptides in split data have no cluster entry "
+              f"(stale map?). Re-run 29_build_cluster_map.py.")
+        rows = rows.dropna(subset=["cluster_id"])
+    rows["cluster_id"] = rows["cluster_id"].astype(int)
+
+    cv = rows[rows[FOLD_COL].isin(cv_folds)].copy()
+    g = cv.groupby("cluster_id")
+    cl = pd.DataFrame({
+        "cluster_rows": g.size(),
+        "cluster_pos": g[LABEL_COL].sum(),
+        "cluster_size": g["cluster_size"].first(),
+        "fold": g[FOLD_COL].first(),
+    }).reset_index()
+
+    w_rows = cl["cluster_rows"].to_numpy(dtype=float)
+    w_pos = cl["cluster_pos"].to_numpy(dtype=float)
+    w_size = cl["cluster_size"].to_numpy(dtype=float)
+    obs_assign = cl["fold"].map(fold_pos).to_numpy(dtype=int)
+
+    obs = _fold_stats_from_assignment(obs_assign, cv_folds, w_rows, w_pos, w_size)
+
+    # -- Null --
+    print(f"  Permuting {len(cl)} clusters over {k} folds x {n_perm} reps "
+          f"(seed={seed}) ...")
+    rng = np.random.default_rng(seed)
+    shares = np.array([w_rows[obs_assign == fi].sum() for fi in range(k)])
+    shares = shares / shares.sum()
+    stat_names = list(obs.keys())
+    nulls = {s: np.empty((n_perm, k)) for s in stat_names}
+    for r in range(n_perm):
+        a = rng.choice(k, p=shares, size=len(cl))
+        st = _fold_stats_from_assignment(a, cv_folds, w_rows, w_pos, w_size)
+        for s in stat_names:
+            nulls[s][r] = st[s]
+    lo = {s: np.nanpercentile(nulls[s], 2.5, axis=0) for s in stat_names}
+    hi = {s: np.nanpercentile(nulls[s], 97.5, axis=0) for s in stat_names}
+
+    # -- Report --
+    print(f"\n  {'Fold':<6} {'Stat':<13} {'Observed':>10} "
+          f"{'Null 95%':>22}  Flag")
+    print(f"  {'-' * 62}")
+    out_records = []
+    n_out = 0
+    for s in stat_names:
+        for fi, f in enumerate(cv_folds):
+            o, l, h = obs[s][fi], lo[s][fi], hi[s][fi]
+            flag = "OUTLIER" if (o < l or o > h) else "ok"
+            if flag == "OUTLIER":
+                n_out += 1
+            print(f"  {f:<6} {s:<13} {o:>10.2f} "
+                  f"[{l:>8.2f}, {h:>8.2f}]  {flag}")
+            out_records.append({"fold": f, "role": f"CV fold {f}", "stat": s,
+                                "observed": o, "null_lo": l, "null_hi": h,
+                                "flag": flag})
+
+    # -- Held-out, observed only --
+    ho = df[df[FOLD_COL] == HELD_OUT_INDEX]
+    ho_upep = ho[PEPTIDE_COL].nunique()
+    ho_pos = int((ho[LABEL_COL] == 1).sum())
+    ho_stats = {"rows": float(len(ho)),
+                "pos_pct": ho_pos / len(ho) * 100 if len(ho) else float("nan"),
+                "dup_frac": 1.0 - ho_upep / len(ho) if len(ho) else float("nan"),
+                "n_clusters": float(cmap[cmap["fold"] == HELD_OUT_INDEX]
+                                     ["cluster_id"].nunique()),
+                "mean_cl_size": float("nan"), "largest_share": float("nan")}
+    for s in stat_names:
+        out_records.append({"fold": HELD_OUT_INDEX, "role": "Held-out",
+                            "stat": s, "observed": ho_stats[s],
+                            "null_lo": float("nan"), "null_hi": float("nan"),
+                            "flag": "n/a (held-out)"})
+    print(f"\n  Held-out fold {HELD_OUT_INDEX} (observed only, excluded from null): "
+          f"rows={len(ho)}, pos%={ho_stats['pos_pct']:.1f}, "
+          f"dup_frac={ho_stats['dup_frac']:.3f}, "
+          f"n_clusters={ho_stats['n_clusters']:.0f}")
+
+    # -- Save --
+    audit_df = pd.DataFrame(out_records)
+    out_path = Path(FOLD_AUDIT_OUT)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    audit_df.to_csv(out_path, index=False)
+    print(f"\n  Saved: {out_path}")
+    if n_out == 0:
+        print("  Verdict: all CV-fold stats inside null 95% intervals "
+              "-- no fold stands out (H1 not supported by size/composition).")
+    else:
+        print(f"  Verdict: {n_out} fold-stat(s) outside null 95% intervals "
+              f"-- inspect flagged cells above.")
+    return audit_df
+
+
+# ──────────────────────────────────────────────
+# 11. MAIN
 # ──────────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -420,6 +594,11 @@ if __name__ == "__main__":
 
     # -- Summary stats --
     report_feature_summary(df, feature_cols)
+
+    # -- Fold-difficulty audit (needs 29_build_cluster_map.py output) --
+    cmap = load_cluster_map()
+    if cmap is not None:
+        report_fold_difficulty_audit(df, cmap)
 
     # -- Footer --
     n_features = len(feature_cols)

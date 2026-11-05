@@ -2,7 +2,7 @@
 
 Exploratory, diagnostic, and one-off analysis scripts supporting the MHC-I antigen-processing pipeline. Not part of the numbered pipeline run order — these investigate data quality, embedding behaviour, and model results around it.
 
-27 scripts (6 R, 21 Python), grouped by function. Numbering is chronological, not semantic — there are two 09s, two 10s, and two 11s covering different topics.
+28 scripts (6 R, 22 Python), grouped by function. Numbering is chronological, not semantic — there are two 09s, two 10s, and two 11s covering different topics.
 
 ## Run conventions
 
@@ -10,7 +10,7 @@ Exploratory, diagnostic, and one-off analysis scripts supporting the MHC-I antig
   - **ESM-C env** — `esm` 3.x package (EvolutionaryScale), Windows anaconda. From WSL: `/mnt/c/Users/olive/anaconda3/python.exe <script>`. See `requirements_esmc_working.txt`.
   - **ESM-IF env** — `fair-esm` 2.0.0, conda `esm_gpu` on the H100 cluster. `No module named 'esm.inverse_folding'` = wrong env. See `requirements_esmif_working.txt`.
   - Inspection/QA scripts (group E) and most analysis scripts need only h5py/pandas/matplotlib/sklearn — run in either env.
-- **Config import gotcha:** `02_datasplit_analysis.py`, `05_model_analysis.py`, `06_feature_importance.py` insert only `src/investigation` into `sys.path` yet `from config import ...` (config lives in `src/pipeline/python/`) → run with `PYTHONPATH=src/pipeline/python` or from that dir. `08_pca_variance_analysis.py`, `09_padmode_subset_auc.py`, `10_pad_subset_auc.py` bootstrap correctly; `07`, `09_sequence_consistency_audit`, `10_dynamic_coordinate_translation`, `11_isoform_structure_audit`, `12_indexing_audit` don't need config.
+- **Config import gotcha:** `05_model_analysis.py`, `06_feature_importance.py` insert only `src/investigation` into `sys.path` yet `from config import ...` (config lives in `src/pipeline/python/`) → run with `PYTHONPATH=src/pipeline/python` or from that dir. `02_datasplit_analysis.py`, `08_pca_variance_analysis.py`, `09_padmode_subset_auc.py`, `10_pad_subset_auc.py`, `29_build_cluster_map.py` bootstrap correctly; `07`, `09_sequence_consistency_audit`, `10_dynamic_coordinate_translation`, `11_isoform_structure_audit`, `12_indexing_audit` don't need config.
 - **R scripts:** `04`, `09_numeric`, `10`, `11` `source("src/pipeline/r/functions.R")` → launch from repo root; `set_working_directory()` then hard-`setwd`s per username (`olive` → Windows path) and **stops on unknown users** (WSL `olivers` fails). `01`, `02` use plain relative paths, no `source()` — run from repo root.
 - Most scripts resolve `data/`, `models/`, `results/` relative to CWD → run from repo root unless noted.
 - **BLOSUM naming (changed 2026-10-12):** every run, filename, `features_key`, TSV entry, or annotation dated **before 2026-10-12** that says `blosum` or `handcrafted_blosum` refers to **BLOSUM50** — nothing else existed. New runs must use an explicit encoding key: `blosum50` / `blosum62` / `blosum80` / `kidera` / `atchley` (`get_feature_set_config("blosum")` now raises). `config.canonical_feature_set()` and the alias table in `extract_model_metrics.py` map legacy labels to `blosum50` when reading old results. Analysis scripts matching historical filenames (e.g. `15_padmode_significance.py`, `plot_padmode_data_compare.py`, `14_plot_grid_auc.py`, `16_esmc300_vs_600.py`) intentionally keep the old `blosum` strings — on-disk artifacts are unchanged.
@@ -63,14 +63,21 @@ Exploratory, diagnostic, and one-off analysis scripts supporting the MHC-I antig
 
 ---
 
-## Data & structure audits (Python, 5)
+## Data & structure audits (Python, 6)
 
-### `02_datasplit_analysis.py` — ⚠ import bug
-**Purpose** — Post-split data-quality report: fold validity, label balance, feature dtypes, NaN/Inf audit per label and per fold, constant columns. Run after `01_datasplit.py`, before CV.
-**Input** — `data/processed/df_all_with_folds.csv` (fold column: 5 CV folds + held-out bucket 5).
-**Output** — `logs/02_datasplit_analysis_log_<ts>.txt` only (tee'd stdout).
-**How** — Pandas: fold validation vs `config.N_CV_FOLDS`; positional-AA audit vs canonical 20-AA set; NaN/Inf % by label (leakage warning when concentrated in one class); per-fold NaN totals; constant cols; `describe()`.
-**Notes** — Broken sys.path bootstrap → needs `PYTHONPATH=src/pipeline/python`. Stale "17 columns" docstring (config has 29). Exit 1 on fold validation failure.
+### `02_datasplit_analysis.py`
+**Purpose** — Post-split data-quality report: fold validity, label balance, feature dtypes, NaN/Inf audit per label and per fold, constant columns, plus fold-difficulty audit (Analysis A). Run after `01_datasplit.py`, before CV.
+**Input** — `data/processed/df_all_with_folds.csv` (fold column: 5 CV folds + held-out bucket 5); `data/processed/cluster_map_peptide.csv` (from `29_build_cluster_map.py`; audit section skipped with instructions if missing).
+**Output** — `logs/02_datasplit_analysis_log_<ts>.txt` (tee'd stdout); `results/tables/fold_audit_cluster.csv` (per-fold rows/pos%/dup-frac/n-clusters/mean-size/largest-share vs 1000-rep cluster-preserving permutation null, OUTLIER flags).
+**How** — Pandas: fold validation vs `config.N_CV_FOLDS`; positional-AA audit vs canonical 20-AA set; NaN/Inf % by label (leakage warning when concentrated in one class); per-fold NaN totals; constant cols; `describe()`; cluster-preserving null re-deals whole homology clusters to folds with prob = observed fold row shares (seed 42), held-out reported observed-only.
+**Notes** — sys.path bootstrap fixed (runs from repo root, no PYTHONPATH needed). Stale "17 columns" docstring (config has 29). Exit 1 on fold validation failure. First run 2026-11-05: all CV-fold stats inside null 95% — no fold stands out on size/composition.
+
+### `29_build_cluster_map.py`
+**Purpose** — Reconstruct peptide-homology clusters with `01_datasplit.cluster_by_hamming` (Hamming ≤1 Union-Find) and save a reusable peptide → cluster map. One-time build; consumed by `02_datasplit_analysis.py` fold-difficulty audit and future B/C/D analyses.
+**Input** — `data/processed/df_all_with_folds.csv` (`peptide`, `fold`).
+**Output** — `data/processed/cluster_map_peptide.csv` (`peptide, cluster_id, cluster_size, cluster_rows, fold`; id 0 = largest cluster).
+**How** — Imports `cluster_by_hamming` from `01_datasplit` (no logic duplication); stable IDs sorted by (−size, min peptide); asserts no peptide split across folds (FATAL if violated) and reports homology clusters spanning folds (leakage check on the saved split).
+**Notes** — 2026-11-05 build: 44,504 peptides → 43,164 clusters (97.4% singletons, largest 14 peptides), zero cross-fold clusters — saved split is homology-clean.
 
 ### `09_sequence_consistency_audit.py` — audit chain step 1
 **Purpose** — Global-align each protein's canonical UniProt sequence (`df_all` `sequence`) against the AlphaFold PDB SEQRES — detect silent coordinate shifts from isoform canonicalization.
@@ -257,7 +264,7 @@ R analyses:
 
 ## Cross-cutting gotchas
 
-1. **Broken config import** — `02_datasplit_analysis.py`, `05_model_analysis.py`, `06_feature_importance.py` need `PYTHONPATH=src/pipeline/python` (their bootstrap inserts only `src/investigation`). Not fixed yet; documented workaround.
+1. **Broken config import** — `05_model_analysis.py`, `06_feature_importance.py` need `PYTHONPATH=src/pipeline/python` (their bootstrap inserts only `src/investigation`). (`02_datasplit_analysis.py` fixed 2026-11-05.) Not fixed yet for 05/06; documented workaround.
 2. **R setwd double-bind** — `04`, `09_numeric`, `10`, `11` need repo-root launch for `source(functions.R)`, then `set_working_directory()` hard-setwds per username and stops for unknown users (WSL `olivers` fails; `olive` branch is a Windows path).
 3. **Not re-runnable today (inputs missing)** — `01_structural_filtering_plots.R` (4 CSVs gone), `02_pca_optimization_analysis.R` (JSONs gone; also superseded), `04_data_overview_figures.R` (needs pipeline r/04 rerun for `sankey_counts.csv`).
 4. **Legacy vs current H5 generation** — `inspect_embeddings.py`, `report_structure_coverage.py`, `summarize_embeddings.py` target single-context/3-region H5s no longer on disk; current generation is `inspect_window_embeddings.py` + the 8 window H5s.
@@ -274,7 +281,8 @@ R analyses:
 | `09_numeric_feature_analysis.R` | Yes | Yes (user `olive`, Windows R, repo root) |
 | `10_categorical_residue_analysis.R` | Yes | Yes (same caveat; 2 subdirs must pre-exist) |
 | `11_structural_preference_logo.R` | Yes | Yes (same caveat) |
-| `02_datasplit_analysis.py` | Yes | Yes, with PYTHONPATH workaround |
+| `02_datasplit_analysis.py` | Yes | Yes |
+| `29_build_cluster_map.py` | Yes | Yes |
 | `05_model_analysis.py` | Depends on models/ JSONs | Yes, with PYTHONPATH workaround |
 | `06_feature_importance.py` | Depends on models/ pickles | Yes, with PYTHONPATH workaround |
 | `07_compare_heldout_roc.py` | Depends on models/ JSONs | Yes — fully portable |

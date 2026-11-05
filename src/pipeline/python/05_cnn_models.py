@@ -17,6 +17,18 @@ CNN_REGISTRY = {
         "display_name": "Simple CNN (1x Conv k=3 + GAP)",
         "params": {"channels": 32, "kernel": 3},
     },
+    "cnn_simple_k5": {
+        "display_name": "Simple CNN (1x Conv k=5 + GAP)",
+        "params": {"channels": 32, "kernel": 5},
+    },
+    "cnn_simple_k7": {
+        "display_name": "Simple CNN (1x Conv k=7 + GAP)",
+        "params": {"channels": 32, "kernel": 7},
+    },
+    "cnn_simple_k9": {
+        "display_name": "Simple CNN (1x Conv k=9 + GAP)",
+        "params": {"channels": 32, "kernel": 9},
+    },
     "cnn_2layer": {
         "display_name": "CNN 2-layer (2x Conv k=3 + GAP, receptive field 5)",
         "params": {"channels": 32, "kernel": 3},

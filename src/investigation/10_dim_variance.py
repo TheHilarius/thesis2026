@@ -163,13 +163,13 @@ def main():
         # used (so topX_variance is directly comparable to PCA at that EV,
         # with no PCA/rotation involved).
         if args.ev:
-            cum = np.cumsum(mean_cv[order]) / mean_cv.sum()
+            cumul = np.cumsum(mean_cv[order]) / mean_cv.sum()
             ev_rows = []
             for thr in args.ev:
-                x = int(np.searchsorted(cum, thr / 100.0) + 1)
+                x = int(np.searchsorted(cumul, thr / 100.0) + 1)
                 x = min(x, len(order))
                 dims_x = sorted(int(s) for s in order[:x])
-                share = float(cum[x - 1])
+                share = float(cumul[x - 1])
                 ev_path = out_dir / f"dim_variance_{key}_ev{thr}.json"
                 ev_path.write_text(json.dumps({
                     "embedding_key": key,
