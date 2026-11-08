@@ -1885,10 +1885,12 @@ if __name__ == "__main__":
                 raise ValueError(
                     "autoencoder supports window embeddings only "
                     f"(component '{comp_key}' is '{emb_data.get('kind')}')")
-            if args.ae_latent >= emb_data["emb_dim"]:
+            # latent == D allowed as the no-compression control arm
+            # (encoder = D->D->D learned transform); must not EXCEED D
+            if args.ae_latent > emb_data["emb_dim"]:
                 raise ValueError(
-                    f"--ae-latent {args.ae_latent} >= D={emb_data['emb_dim']} "
-                    f"({comp_key}) — latent must shrink")
+                    f"--ae-latent {args.ae_latent} > D={emb_data['emb_dim']} "
+                    f"({comp_key}) — latent must not exceed D")
             emb_data["autoencoder"] = {
                 "latent": int(args.ae_latent),
                 "epochs": int(args.ae_epochs),
