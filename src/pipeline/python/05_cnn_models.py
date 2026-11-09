@@ -134,8 +134,10 @@ class TwoLayerCNN(nn.Module):
         return self.fc(h).squeeze(-1)
 
 
-def build_cnn(model_key, in_channels, window=29):
+def build_cnn(model_key, in_channels, window=29, channels_override=None):
+    """Build by registry key; channels_override (channel sweep) beats registry C."""
     cfg = get_cnn_config(model_key)["params"]
+    channels = cfg["channels"] if channels_override is None else int(channels_override)
     if model_key == "cnn_2layer":
-        return TwoLayerCNN(in_channels, cfg["channels"], cfg["kernel"])
-    return SimpleCNN(in_channels, cfg["channels"], cfg["kernel"])
+        return TwoLayerCNN(in_channels, channels, cfg["kernel"])
+    return SimpleCNN(in_channels, channels, cfg["kernel"])

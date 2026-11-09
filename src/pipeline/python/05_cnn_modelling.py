@@ -1,8 +1,14 @@
 """
 05_cnn_modelling.py
 CNN counterpart of 04_modelling.py: same folds/labels/splits, same
-logs/<mode> + models/<mode>/cv_results JSON layout, but raw (N,29,D)
+logs/<mode> + models/<mode>/cv_results JSON layout, but raw (N,L,D)
 windows + torch Conv1d instead of flat PCA + sklearn.
+
+CANONICAL PROTOCOL (from Nov 2026): flank5-19mer embeddings via
+THESIS_VARIANT=flank5 (L=19), 30 epochs / patience 5 / per-fold seeds.
+Proven better than full-29mer (k5 flank5 0.6674 > full 0.6536) and than
+short 20/3 budget (stops in flat noise). Full-29 (L=29) + 20/3 fixed-seed
+is legacy record only, not for new runs.
 
 SIMPLE 6-FOLD CV (experimentation): 6 buckets, 6 models.
 Each bucket serves once as validation, the other 5 as train.
@@ -13,8 +19,9 @@ Per-epoch train-loss / val-AUC histories logged per bucket + one PNG.
 Usage:
     python 05_cnn_modelling.py --model cnn_simple --features emb_esmc300m_win_padtoken
     python 05_cnn_modelling.py --model cnn_2layer --features emb_esmif_eos_bos_repeat
+    python 05_cnn_modelling.py --model cnn_simple_k7 --channels 64  (channel sweep override)
 
-Pooling is naive GAP over all 29 slots (no pad mask).
+Pooling is naive GAP over all L slots (L=29 full, L=19 flank5; no pad mask).
 
 Outputs (mirrors 04):
     <out-root>/logs/cnn/05_cnn_modelling_<run_tag>_log_<ts>.txt
@@ -208,6 +215,9 @@ def parse_args():
                      help="Base seed; per-fold seed = base + bucket unless --seed-mode fixed")
     p.add_argument("--seed-mode", choices=["perfold", "fixed"], default="perfold",
                      help="perfold: seed 42+bucket per fold (default); fixed: same seed all folds (legacy)")
+    p.add_argument("--channels", type=int, default=None,
+                   help="Override registry channels for channel sweeps; "
+                        "recorded in run_tag as _cC and in the results JSON")
     p.add_argument("--out-root", default=None, help="Campaign folder (mirrors 04 --out-root)")
     return p.parse_args()
 
@@ -218,6 +228,9 @@ if __name__ == "__main__":
     feat_cfg = get_feature_set_config(args.features)
     validate_feature_set(feat_cfg)
     cnn_cfg = get_cnn_config(args.model)
+    eff_params = dict(cnn_cfg["params"])  # copy: registry dict stays untouched
+    if args.channels is not None:
+        eff_params["channels"] = args.channels
 
     # Emb-only v1: exactly one embedding_windows component
     emb_keys = [c for c in feat_cfg["components"]
@@ -241,6 +254,8 @@ if __name__ == "__main__":
         window = int(f.attrs.get("window", 29))
 
     run_tag = f"{args.model}_{args.features}_cnn"
+    if args.channels is not None:
+        run_tag = f"{args.model}_c{args.channels}_{args.features}_cnn"  # file separation per C
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     if args.out_root and args.out_root != ".":
         out_base = Path(args.out_root)
@@ -264,7 +279,7 @@ if __name__ == "__main__":
     if device == "cuda":
         torch.cuda.reset_peak_memory_stats()
     print(f"  device={device} epochs={args.epochs} bs={args.batch_size} lr={args.lr} patience={args.patience}")
-    print(f"  params: {cnn_cfg['params']}")
+    print(f"  params: {eff_params}" + ("  (channels override)" if args.channels is not None else ""))
     if device == "cuda":
         print(f"  gpu_mem_total={torch.cuda.get_device_properties(0).total_memory / 1e9:.1f}GB")
 
@@ -287,7 +302,7 @@ if __name__ == "__main__":
                         batch_size=args.batch_size, shuffle=True)
         vl = DataLoader(WindowDataset(h5_path, ds_name, va_idx, labels[va_idx]),
                         batch_size=args.batch_size)
-        net = build_cnn(args.model, emb_dim, window)
+        net = build_cnn(args.model, emb_dim, window, channels_override=args.channels)
         if n_params is None:
             n_params = sum(p.numel() for p in net.parameters())
         net, hist, bauc = train_one_fold(net, tl, vl, device, args.lr, args.epochs,
@@ -324,8 +339,9 @@ if __name__ == "__main__":
 
     curves_csv = plot_dir / f"learning_curves_{run_tag}_{ts}.csv"
     write_curves_csv(curves_csv, curves)
+    model_desc = args.model if args.channels is None else f"{args.model} C={args.channels}"
     meta = {"title": f"{cnn_cfg['display_name']} + {feat_cfg['display_name']} "
-                     f"({args.model}, {args.features})",
+                     f"({model_desc}, {args.features})",
             "buckets": bucket_stats}
     meta_path = plot_dir / f"learning_curves_{run_tag}_{ts}_meta.json"
     with open(meta_path, "w") as f:
@@ -357,7 +373,8 @@ if __name__ == "__main__":
                       "total_models": N_CV_FOLDS + 1,
                       "mask": "naive GAP (no mask)", "epochs": args.epochs,
                       "batch_size": args.batch_size, "lr": args.lr, "patience": args.patience,
-                      "hyperparameters": cnn_cfg["params"], "n_params": n_params,
+                      "hyperparameters": eff_params, "n_params": n_params,
+                      "channels_override": args.channels,
                       "emb_dim": emb_dim, "window": window, "device": device,
                       "random_state": args.seed, "seed_mode": args.seed_mode},
            "cv_summary": summary, "outer_val_metrics": outer_val_metrics,
