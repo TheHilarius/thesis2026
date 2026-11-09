@@ -32,14 +32,16 @@ export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:T
 
 MODEL="${MODEL:-cnn_simple_k5}"
 FEAT="${FEAT:-emb_esmc300m_win_padtoken}"
-EPOCHS="${EPOCHS:-20}"
+EPOCHS="${EPOCHS:-30}"
+PATIENCE="${PATIENCE:-5}"
+SEED_MODE="${SEED_MODE:-perfold}"
 OUT="${RUN:-runs/cnn_flank}"
 
 run_one() {
     local SUB="$1" VARIANT="$2"
     local TASK_OUT="$OUT/$SUB"
     mkdir -p "$TASK_OUT/models" "$TASK_OUT/logs/slurm" "$TASK_OUT/plots" "$TASK_OUT/results"
-    echo "=== task SUB=${SUB} VARIANT='${VARIANT}' model=${MODEL} features=${FEAT} epochs=${EPOCHS} out=${TASK_OUT} ==="
+    echo "=== task SUB=${SUB} VARIANT='${VARIANT}' model=${MODEL} features=${FEAT} epochs=${EPOCHS} patience=${PATIENCE} seed_mode=${SEED_MODE} out=${TASK_OUT} ==="
     if [ -n "$VARIANT" ]; then
         export THESIS_VARIANT="$VARIANT"
     else
@@ -59,6 +61,8 @@ import pathlib; assert pathlib.Path(src['prepared_path']).exists(), 'MISSING H5'
         --model "$MODEL" \
         --features "$FEAT" \
         --epochs "$EPOCHS" \
+        --patience "$PATIENCE" \
+        --seed-mode "$SEED_MODE" \
         --out-root "$TASK_OUT"
     echo "--- ${SUB} done ---"
     nvidia-smi --query-gpu=memory.used,memory.free --format=csv || true
@@ -78,8 +82,12 @@ fi
 
 echo "CNN flank task completed (model=${MODEL}, k=5)."
 
-# New experiment folder, both tasks in parallel (appends under one parent):
-#   OUT="runs/cnn_flank_20261109"; mkdir -p "$OUT/logs/slurm" && sbatch --output="$OUT/logs/slurm/%A_%a.out" --error="$OUT/logs/slurm/%A_%a.err" --export=RUN="$OUT",ALL src/run/run_cnn_flank_slurm.sh
+# Rerun full-vs-flank5: NEW per-fold seeds, LONGER budget (30 epochs / patience 5):
+#   OUT="runs/cnn_flank_rerun_$(date +%Y%m%d)"; mkdir -p "$OUT/logs/slurm" && sbatch --output="$OUT/logs/slurm/%A_%a.out" --error="$OUT/logs/slurm/%A_%a.err" --export=RUN="$OUT",ALL src/run/run_cnn_flank_slurm.sh
+# Short-budget override (original 20/3 feel, still per-fold seeds):
+#   OUT="runs/cnn_flank_short_$(date +%Y%m%d)"; mkdir -p "$OUT/logs/slurm" && sbatch --output="$OUT/logs/slurm/%A_%a.out" --error="$OUT/logs/slurm/%A_%a.err" --export=RUN="$OUT",EPOCHS=20,PATIENCE=3,ALL src/run/run_cnn_flank_slurm.sh
+# Reproduce the OLD fixed-seed results instead:
+#   OUT="runs/cnn_flank_fixed_$(date +%Y%m%d)"; mkdir -p "$OUT/logs/slurm" && sbatch --output="$OUT/logs/slurm/%A_%a.out" --error="$OUT/logs/slurm/%A_%a.err" --export=RUN="$OUT",SEED_MODE=fixed,ALL src/run/run_cnn_flank_slurm.sh
 # Override model/epochs:
 #   OUT="runs/cnn_flank_20261109"; sbatch --array=0-1 --output="$OUT/logs/slurm/%A_%a.out" --error="$OUT/logs/slurm/%A_%a.err" --export=RUN="$OUT",MODEL=cnn_simple_k5,EPOCHS=20,ALL src/run/run_cnn_flank_slurm.sh
 # Smoke test (2 epochs, full only):

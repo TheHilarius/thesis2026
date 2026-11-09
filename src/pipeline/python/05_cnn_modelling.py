@@ -6,7 +6,8 @@ windows + torch Conv1d instead of flat PCA + sklearn.
 
 SIMPLE 6-FOLD CV (experimentation): 6 buckets, 6 models.
 Each bucket serves once as validation, the other 5 as train.
-Same fixed seed for all 6 folds (no per-fold offset).
+Seeds differ per fold by default (base seed + bucket id); --seed-mode fixed
+restores the legacy single-seed protocol.
 Per-epoch train-loss / val-AUC histories logged per bucket + one PNG.
 
 Usage:
@@ -203,7 +204,10 @@ def parse_args():
     p.add_argument("--lr", type=float, default=1e-3)
     p.add_argument("--patience", type=int, default=3,
                    help="Early-stop patience on val AUC (epochs without improvement)")
-    p.add_argument("--seed", type=int, default=RANDOM_STATE)
+    p.add_argument("--seed", type=int, default=RANDOM_STATE,
+                     help="Base seed; per-fold seed = base + bucket unless --seed-mode fixed")
+    p.add_argument("--seed-mode", choices=["perfold", "fixed"], default="perfold",
+                     help="perfold: seed 42+bucket per fold (default); fixed: same seed all folds (legacy)")
     p.add_argument("--out-root", default=None, help="Campaign folder (mirrors 04 --out-root)")
     return p.parse_args()
 
@@ -264,7 +268,9 @@ if __name__ == "__main__":
     if device == "cuda":
         print(f"  gpu_mem_total={torch.cuda.get_device_properties(0).total_memory / 1e9:.1f}GB")
 
-    print(f"\n{'=' * 80}\nSIMPLE 6-FOLD CV  6 buckets = 6 models (fixed seed {args.seed})\n{'=' * 80}")
+    seed_desc = (f"fixed seed {args.seed}" if args.seed_mode == "fixed"
+                 else f"per-fold seeds (base {args.seed} + bucket id)")
+    print(f"\n{'=' * 80}\nSIMPLE 6-FOLD CV  6 buckets = 6 models ({seed_desc})\n{'=' * 80}")
     buckets = list(range(N_CV_FOLDS + 1))
     outer_val_metrics, outer_val_predictions = [], {}
     curves, bucket_stats = {}, {}
@@ -273,7 +279,8 @@ if __name__ == "__main__":
 
     for vb in buckets:
         t1 = time.time()
-        print(f"\n  BUCKET {vb}/{N_CV_FOLDS} (validation bucket = {vb})")
+        seed_fold = args.seed if args.seed_mode == "fixed" else args.seed + int(vb)
+        print(f"\n  BUCKET {vb}/{N_CV_FOLDS} (validation bucket = {vb}, seed = {seed_fold})")
         tr_idx = np.where(folds != vb)[0]
         va_idx = np.where(folds == vb)[0]
         tl = DataLoader(WindowDataset(h5_path, ds_name, tr_idx, labels[tr_idx]),
@@ -284,11 +291,12 @@ if __name__ == "__main__":
         if n_params is None:
             n_params = sum(p.numel() for p in net.parameters())
         net, hist, bauc = train_one_fold(net, tl, vl, device, args.lr, args.epochs,
-                                         args.patience, args.seed)
+                                         args.patience, seed_fold)
         curves[str(vb)] = {"train_loss": hist["train_loss"],
                            "val_auc": hist["val_auc"],
                            "best_val_auc": bauc,
-                           "epochs_run": len(hist["val_auc"])}
+                           "epochs_run": len(hist["val_auc"]),
+                           "seed": seed_fold}
         torch.save(net.state_dict(), model_dir / f"{run_tag}_val{vb}.pt")
         y_va = labels[va_idx].astype(int)
         bucket_stats[str(vb)] = {"n": int(len(y_va)),
@@ -351,7 +359,7 @@ if __name__ == "__main__":
                       "batch_size": args.batch_size, "lr": args.lr, "patience": args.patience,
                       "hyperparameters": cnn_cfg["params"], "n_params": n_params,
                       "emb_dim": emb_dim, "window": window, "device": device,
-                      "random_state": args.seed},
+                      "random_state": args.seed, "seed_mode": args.seed_mode},
            "cv_summary": summary, "outer_val_metrics": outer_val_metrics,
            "outer_val_predictions": outer_val_predictions,
            "learning_curves": curves,
