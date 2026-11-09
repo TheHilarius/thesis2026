@@ -29,6 +29,46 @@ CNN_REGISTRY = {
         "display_name": "Simple CNN (1x Conv k=9 + GAP)",
         "params": {"channels": 32, "kernel": 9},
     },
+    "cnn_simple_k11": {
+        "display_name": "Simple CNN (1x Conv k=11 + GAP)",
+        "params": {"channels": 32, "kernel": 11},
+    },
+    "cnn_simple_k13": {
+        "display_name": "Simple CNN (1x Conv k=13 + GAP)",
+        "params": {"channels": 32, "kernel": 13},
+    },
+    "cnn_simple_k15": {
+        "display_name": "Simple CNN (1x Conv k=15 + GAP)",
+        "params": {"channels": 32, "kernel": 15},
+    },
+    "cnn_simple_k17": {
+        "display_name": "Simple CNN (1x Conv k=17 + GAP)",
+        "params": {"channels": 32, "kernel": 17},
+    },
+    "cnn_simple_k19": {
+        "display_name": "Simple CNN (1x Conv k=19 + GAP)",
+        "params": {"channels": 32, "kernel": 19},
+    },
+    "cnn_simple_k21": {
+        "display_name": "Simple CNN (1x Conv k=21 + GAP)",
+        "params": {"channels": 32, "kernel": 21},
+    },
+    "cnn_simple_k23": {
+        "display_name": "Simple CNN (1x Conv k=23 + GAP)",
+        "params": {"channels": 32, "kernel": 23},
+    },
+    "cnn_simple_k25": {
+        "display_name": "Simple CNN (1x Conv k=25 + GAP)",
+        "params": {"channels": 32, "kernel": 25},
+    },
+    "cnn_simple_k27": {
+        "display_name": "Simple CNN (1x Conv k=27 + GAP)",
+        "params": {"channels": 32, "kernel": 27},
+    },
+    "cnn_simple_k29": {
+        "display_name": "Simple CNN (1x Conv k=29 + GAP)",
+        "params": {"channels": 32, "kernel": 29},
+    },
     "cnn_2layer": {
         "display_name": "CNN 2-layer (2x Conv k=3 + GAP, receptive field 5)",
         "params": {"channels": 32, "kernel": 3},

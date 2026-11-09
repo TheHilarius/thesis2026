@@ -36,7 +36,7 @@ mkdir -p "$OUT/models" "$OUT/logs/slurm" "$OUT/plots" "$OUT/results"
 
 echo "out=${OUT} features=${FEAT} epochs=${EPOCHS}"
 
-for MODEL in cnn_simple_k5 cnn_simple_k7 cnn_simple_k9; do
+for MODEL in ${MODELS:-cnn_simple_k11 cnn_simple_k13 cnn_simple_k15 cnn_simple_k17 cnn_simple_k19 cnn_simple_k21 cnn_simple_k23 cnn_simple_k25 cnn_simple_k27 cnn_simple_k29}; do
     echo "=== ${MODEL} x ${FEAT} (epochs=${EPOCHS}) ==="
     nvidia-smi --query-gpu=memory.used,memory.free --format=csv
     python src/pipeline/python/05_cnn_modelling.py \
@@ -48,7 +48,12 @@ for MODEL in cnn_simple_k5 cnn_simple_k7 cnn_simple_k9; do
     nvidia-smi --query-gpu=memory.used,memory.free --format=csv || true
 done
 
-echo "CNN kernel sweep (k5/k7/k9 sequential, one GPU, separate procs) completed."
+echo "CNN kernel sweep (large-k sequential, one GPU, separate procs) completed."
+
+# Continue in SAME experiment folder (appends; run_tag splits outputs, no overwrite):
+#   OUT="runs/cnn_kernel_20261106"; sbatch --output="$OUT/logs/slurm/%j.out" --error="$OUT/logs/slurm/%j.err" --export=RUN="$OUT",ALL src/run/run_cnn_kernel_slurm.sh
+# Rerun small-k if needed:
+#   OUT="runs/cnn_kernel_20261106"; sbatch --output="$OUT/logs/slurm/%j.out" --error="$OUT/logs/slurm/%j.err" --export=RUN="$OUT",MODELS="cnn_simple_k5 cnn_simple_k7 cnn_simple_k9",ALL src/run/run_cnn_kernel_slurm.sh
 
 # Submit (make the slurm log dir first -- sbatch will not make it for you):
 #   OUT="runs/cnn_kernel_20261106"; mkdir -p "$OUT/logs/slurm" && sbatch --export=RUN="$OUT",ALL src/run/run_cnn_kernel_slurm.sh

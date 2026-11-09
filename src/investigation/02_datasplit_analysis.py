@@ -4,8 +4,16 @@ Post-split data quality report: label balance, feature dtypes,
 NaN / Inf audit (with per-label breakdown), constant-column check,
 positional AA column audit, and summary statistics.
 Run AFTER 01_datasplit.py and BEFORE cross-validation.
+
+Usage:
+    python src/investigation/02_datasplit_analysis.py
+    python src/investigation/02_datasplit_analysis.py \
+        --split data/processed/df_all_with_folds_h2.csv \
+        --cluster-map data/processed/cluster_map_peptide_h2.csv \
+        --audit-out results/tables/fold_audit_cluster_h2.csv --tag h2
 """
 
+import argparse
 import sys
 import os
 
@@ -385,6 +393,8 @@ def load_cluster_map():
         print(f"  Cluster map not found: {CLUSTER_MAP_PATH}")
         print(f"  Build it once with:")
         print(f"    python src/investigation/29_build_cluster_map.py")
+        print(f"  (for a non-default split, also pass --split and the matching")
+        print(f"   --hamming-cutoff, then point --cluster-map here)")
         return None
     cmap = pd.read_csv(CLUSTER_MAP_PATH)
     print(f"\n  Loaded cluster map: {len(cmap)} peptides, "
@@ -542,10 +552,33 @@ def report_fold_difficulty_audit(df, cmap, n_perm=1000, seed=42):
 
 if __name__ == "__main__":
 
+    ap = argparse.ArgumentParser(
+        description="Post-split data quality report + fold-difficulty audit.")
+    ap.add_argument("--split", default=None,
+                    help="split CSV path (default: config SPLIT_DATA_PATH), "
+                         "e.g. data/processed/df_all_with_folds_h2.csv")
+    ap.add_argument("--cluster-map", default=None,
+                    help="cluster map from 29_build_cluster_map.py "
+                         "(default: data/processed/cluster_map_peptide.csv). "
+                         "Must match the split's Hamming cutoff.")
+    ap.add_argument("--audit-out", default=None,
+                    help="fold-audit CSV output path "
+                         "(default: results/tables/fold_audit_cluster.csv)")
+    ap.add_argument("--tag", default="",
+                    help="suffix for the log filename, e.g. 'h2'")
+    args = ap.parse_args()
+
+    split_path = Path(args.split) if args.split else Path(SPLIT_DATA_PATH)
+    if args.cluster_map:
+        CLUSTER_MAP_PATH = Path(args.cluster_map)
+    if args.audit_out:
+        FOLD_AUDIT_OUT = str(args.audit_out)
+    log_tag = f"_{args.tag}" if args.tag else ""
+
     validate_config()
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    LOG_PATH = LOG_DIR / f"02_datasplit_analysis_log_{timestamp}.txt"
+    LOG_PATH = LOG_DIR / f"02_datasplit_analysis_log_{timestamp}{log_tag}.txt"
     os.makedirs(LOG_DIR, exist_ok=True)
     logger = Logger(str(LOG_PATH))
     sys.stdout = logger
@@ -555,15 +588,15 @@ if __name__ == "__main__":
     print("  02_DATASPLIT_ANALYSIS -- POST-SPLIT DATA QUALITY REPORT")
     print("=" * 80)
     print(f"  Timestamp:       {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"  Data path:       {SPLIT_DATA_PATH}")
+    print(f"  Data path:       {split_path}")
     print(f"  Log path:        {LOG_PATH}")
     print(f"  CV folds (k):    {N_CV_FOLDS}")
     print(f"  Held-out bucket: {HELD_OUT_INDEX}")
     print("=" * 80)
 
     # -- Load --
-    print(f"\nLoading split data from: {SPLIT_DATA_PATH}")
-    df = pd.read_csv(SPLIT_DATA_PATH)
+    print(f"\nLoading split data from: {split_path}")
+    df = pd.read_csv(split_path)
     print(f"Shape: {df.shape[0]} rows x {df.shape[1]} columns")
 
     # -- Column inventory --

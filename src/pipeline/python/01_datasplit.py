@@ -1,10 +1,17 @@
 """
 01_datasplit.py
 Homology-based data splitting for MHC-I processing prediction.
+
+Usage:
+    python src/pipeline/python/01_datasplit.py
+    python src/pipeline/python/01_datasplit.py --hamming-cutoff 3 \
+        --split-out data/processed/df_all_with_folds_h3.csv
 """
 
+import argparse
 import sys
 import os
+from pathlib import Path
 
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 if SRC_DIR not in sys.path:
@@ -86,27 +93,106 @@ class UnionFind:
 # ──────────────────────────────────────────────
 
 AMINO_ACIDS = list("ACDEFGHIKLMNPQRSTVWY")
+AA_TO_INT = {aa: i for i, aa in enumerate(AMINO_ACIDS)}
+
+
+def iter_close_pairs(peps, max_dist):
+    """
+    Yield (i, j) index pairs (i < j; a pair can be yielded more than
+    once when it shares several bucket keys) of peptides at DIRECT
+    Hamming distance <= max_dist, for max_dist in {2, 3}.
+
+    Pigeonhole candidate index: positions are split into 3 contiguous
+    blocks. Two strings at Hamming distance <= 3 mismatch in at most 3
+    positions, so at least one block has <= 1 mismatch. Indexing each
+    peptide per block by its exact block string plus every
+    single-position wildcard variant ('*') collects a superset of all
+    close pairs into shared buckets; every candidate pair is verified
+    with the true Hamming distance before being yielded.
+    """
+    if max_dist not in (2, 3):
+        raise ValueError(
+            f"iter_close_pairs supports max_dist 2 or 3, got {max_dist}")
+    L = len(peps[0])
+    if any(len(p) != L for p in peps):
+        raise ValueError(
+            "All peptides must have equal length for Hamming clustering")
+    if L < 3:
+        raise ValueError("Pigeonhole index needs at least 3 positions")
+
+    bounds = [0, L // 3, (2 * L) // 3, L]
+
+    # Bucket key -> peptide indices. Exact keys are (block, string)
+    # 2-tuples, wildcard keys (block, wildcard position, string) with a
+    # '*' that cannot collide with a real residue.
+    buckets = defaultdict(list)
+    for i, pep in enumerate(peps):
+        for b in range(3):
+            s, e = bounds[b], bounds[b + 1]
+            block = pep[s:e]
+            buckets[(b, block)].append(i)          # exact block
+            for p in range(s, e):                  # one wildcard position
+                wc = block[:p - s] + "*" + block[p - s + 1:]
+                buckets[(b, p, wc)].append(i)
+
+    enc = np.array([[AA_TO_INT[c] for c in p] for p in peps], dtype=np.uint8)
+
+    chunk = 512  # bucket rows per verification block (bounds memory)
+    for members in buckets.values():
+        m = len(members)
+        if m < 2:
+            continue
+        idx = np.array(members, dtype=np.int64)
+        B = enc[idx]
+        for c0 in range(0, m, chunk):
+            c1 = min(c0 + chunk, m)
+            # Hamming distances of the chunk rows against all bucket members
+            D = (B[c0:c1, None, :] != B[None, :, :]).sum(axis=2, dtype=np.uint8)
+            for a, b in np.argwhere(D <= max_dist):
+                gi, gj = int(idx[c0 + a]), int(idx[b])
+                if gi < gj:
+                    yield gi, gj
 
 
 def cluster_by_hamming(peptides, max_dist=1):
     """
-    Cluster unique peptides by Hamming distance.
+    Cluster unique peptides by DIRECT Hamming distance <= max_dist.
 
-    Identical peptides are the same node (Hamming distance = 0),
-    so duplicate peptide sequences from different proteins are
-    trivially in the same cluster.
+    Identical peptides are the same node (Hamming distance = 0), so
+    duplicate peptide sequences from different proteins are trivially
+    in the same cluster.
+
+    max_dist = 1     : exhaustive single-substitution neighbour enumeration.
+    max_dist = 2 or 3: pigeonhole candidate index (iter_close_pairs).
+    max_dist > 3     : not supported (3-block pigeonhole bound fails).
+
+    Note: union-find merges transitively, so a cluster can contain pairs
+    farther apart than max_dist that are connected through bridging
+    peptides. The split guarantee is that no DIRECT <= max_dist pair is
+    separated across folds.
     """
-    uf = UnionFind() # Initialize the union-find structure to manage clusters of peptides
+    uf = UnionFind()  # Initialize the union-find structure to manage clusters of peptides
     peptide_set = set(peptides)
 
-    for pep in peptides: 
-        uf.find(pep) #Ensure every peptide is initialized in the union-find structure  
-        for pos in range(len(pep)): 
-            for aa in AMINO_ACIDS: #For each position in peptide, try substituting each amino acid
-                if aa != pep[pos]: # Only consider substitutions that change the sequence (Hamming distance = 1)
-                    neighbour = pep[:pos] + aa + pep[pos + 1:] #Create the neighboring sequence with one amino acid changed
-                    if neighbour in peptide_set: #If the neighboring sequence exists in the dataset, they are homologous and should be in the same cluster
-                        uf.union(pep, neighbour) # Only joins distance-1 pairs
+    for pep in peptides:
+        uf.find(pep)  # Ensure every peptide is initialized in the union-find structure
+
+    if max_dist == 1:
+        for pep in peptides:
+            for pos in range(len(pep)):
+                for aa in AMINO_ACIDS:  # For each position, try substituting each amino acid
+                    if aa != pep[pos]:  # Only substitutions that change the sequence (distance 1)
+                        neighbour = pep[:pos] + aa + pep[pos + 1:]
+                        if neighbour in peptide_set:  # Neighbour exists -> homologous, same cluster
+                            uf.union(pep, neighbour)
+    elif max_dist in (2, 3):
+        peps = sorted(peptide_set)  # deterministic order for the index
+        for i, j in iter_close_pairs(peps, max_dist):
+            uf.union(peps[i], peps[j])
+    else:
+        raise NotImplementedError(
+            f"HAMMING_CUTOFF {max_dist} not supported: use 1, 2 or 3 "
+            f"(pigeonhole index requires <= 3 mismatches over 3 blocks)")
 
     clusters = defaultdict(set) # initialize a dictionary to hold clusters, where each key is a cluster representative (root) and the value is a set of peptides in that cluster
     for pep in peptides: # For each peptide
@@ -155,28 +241,55 @@ def greedy_balanced_partition(clusters, n_buckets, peptide_sample_counts):
 # 4. VERIFICATION
 # ──────────────────────────────────────────────
 
-def verify_no_homology_leakage(df, peptide_col, fold_col):
-    """Check that no two peptides in different folds have Hamming distance <= 1."""
+def verify_no_homology_leakage(df, peptide_col, fold_col, hamming_cutoff=1):
+    """
+    Check that no two peptides in different folds have DIRECT Hamming
+    distance <= hamming_cutoff. Identical peptides appearing in
+    different folds are covered separately by verify_no_peptide_split.
+    """
     folds = sorted(df[fold_col].unique())
     fold_peptides = {
         f: set(df.loc[df[fold_col] == f, peptide_col].unique()) for f in folds
     }
 
     violations = 0
-    for f1, f2 in combinations(folds, 2):
-        set2 = fold_peptides[f2]
-        for pep in fold_peptides[f1]:
-            for pos in range(len(pep)):
-                for aa in AMINO_ACIDS:
-                    if aa != pep[pos]:
-                        neighbour = pep[:pos] + aa + pep[pos + 1:]
-                        if neighbour in set2:
-                            violations += 1
+    if hamming_cutoff == 1:
+        for f1, f2 in combinations(folds, 2):
+            set2 = fold_peptides[f2]
+            for pep in fold_peptides[f1]:
+                for pos in range(len(pep)):
+                    for aa in AMINO_ACIDS:
+                        if aa != pep[pos]:
+                            neighbour = pep[:pos] + aa + pep[pos + 1:]
+                            if neighbour in set2:
+                                violations += 1
+    elif hamming_cutoff in (2, 3):
+        pep_to_fold = {}
+        for f, peps in fold_peptides.items():
+            for p in peps:
+                pep_to_fold[p] = f
+        peps = sorted(pep_to_fold)
+        seen = set()  # a close pair can be yielded from several buckets
+        for i, j in iter_close_pairs(peps, hamming_cutoff):
+            if (i, j) in seen:
+                continue
+            seen.add((i, j))
+            fi, fj = pep_to_fold[peps[i]], pep_to_fold[peps[j]]
+            if fi != fj:
+                violations += 1
+                if violations <= 10:
+                    print(f"  leak: {peps[i]} (fold {fi}) ~ "
+                          f"{peps[j]} (fold {fj})")
+    else:
+        raise NotImplementedError(
+            f"Leakage verification not implemented for cutoff {hamming_cutoff}")
 
     if violations == 0:
-        print("No homology leakage detected across folds.")
+        print(f"No homology leakage detected across folds "
+              f"(direct Hamming <= {hamming_cutoff}).")
     else:
-        print(f"{violations} cross-fold homologous pairs found!")
+        print(f"{violations} cross-fold homologous pairs found "
+              f"(direct Hamming <= {hamming_cutoff})!")
 
     return violations
 
@@ -629,10 +742,30 @@ def inspect_bucket_clusters(df, clusters, peptide_to_bucket,
 
 if __name__ == "__main__":
 
+    ap = argparse.ArgumentParser(
+        description="Homology-based data splitting for MHC-I processing prediction.")
+    ap.add_argument("--hamming-cutoff", type=int, default=HAMMING_CUTOFF,
+                    help="cluster peptides at DIRECT Hamming distance <= this "
+                         "cutoff (1-3). Default: config HAMMING_CUTOFF (%(default)s).")
+    ap.add_argument("--split-out", default=None,
+                    help="output split CSV path. Default: config SPLIT_DATA_PATH. "
+                         "Use a marked path (e.g. data/processed/"
+                         "df_all_with_folds_h3.csv) so the canonical split file "
+                         "is left untouched.")
+    args = ap.parse_args()
+
+    if args.hamming_cutoff not in (1, 2, 3):
+        ap.error("--hamming-cutoff must be 1, 2 or 3 "
+                 "(3-block pigeonhole index supports at most 3)")
+
+    hamming_cutoff = args.hamming_cutoff
+    split_out_path = Path(args.split_out) if args.split_out else Path(SPLIT_DATA_PATH)
+
     validate_config()
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    LOG_PATH = LOG_DIR / f"01_datasplit_log_{timestamp}.txt"
+    log_tag = f"_h{hamming_cutoff}" if hamming_cutoff != HAMMING_CUTOFF else ""
+    LOG_PATH = LOG_DIR / f"01_datasplit_log_{timestamp}{log_tag}.txt"
     os.makedirs(LOG_DIR, exist_ok=True)
     logger = Logger(str(LOG_PATH))
     sys.stdout = logger
@@ -644,13 +777,14 @@ if __name__ == "__main__":
     print("=" * 80)
     print(f"  Timestamp:        {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"  Data path:        {RAW_DATA_PATH}")
-    print(f"  Output path:      {SPLIT_DATA_PATH}")
+    print(f"  Output path:      {split_out_path}")
     print(f"  Log path:         {LOG_PATH}")
     print(f"  CV folds (k):     {N_CV_FOLDS}")
     print(f"  Held-out bucket:  {HELD_OUT_INDEX}")
     print(f"  Total buckets:    {N_BUCKETS}")
     print(f"  Random state:     {RANDOM_STATE}")
-    print(f"  Hamming cutoff:   <= {HAMMING_CUTOFF}")
+    print(f"  Hamming cutoff:   <= {hamming_cutoff}"
+          f"{' (CLI override)' if hamming_cutoff != HAMMING_CUTOFF else ''}")
     print("=" * 80)
 
     # -- Load --
@@ -698,8 +832,8 @@ if __name__ == "__main__":
           f"(same peptide, different protein context)")
 
     t_cluster_start = time.time()
-    print(f"Clustering by Hamming distance <= {HAMMING_CUTOFF} ...")
-    clusters = cluster_by_hamming(unique_peptides, max_dist=HAMMING_CUTOFF)
+    print(f"Clustering by Hamming distance <= {hamming_cutoff} ...")
+    clusters = cluster_by_hamming(unique_peptides, max_dist=hamming_cutoff)
     t_cluster_end = time.time()
 
     n_clusters = len(clusters)
@@ -748,7 +882,8 @@ if __name__ == "__main__":
 
     # Verify 1: No Hamming-distance-1 neighbors across folds
     t_verify_start = time.time()
-    n_violations = verify_no_homology_leakage(df, PEPTIDE_COL, FOLD_COL)
+    n_violations = verify_no_homology_leakage(df, PEPTIDE_COL, FOLD_COL,
+                                              hamming_cutoff=hamming_cutoff)
     t_verify_end = time.time()
     print(f"Verification time: {t_verify_end - t_verify_start:.2f}s")
 
@@ -806,9 +941,9 @@ if __name__ == "__main__":
           f"(pos={v_pos}, neg={v_neg}, ratio={v_neg / v_pos:.3f})")
 
     # -- Save --
-    os.makedirs(DATA_DIR, exist_ok=True)
-    df.to_csv(SPLIT_DATA_PATH, index=False)
-    print(f"\nSaved to: {SPLIT_DATA_PATH}")
+    split_out_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(split_out_path, index=False)
+    print(f"\nSaved to: {split_out_path}")
 
     t_end = time.time()
     print("\n" + "=" * 80)
@@ -822,7 +957,7 @@ if __name__ == "__main__":
     print(f"  Buckets:          {N_BUCKETS} ({N_CV_FOLDS} CV + 1 held-out)")
     print(f"  Homology leakage: {'NONE' if n_violations == 0 else f'{n_violations} violations'}")
     print(f"  Peptide splits:   {'NONE' if n_splits == 0 else f'{n_splits} peptides split'}")
-    print(f"  Output:           {SPLIT_DATA_PATH}")
+    print(f"  Output:           {split_out_path}")
     print(f"  Log:              {LOG_PATH}")
     print(f"  Completed:        {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 80)

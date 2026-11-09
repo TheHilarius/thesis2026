@@ -8,12 +8,17 @@ The map lets fold-difficulty audits (02_datasplit_analysis.py) run
 cluster-preserving permutation nulls without re-clustering every time.
 
 Clusters (01_datasplit.cluster_by_hamming): unique peptides linked by
-Hamming distance <= 1 via Union-Find (transitive closure). Folds are groups
-of whole clusters assigned by greedy bin-packing -- many clusters per fold.
+DIRECT Hamming distance <= --hamming-cutoff via Union-Find (transitive
+closure). Folds are groups of whole clusters assigned by greedy
+bin-packing -- many clusters per fold. The cutoff MUST match the one
+used to build the split file (01_datasplit.py --hamming-cutoff).
 
 Usage:
     python src/investigation/29_build_cluster_map.py
     python src/investigation/29_build_cluster_map.py --out data/processed/cluster_map_peptide.csv
+    python src/investigation/29_build_cluster_map.py \
+        --split data/processed/df_all_with_folds_h2.csv --hamming-cutoff 2 \
+        --out data/processed/cluster_map_peptide_h2.csv
 
 Output (default DATA_DIR/cluster_map_peptide.csv):
     peptide, cluster_id, cluster_size, cluster_rows, fold
@@ -30,6 +35,7 @@ import os
 import sys
 import time
 from datetime import datetime
+from pathlib import Path
 
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 PIPELINE_DIR = os.path.join(SRC_DIR, "..", "pipeline", "python")
@@ -55,9 +61,21 @@ def main():
     ap = argparse.ArgumentParser(description="Build reusable peptide-homology cluster map.")
     ap.add_argument("--out", default=str(DEFAULT_OUT),
                     help="output CSV path")
+    ap.add_argument("--split", default=None,
+                    help="split CSV path (default: config SPLIT_DATA_PATH), "
+                         "e.g. data/processed/df_all_with_folds_h2.csv")
+    ap.add_argument("--hamming-cutoff", type=int, default=HAMMING_CUTOFF,
+                    help="DIRECT Hamming cutoff for clustering (1-3); must "
+                         "match the cutoff used to build --split. "
+                         "Default: config HAMMING_CUTOFF (%(default)s)")
     ap.add_argument("--n-show", type=int, default=10,
                     help="how many largest clusters to print")
     a = ap.parse_args()
+
+    if a.hamming_cutoff not in (1, 2, 3):
+        ap.error("--hamming-cutoff must be 1, 2 or 3")
+
+    split_path = Path(a.split) if a.split else Path(SPLIT_DATA_PATH)
 
     validate_config()
 
@@ -65,13 +83,14 @@ def main():
     print("  29_BUILD_CLUSTER_MAP -- PEPTIDE HOMOLOGY CLUSTER EXPORT")
     print("=" * 80)
     print(f"  Timestamp:    {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"  Data path:    {SPLIT_DATA_PATH}")
+    print(f"  Data path:    {split_path}")
     print(f"  Output path:  {a.out}")
-    print(f"  Hamming cutoff: <= {HAMMING_CUTOFF} (from config, matches 01_datasplit.py)")
+    print(f"  Hamming cutoff: <= {a.hamming_cutoff}"
+          f"{' (CLI override)' if a.hamming_cutoff != HAMMING_CUTOFF else ''}")
 
     # -- Load --
-    print(f"\nLoading {SPLIT_DATA_PATH} ...")
-    df = pd.read_csv(SPLIT_DATA_PATH, usecols=[PEPTIDE_COL, LABEL_COL, FOLD_COL])
+    print(f"\nLoading {split_path} ...")
+    df = pd.read_csv(split_path, usecols=[PEPTIDE_COL, LABEL_COL, FOLD_COL])
     print(f"  {len(df)} rows, {df[PEPTIDE_COL].nunique()} unique peptides")
 
     # -- Sanity 1: no peptide split across folds --
@@ -87,8 +106,8 @@ def main():
     datasplit = importlib.import_module("01_datasplit")
     unique_peptides = df[PEPTIDE_COL].unique().tolist()
     t0 = time.time()
-    print(f"\nClustering {len(unique_peptides)} peptides by Hamming <= {HAMMING_CUTOFF} ...")
-    clusters = datasplit.cluster_by_hamming(unique_peptides, max_dist=HAMMING_CUTOFF)
+    print(f"\nClustering {len(unique_peptides)} peptides by Hamming <= {a.hamming_cutoff} ...")
+    clusters = datasplit.cluster_by_hamming(unique_peptides, max_dist=a.hamming_cutoff)
     print(f"  done in {time.time() - t0:.1f}s: {len(clusters)} clusters")
 
     # -- Stable IDs: largest first, ties by alphabetically-first peptide --

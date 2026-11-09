@@ -2,7 +2,7 @@
 
 Exploratory, diagnostic, and one-off analysis scripts supporting the MHC-I antigen-processing pipeline. Not part of the numbered pipeline run order — these investigate data quality, embedding behaviour, and model results around it.
 
-28 scripts (6 R, 22 Python), grouped by function. Numbering is chronological, not semantic — there are two 09s, two 10s, and two 11s covering different topics.
+33 scripts (6 R, 27 Python), grouped by function. Numbering is chronological, not semantic — there are two 09s, two 10s, and two 11s covering different topics.
 
 ## Run conventions
 
@@ -78,6 +78,41 @@ Exploratory, diagnostic, and one-off analysis scripts supporting the MHC-I antig
 **Output** — `data/processed/cluster_map_peptide.csv` (`peptide, cluster_id, cluster_size, cluster_rows, fold`; id 0 = largest cluster).
 **How** — Imports `cluster_by_hamming` from `01_datasplit` (no logic duplication); stable IDs sorted by (−size, min peptide); asserts no peptide split across folds (FATAL if violated) and reports homology clusters spanning folds (leakage check on the saved split).
 **Notes** — 2026-11-05 build: 44,504 peptides → 43,164 clusters (97.4% singletons, largest 14 peptides), zero cross-fold clusters — saved split is homology-clean.
+
+### `30_plot_fold_audit.py`
+**Purpose** — Visualize Analysis A results: (1) point-range panels of observed per-fold stats vs cluster-preserving null 95% whiskers (red = OUTLIER); (2) per-fold homology-cluster size distributions (log-y).
+**Input** — `results/tables/fold_audit_cluster.csv` (from `02`), `data/processed/cluster_map_peptide.csv` (from `29`).
+**Output** — `results/figures/fold_audit/fold_audit_intervals.png`, `cluster_size_dist.png`.
+**How** — Matplotlib (Agg); CV folds only for plot 1 (held-out has no null, shown in plot 2 legend as "held-out").
+**Notes** — First render 2026-11-06: 0 OUTLIER cells; fold 0 observed largest-share sits at null upper edge; size-14 cluster lives in fold 1.
+
+### `31_fold_similarity.py`
+**Purpose** — Fold-to-fold sequence similarity. Measure registry (extensible): `blosum-nn` (implemented) = mean over x in fold i of max BLOSUM50 similarity to any peptide in fold j; asymmetric matrix, self excluded on diagonal, all 6 buckets incl. held-out. Future slots: `jsd`, `protein`.
+**Input** — `data/processed/df_all_with_folds.csv` (unique 9-mers per fold; BLOSUM50 embedded verbatim from `functions.R`).
+**Output** — `results/tables/fold_similarity_blosum_nn.csv` (fold_i, fold_j, similarity); per-run subfolders under `results/figures/fold_similarity/`: `peptide/` (this measure) with `similarity_heatmap.png` (A: absolute + B: drop-vs-within-fold panels, shared dendrogram order), `similarity_mds.png` (2D MDS map annotated with n/pos%).
+**How** — Int-encoded peptides + 20×20 lookup, chunked (1000-row) score blocks; per unordered pair one matrix gives both directions; `--reuse-table` skips recompute for plot tweaks.
+**Notes** — 2026-11-06: diagonal ≈0.619–0.621, off-diagonal 0.603–0.606 flat; drop panel uniformly −0.013…−0.017, no near-zero cell — no leaky pair; dendrogram near-star. Pairs with H2-as-a-pairwise-problem; difficulty differences must come from elsewhere (label/context, Analysis B).
+
+### `32_fold_scatter.py`
+**Purpose** — Per-peptide UMAP scatter colored by fold (visual companion to 31). `--context peptide` (unique 9-mers → 180-dim) and `--context full` (aligned 29-mers from N10..C10, NaN→X → 609-dim, 21-letter alphabet with X row = −1, R-pipeline convention).
+**Input** — `data/processed/df_all_with_folds.csv`; BLOSUM matrix imported from `31_fold_similarity` (no duplication).
+**Output** — Per-context subfolders `results/figures/fold_similarity/{peptide,full}/`: `umap_<ctx>_all.png` (all points, fold colors), `umap_<ctx>_facets.png` (2×3 highlight panels); `results/tables/umap_<ctx>.csv` (x, y, fold, seq).
+**How** — Concatenated BLOSUM50 rows, euclidean UMAP (`n_neighbors=30, min_dist=0.3, seed=42`); `s=1, alpha=0.25`, rasterized; `--n-sample` cap available.
+**Notes** — 2026-11-06: peptide UMAP = island structure with all folds mixed per island; full-context UMAP = one mixed ball + small X-padding satellites, every facet covers the full space. Requires `umap-learn` (pip-installed 2026-11-06; pulled sklearn 1.5.1→1.9.1 — note version in run logs). Full run: 46,617 seqs fit in ~110 s.
+
+### `33_fold_descriptive.py`
+**Purpose** — Field-idiom fold comparison, main-text numbers (DTU / Kim et al. 2014 style). Per-fold 9×20 frequency matrix → mean per-position entropy, per-position KLD vs pooled (pseudocount 0.5), PCC between fold matrices + vs pooled. Labels unused.
+**Input** — `data/processed/df_all_with_folds.csv` (unique 9-mers) + `data/processed/cluster_map_peptide.csv` (from 29; FATAL instructions if missing).
+**Output** — `results/tables/fold_descriptive.csv` (per fold obs + null bands), `fold_descriptive_kld_pos.csv` (per position obs + 99.9% null flag), `fold_descriptive_pcc.csv`, `fold_descriptive_null.npz`; `results/figures/fold_similarity/descriptive/`: `entropy_null.png`, `kld_heatmap.png`, `pcc_heatmap.png`.
+**How** — Cluster-preserving null shared with 34: stratified shuffle of fold labels across clusters (within-cluster-size permutation, whole clusters move, exact per-fold counts preserved); joint permutations, `--n-perm 500` default (2000 final), `--seed 42`.
+**Notes** — Built 2026-11-07, NOT RUN. Null differs from 02 (which re-deals with row-share probabilities). Verdict = inside/outside null band; no hard cutoffs.
+
+### `34_c2st_simple.py`
+**Purpose** — C2ST sensitivity check (ML-standard adversarial validation, Lopez-Paz & Oquab 2017). Hierarchical: GATE = single 6-way multiclass omnibus (balanced accuracy, obs minus null mean); LOCALIZE only if gate rejects = 6× one-vs-rest AUCs with own max-T. Pairwise/GBM/BLOSUM/flank = Phase 2, not here.
+**Input** — Same split + cluster map as 33; unique 9-mers → pos-specific one-hot 180-d unstandardized; helpers (`build_cluster_table`, `stratified_perm_assignment`) imported from 33 (no duplication).
+**Output** — `results/tables/c2st_multiclass.csv`, `c2st_ovr.csv` (obs, null band, raw p, maxT p); `results/figures/fold_similarity/c2st/`: `multiclass_null.png`, `ovr_null.png`.
+**How** — L2 logistic C=1 balanced, 5-fold StratifiedGroupKFold by cluster (mates never split; ungrouped = leakage by construction); pooled OOF preds/scores; full CV re-run per permutation; `--n-perm 200` default for iteration (2000 final); `--controls` runs negative (half-split, expect ~0.5) + positive (P2→L 5% spike, must lift).
+**Notes** — Built 2026-11-07, NOT RUN. Phase-2 expansion: 15× pairwise, B→2000, BLOSUM-profile + flank repeats, per-fold AUC spread vs re-split null.
 
 ### `09_sequence_consistency_audit.py` — audit chain step 1
 **Purpose** — Global-align each protein's canonical UniProt sequence (`df_all` `sequence`) against the AlphaFold PDB SEQRES — detect silent coordinate shifts from isoform canonicalization.
@@ -283,6 +318,11 @@ R analyses:
 | `11_structural_preference_logo.R` | Yes | Yes (same caveat) |
 | `02_datasplit_analysis.py` | Yes | Yes |
 | `29_build_cluster_map.py` | Yes | Yes |
+| `30_plot_fold_audit.py` | Yes (needs 02 + 29 outputs) | Yes |
+| `31_fold_similarity.py` | Yes | Yes (~2 min compute; `--reuse-table` for replots) |
+| `32_fold_scatter.py` | Yes | Yes (needs `umap-learn`; ~2 min per context) |
+| `33_fold_descriptive.py` | Yes | Not run (needs cluster map; ~1 min at 500 perms) |
+| `34_c2st_simple.py` | Yes | Not run (needs sklearn; ~200 perms iterate, 2000 final = hours) |
 | `05_model_analysis.py` | Depends on models/ JSONs | Yes, with PYTHONPATH workaround |
 | `06_feature_importance.py` | Depends on models/ pickles | Yes, with PYTHONPATH workaround |
 | `07_compare_heldout_roc.py` | Depends on models/ JSONs | Yes — fully portable |
