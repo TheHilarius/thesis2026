@@ -664,14 +664,15 @@ def main():
                                   sharex=False, squeeze=False)
         for ax, k in zip(axes.flat, of_k2s):
             ep = np.arange(1, len(mean_train[k]) + 1)
-            ax.plot(ep, mean_train[k], color="#4477AA", lw=1.5, label="train loss")
+            l1, = ax.plot(ep, mean_train[k], color="#4477AA", lw=1.5, label="train loss")
             ax.set_ylabel("train loss", fontsize=8, color="#4477AA")
             ax.tick_params(axis="y", labelcolor="#4477AA", labelsize=7)
             ax.tick_params(axis="x", labelsize=7)
             ax2 = ax.twinx()
-            ax2.plot(ep, mean_val[k], color=C_ESMC, lw=1.5, label="val AUC")
+            l2, = ax2.plot(ep, mean_val[k], color=C_ESMC, lw=1.5, label="val AUC")
             ax2.set_ylim(0.5, 1.0)
             ax2.tick_params(labelsize=7)
+            ax.legend([l1, l2], ["train loss", "val AUC"], fontsize=7, loc="best")
             ax.set_title(f"k2={k}", fontsize=10)
             ax.set_xlabel("epoch", fontsize=8)
         for ax in axes.flat[n:]:
