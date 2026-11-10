@@ -20,9 +20,19 @@ outer_val_predictions {fold: {y_true, y_prob}} and outer_val_metrics
 
 Outputs (default --runtag cnn_kernel_curve):
     runs/cnn_kernel_curve/plots/cnn_kernel_auc.png (+ .csv bar values)
+    runs/cnn_kernel_curve/plots/cnn_kernel_overfit_curves.png (per-kernel train-loss / val-AUC curves)
+    runs/cnn_kernel_curve/plots/cnn_kernel_val_vs_test.png (best vs final-epoch val AUC: post-peak degradation)
     runs/cnn_kernel_curve/results/cnn_kernel_summary.csv
     runs/cnn_kernel_curve/results/cnn_kernel_delong_stats.tsv  (vs-anchor, Holm)
     runs/cnn_kernel_curve/results/cnn_kernel_delong_allpairs.tsv (all pairs)
+    runs/cnn_kernel_curve/results/cnn_kernel_overfit.tsv (per-fold epochs_run, best/final val AUC)
+
+Note on overfitting: this pipeline runs flat 6-fold CV (no nested split —
+`05_cnn_modelling.py` evaluates the early-stopped model on the same held-out
+bucket used for early stopping), so inner-val best and outer-test AUC are the
+same numbers by construction. The honest overfit signals are (1) train-loss
+vs val-AUC trajectories per epoch and (2) best-vs-final-epoch val-AUC
+degradation (post-peak overfitting inside the patience window).
 
 Usage:
     python src/investigation/35_cnn_kernel_performance.py --anchor k5
@@ -213,6 +223,22 @@ def load_kernel_json(path):
     else:  # fallback: per-fold AUC from pooled vectors
         from sklearn.metrics import roc_auc_score as _auc
         fold_aucs = [float(_auc(y_parts[i], p_parts[i])) for i in range(len(folds))]
+    # overfit diagnostics: per-fold train-loss / val-AUC curves (may be absent in old JSONs)
+    curves = None
+    lc = r.get("learning_curves") or {}
+    if isinstance(lc, dict) and len(lc) == len(folds):
+        try:
+            curves = {}
+            for b in folds:
+                e = lc[str(b)] if str(b) in lc else lc[b]
+                curves[int(b)] = {
+                    "train_loss": [float(v) for v in e["train_loss"]],
+                    "val_auc": [float(v) for v in e["val_auc"]],
+                    "best_val_auc": float(e["best_val_auc"]),
+                    "epochs_run": int(e["epochs_run"]),
+                }
+        except (KeyError, TypeError, ValueError):
+            curves = None
     return {
         "kernel": k,
         "model_key": r.get("model_key", ""),
@@ -222,6 +248,7 @@ def load_kernel_json(path):
         "fold_std": float(np.std(fold_aucs, ddof=1)) if len(fold_aucs) > 1 else 0.0,
         "timestamp": str(r.get("timestamp", "")),
         "file": str(path),
+        "curves": curves,
     }
 
 
@@ -463,13 +490,142 @@ def main():
                         "significant": str(pr["p_adj"] < args.alpha)})
     print(f"  wrote {ap_tsv}")
 
+    # ── overfitting diagnostics (standard): train vs val curves + val-vs-test gap ──
+    of_kernels = [k for k in present if by_kernel[k]["curves"] is not None]
+    if len(of_kernels) < len(present):
+        print(f"  WARN: no learning_curves for kernels "
+              f"{sorted(set(present) - set(of_kernels))} — overfit plots cover {of_kernels}")
+    if of_kernels:
+        # mean curve per kernel: epoch i averaged over folds that ran that long
+        def mean_curve(key):
+            out = {}
+            for k in of_kernels:
+                per_fold = [c[key] for c in by_kernel[k]["curves"].values()]
+                n_ep = max(len(v) for v in per_fold)
+                means = [float(np.mean([v[i] for v in per_fold if len(v) > i]))
+                         for i in range(n_ep)]
+                out[k] = means
+            return out
+        mean_train = mean_curve("train_loss")
+        mean_val = mean_curve("val_auc")
+
+        n = len(of_kernels)
+        ncols = 3
+        nrows = (n + ncols - 1) // ncols
+        fig2, axes = plt.subplots(nrows, ncols, figsize=(4.2 * ncols, 3.4 * nrows),
+                                  sharex=False, squeeze=False)
+        for ax, k in zip(axes.flat, of_kernels):
+            ep = np.arange(1, len(mean_train[k]) + 1)
+            ax.plot(ep, mean_train[k], color="#4477AA", lw=1.5, label="train loss")
+            ax.set_ylabel("train loss", fontsize=8, color="#4477AA")
+            ax.tick_params(axis="y", labelcolor="#4477AA", labelsize=7)
+            ax.tick_params(axis="x", labelsize=7)
+            ax2 = ax.twinx()
+            ax2.plot(ep, mean_val[k], color=C_ESMC, lw=1.5, label="val AUC")
+            ax2.set_ylim(0.5, 1.0)
+            ax2.tick_params(labelsize=7)
+            ax.set_title(f"k{k}", fontsize=10)
+            ax.set_xlabel("epoch", fontsize=8)
+        for ax in axes.flat[n:]:
+            ax.set_visible(False)
+        fig2.suptitle(f"Train loss vs inner-val AUC per epoch (mean over folds, {args.data_label})",
+                      fontsize=11)
+        # single shared right-axis label + legend via last visible panel
+        fig2.text(0.995, 0.5, "val AUC", va="center", rotation="vertical", fontsize=9)
+        fig2.tight_layout(rect=[0, 0, 0.96, 0.95])
+        of_png = plots_dir / "cnn_kernel_overfit_curves.png"
+        fig2.savefig(of_png, dpi=150, bbox_inches="tight")
+        plt.close(fig2)
+        print(f"  wrote {of_png}")
+
+        # per-fold best-vs-final val AUC (post-peak degradation) + epochs_run.
+        # NOTE: flat 6-fold CV here (no nested split): the early-stopped model
+        # is evaluated on the same bucket used for early stopping, so
+        # inner-val best == outer-test by construction — no val-vs-test gap
+        # to plot. Degradation = best_val_auc − final-epoch val_auc instead.
+        gap_rows = []
+        for k in of_kernels:
+            rec = by_kernel[k]
+            for b in sorted(rec["curves"]):
+                c = rec["curves"][b]
+                final_auc = c["val_auc"][-1]
+                gap_rows.append({"kernel": k, "fold": b,
+                                 "epochs_run": c["epochs_run"],
+                                 "best_val_auc": c["best_val_auc"],
+                                 "final_val_auc": final_auc,
+                                 "degradation": c["best_val_auc"] - final_auc})
+        mean_deg = {k: float(np.mean([r["degradation"] for r in gap_rows if r["kernel"] == k]))
+                    for k in of_kernels}
+        mean_best = {k: float(np.mean([r["best_val_auc"] for r in gap_rows if r["kernel"] == k]))
+                     for k in of_kernels}
+        mean_final = {k: float(np.mean([r["final_val_auc"] for r in gap_rows if r["kernel"] == k]))
+                      for k in of_kernels}
+        mean_ep = {k: float(np.mean([r["epochs_run"] for r in gap_rows if r["kernel"] == k]))
+                   for k in of_kernels}
+        for k in of_kernels:
+            print(f"  k{k:<3} val best={mean_best[k]:.4f} "
+                  f"final-ep={mean_final[k]:.4f} degradation={mean_deg[k]:+.4f} "
+                  f"epochs_run~{mean_ep[k]:.1f}")
+
+        xs2 = list(range(len(of_kernels)))
+        v_best = [mean_best[k] for k in of_kernels]
+        v_final = [mean_final[k] for k in of_kernels]
+        fig3, ax3 = plt.subplots(figsize=(max(9, len(of_kernels) * 1.1), 5.8))
+        w = 0.36
+        ax3.bar([x - w / 2 for x in xs2], v_best, width=w, color="#8A8A8A",
+                edgecolor="black", linewidth=0.6, label="val AUC at best epoch")
+        ax3.bar([x + w / 2 for x in xs2], v_final, width=w, color=C_ESMC,
+                edgecolor="black", linewidth=0.6, label="val AUC at final epoch")
+        for x, k in zip(xs2, of_kernels):
+            ax3.text(x, max(v_best[x], v_final[x]) + 0.004, f"{mean_deg[k]:+.3f}",
+                     ha="center", fontsize=8, fontweight="bold")
+        ax3.set_xticks(xs2)
+        ax3.set_xticklabels([f"k{k}" for k in of_kernels], fontsize=9)
+        ax3.set_ylabel("val AUC (mean over 6 folds; labels = best − final degradation)")
+        ax3.set_ylim(0, 1.0)
+        ax3.axhline(0.5, color="gray", lw=0.8, ls=":")
+        ax3.grid(axis="y", alpha=0.3)
+        ax3.legend(fontsize=9, loc="lower right")
+        ax3.set_title(f"Best vs final-epoch val AUC per kernel ({args.data_label}, C=32)",
+                      fontsize=12)
+        fig3.tight_layout()
+        vt_png = plots_dir / "cnn_kernel_val_vs_test.png"
+        fig3.savefig(vt_png, dpi=150, bbox_inches="tight")
+        plt.close(fig3)
+        print(f"  wrote {vt_png}")
+
+        of_tsv = results_dir / "cnn_kernel_overfit.tsv"
+        with open(of_tsv, "w", newline="") as fh:
+            fields = ["kernel", "model_key", "fold", "epochs_run",
+                      "best_val_auc", "final_val_auc", "degradation_best_minus_final"]
+            wr = csv.DictWriter(fh, fieldnames=fields, delimiter="\t")
+            wr.writeheader()
+            for r_ in sorted(gap_rows, key=lambda d: (d["kernel"], d["fold"])):
+                wr.writerow({"kernel": r_["kernel"],
+                             "model_key": by_kernel[r_["kernel"]]["model_key"],
+                             "fold": r_["fold"], "epochs_run": r_["epochs_run"],
+                             "best_val_auc": f"{r_['best_val_auc']:.6f}",
+                             "final_val_auc": f"{r_['final_val_auc']:.6f}",
+                             "degradation_best_minus_final": f"{r_['degradation']:+.6f}"})
+        print(f"  wrote {of_tsv}")
+    else:
+        print("  SKIP overfit diagnostics: no learning_curves in any JSON")
+
+    cap = (f"1-layer CNN kernel-size curve on {args.data_label} windows "
+           "(ESM-C-300M, C=32, naive GAP). Bars: pooled out-of-fold AUC over "
+           "6 outer buckets (same vector DeLong tests); error bars: std of "
+           "the 6 outer-fold AUCs. Brackets: paired DeLong vs anchor "
+           f"k{anchor_k} (Holm-adjusted, significant pairs only). "
+           "y-axis 0-1; chance = 0.5. Ignores F1/MCC (fixed 0.5 threshold).")
+    if of_kernels:
+        cap += (" Overfit panels: per-kernel mean train-loss (left axis) vs val "
+                "AUC (right axis) per epoch; best vs final-epoch val-AUC bars "
+                "labelled with post-peak degradation (flat 6-fold CV: val bucket "
+                "doubles as test, so no separate val-vs-test gap exists).")
+    else:
+        cap += " Overfit panels skipped (no learning_curves in JSONs)."
     print("\n" + "=" * 60 + "\n  CAPTION (paste below the figure):\n" + "=" * 60)
-    print(f"1-layer CNN kernel-size curve on {args.data_label} windows "
-          "(ESM-C-300M, C=32, naive GAP). Bars: pooled out-of-fold AUC over "
-          "6 outer buckets (same vector DeLong tests); error bars: std of "
-          "the 6 outer-fold AUCs. Brackets: paired DeLong vs anchor "
-          f"k{anchor_k} (Holm-adjusted, significant pairs only). "
-          "y-axis 0-1; chance = 0.5. Ignores F1/MCC (fixed 0.5 threshold).")
+    print(cap)
     print("=" * 60)
 
 

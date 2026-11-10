@@ -51,7 +51,7 @@ import numpy as np
 from sklearn.metrics import (roc_auc_score, average_precision_score, accuracy_score,
                              f1_score, matthews_corrcoef, confusion_matrix)
 
-from config import (SPLIT_DATA_PATH, LOG_DIR, N_CV_FOLDS, HELD_OUT_INDEX,
+from config import (LOG_DIR, N_CV_FOLDS,
                     RANDOM_STATE, get_feature_set_config, get_feature_component,
                     get_embedding_source, validate_feature_set, validate_config)
 import importlib.util as _ilu
@@ -141,7 +141,7 @@ class WindowDataset(Dataset):
 
 
 def train_one_fold(model, train_loader, val_loader, device, lr, epochs, patience, seed):
-    """Train with early-stop on val AUC. Fixed seed every fold. Returns model + history."""
+    """Train with early-stop on val AUC. Seed passed in per fold. Returns model + history."""
     torch.manual_seed(seed)
     np.random.seed(seed)
     opt = torch.optim.AdamW(model.parameters(), lr=lr)

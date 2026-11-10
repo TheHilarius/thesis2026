@@ -73,6 +73,42 @@ CNN_REGISTRY = {
         "display_name": "CNN 2-layer (2x Conv k=3 + GAP, receptive field 5)",
         "params": {"channels": 32, "kernel": 3},
     },
+    "cnn_2layer_k17_k3": {
+        "display_name": "CNN 2-layer (k1=17 + k2=3 + GAP)",
+        "params": {"channels": 32, "kernel1": 17, "kernel2": 3},
+    },
+    "cnn_2layer_k17_k5": {
+        "display_name": "CNN 2-layer (k1=17 + k2=5 + GAP)",
+        "params": {"channels": 32, "kernel1": 17, "kernel2": 5},
+    },
+    "cnn_2layer_k17_k7": {
+        "display_name": "CNN 2-layer (k1=17 + k2=7 + GAP)",
+        "params": {"channels": 32, "kernel1": 17, "kernel2": 7},
+    },
+    "cnn_2layer_k17_k9": {
+        "display_name": "CNN 2-layer (k1=17 + k2=9 + GAP)",
+        "params": {"channels": 32, "kernel1": 17, "kernel2": 9},
+    },
+    "cnn_2layer_k17_k11": {
+        "display_name": "CNN 2-layer (k1=17 + k2=11 + GAP)",
+        "params": {"channels": 32, "kernel1": 17, "kernel2": 11},
+    },
+    "cnn_2layer_k17_k13": {
+        "display_name": "CNN 2-layer (k1=17 + k2=13 + GAP)",
+        "params": {"channels": 32, "kernel1": 17, "kernel2": 13},
+    },
+    "cnn_2layer_k17_k15": {
+        "display_name": "CNN 2-layer (k1=17 + k2=15 + GAP)",
+        "params": {"channels": 32, "kernel1": 17, "kernel2": 15},
+    },
+    "cnn_2layer_k17_k17": {
+        "display_name": "CNN 2-layer (k1=17 + k2=17 + GAP)",
+        "params": {"channels": 32, "kernel1": 17, "kernel2": 17},
+    },
+    "cnn_2layer_k17_k19": {
+        "display_name": "CNN 2-layer (k1=17 + k2=19 + GAP)",
+        "params": {"channels": 32, "kernel1": 17, "kernel2": 19},
+    },
 }
 
 DEFAULT_CNN_MODEL = "cnn_simple"
@@ -112,23 +148,25 @@ class SimpleCNN(nn.Module):
 
 
 class TwoLayerCNN(nn.Module):
-    """2x Conv1d k=3 + ReLU, receptive field 5, then naive mean + linear.
+    """2x Conv1d (k1 then k2) + ReLU, then naive mean + linear.
 
     Same naive GAP as SimpleCNN. Layer 2 can compare a
     peptide trigram against flanking trigrams; still translation
     equivariant, so no explicit peptide-vs-context position signal.
     """
 
-    def __init__(self, in_channels, channels=32, kernel=3):
+    def __init__(self, in_channels, channels=32, kernel1=17, kernel2=17, dropout=0.0):
         super().__init__()
-        pad = kernel // 2
-        self.conv1 = nn.Conv1d(in_channels, channels, kernel, padding=pad)
-        self.conv2 = nn.Conv1d(channels, channels, kernel, padding=pad)
+        pad1, pad2 = kernel1 // 2, kernel2 // 2
+        self.conv1 = nn.Conv1d(in_channels, channels, kernel1, padding=pad1)
+        self.conv2 = nn.Conv1d(channels, channels, kernel2, padding=pad2)
         self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(dropout)
         self.fc = nn.Linear(channels, 1)
 
     def forward(self, x):
         h = self.relu(self.conv1(x))
+        h = self.dropout(h)
         h = self.relu(self.conv2(h))
         h = h.mean(-1)
         return self.fc(h).squeeze(-1)
@@ -138,6 +176,9 @@ def build_cnn(model_key, in_channels, window=29, channels_override=None):
     """Build by registry key; channels_override (channel sweep) beats registry C."""
     cfg = get_cnn_config(model_key)["params"]
     channels = cfg["channels"] if channels_override is None else int(channels_override)
-    if model_key == "cnn_2layer":
-        return TwoLayerCNN(in_channels, channels, cfg["kernel"])
+    if model_key.startswith("cnn_2layer"):
+        kernel1 = cfg.get("kernel1", cfg.get("kernel", 17))
+        kernel2 = cfg.get("kernel2", cfg.get("kernel", 17))
+        dropout = cfg.get("dropout", 0.0)
+        return TwoLayerCNN(in_channels, channels, kernel1, kernel2, dropout)
     return SimpleCNN(in_channels, channels, cfg["kernel"])
