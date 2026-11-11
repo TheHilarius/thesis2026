@@ -1,0 +1,27 @@
+{
+ "embedding_key": "esmc6b_win_padtoken",
+ "metric": "mean per-sample across-position variance, pads masked",
+ "dims": [
+  52,
+  76,
+  213,
+  526,
+  685,
+  723,
+  947,
+  985,
+  1363,
+  1386,
+  1398,
+  1429,
+  1536,
+  1537,
+  1753,
+  1810,
+  2134,
+  2163,
+  2291,
+  2479,
+  2542
+ ]
+}
