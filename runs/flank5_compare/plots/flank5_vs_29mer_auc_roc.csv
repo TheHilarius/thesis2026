@@ -1,0 +1,9 @@
+group,variant,auc_roc,std
+BLOSUM50,29mer,0.763271,0.004409
+BLOSUM50,19mer,0.770076,0.003829
+BLOSUM50 + engineered,29mer,0.766527,0.006381
+BLOSUM50 + engineered,19mer,0.771591,0.004663
+ESM-C EV80 + engineered,29mer,0.701840,0.004804
+ESM-C EV80 + engineered,19mer,0.707571,0.005235
+CNN k5 (ESM-C windows),29mer,0.655320,0.005797
+CNN k5 (ESM-C windows),19mer,0.670413,0.004850

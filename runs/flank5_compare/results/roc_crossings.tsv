@@ -1,0 +1,5 @@
+run	family	variant	arm_a	arm_b	n_a	n_b	aligned	auc_a	auc_b	delta_auc	p_delong	tier	verdict	n_cross	cross_fprs	max_abs_dtp	fpr_at_max_dtp	disagree_range	max_flip_dtp
+flank5_compare	flank5_vs_29mer	full	blosum50_29	blosum50_19	46617	46617	True	0.7632535731735643	0.7700591458511133	-0.006806	4.503621339761292e-15	clean	clean	0		0.0234	0.215	0.0	0.0
+flank5_compare	flank5_vs_29mer	full	hc_blosum50_29	hc_blosum50_19	46617	46617	True	0.766512952843461	0.7715291610156685	-0.005016	1.4776376303525736e-10	noise	crossing	2	0.016;0.024	0.0134	0.1	0.001	0.0025
+flank5_compare	flank5_vs_29mer	full	esmc_ev80_29	esmc_ev80_19	46617	46617	True	0.7018146523348339	0.7075452470568828	-0.005731	8.970897608096401e-10	clean	clean	0		0.0175	0.128	0.0	0.0
+flank5_compare	flank5_vs_29mer	full	cnn_k5_29	cnn_k5_19	46617	46617	True	0.654333661991717	0.6688293724690612	-0.014496	1.8879891525775076e-32	clean	clean	0		0.0268	0.214	0.0	0.0
