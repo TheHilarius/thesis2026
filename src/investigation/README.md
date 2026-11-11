@@ -86,6 +86,13 @@ Exploratory, diagnostic, and one-off analysis scripts supporting the MHC-I antig
 **How** — Matplotlib (Agg); CV folds only for plot 1 (held-out has no null, shown in plot 2 legend as "held-out").
 **Notes** — First render 2026-11-06: 0 OUTLIER cells; fold 0 observed largest-share sits at null upper edge; size-14 cluster lives in fold 1.
 
+### `41_flank_duplicate_leakage_audit.py`
+**Purpose** — Read-only thesis-discussion audit: (A) duplicate 9-mers across proteins — flank identity, all-pos/all-neg/mixed label composition, fold containment; (B) mechanism of identical-flank mixed-label groups (annotation artifact vs sequence conflict); (C) flank-context leakage across folds (split uses peptide Hamming ≤1 only, flanks ignored) — exact flank-pair / one-sided n_flank / c_flank overlap, held-out-vs-train overlap, Hamming distances of cross-fold flank-sharing pairs.
+**Input** — `data/processed/df_all_with_folds.csv` (read-only; pipeline never touched).
+**Output** — `logs/41_flank_duplicate_leakage_audit_<ts>.txt` (tee'd stdout); `results/tables/41_flank_leakage/{dup_peptide_summary.csv, identical_flank_mixed_groups.csv, cross_fold_flank_pairs.csv, flank_overlap_by_scope.csv}`.
+**How** — config import bootstrap (like `29_build_cluster_map.py`); pandas groupbys per section; cross-fold flank pairs get Hamming distance, `ham <= HAMMING_CUTOFF` flagged as homology violations; verdict block with PASS/FAIL lines.
+**Notes** — First run 2026-11-09: 1,690 dup peptides all fold-contained (0 cross-fold); 476 mixed-label, 260 with identical input context (annotation artifact, 581 rows = 1.25%); flank-pair cross-fold overlap 20 pairs / 43 rows (0.09%); held-out rows sharing a train flank pair = 5 (4 pos); 0 ham ≤1 violations. Exact-window overlap only — no sub-string flank similarity.
+
 ### `31_fold_similarity.py`
 **Purpose** — Fold-to-fold sequence similarity. Measure registry (extensible): `blosum-nn` (implemented) = mean over x in fold i of max BLOSUM50 similarity to any peptide in fold j; asymmetric matrix, self excluded on diagonal, all 6 buckets incl. held-out. Future slots: `jsd`, `protein`.
 **Input** — `data/processed/df_all_with_folds.csv` (unique 9-mers per fold; BLOSUM50 embedded verbatim from `functions.R`).

@@ -1,0 +1,9 @@
+arm	model	features	n_features	pooled_oof_auc	outer_mean	outer_std	nested_cv_seconds	n_weights_stored
+xgb/blosum50	xgb	blosum50	609	0.763254	0.763271	0.00483	1025.2	50
+rf/blosum50	rf	blosum50	609	0.713908	0.714004	0.010461	1624.3	50
+lr_l2/blosum50	lr_l2	blosum50	609	0.704515	0.704526	0.005276	448.8	50
+lr_elasticnet/blosum50	lr_elasticnet	blosum50	609	0.704745	0.704755	0.005325	16019.5	50
+xgb/handcrafted_blosum50	xgb	handcrafted_blosum50	665	0.766513	0.766527	0.00699	822.6	50
+rf/handcrafted_blosum50	rf	handcrafted_blosum50	665	0.715752	0.715891	0.011234	1725.1	50
+lr_l2/handcrafted_blosum50	lr_l2	handcrafted_blosum50	665	0.709575	0.709629	0.006149	405.0	50
+lr_elasticnet/handcrafted_blosum50	lr_elasticnet	handcrafted_blosum50	665	0.709791	0.709859	0.006232	18423.0	50
