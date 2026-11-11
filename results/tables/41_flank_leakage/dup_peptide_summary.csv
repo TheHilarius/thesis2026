@@ -1,0 +1,14 @@
+category,count
+unique_peptides,44504
+duplicated_peptides,1690
+dup_rows,3803
+dup_same_protein,0
+dup_diff_proteins,1690
+dup_identical_flanks,829
+dup_different_flanks,861
+label_all_positive,634
+label_all_negative,580
+label_mixed,476
+mixed_identical_flanks,260
+mixed_different_flanks,216
+peptides_cross_fold,0

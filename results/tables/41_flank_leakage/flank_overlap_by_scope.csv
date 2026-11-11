@@ -1,0 +1,13 @@
+key,scope,windows,rows
+flank pair (n+c),all,45421,
+flank pair (n+c),shared_by_>1_peptide,86,198.0
+flank pair (n+c),cross_fold,20,43.0
+flank pair (n+c),train_vs_heldout(5),5,5.0
+n_flank,all,44787,
+n_flank,shared_by_>1_peptide,314,875.0
+n_flank,cross_fold,132,457.0
+n_flank,train_vs_heldout(5),55,85.0
+c_flank,all,44797,
+c_flank,shared_by_>1_peptide,325,877.0
+c_flank,cross_fold,133,426.0
+c_flank,train_vs_heldout(5),55,84.0
