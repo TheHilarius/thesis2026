@@ -198,11 +198,8 @@ def plot_cv_auc(arms, dl):
                edgecolor="black", linewidth=0.6, capsize=3,
                error_kw=dict(lw=1.0, ecolor="black"))
 
-    # brackets: level 0 = rf (shortest span), level 2 = elasticnet (longest)
-    tops = [v + e for v, e in zip(vals, errs)]
-    bots = [v - e for v, e in zip(vals, errs)]
-    top, bot = max(tops), min(bots)
-    span = (top - bot) or 0.05
+    # brackets: fixed heights so they stay readable on the full 0-1 y-axis
+    # (level 0 = rf, level 1 = lr_l2, level 2 = elasticnet)
     for feat in FEATURE_SETS:
         x0 = x_of[("xgb", feat)]
         for lvl, model in enumerate(["rf", "lr_l2", "lr_elasticnet"]):
@@ -210,19 +207,19 @@ def plot_cv_auc(arms, dl):
             if row.empty:
                 continue
             p = float(row["p_holm"].iloc[0])
-            yb = top + span * (0.14 + 0.13 * lvl)
+            yb = 0.84 + 0.05 * lvl
             x1 = x_of[(model, feat)]
-            ax.plot([x0, x0, x1, x1], [yb - span * 0.05, yb, yb, yb - span * 0.05],
+            ax.plot([x0, x0, x1, x1], [yb - 0.03, yb, yb, yb - 0.03],
                     color="black", lw=0.8)
-            ax.text((x0 + x1) / 2, yb + span * 0.03, stars_label(p),
+            ax.text((x0 + x1) / 2, yb + 0.012, stars_label(p),
                     ha="center", va="bottom", fontsize=11, fontweight="bold")
 
     ax.set_xticks(xs)
     ax.set_xticklabels([DISPLAY[m] for m, _ in order], fontsize=9.5,
                        rotation=18, ha="right")
     ax.set_ylabel("CV-AUC", fontsize=12)
-    lo = bot
-    ax.set_ylim(lo - span * 0.10, top + span * 0.75)
+    ax.set_ylim(0, 1)                       # full 0-1 scale, per thesis rule
+    ax.set_yticks(np.arange(0, 1.01, 0.1))
 
     # feature-set group labels below the (rotated) tick labels
     for f in FEATURE_SETS:
@@ -232,10 +229,12 @@ def plot_cv_auc(arms, dl):
                 color="0.30", fontweight="bold")
 
     handles = [plt.Rectangle((0, 0), 1, 1, color=COLORS[m]) for m in MODELS]
-    ax.legend(handles, [DISPLAY[m] for m in MODELS], loc="upper left",
-              frameon=False, ncol=4, fontsize=9)
+    # legend above the axes: the 0-1 axis puts the brackets at 0.84-0.94, so
+    # an in-plot legend would sit on top of them
+    ax.legend(handles, [DISPLAY[m] for m in MODELS], loc="lower center",
+              bbox_to_anchor=(0.5, 1.005), frameon=False, ncol=4, fontsize=9)
     ax.set_title("XGBoost vs simpler models — nested-CV AUC per feature set",
-                 fontsize=13, fontweight="bold")
+                 fontsize=13, fontweight="bold", pad=30)
     ax.spines[["top", "right"]].set_visible(False)
     ax.grid(axis="y", color="0.90", lw=0.7)
     ax.set_axisbelow(True)
