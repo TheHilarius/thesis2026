@@ -1,0 +1,2 @@
+run	family	variant	arm_a	arm_b	n_a	n_b	aligned	auc_a	auc_b	delta_auc	p_delong	tier	verdict	n_cross	cross_fprs	max_abs_dtp	fpr_at_max_dtp	disagree_range	max_flip_dtp
+esmc300vs600	glob	full	cv_results_xgb_emb_esmc300m_win_padtoken_pca5883_flat	cv_results_xgb_emb_esmc_win_padtoken_pca6389_flat	46617	46617	True	0.6885172120461858	0.6879609234710866	0.000556	0.7714331925608323	weak	crossing	4	0.127;0.307;0.355;0.697	0.0083	0.022	0.129	0.0083

@@ -1,0 +1,9 @@
+run	family	variant	arm_a	arm_b	n_a	n_b	aligned	auc_a	auc_b	delta_auc	p_delong	tier	verdict	n_cross	cross_fprs	max_abs_dtp	fpr_at_max_dtp	disagree_range	max_flip_dtp
+varfold_pilot	esmc	full	esmc_vf21	esmc_global21	46617	46617	True	0.6592681096116447	0.6592681096116447	0.0	1.0	clean	near_identical	0		0.0	0.011	0.0	0.0
+varfold_pilot	esmc	full	esmc_vf21	esmc_pca60	46617	46617	True	0.6592681096116447	0.6734866279257493	-0.014219	3.22161078043231e-12	clean	clean	0		0.027	0.291	0.0	0.0
+varfold_pilot	esmc	full	esmc_vf21	esmc_pca90	46617	46617	True	0.6592681096116447	0.6885172120461858	-0.029249	2.6883508275468743e-41	clean	clean	0		0.0497	0.382	0.0	0.0
+varfold_pilot	esmc	full	esmc_vf21	esmc_dimselect	46617	46617	True	0.6592681096116447	0.7035580511653876	-0.04429	4.1563722571242145e-113	clean	clean	0		0.0725	0.243	0.0	0.0
+varfold_pilot	esmc	full	esmc_vf50	esmc_global21	46617	46617	True	0.6763535149364968	0.6592681096116447	0.017085	1.3057336004211554e-26	clean	clean	0		0.0319	0.222	0.0	0.0
+varfold_pilot	esmc	full	esmc_vf50	esmc_pca60	46617	46617	True	0.6763535149364968	0.6734866279257493	0.002867	0.13079758444406392	weak	crossing	3	0.034;0.309;0.403	0.008	0.169	0.042	0.0056
+varfold_pilot	esmc	full	esmc_vf50	esmc_pca90	46617	46617	True	0.6763535149364968	0.6885172120461858	-0.012164	7.864210636640471e-10	clean	clean	0		0.0264	0.382	0.0	0.0
+varfold_pilot	esmc	full	esmc_vf50	esmc_dimselect	46617	46617	True	0.6763535149364968	0.7035580511653876	-0.027205	3.1768730933633026e-59	clean	clean	0		0.0468	0.319	0.0	0.0

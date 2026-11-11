@@ -1,0 +1,4 @@
+run	family	variant	arm_a	arm_b	n_a	n_b	aligned	auc_a	auc_b	delta_auc	p_delong	tier	verdict	n_cross	cross_fprs	max_abs_dtp	fpr_at_max_dtp	disagree_range	max_flip_dtp
+try_out_compositional	compositional	full	compositional	blosum50	46617	46617	True	0.5793647687904628	0.7632535731735643	-0.183889	0.0	clean	clean	0		0.2849	0.206	0.0	0.0
+try_out_compositional	compositional	full	handcrafted_compositional	blosum50	46617	46617	True	0.6046975692697547	0.7632535731735643	-0.158556	0.0	clean	clean	0		0.248	0.193	0.0	0.0
+try_out_compositional	compositional	full	compositional	handcrafted_compositional	46617	46617	True	0.5793647687904628	0.6046975692697547	-0.025333	1.9457179338800177e-22	clean	clean	0		0.0374	0.209	0.0	0.0
