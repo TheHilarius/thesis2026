@@ -22,24 +22,43 @@ the split CSV at load time.
 Plot display terminology: "handcrafted features" (reverted from "explicit
 features", user decision Oct 22); code keys keep the handcrafted_* names.
 
-Emits (into runs/handcrafted_sweep/):
-  plots/handcrafted_effect_on_encodings.png   enc / hc+enc / hc
-  plots/handcrafted_encodings_ranking.png     hc+enc arms, all-vs-all
+Emits (into runs/<campaign>/, default campaign=handcrafted_sweep):
+  plots/handcrafted_effect_on_encodings.png   enc / hc+enc + hc anchor bar
+  plots/handcrafted_encodings_ranking.png     hc+enc arms all-vs-all (best pick)
   plots/handcrafted_effect_on_esmif.png       ESM-IF / hc+ESM-IF / hc
   plots/handcrafted_effect_on_esmc.png        ESM-C / hc+ESM-C / hc
   plots/handcrafted_embeddings_ranking.png    4 embedding arms, all-vs-all
   results/handcrafted_sweep_delong_stats.tsv    every tested pair
   results/handcrafted_sweep_deltas.tsv          explicit contrasts + memory
 
+Campaign flags for the vardims-defaults redo:
+  --campaign is_handcrafted_helping_v2 --ref-campaign is_encodings_helping_v2
+The ref campaign supplies the emb_* and encoding+embedding reference arms
+(mirrors the old symlinked refs). Family gating is two-level:
+  level A  handcrafted×encoding singles -> E1/E2/E5 + encodings figures
+           (embedding-free pure-CSV arms; the helping-v2 campaign has
+           these copied from handcrafted_sweep — reduction-agnostic)
+  level B  three-way handcrafted×encoding×embedding arms -> T1-T3 +
+           with_embedding delta rows (absent on helping-v2 by design:
+           old triples are PCA-era and would mix reductions)
+Missing levels skip with a warning instead of aborting; E6/E7/E8 and
+their figures always run when their arms exist.
+
 Caption caveat: the ~0.0024-AUC detection threshold is smaller than the
 0.003-0.009 outer-fold SD, so a significant delta may still be immaterial.
 """
 
+import argparse
 import csv
 import glob
 import hashlib
 import json
 import os
+import sys
+from pathlib import Path
+
+_SRC = Path(__file__).resolve().parent
+sys.path.insert(0, str(_SRC.parent / "pipeline" / "python"))
 
 import numpy as np
 import pandas as pd
@@ -175,10 +194,10 @@ def load_model(path, fold_vec, y, tag):
     }
 
 
-def read_mem(features_key):
+def read_mem(features_key, campaign, ref_campaign):
     """peak_rss_kb, cgroup_peak_bytes, wall_s, cpu_pct; explicit arms live
-    in handcrafted_sweep, reference arms in encodings_sweep."""
-    for run_root in ("handcrafted_sweep", "encodings_sweep"):
+    in the handcrafted campaign, reference arms in the encodings campaign."""
+    for run_root in (campaign, ref_campaign):
         path = PROJECT_ROOT / "runs" / run_root / "results" / \
             f"mem_{features_key}.tsv"
         if path.exists():
@@ -216,6 +235,21 @@ def _tint(hex_color, mix=0.5):
 C_C_COMBO  = _tint(C_C)     # light red
 C_IF_COMBO = _tint(C_IF)    # light blue
 C_EXP_FULL = _tint(C_EXP, mix=-0.5)   # darker sand (explicit-alone bars)
+
+# how each embedding-only arm was reduced: n_features -> legend note
+REDUCTION_NOTES = {
+    18647: "80% EV",               # ESM-C top-variance (vardims default)
+    7540: "65% EV",                # ESM-IF top-variance (vardims default)
+    2278: "PCA 80% EV (k=2278)",   # old campaign reduction
+    632: "PCA 60% EV (k=632)",
+}
+
+
+def reduction_note(models, emb_only_key):
+    """Legend note derived from the arm's actual feature count, so the old
+    PCA campaign and the vardims redo each label themselves truthfully."""
+    k = models[emb_only_key]["k"]
+    return REDUCTION_NOTES.get(k, f"k={k}")
 
 EMB_ONLY = [
     ("esmif_eos_bos_repeat", "ESM-IF", C_IF, C_IF_COMBO),
@@ -294,7 +328,7 @@ def _padmode_brackets(ax, pairs, values, fontsize=7.5, stars_only=False):
 
 def _finish_padmode(fig, ax, title, out_png, legend_entries, footnote=None):
     ax.set_ylim(0, 1.0)
-    ax.set_ylabel("AUC-ROC")
+    ax.set_ylabel("CV-AUC")
     ax.set_title(title)
     ax.grid(axis="y", alpha=0.3)
     if footnote:
@@ -313,43 +347,52 @@ def _finish_padmode(fig, ax, title, out_png, legend_entries, footnote=None):
 
 
 # ── figures ─────────────────────────────────────────────────────────────
-def plot_effect_on_encodings(models, famExpEnc, famExpAlone, out_png,
+def plot_effect_on_encodings(models, famExpEnc, out_png,
                              alpha=ALPHA):
-    """6 groups x 3 bars: encoding / explicit+encoding / explicit features.
-    Brackets: explicit+enc vs enc (E1), explicit+enc vs explicit (E2);
-    stars-only per padmode dense-strip layout."""
-    step_g = 3.0
+    """6 interleaved groups [encoding, encoding+handcrafted] plus ONE
+    standalone handcrafted anchor bar — it is a single constant arm, no
+    need to repeat it per group. Brackets: E1 only (encoding vs its
+    combo), stars-only; E2 stats stay in the TSV (no brackets to the
+    anchor)."""
+    step_g = 2
+    n_g = len(ENCODINGS)
     xs, vals, errs, colors = [], [], [], []
+    key_to_x = {}
     for gi, enc in enumerate(ENCODINGS):
-        trio = [(enc, C_SOLO), (exp_key(enc), C_EXP), (EXP, C_EXP_FULL)]
-        for bi, (k, c) in enumerate(trio):
-            xs.append(gi * step_g + bi)
-            vals.append(models[k]["auc"]); errs.append(models[k]["outer_std"])
+        key_to_x[enc] = gi * step_g
+        key_to_x[exp_key(enc)] = gi * step_g + 1
+        for x, k, c in ((key_to_x[enc], enc, C_SOLO),
+                        (key_to_x[exp_key(enc)], exp_key(enc), C_EXP)):
+            xs.append(x)
+            vals.append(models[k]["auc"])
+            errs.append(models[k]["outer_std"])
             colors.append(c)
+    anchor_x = n_g * step_g + 1                      # gap before the anchor
+    xs.append(anchor_x)
+    vals.append(models[EXP]["auc"])
+    errs.append(models[EXP]["outer_std"])
+    colors.append(C_EXP_FULL)
 
-    famE1 = {(pr["enc"]): pr for pr in famExpEnc}
-    famE2 = {(pr["enc"]): pr for pr in famExpAlone}
+    famE1 = {pr["enc"]: pr for pr in famExpEnc}
     pairs = []
-    for gi, enc in enumerate(ENCODINGS):
+    for enc in ENCODINGS:
         p1 = famE1.get(enc)
         if p1 and p1["p_adj"] < alpha:
-            pairs.append((gi * step_g + 0, gi * step_g + 1, p1["p"], p1["p_adj"]))
-        p2 = famE2.get(enc)
-        if p2 and p2["p_adj"] < alpha:
-            pairs.append((gi * step_g + 1, gi * step_g + 2, p2["p"], p2["p_adj"]))
+            pairs.append((key_to_x[enc], key_to_x[exp_key(enc)],
+                          p1["p"], p1["p_adj"]))
 
     fig, ax = plt.subplots(figsize=(13, 6.2))
     _padmode_bars(ax, xs, vals, errs, colors)
-    for gi in range(len(ENCODINGS) - 1):
-        ax.axvline(gi * step_g + 2.5, color="grey", linestyle="--",
+    for gi in range(n_g - 1):
+        ax.axvline(gi * step_g + 1.5, color="grey", linestyle="--",
                    linewidth=0.8)
+    ax.axvline(anchor_x - 0.75, color="grey", linestyle="--", linewidth=0.8)
     _padmode_brackets(ax, pairs, vals, stars_only=True)
-    ax.set_xticks([gi * step_g + 1 for gi in range(len(ENCODINGS))])
-    ax.set_xticklabels([ENC_LABEL[e] for e in ENCODINGS],
+    ax.set_xticks([gi * step_g + 0.5 for gi in range(n_g)] + [anchor_x])
+    ax.set_xticklabels([ENC_LABEL[e] for e in ENCODINGS] + ["handcrafted"],
                        rotation=30, ha="right", fontsize=9)
     _finish_padmode(fig, ax,
-                    "Effect of handcrafted features: encoding vs "
-                    "handcrafted+encoding vs handcrafted features alone",
+                    "Do handcrafted features improve the AA encodings?",
                     out_png,
                     [("AA encoding", C_SOLO),
                      ("handcrafted + encoding", C_EXP),
@@ -395,16 +438,18 @@ def _draw_hubs(ax, hubs, vals):
             if xt not in (xa, xb):
                 ax.plot([xt, xt], [y_br * 0.985, y_br], color="black", lw=0.9)
         ax.text((xa + xb) / 2, y_br + step * 0.12,
-                f"{fmt_p_pair(p, p_adj)} ({stars(p_adj)})",
+                stars(p_adj) if p is None
+                else f"{fmt_p_pair(p, p_adj)} ({stars(p_adj)})",
                 ha="center", va="bottom", fontsize=fontsize)
 
 
 def plot_exp_enc_ranking(models, famExpPair, out_png, alpha=ALPHA):
-    """Flat 6 bars, all explicit+encoding arms compared against each other
-    (pairwise DeLong, Holm within family). Hub brackets (padmode 'baselines'
-    layout, same as 18_'s encodings-only figure): ONE bracket per left bar
-    to its rightmost significant partner, down-ticks at intermediate
-    significant bars; ns contrasts live in the stats TSV."""
+    """Flat 6 bars, handcrafted+encoding arms all-vs-all (pairwise DeLong,
+    Holm within family) — the best-pick figure: E1 already established
+    that encodings gain slightly from handcrafted, so only the combos
+    compete here. Hub brackets (padmode 'baselines' layout): ONE bracket
+    per left bar to its rightmost significant partner, down-ticks at
+    intermediate significant bars; ns contrasts live in the stats TSV."""
     xs = list(range(len(ENCODINGS)))
     key_to_x = {exp_key(enc): i for i, enc in enumerate(ENCODINGS)}
     vals = [models[exp_key(enc)]["auc"] for enc in ENCODINGS]
@@ -419,8 +464,8 @@ def plot_exp_enc_ranking(models, famExpPair, out_png, alpha=ALPHA):
     footnote = (
         f"best arm: handcrafted+{ENC_LABEL[best_enc]} "
         f"{models[exp_key(best_enc)]['auc']:.4f}; "
-        f"{ns_n}/{len(famExpPair)} pairwise contrasts ns "
-        "(handcrafted_sweep_delong_stats.tsv, family explicit_pairwise)."
+        f"{len(famExpPair) - ns_n}/{len(famExpPair)} pairwise contrasts "
+        "significant (delong_stats.tsv, family explicit_pairwise)."
     )
 
     fig, ax = plt.subplots(figsize=(10, 6.2))
@@ -431,8 +476,7 @@ def plot_exp_enc_ranking(models, famExpPair, out_png, alpha=ALPHA):
                         for e in ENCODINGS],
                        rotation=30, ha="right", fontsize=9)
     _finish_padmode(fig, ax,
-                    "Handcrafted + encoding arms compared against each other "
-                    "(DeLong, Holm-corrected)",
+                    "Which handcrafted+encoding combination is best?",
                     out_png, [("handcrafted + encoding", C_EXP)],
                     footnote=footnote)
 
@@ -471,10 +515,14 @@ def plot_exp_emb_ranking(models, famEmbPair, out_png, alpha=ALPHA):
     ax.set_xticklabels([lb for _k, _c, lb in bars], rotation=20, ha="right",
                        fontsize=9)
     _finish_padmode(fig, ax,
-                    "Embedding arms compared against each other "
-                    "(DeLong, Holm-corrected)",
+                    "Embedding arms compared: does handcrafted "
+                    "add anything?",
                     out_png,
-                    [("embedding", C_IF), ("handcrafted + embedding", C_EXP)],
+                    [(f"ESM-IF {reduction_note(models, 'emb_esmif_eos_bos_repeat')}",
+                      C_IF),
+                     (f"ESM-C {reduction_note(models, 'emb_esmc300m_win_padtoken')}",
+                      C_C),
+                     ("handcrafted + embedding", C_EXP)],
                     footnote=footnote)
 
 
@@ -503,17 +551,28 @@ def plot_emb_explicit(models, famEmbExp, famEmbExpVsExp, emb_comp, emb_label,
     ax.set_xticks(xs)
     ax.set_xticklabels([emb_label, f"handcrafted + {emb_label}",
                         "handcrafted features"], fontsize=10)
+    _note = reduction_note(models, f"emb_{emb_comp}")
     _finish_padmode(fig, ax,
-                    f"Handcrafted features with {emb_label}: "
-                    f"{emb_label} vs handcrafted+{emb_label} vs handcrafted features",
+                    "Do handcrafted features improve "
+                    f"{emb_label}?",
                     out_png,
-                    [(emb_label, emb_full),
-                     (f"handcrafted + {emb_label}", C_EXP),
+                    [(f"{emb_label} {_note}", emb_full),
+                     (f"handcrafted + {emb_label} ({_note})", C_EXP),
                      ("handcrafted features", C_EXP_FULL)])
 
 
 # ── main ────────────────────────────────────────────────────────────────
 def main():
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
+    ap.add_argument("--campaign", default="handcrafted_sweep",
+                    help="primary run folder under runs/ (default: "
+                         "handcrafted_sweep)")
+    ap.add_argument("--ref-campaign", default="encodings_sweep",
+                    help="campaign supplying emb_* and encoding+embedding "
+                         "reference arms (default: encodings_sweep)")
+    args = ap.parse_args()
+    campaign, ref_campaign = args.campaign, args.ref_campaign
+
     split = pd.read_csv(SPLIT_DATA_PATH)
     fold_vec = split["fold"].to_numpy(dtype=int)
     y = split["label"].to_numpy(dtype=int)
@@ -521,10 +580,15 @@ def main():
     print(f"Loaded split: {len(y)} rows, {int(y.sum())} positive, "
           f"{len(set(fold_vec))} folds, labels md5 {y_md5}")
 
-    glob_pat = str(PROJECT_ROOT / "runs" / "handcrafted_sweep" / "models" /
-                   "flat" / "cv_results_*.json")
-    paths = sorted(glob.glob(glob_pat))
-    print(f"Found {len(paths)} result JSONs")
+    # primary campaign + reference campaign (emb_*/enc+emb arms); scan every
+    # models/ subdir (flat for CSV arms, vardims for --vardims arms)
+    paths = []
+    for root in dict.fromkeys((campaign, ref_campaign)):
+        hits = sorted(glob.glob(str(
+            PROJECT_ROOT / "runs" / root / "models" / "*" /
+            "cv_results_*.json")))
+        print(f"Found {len(hits)} result JSONs in runs/{root}")
+        paths.extend(hits)
     models = {}
     for p in paths:
         m = load_model(p, fold_vec, y, os.path.basename(p))
@@ -539,75 +603,108 @@ def main():
     print("Fold/label md5 identical across all arms "
           f"({len(models)} arms)")
 
-    needed = [e for e in ENCODINGS] + [EXP] + \
-             [exp_key(e) for e in ENCODINGS] + \
-             [three_key(e, emb) for e in ENCODINGS
-              for emb, _nm, _c, _ct in EMB_ONLY] + \
-             [enc_emb_key(e, emb) for e in ENCODINGS
-              for emb, _nm, _c, _ct in EMB_ONLY] + \
-             [f"emb_{emb}" for emb, _nm, _c, _ct in EMB_ONLY]
-    missing = [k for k in needed if k not in models]
-    if missing:
-        raise SystemExit(f"Missing arms: {missing}")
+    # core arms (always required): embeddings + handcrafted + handcrafted×emb
+    core = [EXP] + [f"{EXP}_{emb}" for emb, _nm, _c, _ct in EMB_ONLY] + \
+           [f"emb_{emb}" for emb, _nm, _c, _ct in EMB_ONLY]
+    missing_core = [k for k in core if k not in models]
+    if missing_core:
+        raise SystemExit(f"Missing core arms: {missing_core}")
+
+    # level A: handcrafted×encoding singles (embedding-free, pure CSV) —
+    # unlock E1/E2/E5 + the two encodings figures + encoding_only rows
+    enc_needed = [e for e in ENCODINGS] + [exp_key(e) for e in ENCODINGS]
+    missing_enc = [k for k in enc_needed if k not in models]
+    has_enc_arms = not missing_enc
+    if missing_enc:
+        print(f"  WARN: {len(missing_enc)} encoding arms missing "
+              f"(e.g. {missing_enc[0]}) — E1/E2/E5 + encodings figures "
+              "will be skipped")
+
+    # level B: three-way handcrafted×encoding×embedding arms (PCA-era in
+    # the old campaign; deliberately absent on helping-v2) — unlock
+    # T1-T3 + the with_embedding delta rows
+    three_needed = [three_key(e, emb) for e in ENCODINGS
+                    for emb, _nm, _c, _ct in EMB_ONLY]
+    missing_three = [k for k in three_needed if k not in models]
+    has_three = not missing_three
+    if not has_three:
+        print(f"  WARN: {len(missing_three)} three-way arms missing "
+              f"(e.g. {missing_three[0]}) — T1-T3 + with_embedding delta "
+              "rows will be skipped")
 
     # ── DeLong families (Holm within family) ──
-    famExpEnc = []      # E1: explicit+enc vs enc alone
-    famExpAlone = []    # E2: explicit+enc vs explicit alone
-    for enc in ENCODINGS:
-        a, b, d, se, z, p = delong_full(y, models[exp_key(enc)]["probs"],
-                                        models[enc]["probs"])
-        famExpEnc.append(dict(enc=enc, name_a=exp_key(enc), name_b=enc,
-                              auc_a=a, auc_b=b, delta=d, se=se, z=z, p=p))
-        a2, b2, d2, se2, z2, p2 = delong_full(y, models[exp_key(enc)]["probs"],
-                                              models[EXP]["probs"])
-        famExpAlone.append(dict(enc=enc, name_a=exp_key(enc), name_b=EXP,
-                                auc_a=a2, auc_b=b2, delta=d2, se=se2, z=z2, p=p2))
-    holm_family(famExpEnc)
-    holm_family(famExpAlone)
-    print(f"\nFamily E1 (explicit+enc vs enc): {len(famExpEnc)} pairs, "
-          f"{sum(1 for p in famExpEnc if p['p_adj'] < ALPHA)} significant")
-    print(f"Family E2 (explicit+enc vs explicit): {len(famExpAlone)} pairs, "
-          f"{sum(1 for p in famExpAlone if p['p_adj'] < ALPHA)} significant")
+    # E1/E2/E5/T1-T3 need handcrafted×encoding (+three-way) arms, which
+    # the helping-v2 campaign does not contain — skip instead of aborting.
+    famExpEnc, famExpAlone, famExpPair = [], [], []
+    famT1, famT2, famT3 = [], [], []
+    if has_enc_arms:
+        famExpEnc = []      # E1: explicit+enc vs enc alone
+        famExpAlone = []    # E2: explicit+enc vs explicit alone
+        for enc in ENCODINGS:
+            a, b, d, se, z, p = delong_full(y, models[exp_key(enc)]["probs"],
+                                            models[enc]["probs"])
+            famExpEnc.append(dict(enc=enc, name_a=exp_key(enc), name_b=enc,
+                                  auc_a=a, auc_b=b, delta=d, se=se, z=z, p=p))
+            a2, b2, d2, se2, z2, p2 = delong_full(y, models[exp_key(enc)]["probs"],
+                                                  models[EXP]["probs"])
+            famExpAlone.append(dict(enc=enc, name_a=exp_key(enc), name_b=EXP,
+                                    auc_a=a2, auc_b=b2, delta=d2, se=se2,
+                                    z=z2, p=p2))
+        holm_family(famExpEnc)
+        holm_family(famExpAlone)
+        print(f"\nFamily E1 (explicit+enc vs enc): {len(famExpEnc)} pairs, "
+              f"{sum(1 for p in famExpEnc if p['p_adj'] < ALPHA)} significant")
+        print(f"Family E2 (explicit+enc vs explicit): {len(famExpAlone)} pairs, "
+              f"{sum(1 for p in famExpAlone if p['p_adj'] < ALPHA)} significant")
 
-    # E5: all pairwise explicit+encoding vs each other (ranking figure)
-    famExpPair = []
-    for i, a in enumerate(ENCODINGS):
-        for b in ENCODINGS[i + 1:]:
-            auc_a, auc_b, d, se, z, p = delong_full(
-                y, models[exp_key(a)]["probs"], models[exp_key(b)]["probs"])
-            famExpPair.append(dict(enc_a=a, enc_b=b, name_a=exp_key(a),
-                                   name_b=exp_key(b), auc_a=auc_a, auc_b=auc_b,
-                                   delta=d, se=se, z=z, p=p))
-    holm_family(famExpPair)
-    print(f"Family E5 (explicit+enc pairwise): {len(famExpPair)} pairs, "
-          f"{sum(1 for p in famExpPair if p['p_adj'] < ALPHA)} significant")
+        # E5: all pairwise explicit+encoding vs each other (ranking figure)
+        famExpPair = []
+        for i, a in enumerate(ENCODINGS):
+            for b in ENCODINGS[i + 1:]:
+                auc_a, auc_b, d, se, z, p = delong_full(
+                    y, models[exp_key(a)]["probs"], models[exp_key(b)]["probs"])
+                famExpPair.append(dict(enc_a=a, enc_b=b, name_a=exp_key(a),
+                                       name_b=exp_key(b), auc_a=auc_a,
+                                       auc_b=auc_b, delta=d, se=se, z=z, p=p))
+        holm_family(famExpPair)
+        print(f"Family E5 (explicit+enc pairwise): {len(famExpPair)} pairs, "
+              f"{sum(1 for p in famExpPair if p['p_adj'] < ALPHA)} significant")
+    else:
+        print("\nSKIP: families E1/E2/E5 — no handcrafted×encoding arms "
+              "(need runs/<campaign>/handcrafted_<enc>)")
 
-    famT1, famT2, famT3 = [], [], []    # three-way vs enc+emb / exp+enc / exp
-    for enc in ENCODINGS:
-        for emb, _nm, _c, _ct in EMB_ONLY:
-            k3 = three_key(enc, emb)
-            a, b, d, se, z, p = delong_full(
-                y, models[k3]["probs"], models[enc_emb_key(enc, emb)]["probs"])
-            famT1.append(dict(enc=enc, emb=emb, name_a=k3,
-                              name_b=enc_emb_key(enc, emb), auc_a=a, auc_b=b,
-                              delta=d, se=se, z=z, p=p))
-            a2, b2, d2, se2, z2, p2 = delong_full(
-                y, models[k3]["probs"], models[exp_key(enc)]["probs"])
-            famT2.append(dict(enc=enc, emb=emb, name_a=k3, name_b=exp_key(enc),
-                              auc_a=a2, auc_b=b2, delta=d2, se=se2, z=z2, p=p2))
-            a3, b3, d3, se3, z3, p3 = delong_full(
-                y, models[k3]["probs"], models[EXP]["probs"])
-            famT3.append(dict(enc=enc, emb=emb, name_a=k3, name_b=EXP,
-                              auc_a=a3, auc_b=b3, delta=d3, se=se3, z=z3, p=p3))
-    holm_family(famT1)
-    holm_family(famT2)
-    holm_family(famT3)
-    print(f"Family T1 (three-way vs enc+emb): {len(famT1)} pairs, "
-          f"{sum(1 for p in famT1 if p['p_adj'] < ALPHA)} significant")
-    print(f"Family T2 (three-way vs explicit+enc): {len(famT2)} pairs, "
-          f"{sum(1 for p in famT2 if p['p_adj'] < ALPHA)} significant")
-    print(f"Family T3 (three-way vs explicit alone): {len(famT3)} pairs, "
-          f"{sum(1 for p in famT3 if p['p_adj'] < ALPHA)} significant")
+    if has_three:
+        famT1, famT2, famT3 = [], [], []    # three-way vs enc+emb / exp+enc / exp
+        for enc in ENCODINGS:
+            for emb, _nm, _c, _ct in EMB_ONLY:
+                k3 = three_key(enc, emb)
+                a, b, d, se, z, p = delong_full(
+                    y, models[k3]["probs"], models[enc_emb_key(enc, emb)]["probs"])
+                famT1.append(dict(enc=enc, emb=emb, name_a=k3,
+                                  name_b=enc_emb_key(enc, emb), auc_a=a,
+                                  auc_b=b, delta=d, se=se, z=z, p=p))
+                a2, b2, d2, se2, z2, p2 = delong_full(
+                    y, models[k3]["probs"], models[exp_key(enc)]["probs"])
+                famT2.append(dict(enc=enc, emb=emb, name_a=k3, name_b=exp_key(enc),
+                                  auc_a=a2, auc_b=b2, delta=d2, se=se2,
+                                  z=z2, p=p2))
+                a3, b3, d3, se3, z3, p3 = delong_full(
+                    y, models[k3]["probs"], models[EXP]["probs"])
+                famT3.append(dict(enc=enc, emb=emb, name_a=k3, name_b=EXP,
+                                  auc_a=a3, auc_b=b3, delta=d3, se=se3,
+                                  z=z3, p=p3))
+        holm_family(famT1)
+        holm_family(famT2)
+        holm_family(famT3)
+        print(f"Family T1 (three-way vs enc+emb): {len(famT1)} pairs, "
+              f"{sum(1 for p in famT1 if p['p_adj'] < ALPHA)} significant")
+        print(f"Family T2 (three-way vs explicit+enc): {len(famT2)} pairs, "
+              f"{sum(1 for p in famT2 if p['p_adj'] < ALPHA)} significant")
+        print(f"Family T3 (three-way vs explicit alone): {len(famT3)} pairs, "
+              f"{sum(1 for p in famT3 if p['p_adj'] < ALPHA)} significant")
+    else:
+        print("SKIP: families T1-T3 — no three-way arms (by design on "
+              "helping-v2; PCA-era triples would mix reductions)")
 
     # ── E6/E7/E8: explicit+embedding arms (only once the 2 new cluster jobs
     #    handcrafted_<emb> have landed; otherwise figures are skipped) ──
@@ -653,12 +750,17 @@ def main():
               f"{sum(1 for p in famEmbPair if p['p_adj'] < ALPHA)} significant")
 
     # ── figures (padmode_choice style) ──
-    out_dir = PROJECT_ROOT / "runs" / "handcrafted_sweep" / "plots"
+    out_dir = PROJECT_ROOT / "runs" / campaign / "plots"
     out_dir.mkdir(parents=True, exist_ok=True)
-    plot_effect_on_encodings(models, famExpEnc, famExpAlone,
-                             out_dir / "handcrafted_effect_on_encodings.png")
-    plot_exp_enc_ranking(models, famExpPair,
-                         out_dir / "handcrafted_encodings_ranking.png")
+    if has_enc_arms:
+        plot_effect_on_encodings(models, famExpEnc,
+                                 out_dir / "handcrafted_effect_on_encodings.png")
+        plot_exp_enc_ranking(models, famExpPair,
+                             out_dir / "handcrafted_encodings_ranking.png")
+    else:
+        print("  (skipping handcrafted_effect_on_encodings.png / "
+              "handcrafted_encodings_ranking.png — no handcrafted×encoding "
+              "arms)")
     if len(embs_with_exp) == len(EMB_ONLY):
         plot_exp_emb_ranking(models, famEmbPair,
                              out_dir / "handcrafted_embeddings_ranking.png")
@@ -676,7 +778,7 @@ def main():
                   ".png — handcrafted+embedding arm not landed yet)")
 
     # ── TSV: every tested pair ──
-    res_dir = PROJECT_ROOT / "runs" / "handcrafted_sweep" / "results"
+    res_dir = PROJECT_ROOT / "runs" / campaign / "results"
     res_dir.mkdir(parents=True, exist_ok=True)
     stat_rows = []
     for fam, pairs in (("explicit_vs_encoding", famExpEnc),
@@ -722,22 +824,28 @@ def main():
             z=f"{pr['z']:.4f}", p=f"{pr['p']:.3e}",
             p_adj=f"{pr['p_adj']:.3e}",
             significant=str(pr["p_adj"] < ALPHA)))
-    with open(res_dir / "handcrafted_sweep_delong_stats.tsv", "w",
+    stats_tsv = res_dir / f"{campaign}_delong_stats.tsv"
+    with open(stats_tsv, "w",
               newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(stat_rows[0].keys()),
                            delimiter="\t")
         w.writeheader()
         w.writerows(stat_rows)
-    print(f"  Wrote {res_dir/'handcrafted_sweep_delong_stats.tsv'}")
+    print(f"  Wrote {stats_tsv}")
 
     # ── TSV: explicit-feature contrasts + memory columns ──
+    # (needs the handcrafted×encoding families — absent on helping-v2)
+    if not has_enc_arms:
+        print("  (skipping handcrafted_deltas TSV — no handcrafted×"
+              "encoding arms)")
+        return
     famT1_by = {(pr["enc"], pr["emb"]): pr for pr in famT1}
     famT2_by = {(pr["enc"], pr["emb"]): pr for pr in famT2}
     delta_rows = []
     for enc in ENCODINGS:
         pr = next(p for p in famExpEnc if p["enc"] == enc)
-        mem_exp = read_mem(exp_key(enc))
-        mem_base = read_mem(enc)
+        mem_exp = read_mem(exp_key(enc), campaign, ref_campaign)
+        mem_base = read_mem(enc, campaign, ref_campaign)
         delta_rows.append(dict(
             context="encoding_only", embedding="", encoding=enc,
             explicit_arm=exp_key(enc), baseline_arm=enc,
@@ -755,12 +863,12 @@ def main():
             baseline_wall_s=mem_base["wall_s"],
             baseline_cpu_pct=mem_base["cpu_pct"],
         ))
-        for emb, nm, _c, _ct in EMB_ONLY:
+        for emb, nm, _c, _ct in (EMB_ONLY if has_three else []):
             p1 = famT1_by[(enc, emb)]
             p2 = famT2_by[(enc, emb)]
             k3 = three_key(enc, emb)
-            mem_exp = read_mem(k3)
-            mem_base = read_mem(enc_emb_key(enc, emb))
+            mem_exp = read_mem(k3, campaign, ref_campaign)
+            mem_base = read_mem(enc_emb_key(enc, emb), campaign, ref_campaign)
             delta_rows.append(dict(
                 context="with_embedding", embedding=nm, encoding=enc,
                 explicit_arm=k3, baseline_arm=enc_emb_key(enc, emb),
@@ -778,13 +886,14 @@ def main():
                 baseline_wall_s=mem_base["wall_s"],
                 baseline_cpu_pct=mem_base["cpu_pct"],
             ))
-    with open(res_dir / "handcrafted_sweep_deltas.tsv", "w",
+    deltas_tsv = res_dir / f"{campaign}_deltas.tsv"
+    with open(deltas_tsv, "w",
               newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(delta_rows[0].keys()),
                            delimiter="\t")
         w.writeheader()
         w.writerows(delta_rows)
-    print(f"  Wrote {res_dir/'handcrafted_sweep_deltas.tsv'}")
+    print(f"  Wrote {deltas_tsv}")
 
     print("\nCaption caveat: detection threshold ~0.0024 AUC vs outer-fold "
           "SD 0.003-0.009; significant != material.")

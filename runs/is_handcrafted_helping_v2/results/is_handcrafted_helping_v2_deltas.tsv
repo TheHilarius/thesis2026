@@ -1,0 +1,7 @@
+context	embedding	encoding	explicit_arm	baseline_arm	explicit_auc	baseline_auc	delta	se	z	p	p_adj	explicit_peak_rss_kb	explicit_cgroup_peak_bytes	explicit_wall_s	explicit_cpu_pct	baseline_peak_rss_kb	baseline_cgroup_peak_bytes	baseline_wall_s	baseline_cpu_pct
+encoding_only		sparse	handcrafted_sparse	sparse	0.743375	0.740906	0.002469	0.001127	2.1920	2.838e-02	2.838e-02								
+encoding_only		blosum50	handcrafted_blosum50	blosum50	0.766513	0.763254	0.003259	0.000923	3.5328	4.112e-04	1.234e-03								
+encoding_only		blosum62	handcrafted_blosum62	blosum62	0.766103	0.761215	0.004888	0.000936	5.2234	1.757e-07	1.054e-06								
+encoding_only		blosum80	handcrafted_blosum80	blosum80	0.765749	0.762749	0.003000	0.000918	3.2685	1.081e-03	2.162e-03								
+encoding_only		kidera	handcrafted_kidera	kidera	0.761426	0.756658	0.004768	0.000917	5.2005	1.988e-07	1.054e-06								
+encoding_only		atchley	handcrafted_atchley	atchley	0.753208	0.748775	0.004433	0.000979	4.5300	5.898e-06	2.359e-05								

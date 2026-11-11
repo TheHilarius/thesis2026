@@ -1,0 +1,13 @@
+encoding	embedding	combined_key	enc_only_auc	combined_auc	delta	se	z	p	p_adj	emb_only_auc	delta_vs_emb	p_vs_emb	p_adj_vs_emb	enc_only_peak_rss_kb	enc_only_cgroup_peak_bytes	enc_only_wall_s	combined_peak_rss_kb	combined_cgroup_peak_bytes	combined_wall_s	combined_cpu_pct
+sparse	ESM-IF	sparse_esmif_eos_bos_repeat	0.740906	0.712388	-0.028518	0.001999	-14.2644	3.646e-46	4.375e-45	0.644742	0.067646	2.890e-289	1.734e-288							
+sparse	ESM-C	sparse_esmc300m_win_padtoken	0.740906	0.731838	-0.009068	0.002137	-4.2436	2.200e-05	6.599e-05	0.701727	0.030112	1.143e-121	1.143e-121							
+blosum50	ESM-IF	blosum50_esmif_eos_bos_repeat	0.763254	0.740574	-0.022680	0.001709	-13.2724	3.349e-40	3.683e-39	0.644742	0.095831	0.000e+00	0.000e+00							
+blosum50	ESM-C	blosum50_esmc300m_win_padtoken	0.763254	0.750518	-0.012735	0.001874	-6.7952	1.081e-11	6.488e-11	0.701727	0.048792	1.225e-268	4.898e-268							
+blosum62	ESM-IF	blosum62_esmif_eos_bos_repeat	0.761215	0.739301	-0.021915	0.001718	-12.7553	2.913e-37	2.622e-36	0.644742	0.094558	0.000e+00	0.000e+00							
+blosum62	ESM-C	blosum62_esmc300m_win_padtoken	0.761215	0.750291	-0.010924	0.001881	-5.8084	6.307e-09	3.154e-08	0.701727	0.048565	1.013e-261	3.039e-261							
+blosum80	ESM-IF	blosum80_esmif_eos_bos_repeat	0.762749	0.740265	-0.022484	0.001698	-13.2416	5.044e-40	5.044e-39	0.644742	0.095523	0.000e+00	0.000e+00							
+blosum80	ESM-C	blosum80_esmc300m_win_padtoken	0.762749	0.752075	-0.010674	0.001856	-5.7517	8.836e-09	3.535e-08	0.701727	0.050349	3.388e-278	1.694e-277							
+kidera	ESM-IF	kidera_esmif_eos_bos_repeat	0.756658	0.740883	-0.015775	0.001640	-9.6176	6.741e-22	4.719e-21	0.644742	0.096141	0.000e+00	0.000e+00							
+kidera	ESM-C	kidera_esmc300m_win_padtoken	0.756658	0.754322	-0.002336	0.001817	-1.2859	1.985e-01	1.985e-01	0.701727	0.052595	4.051e-297	2.836e-296							
+atchley	ESM-IF	atchley_esmif_eos_bos_repeat	0.748775	0.728907	-0.019868	0.001807	-10.9929	4.132e-28	3.306e-27	0.644742	0.084165	0.000e+00	0.000e+00							
+atchley	ESM-C	atchley_esmc300m_win_padtoken	0.748775	0.743885	-0.004890	0.001974	-2.4775	1.323e-02	2.646e-02	0.701727	0.042158	3.505e-220	7.011e-220							

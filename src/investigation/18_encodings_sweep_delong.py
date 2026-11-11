@@ -17,10 +17,16 @@ Two DeLong families (Holm within family):
   A  vs_encoding_only     each (encoding+embedding) vs its encoding alone
   B  vs_embedding_only    each (encoding+embedding) vs its embedding alone
 
-Emits (into runs/encodings_sweep/):
-  plots/encodings_sweep_auc_delong.png (+.pdf)   two panels
-  results/encodings_sweep_deltas.tsv             both delta directions + memory
-  results/encodings_sweep_delong_stats.tsv       every tested pair
+Emits (into runs/<campaign>/, default campaign=encodings_sweep):
+  plots/<campaign>_triple_<emb>.png   per-embedding triple panels
+  plots/<campaign>_flat_padmode.png   13-bar flat figure (ESM-C only)
+  plots/<campaign>_encodings_only.png encodings-alone ranking
+  results/<campaign>_deltas.tsv             both delta directions + memory
+  results/<campaign>_delong_stats.tsv       every tested pair
+
+--campaign is_encodings_helping_v2 reruns the identical analysis on the
+vardims-defaults redo campaign (models/ flat+vardims subdirs are both
+scanned; missing memory sidecars yield empty columns).
 
 Caption caveat (lives in the thesis, not the figure): the ~0.0024-AUC
 detection threshold is smaller than the 0.003-0.009 outer-fold SD, so a
@@ -31,10 +37,16 @@ itself inlined it from 15_padmode_significance.py — its import chain is
 broken upstream).
 """
 
+import argparse
 import csv
 import glob
 import json
 import os
+import sys
+from pathlib import Path
+
+_SRC = Path(__file__).resolve().parent
+sys.path.insert(0, str(_SRC.parent / "pipeline" / "python"))
 
 import numpy as np
 import pandas as pd
@@ -169,9 +181,9 @@ def load_model(path, fold_vec, y, tag):
     }
 
 
-def read_mem(features_key):
+def read_mem(features_key, campaign):
     """peak_rss_kb, cgroup_peak_bytes, wall_s, cpu_pct from the sidecar."""
-    path = PROJECT_ROOT / "runs" / "encodings_sweep" / "results" / \
+    path = PROJECT_ROOT / "runs" / campaign / "results" / \
         f"mem_{features_key}.tsv"
     if not path.exists():
         return dict(peak_rss_kb="", cgroup_peak_bytes="", wall_s="", cpu_pct="")
@@ -206,6 +218,22 @@ def _tint(hex_color, mix=0.5):
 # 50%-white tints for the "encoding + embedding" combo bars
 C_C_COMBO  = _tint(C_C)     # light red
 C_IF_COMBO = _tint(C_IF)    # light blue
+
+
+# how each embedding-only arm was reduced: n_features -> legend note
+REDUCTION_NOTES = {
+    18647: "80% EV",               # ESM-C top-variance (vardims default)
+    7540: "65% EV",                # ESM-IF top-variance (vardims default)
+    2278: "PCA 80% EV (k=2278)",   # old campaign reduction
+    632: "PCA 60% EV (k=632)",
+}
+
+
+def reduction_note(models, emb_only_key):
+    """Legend note derived from the arm's actual feature count, so the old
+    PCA campaign and the vardims redo each label themselves truthfully."""
+    k = models[emb_only_key]["k"]
+    return REDUCTION_NOTES.get(k, f"k={k}")
 
 
 # (emb component name used in combined keys, emb-ONLY baseline features_key,
@@ -280,7 +308,7 @@ def _padmode_brackets(ax, pairs, values, fontsize=7.5, stars_only=False):
 
 def _finish_padmode(fig, ax, title, out_png, legend_entries, footnote=None):
     ax.set_ylim(0, 1.0)
-    ax.set_ylabel("AUC-ROC")
+    ax.set_ylabel("CV-AUC")
     ax.set_title(title)
     ax.grid(axis="y", alpha=0.3)
     if footnote:
@@ -341,14 +369,15 @@ def plot_triple(models, famA, famB, famC, emb_comp, emb_label, emb_full,
     ax.set_xticklabels([ENC_LABEL[e] for e in ENCODINGS],
                        rotation=30, ha="right", fontsize=9)
     _finish_padmode(fig, ax,
-                    f"AA encoding vs encoding + {emb_label} vs {emb_label} alone",
+                    f"Can an AA encoding help {emb_label}?",
                     out_png,
                     [("AA encoding", C_SOLO),
-                     (f"encoding + {emb_label}", emb_combo),
-                     (f"{emb_label} alone", emb_full)])
+                     ("combined", emb_combo),
+                     (f"{emb_label} {reduction_note(models, f'emb_{emb_comp}')}",
+                      emb_full)])
 
 
-def plot_encodings_only(models, famEnc, out_png, alpha=ALPHA):
+def plot_encodings_only(models, famEnc, out_png, stats_tsv, alpha=ALPHA):
     """6 encoding bars; BLOSUM50-centred significant contrasts only.
 
     Non-significant comparisons are not bracketed; the BLOSUM50 vs BLOSUM80
@@ -378,7 +407,7 @@ def plot_encodings_only(models, famEnc, out_png, alpha=ALPHA):
         f"BLOSUM50 vs BLOSUM80: delta={ns['delta']:+.4f}, "
         f"adjusted p={ns['p_adj']:.2g} (ns). "
         f"BLOSUM80 vs BLOSUM62: adjusted p={borderline['p_adj']:.2g} (ns). "
-        "Full pairwise tests: encodings_sweep_delong_stats.tsv."
+        f"Full pairwise tests: {stats_tsv}."
     )
 
     fig, ax = plt.subplots(figsize=(10, 6.2))
@@ -388,22 +417,20 @@ def plot_encodings_only(models, famEnc, out_png, alpha=ALPHA):
     ax.set_xticklabels([ENC_LABEL[e] for e in ENCODINGS],
                        rotation=30, ha="right", fontsize=9)
     _finish_padmode(fig, ax,
-                    "Held-out AUC: AA encodings alone (BLOSUM50 contrasts)",
+                    "Which AA encoding performs best?",
                     out_png, [("AA encoding", C_SOLO)], footnote=footnote)
 
 
 def plot_flat(models, famA, out_png, alpha=ALPHA):
-    """All 20 bars, padmode sectioning: encodings | ESM-C | ESM-IF.
-    Family-A brackets only, significant pairs only."""
+    """13 bars, ESM-C sectioning: encodings | combined | ESM-C alone.
+    Family-A brackets only, significant pairs only, ESM-C arms only
+    (ESM-IF removed 2026-11-05 by request)."""
     sec1 = [(enc, C_SOLO, ENC_LABEL[enc]) for enc in ENCODINGS]
-    c_if, c_if_combo, c_c, c_c_combo = C_IF, C_IF_COMBO, C_C, C_C_COMBO
+    c_c, c_c_combo = C_C, C_C_COMBO
     sec2 = [(arm_key(e, "esmc300m_win_padtoken"), c_c_combo,
              f"{ENC_LABEL[e]} +ESM-C") for e in ENCODINGS] + \
            [("emb_esmc300m_win_padtoken", c_c, "ESM-C")]
-    sec3 = [(arm_key(e, "esmif_eos_bos_repeat"), c_if_combo,
-             f"{ENC_LABEL[e]} +ESM-IF") for e in ENCODINGS] + \
-           [("emb_esmif_eos_bos_repeat", c_if, "ESM-IF")]
-    bars = sec1 + sec2 + sec3                       # 6 + 7 + 7 = 20
+    bars = sec1 + sec2                              # 6 + 7 = 13
 
     xs = list(range(len(bars)))
     key_to_x = {k: x for x, (k, _c, _l) in enumerate(bars)}
@@ -414,34 +441,43 @@ def plot_flat(models, famA, out_png, alpha=ALPHA):
 
     pairs = [(key_to_x[pr["name_b"]], key_to_x[pr["name_a"]],
               pr["p"], pr["p_adj"])
-             for pr in famA if pr["p_adj"] < alpha]
+             for pr in famA if pr["p_adj"] < alpha
+             and pr["name_a"] in key_to_x and pr["name_b"] in key_to_x]
 
-    fig, ax = plt.subplots(figsize=(16, 6.2))
+    fig, ax = plt.subplots(figsize=(13, 6.2))
     _padmode_bars(ax, xs, vals, errs, colors)
     ax.axvline(5.5, color="grey", linestyle="--", linewidth=0.8)
-    ax.axvline(12.5, color="grey", linestyle="--", linewidth=0.8)
     _padmode_brackets(ax, pairs, vals)
     ax.set_xticks(xs)
     ax.set_xticklabels(labels, rotation=30, ha="right", fontsize=7.5)
     _finish_padmode(fig, ax,
-                    "Held-out AUC: AA encodings, encodings + embeddings, embeddings alone",
+                    "AA encodings, ESM-C, or both?",
                     out_png,
                     [("AA encoding", C_SOLO),
-                     ("encoding + ESM-C", c_c_combo), ("ESM-C", c_c),
-                     ("encoding + ESM-IF", c_if_combo), ("ESM-IF", c_if)])
+                     ("combined", c_c_combo),
+                     (f"ESM-C {reduction_note(models, 'emb_esmc300m_win_padtoken')}",
+                      c_c)])
 
 
 
 # ── main ────────────────────────────────────────────────────────────────
 def main():
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
+    ap.add_argument("--campaign", default="encodings_sweep",
+                    help="run folder under runs/ to analyse "
+                         "(default: encodings_sweep)")
+    args = ap.parse_args()
+    campaign = args.campaign
+
     split = pd.read_csv(SPLIT_DATA_PATH)
     fold_vec = split["fold"].to_numpy(dtype=int)
     y = split["label"].to_numpy(dtype=int)
     print(f"Loaded split: {len(y)} rows, {int(y.sum())} positive, "
           f"{len(set(fold_vec))} folds")
 
-    glob_pat = str(PROJECT_ROOT / "runs" / "encodings_sweep" / "models" /
-                   "flat" / "cv_results_*.json")
+    # scan every models/ subdir (flat for CSV-only, vardims for --vardims arms)
+    glob_pat = str(PROJECT_ROOT / "runs" / campaign / "models" /
+                   "*" / "cv_results_*.json")
     paths = sorted(glob.glob(glob_pat))
     print(f"Found {len(paths)} result JSONs")
     models = {}
@@ -510,17 +546,19 @@ def main():
           f"{sum(1 for p in famEnc if p['p_adj'] < ALPHA)} significant")
 
     # ── figures (padmode_choice style) ──
-    out_dir = PROJECT_ROOT / "runs" / "encodings_sweep" / "plots"
+    out_dir = PROJECT_ROOT / "runs" / campaign / "plots"
     out_dir.mkdir(parents=True, exist_ok=True)
     for comp, base, label, full, combo in EMB_ONLY:
         plot_triple(models, famA, famB, famC, comp, label, full, combo,
-                    out_dir / f"encodings_sweep_triple_{comp.split('_')[0]}.png")
-    plot_flat(models, famA, out_dir / "encodings_sweep_flat_padmode.png")
+                    out_dir / f"{campaign}_triple_{comp.split('_')[0]}.png")
+    plot_flat(models, famA, out_dir / f"{campaign}_flat_padmode.png")
+    stats_tsv = f"{campaign}_delong_stats.tsv"
     plot_encodings_only(models, famEnc,
-                        out_dir / "encodings_sweep_encodings_only.png")
+                        out_dir / f"{campaign}_encodings_only.png",
+                        stats_tsv)
 
     # ── TSV: deltas + memory ──
-    res_dir = PROJECT_ROOT / "runs" / "encodings_sweep" / "results"
+    res_dir = PROJECT_ROOT / "runs" / campaign / "results"
     res_dir.mkdir(parents=True, exist_ok=True)
     famB_by = {(pr["enc"], pr["emb"]): pr for pr in famB}
     delta_rows = []
@@ -529,8 +567,8 @@ def main():
             k_comb = arm_key(enc, emb)
             pa = next(p for p in famA if p["enc"] == enc and p["emb"] == emb)
             pb = famB_by[(enc, emb)]
-            mem_comb = read_mem(k_comb)
-            mem_enc = read_mem(enc)
+            mem_comb = read_mem(k_comb, campaign)
+            mem_enc = read_mem(enc, campaign)
             delta_rows.append(dict(
                 encoding=enc, embedding=nm, combined_key=k_comb,
                 enc_only_auc=f"{models[enc]['auc']:.6f}",
@@ -549,12 +587,13 @@ def main():
                 combined_wall_s=mem_comb["wall_s"],
                 combined_cpu_pct=mem_comb["cpu_pct"],
             ))
-    with open(res_dir / "encodings_sweep_deltas.tsv", "w", newline="") as fh:
+    deltas_tsv = res_dir / f"{campaign}_deltas.tsv"
+    with open(deltas_tsv, "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(delta_rows[0].keys()),
                            delimiter="\t")
         w.writeheader()
         w.writerows(delta_rows)
-    print(f"  Wrote {res_dir/'encodings_sweep_deltas.tsv'}")
+    print(f"  Wrote {deltas_tsv}")
 
     # ── TSV: every tested pair ──
     stat_rows = []
@@ -580,12 +619,12 @@ def main():
             p_adj=f"{pr['p_adj']:.3e}",
             significant=str(pr["p_adj"] < ALPHA)))
 
-    with open(res_dir / "encodings_sweep_delong_stats.tsv", "w", newline="") as fh:
+    with open(res_dir / stats_tsv, "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(stat_rows[0].keys()),
                            delimiter="\t")
         w.writeheader()
         w.writerows(stat_rows)
-    print(f"  Wrote {res_dir/'encodings_sweep_delong_stats.tsv'}")
+    print(f"  Wrote {res_dir / stats_tsv}")
 
     print("\nCaption caveat: detection threshold ~0.0024 AUC vs outer-fold "
           "SD 0.003-0.009; significant != material.")
