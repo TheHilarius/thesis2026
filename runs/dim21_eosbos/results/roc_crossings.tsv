@@ -1,0 +1,9 @@
+run	family	variant	arm_a	arm_b	n_a	n_b	aligned	auc_a	auc_b	delta_auc	p_delong	tier	verdict	n_cross	cross_fprs	max_abs_dtp	fpr_at_max_dtp	disagree_range	max_flip_dtp
+dim21_eosbos	esmc	full	esmc_first	esmc_var	46617	46617	True	0.6271204289538941	0.6592681096116447	-0.032148	4.779470709107642e-33	clean	clean	0		0.0528	0.266	0.0	0.0
+dim21_eosbos	esmc	full	esmc_first	esmc_pca80	46617	46617	True	0.6271204289538941	0.6972608138633505	-0.07014	3.847155633640425e-178	clean	clean	0		0.1175	0.248	0.0	0.0
+dim21_eosbos	esmc	full	esmc_var	esmc_pca80	46617	46617	True	0.6592681096116447	0.6972608138633505	-0.037993	3.1720727154836924e-70	clean	clean	0		0.0662	0.251	0.0	0.0
+dim21_eosbos	esmif	full	esmif_first	esmif_var	46617	46617	True	0.5729398274683389	0.6266742888551142	-0.053734	5.543387311293135e-71	clean	clean	0		0.0798	0.446	0.0	0.0
+dim21_eosbos	esmif	full	esmif_first	esmif_pca60	46617	46617	True	0.5729398274683389	0.644834748934609	-0.071895	5.904909278079931e-142	clean	clean	0		0.1016	0.442	0.0	0.0
+dim21_eosbos	esmif	full	esmif_var	esmif_pca60	46617	46617	True	0.6266742888551142	0.644834748934609	-0.01816	1.3818503495939395e-15	clean	clean	0		0.0351	0.223	0.0	0.0
+dim21_eosbos	vs_blosum	full	esmc_var	blosum50	46617	46617	True	0.6592681096116447	0.7632535731735643	-0.103985	0.0	clean	clean	0		0.1706	0.264	0.0	0.0
+dim21_eosbos	vs_blosum	full	esmif_var	blosum50	46617	46617	True	0.6266742888551142	0.7632535731735643	-0.136579	0.0	clean	clean	0		0.227	0.228	0.0	0.0

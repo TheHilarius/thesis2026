@@ -1,0 +1,5 @@
+feature,variant,auc_roc,std,n_oof,source
+blosum50,full,0.763271,0.004409,46617,cv_results_xgb_blosum50_flat_20261030_104616.json
+blosum50,reduced,0.765736,0.010014,44346,cv_results_xgb_blosum50_flat_20261030_105241.json
+emb_esmc300m_win_padtoken_vardims_ev80_var643,full,0.701769,0.004966,46617,cv_results_xgb_emb_esmc300m_win_padtoken_vardims_ev80_var643_20261104_093230.json
+emb_esmc300m_win_padtoken_vardims_ev80_var643,reduced,0.698270,0.003718,44346,cv_results_xgb_emb_esmc300m_win_padtoken_vardims_ev80_var643_20261105_062839.json

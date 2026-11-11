@@ -1,0 +1,3 @@
+feature	auc_full_subset	auc_red_subset	delta	se	z	p_delong	p_holm	star	boot_ci_lo	boot_ci_hi	p_boot	boot_sd	n_pairs	p_boot_holm	star_boot
+blosum50	0.765693	0.766280	0.000587	0.000959	0.6124	5.402e-01	1.000e+00	ns	-0.002459	0.001277	5.498e-01	0.000959	44346	1.000e+00	ns
+emb_esmc300m_win_padtoken_vardims_ev80_var643	0.698220	0.698765	0.000545	0.002661	0.2050	8.376e-01	1.000e+00	ns	-0.005750	0.004627	8.500e-01	0.002675	44346	1.000e+00	ns
