@@ -5,6 +5,7 @@
 #
 # Outputs (all results/figures/logo/, no overwrites of existing files):
 #   differential_logo_29mer.png    diff PPM (Presented - Not Presented)
+#   differential_logo_29mer_trim5.png  same, flanks trimmed to ±5 (slide version)
 #   logo_presented_29mer.png       bits logo, label=1 only
 #   logo_not_presented_29mer.png   bits logo, label=0 only
 #   differential_logo_by_fold.png  6-panel diff logo (fold stability QC)
@@ -99,6 +100,25 @@ p_diff <- ggseqlogo(diff_ppm, method = "custom") +
 ggsave("results/figures/logo/differential_logo_29mer.png",
        plot = p_diff, width = 20, height = 5, dpi = 300)
 cat("Saved: results/figures/logo/differential_logo_29mer.png\n")
+
+# 3a-2. Trimmed diff logo for slides: N5-N1 | P1-P9 | C1-C5 (19 ticks)
+trim_feats <- c(paste0("N", 5:1), paste0("P", 1:9), paste0("C", 1:5))
+diff_trim <- diff_ppm[, trim_feats]
+
+p_diff_trim <- ggseqlogo(diff_trim, method = "custom") +
+  geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5) +
+  geom_vline(xintercept = 5.5,  linetype = "dashed", color = "grey50") +
+  geom_vline(xintercept = 14.5, linetype = "dashed", color = "grey50") +
+  scale_x_continuous(breaks = 1:19, labels = trim_feats) +
+  theme_logo_slide() +
+  lab_slide(
+    "Differential Sequence Logo: Presented vs. Not Presented",
+    "Top = Enriched in Presented | Bottom = Depleted in Presented (flanks trimmed to ±5)",
+    "Difference in Probability")
+
+ggsave("results/figures/logo/differential_logo_29mer_trim5.png",
+       plot = p_diff_trim, width = 14, height = 5, dpi = 300)
+cat("Saved: results/figures/logo/differential_logo_29mer_trim5.png\n")
 
 # 3b. Per-class bits logos (absolute 0-2 bit scale)
 p_pos <- ggseqlogo(ppm_1, method = "bits") +

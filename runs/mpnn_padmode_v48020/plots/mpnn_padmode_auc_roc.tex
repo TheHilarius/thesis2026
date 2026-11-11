@@ -1,0 +1,13 @@
+\begin{table}[htbp]
+\centering
+\caption{ProteinMPNN padmode comparison --- held-out AUC-ROC (nested CV, OOF); DeLong test: boundary-repeat vs zero-pad on the padded subset}
+\label{tab:mpnn_padmode}
+\begin{tabular}{lccccc}
+\toprule
+Pad mode & AUC (all, $n{=}46,617$) & AUC (padded subset, $n{=}1,442$) & $\Delta$AUC & $p$ (DeLong) & $p_{\mathrm{Holm}}$ \\
+\midrule
+zero-pad & 0.6012 & 0.6040 & --- & --- & --- \\
+boundary-repeat & 0.6014 & 0.5841 & $-0.0199$ & 0.0695 & 0.0695 \\
+\bottomrule
+\end{tabular}
+\end{table}

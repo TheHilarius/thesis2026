@@ -196,6 +196,50 @@ def plot_bars(g: dict, bars: list[tuple], title: str, outfile: Path) -> None:
     print(f"  saved: {csv_path}")
 
 
+def build_padmode_tex(groups: list[tuple], bars: list[tuple]) -> str:
+    """One combined booktabs table for the padmode campaign: per-arm AUC
+    for both scopes; DeLong stats from the padded-subset pair (the scope
+    where the padmode effect lives)."""
+    by_suffix = {suffix: g for suffix, _, g, _ in groups}
+    g_all, g_sub = by_suffix[""], by_suffix["_subset"]
+    n_all = next(iter(g_all["pairs"].values()))["n_rows"]
+    n_sub = next(iter(g_sub["pairs"].values()))["n_rows"]
+    pair = g_sub["pairs"].get(frozenset((bars[0][0], bars[1][0])))
+    if pair is None:
+        raise SystemExit("padmode: no boundary-vs-zero pair row in paired_tests.csv")
+
+    def fmt_p(p: float) -> str:
+        return f"{p:.3g}"
+
+    stat_cells = {bars[0][0]: ("---", "---", "---"),
+                  bars[1][0]: (f"${pair['delta']:+.4f}$",
+                               fmt_p(pair["p"]), fmt_p(pair["p_adj"]))}
+    rows = []
+    for key, lbl, _, _ in bars:
+        d, p, pa = stat_cells[key]
+        rows.append(f"{lbl} & {g_all['auc'][key]:.4f} & {g_sub['auc'][key]:.4f} "
+                    f"& {d} & {p} & {pa} \\\\")
+
+    return "\n".join([
+        r"\begin{table}[htbp]",
+        r"\centering",
+        r"\caption{ProteinMPNN padmode comparison --- held-out AUC-ROC "
+        r"(nested CV, OOF); DeLong test: boundary-repeat vs zero-pad "
+        r"on the padded subset}",
+        r"\label{tab:mpnn_padmode}",
+        r"\begin{tabular}{lccccc}",
+        r"\toprule",
+        f"Pad mode & AUC (all, $n{{=}}{n_all:,}$) & "
+        f"AUC (padded subset, $n{{=}}{n_sub:,}$) & "
+        r"$\Delta$AUC & $p$ (DeLong) & $p_{\mathrm{Holm}}$ \\",
+        r"\midrule",
+        *rows,
+        r"\bottomrule",
+        r"\end{tabular}",
+        r"\end{table}",
+    ])
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(
         description="ProteinMPNN comparison figures (padmode_choice style).")
@@ -231,6 +275,14 @@ def main() -> None:
                 print(f"    {arms[0]} vs {other:<14} delta={pair['delta']:+.4f} "
                       f"p={pair['p']:.3g} p_adj={pair['p_adj']:.3g}")
     if args.smoke:
+        return
+
+    if args.campaign == "padmode":
+        tex = build_padmode_tex(groups, bars)
+        print(tex)
+        tex_path = out_dir / f"{camp['stem']}.tex"
+        tex_path.write_text(tex + "\n")
+        print(f"  saved: {tex_path}")
         return
 
     for suffix, scope, g, _ in groups:
