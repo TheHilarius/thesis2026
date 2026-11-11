@@ -66,6 +66,17 @@ DEFAULT_VAR_EV = {
                                     # kept at the 260-dim budget on purpose)
 }
 
+# Default budgets for --pca-mode dimselect --top-n default (supervised
+# per-dim screening). Supersedes DEFAULT_VAR_EV as the go-to embedding
+# arm because it performs better at matched budgets: ESM-C N=643 -> 0.7061
+# vs EV80 var643 0.7018 (+0.0043, DeLong Holm p<0.001); ESM-IF N=250 ->
+# 0.6504 vs EV65 var260 0.6468 (+0.0036, p<0.01). DEFAULT_VAR_EV stays
+# for variance-method runs (--vardims default).
+DEFAULT_DIMSELECT_N = {
+    "esmc300m_win_padtoken": 643,
+    "esmif_eos_bos_repeat": 250,
+}
+
 EMBEDDING_SOURCES = {
     "esmc": {
         "display_name": "ESM-C (600M) context window",

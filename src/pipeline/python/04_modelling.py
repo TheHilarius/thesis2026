@@ -43,6 +43,7 @@ from config import (
     POSITION_AA_COLS, EMBEDDING_REGIONS, EMBEDDING_SOURCES,
     RANDOM_STATE, DEFAULT_MODEL, DEFAULT_FEATURE_SET,
     DEFAULT_VAR_EV,
+    DEFAULT_DIMSELECT_N,
     get_feature_cols, get_model_config,
     get_feature_set_config, get_feature_component,
     get_embedding_source, validate_config, validate_feature_set,
@@ -1520,10 +1521,12 @@ def parse_args():
              "including filler. Requires --pool.",
     )
     parser.add_argument(
-        "--top-n", type=int, default=None, dest="top_n",
+        "--top-n", type=str, default=None, dest="top_n",
         help="Keep top-N dims for --pca-mode dimselect (screened, fold-"
              "nested/cached) or varfold (variance-ranked, fold-nested/"
-             "leak-free, recomputed per fold). Features = 29 x N.",
+             "leak-free, recomputed per fold). Features = 29 x N. "
+             "'default' (dimselect only) resolves via "
+             "config.DEFAULT_DIMSELECT_N (esmc300m=643, esmif=250).",
     )
     parser.add_argument(
         "--screen-model", type=str, default="xgb",
@@ -1596,6 +1599,23 @@ if __name__ == "__main__":
     model_cfg = get_model_config(model_key)
     feat_cfg = get_feature_set_config(features_key)
     validate_feature_set(feat_cfg)
+
+    # ── top-n resolution: 'default' -> supervised selection budget ──
+    if args.top_n == "default":
+        if pca_mode != "dimselect":
+            raise ValueError("--top-n 'default' only applies to "
+                             "--pca-mode dimselect")
+        emb_comps = [c for c in feat_cfg["components"]
+                     if c in EMBEDDING_SOURCES]
+        if len(emb_comps) != 1 or emb_comps[0] not in DEFAULT_DIMSELECT_N:
+            raise ValueError(
+                "--top-n 'default' needs exactly one embedding component "
+                f"with a known budget, got {emb_comps}; pass --top-n N")
+        args.top_n = int(DEFAULT_DIMSELECT_N[emb_comps[0]])
+        print(f"  [CLI OVERRIDE] top-n default -> {args.top_n} "
+              f"(DEFAULT_DIMSELECT_N[{emb_comps[0]}])")
+    elif args.top_n is not None:
+        args.top_n = int(args.top_n)
 
     # ── Homemade top-variance selection (--vardims; NOT a PCA mode) ──
     # Resolves the frozen per-dim variance ranking (10_dim_variance.py)
