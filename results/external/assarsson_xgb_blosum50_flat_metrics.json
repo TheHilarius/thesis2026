@@ -1,0 +1,61 @@
+{
+  "run_tag": "xgb_blosum50_flat",
+  "run_dir": "/home/hilarius/projects/thesis2026/runs/encodings_sweep/models/flat",
+  "n_pickles": 30,
+  "all_rows": {
+    "n": 104,
+    "n_pos": 65,
+    "n_neg": 39,
+    "auroc": 0.6667,
+    "auprc": 0.7607,
+    "accuracy": 0.5385,
+    "threshold": 0.5,
+    "confusion": {
+      "tn": 34,
+      "fp": 5,
+      "fn": 43,
+      "tp": 22
+    }
+  },
+  "9mer_only": {
+    "n": 73,
+    "n_pos": 47,
+    "n_neg": 26,
+    "auroc": 0.7406,
+    "auprc": 0.8128,
+    "accuracy": 0.5753,
+    "threshold": 0.5,
+    "confusion": {
+      "tn": 23,
+      "fp": 3,
+      "fn": 28,
+      "tp": 19
+    }
+  },
+  "by_classification": {
+    "Cryptic": {
+      "n": 43,
+      "mean_prob": 0.3522,
+      "pos_rate": 1.0,
+      "accuracy": 0.2791
+    },
+    "Dominant": {
+      "n": 15,
+      "mean_prob": 0.5066,
+      "pos_rate": 1.0,
+      "accuracy": 0.5333
+    },
+    "Negative": {
+      "n": 39,
+      "mean_prob": 0.2385,
+      "pos_rate": 0.0,
+      "accuracy": 0.8718
+    },
+    "Subdominant": {
+      "n": 7,
+      "mean_prob": 0.3329,
+      "pos_rate": 1.0,
+      "accuracy": 0.2857
+    }
+  }
+}
