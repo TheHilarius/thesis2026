@@ -1,6 +1,12 @@
 #!/bin/bash
 # run_dimselect_sweep.sh — per-dim supervised screening arms (dimselect).
 #
+# DATASET VARIANT: defaults to flank5 (19mer, 5aa flanks) from 2026-11-11
+# via config's THESIS_VARIANT mechanism. Pass --variant none for the
+# original 29mer. Screening caches are per-out-root, so a flank5 campaign
+# MUST use its own --out dir (e.g. runs/dimselect_flank5) — the cache
+# filename has no variant in it and would collide with 29mer rankings.
+#
 # Supervisor's "50 rows" idea: fold-nested per-dim screening (12_dim_screening),
 # keep top-N dims RAW (29 x N, no PCA), final XGB. Arms:
 #   emb_esmc300m_win_padtoken (D=960)  x N{25,50,100,200} x screen{xgb,lr_l2}
@@ -41,30 +47,36 @@ REPO=/home/projects/thesis_s204692_s204581/thesis2026
 if [[ "${1:-}" == "--submit" ]]; then
     shift
     OUT_ROOT=""
+    VARIANT="flank5"   # default: 19mer (5aa flanks); --variant none = 29mer
     ARM_SPECS=()
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --out)  OUT_ROOT="$2"; shift 2 ;;
-            --arm)  shift; while [[ $# -gt 0 && "$1" != --* ]]; do
-                        ARM_SPECS+=("$1"); shift; done ;;
+            --out)     OUT_ROOT="$2"; shift 2 ;;
+            --variant) VARIANT="$2"; shift 2 ;;
+            --arm)     shift; while [[ $# -gt 0 && "$1" != --* ]]; do
+                           ARM_SPECS+=("$1"); shift; done ;;
             *) echo "unknown arg: $1" >&2; exit 1 ;;
         esac
     done
+    [[ "$VARIANT" == "none" || "$VARIANT" == "off" ]] && VARIANT=""
     [[ -n "$OUT_ROOT" && ${#ARM_SPECS[@]} -gt 0 ]] || {
-        echo "usage: --submit --out DIR --arm feature:topn:screen:cpus:memGB:hours ..." >&2
+        echo "usage: --submit --out DIR [--variant flank5|none] --arm feature:topn:screen:cpus:memGB:hours ..." >&2
         exit 1; }
+    if [[ -z "$VARIANT" ]]; then
+        echo "WARNING: --variant none (29mer) — ensure --out is a 29mer campaign dir" >&2
+    fi
     mkdir -p "$OUT_ROOT"/{models/dimselect,logs/slurm,results,plots,screening}
     for spec in "${ARM_SPECS[@]}"; do
         IFS=: read -r feature topn screen cpus mem hrs <<< "$spec"
-        echo "submit feature=$feature topn=$topn screen=$screen  cpus=$cpus mem=${mem}G time=${hrs}h -> $OUT_ROOT"
+        echo "submit variant=${VARIANT:-29mer} feature=$feature topn=$topn screen=$screen  cpus=$cpus mem=${mem}G time=${hrs}h -> $OUT_ROOT"
         sbatch --job-name="dim_${feature}_n${topn}_${screen}" \
             --cpus-per-task="$cpus" --mem="${mem}G" --time="${hrs}:00:00" \
             --output="$OUT_ROOT/logs/slurm/${feature}_n${topn}_${screen}_%j.out" \
             --error="$OUT_ROOT/logs/slurm/${feature}_n${topn}_${screen}_%j.err" \
-            --export=ALL,FEATURE="$feature",TOPN="$topn",SCREEN="$screen",OUT_ROOT="$OUT_ROOT" \
+            --export=ALL,FEATURE="$feature",TOPN="$topn",SCREEN="$screen",OUT_ROOT="$OUT_ROOT",THESIS_VARIANT="$VARIANT" \
             "$0"
     done
-    echo "submitted ${#ARM_SPECS[@]} jobs; squeue -u \$USER -n dim_ to monitor"
+    echo "submitted ${#ARM_SPECS[@]} jobs (variant=${VARIANT:-29mer}); squeue -u \$USER -n dim_ to monitor"
     exit 0
 fi
 
@@ -76,7 +88,7 @@ cd "$REPO"
 export PYTHONUNBUFFERED=1
 mkdir -p "$OUT_ROOT"/{models/dimselect,logs/slurm,results,screening}
 TIME_FILE="$OUT_ROOT/logs/mem_${FEATURE}_n${TOPN}_${SCREEN}.time"
-echo "feature=$FEATURE topn=$TOPN screen=$SCREEN out=$OUT_ROOT  ($(date))"
+echo "feature=$FEATURE topn=$TOPN screen=$SCREEN out=$OUT_ROOT variant=${THESIS_VARIANT:-29mer}  ($(date))"
 
 # Peak RSS per run + cgroup peak (JobAcctGather=none on this cluster).
 # NOTE: sacct exit codes lie here — trust the 'Success:' line python prints.
