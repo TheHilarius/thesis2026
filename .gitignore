@@ -78,6 +78,18 @@ data/processed/df_all_with_folds.csv
 # Python cache
 __pycache__/
 *.pyc
+
+# Raw IEDB dumps (incl. allele variants)
+data/raw/iedb_*hla*.csv
+
+# Run scratch logs
+runs/*.log
+
+# Random-peptide logo derived scores (reproducible via 31_random_peptide_logo.py)
+runs/random_peptide_logo*/scores.csv.gz
+runs/random_peptide_logo*/train_scores.csv.gz
+runs/random_peptide_logo*/top10.csv
+runs/random_peptide_logo*/bottom10.csv
 data/processed/structures_hybrid_60/
 data/processed/structures_hybrid_80/
 data/processed/structures_hybrid_40/
