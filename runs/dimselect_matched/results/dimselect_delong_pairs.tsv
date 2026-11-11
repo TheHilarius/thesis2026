@@ -1,0 +1,13 @@
+arm_a	arm_b	auc_a	auc_b	delta	se	z	p_delong	p_holm	family	star
+dimselect_esmc_n434	variance_esmc_n434	0.702362	0.698863	0.003499	0.001116	3.1353	1.717e-03	3.433e-03	matched_esmc	**
+dimselect_esmc_n643	variance_esmc_n643	0.706062	0.701727	0.004335	0.000979	4.4276	9.529e-06	2.859e-05	matched_esmc	***
+dimselect_esmc_n793	variance_esmc_n793	0.703558	0.704873	-0.001315	0.000907	-1.4497	1.472e-01	1.472e-01	matched_esmc	ns
+dimselect_esmif_n122	variance_esmif_n122	0.648007	0.642058	0.005949	0.001534	3.8785	1.051e-04	3.153e-04	matched_esmif	***
+dimselect_esmif_n260	variance_esmif_n260	0.649784	0.644742	0.005042	0.001320	3.8200	1.334e-04	3.153e-04	matched_esmif	***
+dimselect_esmif_n429	variance_esmif_n429	0.649923	0.648670	0.001253	0.001157	1.0828	2.789e-01	2.789e-01	matched_esmif	ns
+dimselect_esmc_n643	pca_esmc	0.706062	0.697261	0.008801	0.001513	5.8159	6.032e-09	2.413e-08	vs_pca	***
+variance_esmc_n793	pca_esmc	0.704873	0.697261	0.007612	0.001523	4.9994	5.751e-07	1.725e-06	vs_pca	***
+dimselect_esmif_n250	pca_esmif	0.650357	0.644835	0.005522	0.001713	3.2240	1.264e-03	2.529e-03	vs_pca	**
+variance_esmif_n392	pca_esmif	0.648705	0.644835	0.003870	0.001698	2.2788	2.268e-02	2.268e-02	vs_pca	*
+dimselect_esmc_n643	blosum50	0.706062	0.763254	-0.057192	0.002502	-22.8600	1.162e-115	1.162e-115	vs_blosum	***
+dimselect_esmif_n250	blosum50	0.650357	0.763254	-0.112897	0.002790	-40.4616	0.000e+00	0.000e+00	vs_blosum	***
