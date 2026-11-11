@@ -1,0 +1,29 @@
+{
+  "title": "Simple CNN (1x Conv k=17 + GAP) + ESM-C-300M windows only (pad-token) (cnn_simple_k17 C=64, emb_esmc300m_win_padtoken)",
+  "buckets": {
+    "0": {
+      "n": 7770,
+      "pos_pct": 46.6
+    },
+    "1": {
+      "n": 7770,
+      "pos_pct": 46.2
+    },
+    "2": {
+      "n": 7770,
+      "pos_pct": 46.4
+    },
+    "3": {
+      "n": 7769,
+      "pos_pct": 46.2
+    },
+    "4": {
+      "n": 7769,
+      "pos_pct": 46.4
+    },
+    "5": {
+      "n": 7769,
+      "pos_pct": 46.3
+    }
+  }
+}

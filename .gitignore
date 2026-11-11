@@ -16,6 +16,9 @@ data/raw/fasta/
 # NetMHCpan output
 data/processed/netmhcpan/
 
+# HLA-A*01:01 external-validation allele (src/pipeline_a0101)
+data/processed/hla_*/
+
 # R
 .Rhistory
 .RData

@@ -1,0 +1,9 @@
+family	kernel	anchor	name_a	name_b	auc_a	auc_b	delta	se	z	p	p_adj	significant
+vs_anchor	3	17	cnn_simple_k3	cnn_simple_k17	0.665641	0.681498	-0.015856	0.001617	-9.8046	1.076e-22	8.609e-22	True
+vs_anchor	5	17	cnn_simple_k5	cnn_simple_k17	0.669940	0.681498	-0.011558	0.001442	-8.0155	1.097e-15	7.676e-15	True
+vs_anchor	7	17	cnn_simple_k7	cnn_simple_k17	0.672284	0.681498	-0.009214	0.001390	-6.6292	3.375e-11	2.025e-10	True
+vs_anchor	9	17	cnn_simple_k9	cnn_simple_k17	0.673640	0.681498	-0.007858	0.001330	-5.9085	3.453e-09	1.726e-08	True
+vs_anchor	11	17	cnn_simple_k11	cnn_simple_k17	0.678181	0.681498	-0.003317	0.001279	-2.5930	9.514e-03	1.903e-02	True
+vs_anchor	13	17	cnn_simple_k13	cnn_simple_k17	0.676721	0.681498	-0.004777	0.001245	-3.8371	1.245e-04	4.979e-04	True
+vs_anchor	15	17	cnn_simple_k15	cnn_simple_k17	0.677994	0.681498	-0.003504	0.001182	-2.9642	3.034e-03	9.103e-03	True
+vs_anchor	19	17	cnn_simple_k19	cnn_simple_k17	0.680907	0.681498	-0.000590	0.000978	-0.6032	5.464e-01	5.464e-01	False

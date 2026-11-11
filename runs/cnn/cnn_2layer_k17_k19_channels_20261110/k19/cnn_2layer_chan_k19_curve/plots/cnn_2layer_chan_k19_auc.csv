@@ -1,0 +1,7 @@
+k2,channels,model_key,kernel1,pooled_auc,fold_std,n_params,anchor,file
+19,ref,cnn_simple_k17,,0.684720,0.008824,522305,False,cv_results_cnn_simple_k17_c32_emb_esmc300m_win_padtoken_cnn_20261110_115910.json
+19,8,cnn_2layer_k17_k19,17,0.673615,0.008689,131801,False,cv_results_cnn_2layer_k17_k19_c8_emb_esmc300m_win_padtoken_cnn_20261110_175043.json
+19,16,cnn_2layer_k17_k19,17,0.675273,0.005931,266033,False,cv_results_cnn_2layer_k17_k19_c16_emb_esmc300m_win_padtoken_cnn_20261110_175043.json
+19,32,cnn_2layer_k17_k19,17,0.677932,0.007704,541793,True,cv_results_cnn_2layer_k17_k19_c32_emb_esmc300m_win_padtoken_cnn_20261110_175034.json
+19,64,cnn_2layer_k17_k19,17,0.677568,0.008361,1122497,False,cv_results_cnn_2layer_k17_k19_c64_emb_esmc300m_win_padtoken_cnn_20261110_175034.json
+19,128,cnn_2layer_k17_k19,17,0.675210,0.008230,2400641,False,cv_results_cnn_2layer_k17_k19_c128_emb_esmc300m_win_padtoken_cnn_20261110_175029.json

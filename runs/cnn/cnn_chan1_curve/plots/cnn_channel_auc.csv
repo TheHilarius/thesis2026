@@ -1,0 +1,6 @@
+channel,model_key,pooled_auc,fold_std,n_params,anchor,file
+8,cnn_simple_k17,0.674466,0.006443,130577,False,cv_results_cnn_simple_k17_c8_emb_esmc300m_win_padtoken_cnn_20261110_115923.json
+16,cnn_simple_k17,0.677463,0.005786,261153,False,cv_results_cnn_simple_k17_c16_emb_esmc300m_win_padtoken_cnn_20261110_115910.json
+32,cnn_simple_k17,0.684720,0.008824,522305,True,cv_results_cnn_simple_k17_c32_emb_esmc300m_win_padtoken_cnn_20261110_115910.json
+64,cnn_simple_k17,0.683067,0.006834,1044609,False,cv_results_cnn_simple_k17_c64_emb_esmc300m_win_padtoken_cnn_20261110_115909.json
+128,cnn_simple_k17,0.681310,0.006056,2089217,False,cv_results_cnn_simple_k17_c128_emb_esmc300m_win_padtoken_cnn_20261110_115910.json

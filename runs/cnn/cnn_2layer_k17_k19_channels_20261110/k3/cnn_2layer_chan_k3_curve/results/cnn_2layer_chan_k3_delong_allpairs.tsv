@@ -1,0 +1,11 @@
+family	k2	channel_a	channel_b	name_a	name_b	auc_a	auc_b	delta	se	z	p	p_adj	significant
+allpairs	3	8	16	cnn_2layer_k17_k3_c8	cnn_2layer_k17_k3_c16	0.678971	0.678105	-0.000866	0.001694	-0.5112	6.092e-01	1.000e+00	False
+allpairs	3	8	32	cnn_2layer_k17_k3_c8	cnn_2layer_k17_k3_c32	0.678971	0.676170	-0.002801	0.001706	-1.6415	1.007e-01	1.000e+00	False
+allpairs	3	8	64	cnn_2layer_k17_k3_c8	cnn_2layer_k17_k3_c64	0.678971	0.678057	-0.000914	0.001656	-0.5523	5.807e-01	1.000e+00	False
+allpairs	3	8	128	cnn_2layer_k17_k3_c8	cnn_2layer_k17_k3_c128	0.678971	0.678609	-0.000362	0.001824	-0.1984	8.427e-01	1.000e+00	False
+allpairs	3	16	32	cnn_2layer_k17_k3_c16	cnn_2layer_k17_k3_c32	0.678105	0.676170	-0.001935	0.001697	-1.1401	2.542e-01	1.000e+00	False
+allpairs	3	16	64	cnn_2layer_k17_k3_c16	cnn_2layer_k17_k3_c64	0.678105	0.678057	-0.000049	0.001723	-0.0283	9.774e-01	1.000e+00	False
+allpairs	3	16	128	cnn_2layer_k17_k3_c16	cnn_2layer_k17_k3_c128	0.678105	0.678609	+0.000504	0.001768	0.2849	7.757e-01	1.000e+00	False
+allpairs	3	32	64	cnn_2layer_k17_k3_c32	cnn_2layer_k17_k3_c64	0.676170	0.678057	+0.001886	0.001435	1.3145	1.887e-01	1.000e+00	False
+allpairs	3	32	128	cnn_2layer_k17_k3_c32	cnn_2layer_k17_k3_c128	0.676170	0.678609	+0.002439	0.001721	1.4174	1.564e-01	1.000e+00	False
+allpairs	3	64	128	cnn_2layer_k17_k3_c64	cnn_2layer_k17_k3_c128	0.678057	0.678609	+0.000553	0.001599	0.3456	7.296e-01	1.000e+00	False

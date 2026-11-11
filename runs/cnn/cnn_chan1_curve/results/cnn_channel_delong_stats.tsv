@@ -1,0 +1,5 @@
+family	channel	anchor	name_a	name_b	auc_a	auc_b	delta	se	z	p	p_adj	significant
+vs_anchor	8	32	cnn_simple_k17_c8	cnn_simple_k17_c32	0.674466	0.684720	-0.010253	0.001315	-7.7952	6.431e-15	2.573e-14	True
+vs_anchor	16	32	cnn_simple_k17_c16	cnn_simple_k17_c32	0.677463	0.684720	-0.007256	0.001276	-5.6851	1.307e-08	3.921e-08	True
+vs_anchor	64	32	cnn_simple_k17_c64	cnn_simple_k17_c32	0.683067	0.684720	-0.001653	0.001201	-1.3757	1.689e-01	1.689e-01	False
+vs_anchor	128	32	cnn_simple_k17_c128	cnn_simple_k17_c32	0.681310	0.684720	-0.003410	0.001335	-2.5549	1.062e-02	2.124e-02	True

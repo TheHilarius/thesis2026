@@ -1,0 +1,5 @@
+family	k2	channel	anchor	name_a	name_b	auc_a	auc_b	delta	se	z	p	p_adj	significant
+vs_anchor	3	16	8	cnn_2layer_k17_k3_c16	cnn_2layer_k17_k3_c8	0.678105	0.678971	-0.000866	0.001694	-0.5112	6.092e-01	1.000e+00	False
+vs_anchor	3	32	8	cnn_2layer_k17_k3_c32	cnn_2layer_k17_k3_c8	0.676170	0.678971	-0.002801	0.001706	-1.6415	1.007e-01	4.028e-01	False
+vs_anchor	3	64	8	cnn_2layer_k17_k3_c64	cnn_2layer_k17_k3_c8	0.678057	0.678971	-0.000914	0.001656	-0.5523	5.807e-01	1.000e+00	False
+vs_anchor	3	128	8	cnn_2layer_k17_k3_c128	cnn_2layer_k17_k3_c8	0.678609	0.678971	-0.000362	0.001824	-0.1984	8.427e-01	1.000e+00	False

@@ -1,0 +1,11 @@
+k2,model_key,kernel1,kernel2,channels,pooled_auc,fold_std,n_params,anchor,file
+ref,cnn_simple_k17,,,32,0.684720,0.008824,522305,False,cv_results_cnn_simple_k17_c32_emb_esmc300m_win_padtoken_cnn_20261110_115910.json
+3,cnn_2layer_k17_k3,17,3,32,0.678268,0.008034,525409,False,cv_results_cnn_2layer_k17_k3_c32_emb_esmc300m_win_padtoken_cnn_20261110_161824.json
+5,cnn_2layer_k17_k5,17,5,32,0.674250,0.008958,527457,False,cv_results_cnn_2layer_k17_k5_c32_emb_esmc300m_win_padtoken_cnn_20261110_161827.json
+7,cnn_2layer_k17_k7,17,7,32,0.677459,0.006854,529505,False,cv_results_cnn_2layer_k17_k7_c32_emb_esmc300m_win_padtoken_cnn_20261110_161811.json
+9,cnn_2layer_k17_k9,17,9,32,0.675308,0.007151,531553,False,cv_results_cnn_2layer_k17_k9_c32_emb_esmc300m_win_padtoken_cnn_20261110_161816.json
+11,cnn_2layer_k17_k11,17,11,32,0.677318,0.007883,533601,False,cv_results_cnn_2layer_k17_k11_c32_emb_esmc300m_win_padtoken_cnn_20261110_161816.json
+13,cnn_2layer_k17_k13,17,13,32,0.673588,0.009030,535649,False,cv_results_cnn_2layer_k17_k13_c32_emb_esmc300m_win_padtoken_cnn_20261110_161816.json
+15,cnn_2layer_k17_k15,17,15,32,0.677557,0.007509,537697,False,cv_results_cnn_2layer_k17_k15_c32_emb_esmc300m_win_padtoken_cnn_20261110_162419.json
+17,cnn_2layer_k17_k17,17,17,32,0.678085,0.004812,539745,False,cv_results_cnn_2layer_k17_k17_c32_emb_esmc300m_win_padtoken_cnn_20261110_162439.json
+19,cnn_2layer_k17_k19,17,19,32,0.679415,0.005300,541793,True,cv_results_cnn_2layer_k17_k19_c32_emb_esmc300m_win_padtoken_cnn_20261110_162459.json

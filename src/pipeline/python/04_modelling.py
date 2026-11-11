@@ -2079,6 +2079,19 @@ if __name__ == "__main__":
             with open(inner_model_path, "wb") as f:
                 pickle.dump(model, f)
 
+            # Save fold preprocessing artifacts (scaler, fold PCA objects,
+            # column medians, dimselect/varfold dims) alongside the model.
+            # Purely additive: enables external-set replay (e.g. the
+            # a0101 external validation in src/pipeline_a0101/python/
+            # 14_predict_external.py). Without these, a loaded .pkl alone
+            # cannot reproduce the feature pipeline it was trained on.
+            inner_artifacts_path = (
+                model_dir /
+                f"{run_tag}_outer{outer_fold}_inner{inner_idx}_artifacts.pkl"
+            )
+            with open(inner_artifacts_path, "wb") as f:
+                pickle.dump(fold_artifacts, f)
+
         # ── Average predictions on validation set ──
         print(f"\n  Averaging {len(inner_models)} inner models on "
               f"validation bucket {outer_fold}...")

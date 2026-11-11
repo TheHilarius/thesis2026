@@ -1,0 +1,11 @@
+family	channel_a	channel_b	name_a	name_b	auc_a	auc_b	delta	se	z	p	p_adj	significant
+allpairs	8	16	cnn_simple_k17_c8	cnn_simple_k17_c16	0.674466	0.677463	+0.002997	0.001125	2.6635	7.733e-03	3.199e-02	True
+allpairs	8	32	cnn_simple_k17_c8	cnn_simple_k17_c32	0.674466	0.684720	+0.010253	0.001315	7.7952	6.431e-15	6.431e-14	True
+allpairs	8	64	cnn_simple_k17_c8	cnn_simple_k17_c64	0.674466	0.683067	+0.008600	0.001420	6.0582	1.377e-09	1.239e-08	True
+allpairs	8	128	cnn_simple_k17_c8	cnn_simple_k17_c128	0.674466	0.681310	+0.006844	0.001558	4.3916	1.125e-05	7.876e-05	True
+allpairs	16	32	cnn_simple_k17_c16	cnn_simple_k17_c32	0.677463	0.684720	+0.007256	0.001276	5.6851	1.307e-08	1.046e-07	True
+allpairs	16	64	cnn_simple_k17_c16	cnn_simple_k17_c64	0.677463	0.683067	+0.005604	0.001282	4.3693	1.246e-05	7.876e-05	True
+allpairs	16	128	cnn_simple_k17_c16	cnn_simple_k17_c128	0.677463	0.681310	+0.003847	0.001411	2.7267	6.397e-03	3.199e-02	True
+allpairs	32	64	cnn_simple_k17_c32	cnn_simple_k17_c64	0.684720	0.683067	-0.001653	0.001201	-1.3757	1.689e-01	2.550e-01	False
+allpairs	32	128	cnn_simple_k17_c32	cnn_simple_k17_c128	0.684720	0.681310	-0.003410	0.001335	-2.5549	1.062e-02	3.199e-02	True
+allpairs	64	128	cnn_simple_k17_c64	cnn_simple_k17_c128	0.683067	0.681310	-0.001757	0.001153	-1.5241	1.275e-01	2.550e-01	False

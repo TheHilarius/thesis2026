@@ -1,0 +1,9 @@
+family	k2	anchor	name_a	name_b	auc_a	auc_b	delta	se	z	p	p_adj	significant
+vs_anchor	3	19	cnn_2layer_k17_k3	cnn_2layer_k17_k19	0.678268	0.679415	-0.001147	0.001674	-0.6852	4.932e-01	9.162e-01	False
+vs_anchor	5	19	cnn_2layer_k17_k5	cnn_2layer_k17_k19	0.674250	0.679415	-0.005165	0.001670	-3.0919	1.989e-03	1.392e-02	True
+vs_anchor	7	19	cnn_2layer_k17_k7	cnn_2layer_k17_k19	0.677459	0.679415	-0.001956	0.001626	-1.2028	2.290e-01	9.162e-01	False
+vs_anchor	9	19	cnn_2layer_k17_k9	cnn_2layer_k17_k19	0.675308	0.679415	-0.004107	0.001593	-2.5777	9.946e-03	5.967e-02	False
+vs_anchor	11	19	cnn_2layer_k17_k11	cnn_2layer_k17_k19	0.677318	0.679415	-0.002097	0.001542	-1.3601	1.738e-01	8.690e-01	False
+vs_anchor	13	19	cnn_2layer_k17_k13	cnn_2layer_k17_k19	0.673588	0.679415	-0.005827	0.001708	-3.4112	6.469e-04	5.175e-03	True
+vs_anchor	15	19	cnn_2layer_k17_k15	cnn_2layer_k17_k19	0.677557	0.679415	-0.001858	0.001619	-1.1474	2.512e-01	9.162e-01	False
+vs_anchor	17	19	cnn_2layer_k17_k17	cnn_2layer_k17_k19	0.678085	0.679415	-0.001330	0.001597	-0.8331	4.048e-01	9.162e-01	False
