@@ -1,7 +1,13 @@
-features	reference	comparison	auc_xgb	auc_other	delta	se	z	p_value	p_holm	significance
-blosum50	xgb/blosum50	rf/blosum50	0.763254	0.713908	0.049346	0.001662	29.6994	7.8157e-194	7.8157e-194	***
-blosum50	xgb/blosum50	lr_l2/blosum50	0.763254	0.704515	0.058739	0.001574	37.3208	7.5389e-305	2.2617e-304	***
-blosum50	xgb/blosum50	lr_elasticnet/blosum50	0.763254	0.704745	0.058509	0.001571	37.2383	1.6379e-303	3.2758e-303	***
-handcrafted_blosum50	xgb/handcrafted_blosum50	rf/handcrafted_blosum50	0.766513	0.715752	0.050761	0.001653	30.7084	4.4001e-207	4.4001e-207	***
-handcrafted_blosum50	xgb/handcrafted_blosum50	lr_l2/handcrafted_blosum50	0.766513	0.709575	0.056938	0.001552	36.6933	9.3492e-295	2.8048e-294	***
-handcrafted_blosum50	xgb/handcrafted_blosum50	lr_elasticnet/handcrafted_blosum50	0.766513	0.709791	0.056722	0.001549	36.6119	1.8504e-293	3.7008e-293	***
+features	family	reference	comparison	auc_ref	auc_cmp	delta	se	z	p_value	p_holm	significance
+blosum50	xgb_vs_simple	xgb/blosum50	rf/blosum50	0.763254	0.713908	0.049346	0.001662	29.6994	7.8157e-194	7.8157e-194	***
+blosum50	xgb_vs_simple	xgb/blosum50	lr_l2/blosum50	0.763254	0.704515	0.058739	0.001574	37.3208	7.5389e-305	2.2617e-304	***
+blosum50	xgb_vs_simple	xgb/blosum50	lr_elasticnet/blosum50	0.763254	0.704745	0.058509	0.001571	37.2383	1.6379e-303	3.2758e-303	***
+blosum50	simple_vs_simple	rf/blosum50	lr_l2/blosum50	0.713908	0.704515	0.009393	0.001942	4.8377	1.3134e-06	3.9403e-06	***
+blosum50	simple_vs_simple	rf/blosum50	lr_elasticnet/blosum50	0.713908	0.704745	0.009163	0.001935	4.7349	2.1914e-06	4.3827e-06	***
+blosum50	simple_vs_simple	lr_l2/blosum50	lr_elasticnet/blosum50	0.704515	0.704745	-0.00023	6.3e-05	-3.6412	0.0002714	0.0002714	***
+handcrafted_blosum50	xgb_vs_simple	xgb/handcrafted_blosum50	rf/handcrafted_blosum50	0.766513	0.715752	0.050761	0.001653	30.7084	4.4001e-207	4.4001e-207	***
+handcrafted_blosum50	xgb_vs_simple	xgb/handcrafted_blosum50	lr_l2/handcrafted_blosum50	0.766513	0.709575	0.056938	0.001552	36.6933	9.3492e-295	2.8048e-294	***
+handcrafted_blosum50	xgb_vs_simple	xgb/handcrafted_blosum50	lr_elasticnet/handcrafted_blosum50	0.766513	0.709791	0.056722	0.001549	36.6119	1.8504e-293	3.7008e-293	***
+handcrafted_blosum50	simple_vs_simple	rf/handcrafted_blosum50	lr_l2/handcrafted_blosum50	0.715752	0.709575	0.006177	0.001947	3.1722	0.0015131	0.0030261	**
+handcrafted_blosum50	simple_vs_simple	rf/handcrafted_blosum50	lr_elasticnet/handcrafted_blosum50	0.715752	0.709791	0.005961	0.001941	3.0711	0.0021325	0.0030261	**
+handcrafted_blosum50	simple_vs_simple	lr_l2/handcrafted_blosum50	lr_elasticnet/handcrafted_blosum50	0.709575	0.709791	-0.000215	6.2e-05	-3.4949	0.00047426	0.0014228	**

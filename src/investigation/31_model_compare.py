@@ -144,24 +144,35 @@ def main():
     met.to_csv(met_path, sep="\t", index=False)
     print(f"\nwrote {met_path.relative_to(PROJECT_ROOT)}")
 
-    # ── A2: DeLong xgb vs each simple model, Holm within feature set ───────
+    # ── A2: DeLong — two Holm families per feature set ─────────────────────
+    #   xgb_vs_simple     : xgb vs each of rf / lr_l2 / lr_elasticnet
+    #   simple_vs_simple  : rf, lr_l2, lr_elasticnet taken pairwise
+    # Holm is corrected within each family (3 comparisons per family).
     dl_rows = []
-    for feat in FEATURE_SETS:
-        xkey = f"xgb/{feat}"
-        others = [(k, m) for k, m in arms.items()
-                  if k.endswith(f"/{feat}") and k != xkey]
-        res = [(k, delong_full(y, arms[xkey]["probs"], m["probs"]))
-               for k, m in others]
-        adj = holm_adjust([r[5] for _, r in res])
-        for (k, (a, b, delta, se, z, p)), pa in zip(res, adj):
+
+    def add_family(feat, family, pairs):
+        """pairs: [(reference_key, comparison_key)] -> rows with Holm within."""
+        res = [(r, c, delong_full(y, arms[r]["probs"], arms[c]["probs"]))
+               for r, c in pairs]
+        adj = holm_adjust([t[5] for _, _, t in res])
+        for (r, c, (a, b, delta, se, z, p)), pa in zip(res, adj):
             dl_rows.append(dict(
-                features=feat, reference=xkey, comparison=k,
-                auc_xgb=round(a, 6), auc_other=round(b, 6),
+                features=feat, family=family, reference=r, comparison=c,
+                auc_ref=round(a, 6), auc_cmp=round(b, 6),
                 delta=round(delta, 6), se=round(se, 6), z=round(z, 4),
                 p_value=float(f"{p:.4e}"), p_holm=float(f"{pa:.4e}"),
                 significance=stars_label(pa)))
-            print(f"  delong {feat:22s} {k:32s} "
+            print(f"  delong {feat:22s} {family:17s} {r:30s} vs {c:32s} "
                   f"delta={delta:+.4f} pHolm={pa:.2e} {stars_label(pa)}")
+
+    for feat in FEATURE_SETS:
+        simple = [f"{m}/{feat}" for m in MODELS if m != "xgb"]
+        add_family(feat, "xgb_vs_simple",
+                   [(f"xgb/{feat}", k) for k in simple])
+        add_family(feat, "simple_vs_simple",
+                   [(simple[i], simple[j])
+                    for i in range(len(simple))
+                    for j in range(i + 1, len(simple))])
     dl = pd.DataFrame(dl_rows)
     dl_path = RESULTS / "model_compare_delong.tsv"
     dl.to_csv(dl_path, sep="\t", index=False)
@@ -178,7 +189,8 @@ def main():
 
 # ───────────────────────────────────────────────────────────────────────────
 def plot_cv_auc(arms, dl):
-    """CV-AUC bars (thesis convention) with star-only Holm brackets vs xgb."""
+    """CV-AUC bars (0-1 axis) with AUC labels and star-only Holm brackets —
+    two families per feature set: xgb-vs-simple and simple-vs-simple."""
     order = [(m, f) for f in FEATURE_SETS for m in MODELS]
     xs, x_of = [], {}
     x = 0.0
@@ -192,27 +204,50 @@ def plot_cv_auc(arms, dl):
     vals = [np.mean(arms[f"{m}/{f}"]["outer"]) for m, f in order]
     errs = [np.std(arms[f"{m}/{f}"]["outer"], ddof=1) for m, f in order]
 
-    fig, ax = plt.subplots(figsize=(13, 6.0))
+    fig, ax = plt.subplots(figsize=(13, 7.5))
     for i, ((m, f), v, e) in enumerate(zip(order, vals, errs)):
         ax.bar(xs[i], v, yerr=e, width=0.72, color=COLORS[m],
                edgecolor="black", linewidth=0.6, capsize=3,
                error_kw=dict(lw=1.0, ecolor="black"))
+        # value inside the bar top — above it would hit the lowest bracket
+        ax.text(xs[i], v - 0.012, f"{v:.3f}", ha="center", va="top",
+                color="white", fontweight="bold", fontsize=10)
 
-    # brackets: fixed heights so they stay readable on the full 0-1 y-axis
-    # (level 0 = rf, level 1 = lr_l2, level 2 = elasticnet)
+    # ── brackets: two bands per group, significant pairs only ──────────────
+    # bars top out near 0.77 and the axis ceiling is 1.0, so all brackets fit
+    # in between: simple-vs-simple just above the bars, xgb-vs-simple above
+    # that. Star text goes BELOW each line so nothing overflows 1.0.
+    def sig_pairs(feat, family):
+        sub = dl[(dl["features"] == feat) & (dl["family"] == family)
+                 & (dl["p_holm"] < 0.05)]
+        out = []
+        for _, r in sub.iterrows():
+            a = x_of[tuple(r["reference"].split("/"))]
+            b = x_of[tuple(r["comparison"].split("/"))]
+            out.append((min(a, b), max(a, b), float(r["p_holm"])))
+        out.sort(key=lambda t: (t[1] - t[0], t[0]))   # shortest span lowest
+        return out
+
+    bands = {feat: {"simple_vs_simple": sig_pairs(feat, "simple_vs_simple"),
+                    "xgb_vs_simple": sig_pairs(feat, "xgb_vs_simple")}
+             for feat in FEATURE_SETS}
+    y_bot, y_top, gap = 0.79, 0.995, 0.012
+    n_rows = max(len(v["simple_vs_simple"]) + len(v["xgb_vs_simple"])
+                 for v in bands.values())
+    pitch = (y_top - y_bot - gap) / max(n_rows - 1, 1)
+
     for feat in FEATURE_SETS:
-        x0 = x_of[("xgb", feat)]
-        for lvl, model in enumerate(["rf", "lr_l2", "lr_elasticnet"]):
-            row = dl[(dl["features"] == feat) & (dl["comparison"] == f"{model}/{feat}")]
-            if row.empty:
-                continue
-            p = float(row["p_holm"].iloc[0])
-            yb = 0.84 + 0.05 * lvl
-            x1 = x_of[(model, feat)]
-            ax.plot([x0, x0, x1, x1], [yb - 0.03, yb, yb, yb - 0.03],
-                    color="black", lw=0.8)
-            ax.text((x0 + x1) / 2, yb + 0.012, stars_label(p),
-                    ha="center", va="bottom", fontsize=11, fontweight="bold")
+        simple_base = y_bot
+        xgb_base = (y_bot + pitch * len(bands[feat]["simple_vs_simple"])
+                    + gap)
+        for family, base in (("simple_vs_simple", simple_base),
+                             ("xgb_vs_simple", xgb_base)):
+            for lvl, (xa, xb, p) in enumerate(bands[feat][family]):
+                yb = base + pitch * lvl
+                ax.plot([xa, xa, xb, xb], [yb - 0.020, yb, yb, yb - 0.020],
+                        color="black", lw=0.8)
+                ax.text((xa + xb) / 2, yb - 0.005, stars_label(p),
+                        ha="center", va="top", fontsize=9.5, fontweight="bold")
 
     ax.set_xticks(xs)
     ax.set_xticklabels([DISPLAY[m] for m, _ in order], fontsize=9.5,
@@ -239,8 +274,9 @@ def plot_cv_auc(arms, dl):
     ax.grid(axis="y", color="0.90", lw=0.7)
     ax.set_axisbelow(True)
     ax.text(0.5, -0.33,
-            "Error bars = SD across 6 outer folds. Brackets = DeLong xgb vs each "
-            "model, Holm-corrected within feature set.",
+            "Error bars = SD across 6 outer folds; bar labels = pooled OOF AUC. "
+            "Brackets = DeLong, Holm-corrected within family "
+            "(xgb vs simple; simple vs simple); non-significant pairs omitted.",
             transform=ax.transAxes, ha="center", fontsize=8.5, color="0.35")
 
     out = PLOTS / "model_compare_cv_auc.png"
