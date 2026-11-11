@@ -14,9 +14,10 @@ df_all_with_folds.csv):
 
     blosum50              encodings_sweep          vs flank5_compare
     handcrafted_blosum50  handcrafted_sweep        vs flank5_compare
-    handcrafted_esmc300m_win_padtoken (EV80 vardims)
-                          is_handcrafted_helping_v2 var643
-                                                 vs flank5 var645
+    emb_esmc300m_win_padtoken dimselect top643 (supervised per-dim
+                          screening — replaced the EV80 vardims pair
+                          2026-11-11; pure embedding, no handcrafted)
+                          dimselect_matched      vs dimselect_flank5
     cnn_simple_k5 (ESM-C windows, mode=cnn_cv)
                           flank5_compare/cnn/full  vs cnn/flank5
                           (rerun batch — both arms from the same batch)
@@ -76,14 +77,14 @@ ARMS = {
     "hc_blosum50_19":
         R / "flank5_compare/models/flat/"
             "cv_results_xgb_handcrafted_blosum50_flat_*.json",
-    "esmc_ev80_29":
-        R / "is_handcrafted_helping_v2/models/vardims/"
-            "cv_results_xgb_handcrafted_esmc300m_win_padtoken_"
-            "vardims_ev80_var643_*.json",
-    "esmc_ev80_19":
-        R / "flank5_compare/models/vardims/"
-            "cv_results_xgb_handcrafted_esmc300m_win_padtoken_"
-            "vardims_ev80_var645_*.json",
+    "esmc_dimselect_29":
+        R / "dimselect_matched/models/dimselect/"
+            "cv_results_xgb_emb_esmc300m_win_padtoken_"
+            "dimselect_top643_xgb_*.json",
+    "esmc_dimselect_19":
+        R / "dimselect_flank5/models/dimselect/"
+            "cv_results_xgb_emb_esmc300m_win_padtoken_"
+            "dimselect_top643_xgb_*.json",
     # CNN: rerun batch, BOTH arms from the same job pair (cleanest pair —
     # no cross-campaign concern). mode=cnn_cv, model_key=cnn_simple_k5.
     "cnn_k5_29":
@@ -98,7 +99,7 @@ FAMILIES = {
     "flank5_vs_29mer": [
         ("blosum50_29", "blosum50_19"),
         ("hc_blosum50_29", "hc_blosum50_19"),
-        ("esmc_ev80_29", "esmc_ev80_19"),
+        ("esmc_dimselect_29", "esmc_dimselect_19"),
         ("cnn_k5_29", "cnn_k5_19"),
     ],
 }

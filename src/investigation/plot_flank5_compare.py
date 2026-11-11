@@ -4,7 +4,7 @@ plot_flank5_compare.py — 19mer (5-aa flank) vs 29mer (10-aa flank)
 grouped barplot for the runs/flank5_compare campaign.
 
 One bar group per feature set, two bars each (29mer grey / flank5 blue):
-    BLOSUM50 · BLOSUM50 + engineered · ESM-C EV80 + engineered
+    BLOSUM50 · BLOSUM50 + engineered · ESM-C dimselect N=643
 
 Values = nested-CV AUC-ROC (mean ± std over 6 outer iterations) from
 cv_summary.auc_roc of the newest matching cv_results JSONs (same globs
@@ -50,11 +50,11 @@ GROUPS = [
      "cv_results_xgb_handcrafted_blosum50_flat_*.json",
      "flank5_compare/models/flat/"
      "cv_results_xgb_handcrafted_blosum50_flat_*.json"),
-    ("ESM-C EV80 +\nengineered",
-     "is_handcrafted_helping_v2/models/vardims/"
-     "cv_results_xgb_handcrafted_esmc300m_win_padtoken_vardims_ev80_var643_*.json",
-     "flank5_compare/models/vardims/"
-     "cv_results_xgb_handcrafted_esmc300m_win_padtoken_vardims_ev80_var645_*.json"),
+    ("ESM-C dimselect\nN=643",
+     "dimselect_matched/models/dimselect/"
+     "cv_results_xgb_emb_esmc300m_win_padtoken_dimselect_top643_xgb_*.json",
+     "dimselect_flank5/models/dimselect/"
+     "cv_results_xgb_emb_esmc300m_win_padtoken_dimselect_top643_xgb_*.json"),
     ("CNN k5\n(ESM-C windows)",
      "flank5_compare/cnn/full/models/cnn/"
      "cv_results_cnn_simple_k5_*.json",
@@ -134,10 +134,10 @@ def main():
         with open(stats_path) as fh:
             stats_rows = list(csv.DictReader(fh))
         # map 32_'s arm names (blosum50_29/blosum50_19, hc_blosum50_*,
-        # esmc_ev80_*) to this plot's group slots by prefix — robust to
-        # skipped pairs in the CSV
+        # esmc_dimselect_*) to this plot's group slots by prefix — robust
+        # to skipped pairs in the CSV
         prefix_to_group = {"blosum50": 0, "hc_blosum50": 1,
-                           "esmc_ev80": 2, "cnn_k5": 3}
+                           "esmc_dimselect": 2, "cnn_k5": 3}
         data_top = max(m + s for m, s in zip(means, stds))
         y = data_top + 0.045
         for r in stats_rows:
