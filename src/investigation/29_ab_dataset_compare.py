@@ -58,7 +58,9 @@ sys.modules["p15"] = _p15
 _spec.loader.exec_module(_p15)
 
 R = PROJECT_ROOT / "runs"
-REDUCED_MARKER = "remove715"   # appears in df_*_remove715negonly.csv paths
+REDUCED_MARKER = "remove715negonly"   # appears in df_*_<variant>.csv paths
+                                      # (override with --variant; substring
+                                      #  "remove715" still matches old runs)
 COLORS = {"encoding": "#BBBBBB", "esmc": "#EE6677", "esmif": "#4477AA"}
 FRIENDLY = {  # bare CSV feature tags -> display names
     "blosum50": "BLOSUM50", "blosum62": "BLOSUM62", "blosum80": "BLOSUM80",
@@ -158,11 +160,19 @@ def main():
                     help="run folder under runs/ (default: ab_dataset_test)")
     ap.add_argument("--out-prefix", default=None,
                     help="default: <run-dir>/plots/ab_dataset_cv_auc")
+    ap.add_argument("--variant", default="remove715negonly",
+                    help="reduced-dataset variant name (marker in run JSONs "
+                         "and split-CSV suffix; default: remove715negonly)")
     args = ap.parse_args()
+
+    global REDUCED_MARKER
+    REDUCED_MARKER = args.variant
+    suffix = ("" if args.variant == "remove715negonly"
+              else f"_{args.variant}")
 
     run_dir = R / args.run_dir
     out_prefix = (Path(args.out_prefix) if args.out_prefix
-                  else run_dir / "plots" / "ab_dataset_cv_auc")
+                  else run_dir / "plots" / f"ab_dataset_cv_auc{suffix}")
 
     # pca_mode decides the subdir (flat / vardims / flat_raw / ...) —
     # the blosum arms are models/flat, the esmc --vardims arms are
@@ -208,7 +218,7 @@ def main():
     # ── paired tests on the shared subset ────────────────────────────
     full_rows = _read_split(SPLIT_DATA_PATH)
     red_path = SPLIT_DATA_PATH.with_name(
-        SPLIT_DATA_PATH.stem + "_remove715negonly" + SPLIT_DATA_PATH.suffix)
+        SPLIT_DATA_PATH.stem + "_" + args.variant + SPLIT_DATA_PATH.suffix)
     red_rows = _read_split(red_path)
     mapping = subset_mapping(full_rows, red_rows)
     n_pairs = len(mapping)
@@ -344,7 +354,7 @@ def main():
         w_ = csv.DictWriter(fh, fieldnames=list(rows[0]))
         w_.writeheader()
         w_.writerows(rows)
-    tsvp = run_dir / "results" / "ab_dataset_delong.tsv"
+    tsvp = run_dir / "results" / f"ab_dataset_delong{suffix}.tsv"
     tsvp.parent.mkdir(parents=True, exist_ok=True)
     with open(tsvp, "w", newline="") as fh:
         w_ = csv.DictWriter(fh, fieldnames=list(test_rows[0]), delimiter="\t")
@@ -357,11 +367,19 @@ def main():
     print("\n" + "=" * 60)
     print("  CAPTION (paste below the figure):")
     print("=" * 60)
-    print("A/B dataset comparison: the reduced variant drops the 2,271 "
-          "negative peptides contributed by 715 orphan proteins — "
-          "proteins whose entries contain no positive example "
-          "(THESIS_VARIANT remove715negonly, built by "
-          "make_variant_dataset.py) — while all positives and the 6-fold "
+    if args.variant == "remove715negonly":
+        desc = ("the reduced variant drops the 2,271 "
+                "negative peptides contributed by 715 orphan proteins — "
+                "proteins whose entries contain no positive example "
+                "(THESIS_VARIANT remove715negonly, built by "
+                "make_variant_dataset.py)")
+    else:
+        desc = (f"the reduced variant applies the {args.variant} "
+                f"context-window dedup rule (THESIS_VARIANT "
+                f"{args.variant}, built by make_variant_dataset.py; "
+                "prepared embeddings subset by prepare_variant_h5.py)")
+    print(f"A/B dataset comparison: {desc} — while all positives "
+          "and the 6-fold "
           "nesting are kept. Solid bars = full "
           "dataset, hatched bars = reduced variant; family colors as in "
           "the other benchmark figures. Bars: nested-CV outer mean +/- std, "

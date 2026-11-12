@@ -10,6 +10,6 @@ export PYTHONUNBUFFERED=1
 M=src/pipeline/python/04_modelling.py
 python $M --model xgb --features blosum50 --out-root runs/ab_dataset_test
 THESIS_VARIANT=remove715negonly python $M --model xgb --features blosum50 --out-root runs/ab_dataset_test
-python $M --model xgb --features emb_esmc300m_win_padtoken --vardims default --out-root runs/ab_dataset_test
-THESIS_VARIANT=remove715negonly python $M --model xgb --features emb_esmc300m_win_padtoken --vardims default --out-root runs/ab_dataset_test
+python $M --model xgb --features emb_esmc300m_win_padtoken --pca-mode dimselect --top-n default --out-root runs/ab_dataset_test
+THESIS_VARIANT=remove715negonly python $M --model xgb --features emb_esmc300m_win_padtoken --pca-mode dimselect --top-n default --out-root runs/ab_dataset_test
 echo "ALL 4 A/B RUNS DONE"

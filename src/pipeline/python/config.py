@@ -13,9 +13,14 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 # ──────────────────────────────────────────────
 # DATASET VARIANT (A/B testing; unset = current behavior)
-# THESIS_VARIANT=remove715negonly redirects every per-dataset path
+# THESIS_VARIANT=<name> redirects every per-dataset path
 # (raw/split/encoding CSVs, prepared embedding H5s) to *_<variant> files.
-# Raw embedding H5s are shared — the prepare step aligns them to the split.
+# Existing variants: remove715negonly, remove_dup_windows.
+# Raw embedding H5s stay base-only (N=46,617). Variant PREPARED H5s are
+# built by prepare_variant_h5.py (positional subset of the base prepared
+# file) — do NOT run 03_prepare_embeddings against a row-dropped variant:
+# align_window_by_row_indices maps old row_indices into the shorter df
+# and silently misaligns.
 # ──────────────────────────────────────────────
 VARIANT = os.environ.get("THESIS_VARIANT") or None
 
