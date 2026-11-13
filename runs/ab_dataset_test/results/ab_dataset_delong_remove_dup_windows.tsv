@@ -1,0 +1,2 @@
+feature	auc_full_subset	auc_red_subset	delta	se	z	p_delong	p_holm	star	boot_ci_lo	boot_ci_hi	p_boot	boot_sd	n_pairs	p_boot_holm	star_boot
+blosum50	0.764583	0.765894	0.001310	0.000923	1.4192	1.558e-01	1.558e-01	ns	-0.003118	0.000481	1.533e-01	0.000920	45510	1.533e-01	ns
