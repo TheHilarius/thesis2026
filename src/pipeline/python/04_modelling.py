@@ -1454,6 +1454,13 @@ def parse_args():
         help=f"Feature set key from FEATURE_SETS (default: {DEFAULT_FEATURE_SET})",
     )
     parser.add_argument(
+        "--split", type=str, default=None,
+        help="Split CSV path providing the fold column (e.g. "
+             "data/processed/df_all_with_folds_rob-h2.csv). Default: config "
+             "SPLIT_DATA_PATH. Feature CSVs join positionally, so the file "
+             "must have the same rows/order as the canonical split.",
+    )
+    parser.add_argument(
         "--pca", type=parse_pca_value, default=None,
         help="Override PCA components: int for all embeddings ('13') "
              "or per-embedding dict ('esmc=1,esmif=9')",
@@ -1763,7 +1770,9 @@ if __name__ == "__main__":
     print(f"  Pool:            {pool if pool is not None else '-'}"
           + (f" ({pool_mask})" if pool is not None else ""))
     print(f"  Components:      {feat_cfg['components']}")
-    print(f"  Data path:       {SPLIT_DATA_PATH}")
+    split_path = Path(args.split) if args.split else Path(SPLIT_DATA_PATH)
+    print(f"  Data path:       {split_path}"
+          + ("  (CLI override)" if args.split else ""))
     print(f"  Log path:        {LOG_PATH}")
     print(f"  CV folds (k):    {N_CV_FOLDS}")
     print(f"  Held-out bucket: {HELD_OUT_INDEX}")
@@ -1775,8 +1784,8 @@ if __name__ == "__main__":
     print("=" * 80)
 
     # -- Load split data --
-    print(f"\nLoading split data: {SPLIT_DATA_PATH}")
-    df_split = pd.read_csv(SPLIT_DATA_PATH)
+    print(f"\nLoading split data: {split_path}")
+    df_split = pd.read_csv(split_path)
     print(f"  Shape: {df_split.shape[0]} rows x {df_split.shape[1]} columns")
 
     # ── Per-peptide pad-count metadata (always present, sourced from df_all
