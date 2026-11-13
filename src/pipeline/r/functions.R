@@ -1526,4 +1526,52 @@ matrix_encode_position <- function(df, pos_col, mat) {
   as_tibble(encoded)
 }
 
+# ── Allele switch (paths + labels only, no logic change) ───────────────────
+# Each allele run reads ONLY its own FASTA (separated files, no union).
+# 0201 helpers return the legacy flat strings byte-identical.
+ALLELE_TAGS <- c("hla0201", "hla_a0101")
+
+parse_allele_arg <- function() {
+  args <- commandArgs(trailingOnly = TRUE)
+  if (length(args) == 0) "hla0201" else match.arg(args[1], ALLELE_TAGS)
+}
+
+PROCESSED_PREFIX_FOR <- function(allele) {
+  if (allele == "hla0201") "data/processed/" else "data/processed/hla_a0101/"
+}
+
+pp <- function(f, allele) paste0(PROCESSED_PREFIX_FOR(allele), f)
+
+FIGURE_DIR_FOR <- function(allele) {
+  if (allele == "hla0201") "results/figures/netmhcpan/" else "results/figures/netmhcpan_hla_a0101/"
+}
+
+HLA_FOR <- function(allele) {
+  if (allele == "hla0201") "HLA-A02:01" else "HLA-A01:01"
+}
+
+HLA_PLOT_FOR <- function(allele) {
+  if (allele == "hla0201") "HLA-A*02:01" else "HLA-A*01:01"
+}
+
+FASTA_FOR <- function(allele) {
+  if (allele == "hla0201") "data/raw/fasta/combined_positives_only.fasta" else "data/raw/fasta/hla_a0101_positives_only.fasta"
+}
+
+NETMHCPAN_DIR_FOR <- function(allele) {
+  if (allele == "hla0201") "data/processed/netmhcpan/" else "data/processed/hla_a0101/netmhcpan/"
+}
+
+POS_ALL_FOR <- function(allele) {
+  if (allele == "hla0201") "data/processed/pos_EL_all_epitopes_hla0201.csv" else pp("pos_EL_all_epitopes_hla_a0101.csv", allele)
+}
+
+POS9_FOR <- function(allele) {
+  if (allele == "hla0201") "data/processed/pos_EL_9mers_epitopes_hla0201.csv" else pp("pos_EL_9mers_epitopes_hla_a0101.csv", allele)
+}
+
+STAGES_FOR <- function(allele) {
+  if (allele == "hla0201") "data/processed/iedb_stage_counts.csv" else pp("iedb_stage_counts.csv", allele)
+}
+
 cat("functions.R loaded successfully.\n")

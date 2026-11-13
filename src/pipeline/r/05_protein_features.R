@@ -2,6 +2,11 @@ suppressPackageStartupMessages(library(tidyverse))
 source("src/pipeline/r/functions.R")
 set_working_directory()
 
+# ── Allele switch (paths only; all logic below untouched) ──────────────────
+# Usage: Rscript src/pipeline/r/05_protein_features.R [hla0201|hla_a0101]
+ALLELE_TAG <- parse_allele_arg()
+cat("=== Allele:", ALLELE_TAG, "===\n")
+
 my_packages <- c(
   "tidyverse",
   "Peptides",      
@@ -10,9 +15,9 @@ my_packages <- c(
   "progress"       
 )
 
-df_epitopes <- read_csv("data/processed/df_combined_pos_and_neg.csv", show_col_types = FALSE)
+df_epitopes <- read_csv(pp("df_combined_pos_and_neg.csv", ALLELE_TAG), show_col_types = FALSE)
 
-df_fasta <- read_fasta_df("data/raw/fasta/combined_positives_only.fasta") |>
+df_fasta <- read_fasta_df(FASTA_FOR(ALLELE_TAG)) |>
   mutate(
     accession  = str_extract(header, "(?<=\\|)[^|]+(?=\\|)"),
     uniprot_id = accession,
@@ -106,5 +111,5 @@ df_with_cleavage <- df_with_flanks %>%
     c_flank_col = "c_flank"
   )
 
-write_csv(df_with_cleavage, "data/processed/epitopes_pos_and_neg_features.csv")
-cat("\n✅ Saved final extracted features to data/processed/epitopes_pos_and_neg_features.csv\n")
+write_csv(df_with_cleavage, pp("epitopes_pos_and_neg_features.csv", ALLELE_TAG))
+cat("\n✅ Saved final extracted features to ", pp("epitopes_pos_and_neg_features.csv", ALLELE_TAG), "\n", sep = "")

@@ -104,6 +104,9 @@ now come with artifacts.
 - **Server-side Slurm netMHCpan wrapper** is not in this repo — if it exists
   on the server, apply the same two edits there: `-a HLA-A01:01`, `-l 9`,
   output to `data/processed/hla_a0101/netmhcpan`.
-- The legacy semicolon-delimiter quirk of `iedb_200K_EL_epitopes.csv` is
-  irrelevant here: the a0101 export is comma-delimited and a0101 02 reads
-  it with `sep=","` correctly. The legacy 02 script is untouched by design.
+- Both raw IEDB exports are comma-delimited and parse with `sep=","`
+  (verified 2026-11-11: legacy 200,381 rows / a0101 55,183 rows, each 100%
+  single-allele / ligand presentation / linear peptide). Semicolons occur
+  only *inside* legacy data fields (author lists) — there is no delimiter
+  bug. Note: the legacy file contains latin-1 bytes (parse with
+  `encoding='latin-1'` in Python). The legacy 02 script is untouched by design.

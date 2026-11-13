@@ -3,7 +3,16 @@ suppressPackageStartupMessages(library(data.table))
 source("src/pipeline/r/functions.R")
 set_working_directory()
 
-df_raw <- read_csv("data/processed/epitopes_pos_and_neg_features.csv", show_col_types = FALSE)
+# ── Allele switch (paths only; all logic below untouched) ──────────────────
+# Usage: Rscript src/pipeline/r/06_netsurfp_protein_features.R [hla0201|hla_a0101]
+ALLELE_TAG <- parse_allele_arg()
+NSP3_FIG_DIR <- if (ALLELE_TAG == "hla0201") "results/figures/netsurfp3/" else "results/figures/netsurfp3_hla_a0101/"
+NSP3_LOG_DIR <- if (ALLELE_TAG == "hla0201") "results/logs/netsurfp3/" else "results/logs/netsurfp3_hla_a0101/"
+dir.create(NSP3_FIG_DIR, recursive = TRUE, showWarnings = FALSE)
+dir.create(NSP3_LOG_DIR, recursive = TRUE, showWarnings = FALSE)
+cat("=== Allele:", ALLELE_TAG, "===\n")
+
+df_raw <- read_csv(pp("epitopes_pos_and_neg_features.csv", ALLELE_TAG), show_col_types = FALSE)
 
 df_peptides <- df_raw |>
   select(peptide, n_flank, c_flank, full_context, uniprot_id, start, end,
@@ -294,7 +303,7 @@ p1 <- ggplot(plot_data, aes(x = diff, y = feature, fill = direction)) +
   theme(legend.position = "bottom")
 
 print(p1)
-ggsave("results/figures/netsurfp3/q8_feature_differences.png", p1, width = 10, height = 10, dpi = 150)
+ggsave(paste0(NSP3_FIG_DIR, "q8_feature_differences.png"), p1, width = 10, height = 10, dpi = 150)
 
 # --- Plot 2: Heatmap — points by state × window ---
 heatmap_data <- q8_full |>
@@ -326,7 +335,7 @@ p2 <- ggplot(heatmap_data, aes(x = window, y = state_label, fill = diff)) +
   theme(panel.grid = element_blank())
 
 print(p2)
-ggsave("results/figures/netsurfp3/q8_point_heatmap.png", p2, width = 7, height = 6, dpi = 150)
+ggsave(paste0(NSP3_FIG_DIR, "q8_point_heatmap.png"), p2, width = 7, height = 6, dpi = 150)
 
 # --- Plot 3: Heatmap — transitions by state × boundary ---
 trans_data <- q8_full |>
@@ -361,13 +370,13 @@ p3 <- ggplot(trans_data, aes(x = boundary, y = state_label, fill = diff)) +
   theme(panel.grid = element_blank())
 
 print(p3)
-ggsave("results/figures/netsurfp3/q8_transition_heatmap.png", p3, width = 7, height = 6, dpi = 150)
+ggsave(paste0(NSP3_FIG_DIR, "q8_transition_heatmap.png"), p3, width = 7, height = 6, dpi = 150)
 
 # ============================================================================
 # WRITE LOG FILE
 # ============================================================================
 
-log_file <- paste0("results/logs/netsurfp3/q8_feature_analysis_log_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".txt")
+log_file <- paste0(NSP3_LOG_DIR, "q8_feature_analysis_log_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".txt")
 sink(log_file)
 
 cat("=" |> strrep(70), "\n")
@@ -458,7 +467,7 @@ cat("Log written to:", log_file, "\n")
 # SAVE FINAL DATASET
 # ============================================================================
 
-write_csv(df_final_nsp3, "data/processed/epitopes_pos_and_neg_features_with_nsp3.csv")
-cat("\nSaved: data/processed/epitopes_pos_and_neg_features_with_nsp3.csv\n")
+write_csv(df_final_nsp3, pp("epitopes_pos_and_neg_features_with_nsp3.csv", ALLELE_TAG))
+cat("\nSaved: ", pp("epitopes_pos_and_neg_features_with_nsp3.csv", ALLELE_TAG), "\n", sep = "")
 cat("Final dimensions:", nrow(df_final_nsp3), "x", ncol(df_final_nsp3), "\n")
 

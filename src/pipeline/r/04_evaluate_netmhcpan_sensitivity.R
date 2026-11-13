@@ -3,8 +3,15 @@ source("src/pipeline/r/functions.R")
 set_working_directory()
 suppressPackageStartupMessages(library(ggplot2))
 
+# ── Allele switch (paths + labels only; all logic below untouched) ──────────
+# Usage: Rscript src/pipeline/r/04_evaluate_netmhcpan_sensitivity.R [hla0201|hla_a0101]
+ALLELE_TAG <- parse_allele_arg()
+dir.create(PROCESSED_PREFIX_FOR(ALLELE_TAG), recursive = TRUE, showWarnings = FALSE)
+dir.create(FIGURE_DIR_FOR(ALLELE_TAG), recursive = TRUE, showWarnings = FALSE)
+cat("=== Allele:", ALLELE_TAG, "===\n")
+
 # Load IEDB positives 
-df_raw <- read_csv("data/processed/pos_EL_all_epitopes_hla0201.csv", show_col_types = FALSE)
+df_raw <- read_csv(POS_ALL_FOR(ALLELE_TAG), show_col_types = FALSE)
 
 df_iedb_pos <- df_raw |>
   filter(pep_length == 9) |>
@@ -24,7 +31,7 @@ if (n_before > n_after) {
 
 # Validate against FASTA database ────────────────────────────────────────
 cat("Loading FASTA database to remove obsolete isoforms...\n")
-df_fasta_raw <- read_fasta_df("data/raw/fasta/combined_positives_only.fasta") |>
+df_fasta_raw <- read_fasta_df(FASTA_FOR(ALLELE_TAG)) |>
   mutate(
     accession  = str_extract(header, "(?<=\\|)[^|]+(?=\\|)"),
     uniprot_id = accession,
@@ -225,7 +232,7 @@ df_ledger <- df_ledger |>
     )
   )
 
-write_csv(df_ledger, "data/processed/exclusion_ledger.csv")
+write_csv(df_ledger, pp("exclusion_ledger.csv", ALLELE_TAG))
 
 # ── Peptide-level exclusion ledger ──────────────────────────────────────
 df_peptide_ledger <- df_iedb_pos_pre_af |>
@@ -235,7 +242,7 @@ df_peptide_ledger <- df_iedb_pos_pre_af |>
     by = "uniprot_id"
   )
 
-write_csv(df_peptide_ledger, "data/processed/exclusion_ledger_peptides.csv")
+write_csv(df_peptide_ledger, pp("exclusion_ledger_peptides.csv", ALLELE_TAG))
 cat("  Peptide ledger:", nrow(df_peptide_ledger), "peptides,",
     sum(df_peptide_ledger$excluded), "from excluded proteins\n")
 
@@ -255,7 +262,7 @@ cat("\n  Unified exclusion results:\n")
 cat("  Proteins excluded:  ", sum(df_ledger$excluded), "\n")
 cat("  Positives remaining:", nrow(df_iedb_pos), "\n\n")
 
-write_csv(df_iedb_pos, "data/processed/pos_EL_9mers_epitopes_hla0201.csv")
+write_csv(df_iedb_pos, POS9_FOR(ALLELE_TAG))
 cat("IEDB positives:", nrow(df_iedb_pos), "\n")
 
 # Protein lookup table 
@@ -263,19 +270,19 @@ df_protein_lookup <- df_iedb_pos |>
   select(uniprot_id, source_molecule, molecule_parent) |>
   slice_head(n = 1, by = uniprot_id)
 
-write_csv(df_protein_lookup, "data/processed/protein_lookup.csv")
+write_csv(df_protein_lookup, pp("protein_lookup.csv", ALLELE_TAG))
 cat("Unique proteins:", nrow(df_protein_lookup), "\n")
 
 
 # Load NetMHCpan predictions (9-mer binders only) 
 cat("Loading NetMHCpan 9-mer binders...\n")
-df_netmhcpan_raw <- load_netmhcpan_batches(binders_only = TRUE, peptide_length = 9)
+df_netmhcpan_raw <- load_netmhcpan_batches(netmhcpan_dir = NETMHCPAN_DIR_FOR(ALLELE_TAG), binders_only = TRUE, peptide_length = 9)
 cat("Total 9-mer binders loaded:", nrow(df_netmhcpan_raw), "\n")
 
 
 # Parse, clean, and filter to valid proteins 
 df_netmhcpan_binders_parsed <- df_netmhcpan_raw |>
-  mutate(HLA = "HLA-A02:01") |>
+  mutate(HLA = HLA_FOR(ALLELE_TAG)) |>
   mutate(binder = case_when(
     Rank < 0.5 ~ "SB",
     Rank < 2   ~ "WB",
@@ -309,7 +316,7 @@ missing_proteins <- df_protein_lookup |>
 cat("Note:", nrow(missing_proteins),
     "proteins in lookup had no predicted 9-mer binders (Rank < 2%)\n")
 cat("The", nrow(missing_proteins), "proteins without 9-mer binders have",
-    get_netmhcpan_total(peptide_length = 9, valid_ids = missing_proteins$uniprot_id),
+    get_netmhcpan_total(netmhcpan_dir = NETMHCPAN_DIR_FOR(ALLELE_TAG), peptide_length = 9, valid_ids = missing_proteins$uniprot_id),
     "non-binders (predicted by NetMHCpan)\n")
 
 
@@ -351,7 +358,7 @@ df_all_removed_proteins <- df_ledger |>
   select(uniprot_id, seq_length, filter_stage, exclusion_reasons,
          n_positives, n_negatives, too_short, too_long, no_pdb, out_of_range)
 
-write_csv(df_all_removed_proteins, "data/processed/af_nsp3_removed.csv")
+write_csv(df_all_removed_proteins, pp("af_nsp3_removed.csv", ALLELE_TAG))
 
 cat("\n=== Proteins removed by prefilter (ledger-based) ===\n")
 df_all_removed_proteins |>
@@ -443,10 +450,10 @@ cat("Sensitivity (IEDB peptides recovered):    ",
 
 
 # Save split outputs 
-write_csv(df_netmhcpan_binders, "data/processed/netmhcpan_9mer_binders.csv")
-write_csv(df_netmhcpan_only,    "data/processed/netmhcpan_9mer_only.csv")
-write_csv(df_iedb_only,         "data/processed/iedb_9mer_only.csv")
-cat("\n✅ Saved split data to data/processed/\n")
+write_csv(df_netmhcpan_binders, pp("netmhcpan_9mer_binders.csv", ALLELE_TAG))
+write_csv(df_netmhcpan_only,    pp("netmhcpan_9mer_only.csv", ALLELE_TAG))
+write_csv(df_iedb_only,         pp("iedb_9mer_only.csv", ALLELE_TAG))
+cat("\n✅ Saved split data to ", PROCESSED_PREFIX_FOR(ALLELE_TAG), "\n", sep = "")
 
 
 # Confusion matrix 
@@ -455,7 +462,7 @@ FP <- nrow(df_netmhcpan_only)
 FN <- nrow(df_iedb_only)
 
 valid_proteins <- df_protein_lookup$uniprot_id
-total_peptides <- get_netmhcpan_total(peptide_length = 9, valid_ids = valid_proteins)
+total_peptides <- get_netmhcpan_total(netmhcpan_dir = NETMHCPAN_DIR_FOR(ALLELE_TAG), peptide_length = 9, valid_ids = valid_proteins)
 cat("Total 9-mer peptides from valid proteins:", scales::comma(total_peptides), "\n")
 
 TN <- total_peptides - nrow(df_netmhcpan_binders_unique) - FN
@@ -504,7 +511,7 @@ p1 <- ggplot(df_cm, aes(x = Predicted, y = Actual, fill = quad)) +
   scale_y_discrete(sec.axis = dup_axis(name = NULL, labels = row_sums)) +
   labs(
     title    = "How accurately does NetMHCpan identify true binders?",
-    subtitle = "Evaluating HLA-A*02:01 9-mers at a 2% rank threshold",
+    subtitle = paste0("Evaluating ", HLA_PLOT_FOR(ALLELE_TAG), " 9-mers at a 2% rank threshold"),
     x = "NetMHCpan Prediction", y = "", fill = NULL
   ) +
   theme_bw(base_size = 13) +
@@ -586,7 +593,7 @@ p2 <- ggplot(df_rank_pre, aes(x = rank, fill = label)) +
            vjust = 1.5, size = 5, fontface = "bold", colour = "#e74c3c") +
   labs(
     title    = "Affinity Bias Check: NetMHCpan EL Rank Distribution",
-    subtitle = paste0("9-mers  |  HLA-A*02:01  |  KS D = ", round(ks_pre$statistic, 4),
+    subtitle = paste0("9-mers  |  ", HLA_PLOT_FOR(ALLELE_TAG), "  |  KS D = ", round(ks_pre$statistic, 4),
                       " (clearly different distributions)"),
     x = "NetMHCpan EL Rank (%)", y = "Density", fill = NULL
   ) +
@@ -635,7 +642,7 @@ cat("Pre-filtered", n_before_pre - nrow(df_netmhcpan_only),
 cat("df_netmhcpan_only:", nrow(df_netmhcpan_only), "\n")
 
 # Save pre-filtered proteins for reference
-write_csv(oor_neg_proteins, "data/processed/pre_filtered_out_of_range_proteins.csv")
+write_csv(oor_neg_proteins, pp("pre_filtered_out_of_range_proteins.csv", ALLELE_TAG))
 
 
 # Rank-matched negative sampling 
@@ -803,8 +810,8 @@ df_combined_fixed <- bind_rows(df_positives, df_negatives_fixed) |>
 stopifnot(!any(setdiff(unique(df_negatives_fixed$uniprot_id),
                        unique(df_positives$uniprot_id))))
 write_csv(df_combined_fixed,
-          "data/processed/df_combined_pos_and_neg_remove715negonly.csv")
-cat("Saved fixed dataset to data/processed/df_combined_pos_and_neg_remove715negonly.csv\n")
+          pp("df_combined_pos_and_neg_remove715negonly.csv", ALLELE_TAG))
+cat("Saved fixed dataset to ", pp("df_combined_pos_and_neg_remove715negonly.csv", ALLELE_TAG), "\n", sep = "")
 
 cat("\n=== Chosen Configuration: Option C ===\n")
 cat("Bins:    ", CHOSEN_N_BINS, "\n")
@@ -850,14 +857,14 @@ p2b <- ggplot(df_rank_post, aes(x = rank, fill = label)) +
            vjust = 1.5, size = 5, fontface = "bold", colour = "#e74c3c") +
   labs(
     title    = "Did rank-matching eliminate the EL rank bias?",
-    subtitle = "HLA-A*02:01 9-mers after 25-bin matching",
+    subtitle = paste0(HLA_PLOT_FOR(ALLELE_TAG), " 9-mers after 25-bin matching"),
     x = "NetMHCpan EL Rank (%)", y = "Density", fill = NULL
   ) +
   theme_bw(base_size = 13) +
   theme(legend.position = "top", panel.grid.minor = element_blank(),
         plot.title.position = "plot")
 
-ggsave("results/figures/netmhcpan/affinity_bias_density_after.png", p2b, width = 7, height = 5, dpi = 150)
+ggsave(paste0(FIGURE_DIR_FOR(ALLELE_TAG), "affinity_bias_density_after.png"), p2b, width = 7, height = 5, dpi = 150)
 
 cat("Computing Cliff's Delta (before matching)...\n")
 cliff_before <- cliff_delta_sampled(df_positives$rank, df_netmhcpan_only$rank)
@@ -1012,19 +1019,19 @@ p6 <- ggplot(df_stat_compare, aes(x = group, y = rank, fill = group)) +
   )
 
 # Save all outputs 
-ggsave("results/figures/netmhcpan/confusion_matrix_9mer.png",              p1, width = 7,  height = 5,  dpi = 150)
-ggsave("results/figures/netmhcpan/affinity_bias_density_before.png",       p2, width = 7,  height = 5,  dpi = 150)
-ggsave("results/figures/netmhcpan/affinity_bias_ecdf_before.png",          p3, width = 7,  height = 5,  dpi = 150)
-ggsave("results/figures/netmhcpan/affinity_bias_options_ecdf.png", p5, width = 13.33, height = 7.5, dpi = 200)
-ggsave("results/figures/netmhcpan/affinity_bias_options_density.png", p4, width = 13.33, height = 7.5, dpi = 200)
-ggsave("results/figures/netmhcpan/affinity_bias_boxplot_comparison.png",   p6, width = 9,  height = 7,  dpi = 150)
+ggsave(paste0(FIGURE_DIR_FOR(ALLELE_TAG), "confusion_matrix_9mer.png"),              p1, width = 7,  height = 5,  dpi = 150)
+ggsave(paste0(FIGURE_DIR_FOR(ALLELE_TAG), "affinity_bias_density_before.png"),       p2, width = 7,  height = 5,  dpi = 150)
+ggsave(paste0(FIGURE_DIR_FOR(ALLELE_TAG), "affinity_bias_ecdf_before.png"),          p3, width = 7,  height = 5,  dpi = 150)
+ggsave(paste0(FIGURE_DIR_FOR(ALLELE_TAG), "affinity_bias_options_ecdf.png"), p5, width = 13.33, height = 7.5, dpi = 200)
+ggsave(paste0(FIGURE_DIR_FOR(ALLELE_TAG), "affinity_bias_options_density.png"), p4, width = 13.33, height = 7.5, dpi = 200)
+ggsave(paste0(FIGURE_DIR_FOR(ALLELE_TAG), "affinity_bias_boxplot_comparison.png"),   p6, width = 9,  height = 7,  dpi = 150)
 
-write_csv(df_rank_summary,  "data/processed/rank_distribution_summary.csv")
-write_csv(df_test_summary,  "data/processed/statistical_test_summary.csv")
-write_csv(df_combined,      "data/processed/df_combined_pos_and_neg.csv")
+write_csv(df_rank_summary,  pp("rank_distribution_summary.csv", ALLELE_TAG))
+write_csv(df_test_summary,  pp("statistical_test_summary.csv", ALLELE_TAG))
+write_csv(df_combined,      pp("df_combined_pos_and_neg.csv", ALLELE_TAG))
 
-cat("\nSaved all plots to results/\n")
-cat("Saved final dataset to data/processed/df_combined_pos_and_neg.csv\n")
+cat("\nSaved all plots to ", FIGURE_DIR_FOR(ALLELE_TAG), "\n", sep = "")
+cat("Saved final dataset to ", pp("df_combined_pos_and_neg.csv", ALLELE_TAG), "\n", sep = "")
 cat("   Positives:", scales::comma(sum(df_combined$label == 1)), "\n")
 cat("   Negatives:", scales::comma(sum(df_combined$label == 0)), "\n")
 cat("   Total:    ", scales::comma(nrow(df_combined)), "\n")
@@ -1151,7 +1158,7 @@ if (cascade_diff != 0) {
 }
 
 # Read IEDB stage counts from step 02
-iedb_stage <- read_csv("data/processed/iedb_stage_counts.csv", show_col_types = FALSE)
+iedb_stage <- read_csv(STAGES_FOR(ALLELE_TAG), show_col_types = FALSE)
 iedb_ct <- setNames(iedb_stage$count, iedb_stage$stage)
 
 # Save counts for Sankey script
@@ -1184,6 +1191,6 @@ df_sankey_counts <- tibble(
   )
 )
 
-write_csv(df_sankey_counts, "data/processed/sankey_counts.csv")
-cat("Saved: data/processed/sankey_counts.csv\n")
+write_csv(df_sankey_counts, pp("sankey_counts.csv", ALLELE_TAG))
+cat("Saved: ", pp("sankey_counts.csv", ALLELE_TAG), "\n", sep = "")
 print(df_sankey_counts, n = Inf)

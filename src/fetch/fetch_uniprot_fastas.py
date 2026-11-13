@@ -2,15 +2,27 @@
 """
 fetch_uniprot_fastas.py — Download full-length protein sequences from UniProt.
 
-Reads unique uniprot_ids from pos_EL_all_epitopes_hla0201.csv (which includes
+Reads unique uniprot_ids from pos_EL_all_epitopes csv (which includes
 isoforms resolved by 02_load_iedb_data.R). Queries UniProt with
 includeIsoform=true to ensure isoform-specific sequences are returned as
 separate FASTA entries.
 
-Outputs:
+Allele switch (args only, logic untouched — same exact code per allele).
+Each allele downloads its FULL set to SEPARATE files (duplicates across
+files OK — R unions with distinct()). No skip-list, no mixing on disk.
+  legacy (no args = old run byte-identical):
+    python src/fetch/fetch_uniprot_fastas.py
+  a0101 (full download, separated files):
+    python src/fetch/fetch_uniprot_fastas.py \
+      --input-csv data/processed/hla_a0101/pos_EL_all_epitopes_hla_a0101.csv \
+      --output-fasta data/raw/fasta/hla_a0101_full_length.fasta \
+      --positives-fasta data/raw/fasta/hla_a0101_positives_only.fasta
+
+Outputs (defaults = legacy):
   data/raw/fasta/combined_full_length.fasta       — all accessions (with isoforms)
   data/raw/fasta/combined_positives_only.fasta    — proteins with positive epitopes only
 """
+import argparse
 import pandas as pd
 import requests
 import re
@@ -19,11 +31,20 @@ from pathlib import Path
 import time
 
 
-def main():
+def parse_args():
+    p = argparse.ArgumentParser(description="Fetch UniProt FASTAs (allele-aware paths, identical logic).")
+    p.add_argument("--input-csv", default="data/processed/pos_EL_all_epitopes_hla0201.csv")
+    p.add_argument("--output-fasta", default="data/raw/fasta/combined_full_length.fasta")
+    p.add_argument("--positives-fasta", default="data/raw/fasta/combined_positives_only.fasta")
+    return p.parse_args()
+
+
+def main(args=None):
+    opts = parse_args() if args is None else args
     # Paths
-    pos_el_path = Path("data/processed/pos_EL_all_epitopes_hla0201.csv")
-    output_fasta = Path("data/raw/fasta/combined_full_length.fasta")
-    positives_fasta = Path("data/raw/fasta/combined_positives_only.fasta")
+    pos_el_path = Path(opts.input_csv)
+    output_fasta = Path(opts.output_fasta)
+    positives_fasta = Path(opts.positives_fasta)
 
     output_fasta.parent.mkdir(parents=True, exist_ok=True)
 
@@ -92,18 +113,24 @@ def main():
     print(f"Downloaded:          {total_downloaded} FASTA sequences")
     print(f"Output:              {output_fasta}")
 
-    # Filter to proteins with positive epitopes
-    print(f"\nFiltering to proteins with positive epitopes...")
-    pos_ids = set(df['uniprot_id'].dropna().unique())
+    # Positives filter runs for both alleles (separate full + positives files).
+    # Guard: same path passed twice → stream file already is the positives file.
+    if positives_fasta.resolve() == output_fasta.resolve():
+        print(f"\nPositives-only FASTA: {total_downloaded} entries (stream file, no filter)")
+        print(f"Output:               {positives_fasta}")
+    else:
+        # Filter to proteins with positive epitopes
+        print(f"\nFiltering to proteins with positive epitopes...")
+        pos_ids = set(df['uniprot_id'].dropna().unique())
 
-    from Bio import SeqIO
-    all_records = list(SeqIO.parse(str(output_fasta), "fasta"))
-    pos_records = [r for r in all_records if r.id.split("|")[1] in pos_ids]
-    SeqIO.write(pos_records, str(positives_fasta), "fasta")
+        from Bio import SeqIO
+        all_records = list(SeqIO.parse(str(output_fasta), "fasta"))
+        pos_records = [r for r in all_records if r.id.split("|")[1] in pos_ids]
+        SeqIO.write(pos_records, str(positives_fasta), "fasta")
 
-    print(f"Full FASTA:           {len(all_records)} entries")
-    print(f"Positives-only FASTA: {len(pos_records)} entries")
-    print(f"Output:               {positives_fasta}")
+        print(f"Full FASTA:           {len(all_records)} entries")
+        print(f"Positives-only FASTA: {len(pos_records)} entries")
+        print(f"Output:               {positives_fasta}")
 
     if total_downloaded < len(unique_ids):
         print(f"\n[NOTE] {len(unique_ids) - total_downloaded} IDs not found on UniProt "

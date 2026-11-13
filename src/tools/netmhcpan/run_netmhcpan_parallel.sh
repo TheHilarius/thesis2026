@@ -1,16 +1,21 @@
 #!/bin/bash
 # run_netmhcpan_parallel.sh — Parallel netMHCpan batch runner
 #
-# Usage: bash run_netmhcpan_parallel.sh <fasta_batch_dir> <output_dir> <prefix> [max_jobs] [BA]
-# Example: bash src/tools/netmhcpan/run_netmhcpan_parallel.sh data/raw/fasta/combined_batches data/processed/netmhcpan hla_a0201 10
+# Usage: bash run_netmhcpan_parallel.sh <fasta_batch_dir> <output_dir> <prefix> [max_jobs] [allele] [lengths] [BA]
+# Example (legacy): bash src/tools/netmhcpan/run_netmhcpan_parallel.sh data/raw/fasta/batches data/processed/netmhcpan hla_a0201 10
+# Example (a0101):  bash src/tools/netmhcpan/run_netmhcpan_parallel.sh data/raw/fasta/a0101_batches data/processed/hla_a0101/netmhcpan hla_a0101 10 HLA-A01:01 9
+# Defaults: allele=HLA-A02:01, lengths=9 (9-mers only throughout project).
+# BA token may appear as $5/$6/$7 for backward compat with old [BA] 5th-arg calls.
 
 set -uo pipefail
 
 # ── Arguments ────────────────────────────────────────────────────────────────
-if [ "$#" -lt 3 ] || [ "$#" -gt 5 ]; then
-    echo "Usage: bash run_netmhcpan_parallel.sh <fasta_batch_dir> <output_dir> <prefix> [max_jobs] [BA]"
+if [ "$#" -lt 3 ] || [ "$#" -gt 7 ]; then
+    echo "Usage: bash run_netmhcpan_parallel.sh <fasta_batch_dir> <output_dir> <prefix> [max_jobs] [allele] [lengths] [BA]"
     echo "  max_jobs: parallel netMHCpan processes (default: 10)"
-    echo "  BA: add 'BA' as 5th arg to include binding affinity prediction"
+    echo "  allele:   HLA allele, e.g. HLA-A02:01 (default), HLA-A01:01"
+    echo "  lengths:  peptide lengths, e.g. 9 (default; 9-mers only)"
+    echo "  BA: add 'BA' anywhere after prefix to include binding affinity prediction"
     exit 1
 fi
 
@@ -18,11 +23,22 @@ BATCH_DIR=$1
 OUTPUT_DIR=$2
 PREFIX=$3
 MAX_JOBS=${4:-10}
+ALLELE="HLA-A02:01"
+LENGTHS="9"
 BA_FLAG=""
 
-if [ "$#" -eq 5 ] && [ "$5" == "BA" ]; then
-    BA_FLAG="-BA"
-fi
+for arg in "${@:5}"; do
+    if [ "$arg" == "BA" ]; then
+        BA_FLAG="-BA"
+    elif [[ "$arg" == HLA-* ]]; then
+        ALLELE="$arg"
+    elif [[ "$arg" =~ ^[0-9,]+$ ]]; then
+        LENGTHS="$arg"
+    else
+        echo "[ERROR] Unknown argument: $arg (expected HLA allele, lengths, or BA)"
+        exit 1
+    fi
+done
 
 # ── Validate ─────────────────────────────────────────────────────────────────
 if [ ! -d "$BATCH_DIR" ]; then
@@ -100,9 +116,9 @@ run_batch() {
     local batch_start=$(date +%s)
 
     netMHCpan \
-        -a HLA-A02:01 \
+        -a "$ALLELE" \
         -f "$batch" \
-        -l 8,9,10,11,12,13,14 \
+        -l "$LENGTHS" \
         $BA_FLAG \
         -xls \
         -xlsfile "$output_csv" \

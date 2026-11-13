@@ -1,10 +1,39 @@
   library(tidyverse)
   source("src/pipeline/r/functions.R")
   set_working_directory()
-  
+
+  # ── Allele switch (required arg, no silent default) ──────────────────────
+  # Usage: Rscript src/pipeline/r/02_load_iedb_data.R [hla0201|hla_a0101]
+  # No arg = hla0201 (legacy call preserved byte-identical).
+  # Cleaning logic below untouched — same exact code per allele.
+  args <- commandArgs(trailingOnly = TRUE)
+  if (length(args) == 0) {
+    ALLELE_TAG <- "hla0201"
+  } else {
+    ALLELE_TAG <- match.arg(args[1], c("hla0201", "hla_a0101"))
+  }
+
+  IEDB_RAW <- if (ALLELE_TAG == "hla0201")
+    "data/raw/iedb_200K_EL_epitopes.csv"
+  else
+    "data/raw/mhc_ligand_table_export_HLA-A0101.csv"
+
+  OUT_POS <- if (ALLELE_TAG == "hla0201")
+    "data/processed/pos_EL_all_epitopes_hla0201.csv"
+  else
+    "data/processed/hla_a0101/pos_EL_all_epitopes_hla_a0101.csv"
+
+  OUT_STAGES <- if (ALLELE_TAG == "hla0201")
+    "data/processed/iedb_stage_counts.csv"
+  else
+    "data/processed/hla_a0101/iedb_stage_counts.csv"
+
+  if (ALLELE_TAG == "hla_a0101") dir.create("data/processed/hla_a0101", recursive = TRUE, showWarnings = FALSE)
+
+  cat("=== Allele:", ALLELE_TAG, "===\n")
   cat("=== STEP 1: Loading Raw IEDB Data ===\n")
   # Load and clean IEDB 200K EL epitopes
-  df_raw <- read.csv("data/raw/iedb_200K_EL_epitopes.csv",
+  df_raw <- read.csv(IEDB_RAW,
                      sep = ",", stringsAsFactors = FALSE) # Oliver should use delimter = ","
   colnames(df_raw) <- clean_names(colnames(df_raw))
   
@@ -65,7 +94,7 @@
   
   cat("=== STEP 4: Exporting Data ===\n")
   # Export
-  write_csv(df_clean,   "data/processed/pos_EL_all_epitopes_hla0201.csv")
+  write_csv(df_clean,   OUT_POS)
   
   # Write stage counts for Sankey diagram
   iedb_stage_counts <- tibble(
@@ -73,8 +102,12 @@
     count = c(nrow(df_raw), nrow(df_formatted) - nrow(df_dedup), nrow(df_dedup),
               nrow(df_dedup) - nrow(df_clean), nrow(df_clean))
   )
-  write_csv(iedb_stage_counts, "data/processed/iedb_stage_counts.csv")
-  cat("Stage counts saved to data/processed/iedb_stage_counts.csv\n")
+  write_csv(iedb_stage_counts, OUT_STAGES)
+  cat("Stage counts saved to ", OUT_STAGES, "\n", sep = "")
   
-  cat("✅ Saved cleaned files to data/processed/\n")
-  cat("Next step: run python src/fetch/fetch_uniprot_fastas.py\n")
+  cat("✅ Saved cleaned files to ", dirname(OUT_POS), "/\n", sep = "")
+  if (ALLELE_TAG == "hla0201") {
+    cat("Next step: run python src/fetch/fetch_uniprot_fastas.py\n")
+  } else {
+    cat("Next step: run python src/pipeline_a0101/fetch/fetch_a0101_fastas.py\n")
+  }
