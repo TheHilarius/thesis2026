@@ -163,6 +163,9 @@ def main():
     ap.add_argument("--variant", default="remove715negonly",
                     help="reduced-dataset variant name (marker in run JSONs "
                          "and split-CSV suffix; default: remove715negonly)")
+    ap.add_argument("--tags", default=None,
+                    help="comma-separated feature tags to compare "
+                         "(default: all; e.g. --tags blosum50)")
     args = ap.parse_args()
 
     global REDUCED_MARKER
@@ -201,6 +204,9 @@ def main():
             slot[variant] = (f, mean, std, n)
 
     tags = sorted(arms, key=lambda t: (family(t) != "encoding", t))
+    if args.tags:
+        want = {t.strip() for t in args.tags.split(",") if t.strip()}
+        tags = [t for t in tags if t in want]
     print("Loading arms ...")
     rows = []
     for tag in tags:
