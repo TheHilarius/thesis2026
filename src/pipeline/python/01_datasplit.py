@@ -6,6 +6,31 @@ Usage:
     python src/pipeline/python/01_datasplit.py
     python src/pipeline/python/01_datasplit.py --hamming-cutoff 3 \
         --split-out data/processed/df_all_with_folds_h3.csv
+
+    # Robust Hamming sweep over the FULL context window (19-mer or 29-mer,
+    # width inferred from the data), one marked split file per cutoff:
+    python src/pipeline/python/01_datasplit.py --group-by context --sweep 1,2,3
+    THESIS_VARIANT=flank5 python src/pipeline/python/01_datasplit.py \
+        --group-by context --sweep 1,2,3
+
+--group-by context is a ROBUST split: one union-find over the union of
+two edge sets —
+    (A) window edges:     ham(full_context) <= c
+    (B) peptide edges:    ham(peptide) <= 1  (fixed, independent of c)
+GUARANTEES:
+  - No window pair at distance <= c crosses folds.
+  - No peptide pair at distance <= 1 crosses folds.
+  - NOT guaranteed: peptide pairs at distance 2..c with divergent flanks
+    can still be split (that case is the canonical peptide-hc split).
+  Partition ladder: pure-window-hc <= robust-hc <= peptide-hc, and
+  peptide-h1 <= robust-hc. At c=1, robust == canonical peptide-h1.
+Both violations are checked HARD (FATAL + exit 1) after fold assignment.
+
+Outputs are additive marked files (e.g. df_all_with_folds_rob-h2.csv);
+the canonical df_all_with_folds.csv is only written by the default
+invocation (peptide grouping, cutoff == config HAMMING_CUTOFF, no sweep).
+Pure-window baseline files df_all_with_folds*_ctx-h*.csv are never
+overwritten (produced by src/pipeline/python/01_datasplit.py.ctx_baseline.bak).
 """
 
 import argparse
@@ -94,6 +119,12 @@ class UnionFind:
 
 AMINO_ACIDS = list("ACDEFGHIKLMNPQRSTVWY")
 AA_TO_INT = {aa: i for i, aa in enumerate(AMINO_ACIDS)}
+# 'X' = flank padding char inside full_context windows (context mode).
+# Distinct code so the pigeonhole encoder never KeyErrors on padded
+# contexts; also part of the substitution alphabet so A<->X
+# single-substitution pairs are found from BOTH sides.
+AA_TO_INT["X"] = 20
+NEIGHBOR_ALPHABET = AMINO_ACIDS + ["X"]
 
 
 def iter_close_pairs(peps, max_dist):
@@ -180,7 +211,7 @@ def cluster_by_hamming(peptides, max_dist=1):
     if max_dist == 1:
         for pep in peptides:
             for pos in range(len(pep)):
-                for aa in AMINO_ACIDS:  # For each position, try substituting each amino acid
+                for aa in NEIGHBOR_ALPHABET:  # substitutions incl. X<->AA
                     if aa != pep[pos]:  # Only substitutions that change the sequence (distance 1)
                         neighbour = pep[:pos] + aa + pep[pos + 1:]
                         if neighbour in peptide_set:  # Neighbour exists -> homologous, same cluster
@@ -201,30 +232,91 @@ def cluster_by_hamming(peptides, max_dist=1):
     return dict(clusters)
 
 
+def cluster_context_robust(contexts, ctx_to_peptide, max_dist):
+    """
+    Robust context clustering: ONE union-find over the union of two edge
+    sets, taken as connected components of A ∪ B (never sequential —
+    neither phase's output is final on its own):
+
+      (A) window edges:  ham(full_context) <= max_dist   (reuses
+          cluster_by_hamming unchanged)
+      (B) peptide edges: ham(peptide) <= 1, fixed at 1 and independent
+          of max_dist — lifts to every context of those peptides
+
+    Returns (clusters, pep_class) where clusters maps root -> set of
+    contexts, and pep_class maps each context -> its peptide-h1 class
+    root (used for the c=1 bijection assertion).
+
+    Guarantees (see module docstring): no window pair at distance
+    <= max_dist and no peptide pair at distance <= 1 crosses the
+    resulting groups.
+    """
+    # Edge set A: components of window-ham <= max_dist
+    win_clusters = cluster_by_hamming(contexts, max_dist=max_dist)
+    # Edge set B: components of peptide-ham <= 1
+    unique_peptides = list(dict.fromkeys(ctx_to_peptide[c] for c in contexts))
+    pep_clusters = cluster_by_hamming(unique_peptides, max_dist=1)
+
+    pep_class = {}
+    for root, peps in pep_clusters.items():
+        for p in peps:
+            pep_class[p] = root
+
+    uf = UnionFind()
+    for c in contexts:
+        uf.find(c)
+    # Add A edges (union within each window component; members sorted so
+    # the pass is order-stable — components do not depend on it)
+    for members in win_clusters.values():
+        ordered = sorted(members)
+        for m in ordered[1:]:
+            uf.union(ordered[0], m)
+    # Add B edges: all contexts whose peptides share a peptide-h1 class
+    by_class = defaultdict(list)
+    for c in contexts:
+        by_class[pep_class[ctx_to_peptide[c]]].append(c)
+    for members in by_class.values():
+        ordered = sorted(members)
+        for m in ordered[1:]:
+            uf.union(ordered[0], m)
+
+    clusters = defaultdict(set)
+    for c in contexts:
+        clusters[uf.find(c)].add(c)
+
+    ctx_class = {c: pep_class[ctx_to_peptide[c]] for c in contexts}
+    return dict(clusters), ctx_class
+
+
 # ──────────────────────────────────────────────
 # 3. BALANCED PARTITION
 # ──────────────────────────────────────────────
 
-def greedy_balanced_partition(clusters, n_buckets, peptide_sample_counts):
+def greedy_balanced_partition(clusters, n_buckets, peptide_sample_counts,
+                              key_min_row):
     """
     Greedy bin-packing: assign each cluster to the currently smallest bucket.
 
-    peptide_sample_counts includes ALL rows for each peptide
+    peptide_sample_counts includes ALL rows for each cluster member
     (including duplicates from different proteins), so the balancing
-    accounts for the true number of data rows, not just unique peptides.
+    accounts for the true number of data rows, not just unique keys.
+
+    Deterministic: clusters are ordered by (-size, min row index), so
+    tie-breaking never depends on dict/union-find construction order.
     """
     cluster_info = []
     for root, peps in clusters.items(): # For each cluster
-        total = sum(peptide_sample_counts.get(p, 0) for p in peps) # Calculate the total number of samples (rows) that correspond to the peptides in this cluster, including duplicates from different proteins
-        cluster_info.append((root, peps, total)) # Append a tuple of (cluster representative, set of peptides in the cluster, total sample count for the cluster) to the cluster_info list
+        total = sum(peptide_sample_counts.get(p, 0) for p in peps) # Calculate the total number of samples (rows) that correspond to the keys in this cluster, including duplicates from different proteins
+        min_row = min(key_min_row[p] for p in peps)
+        cluster_info.append((root, peps, total, min_row)) # Append (representative, members, total row count, first row index)
 
-    cluster_info.sort(key=lambda x: x[2], reverse=True) # Sort the clusters in descending order based on their total sample count, so that larger clusters are assigned to buckets first
+    cluster_info.sort(key=lambda x: (-x[2], x[3])) # Largest first; ties broken by earliest row — deterministic across construction orders
     # x[2] is the second column, which contains the total sample count for each cluster. Reverse = True, so largest clusters are first. 
     bucket_totals = np.zeros(n_buckets, dtype=int) 
     peptide_to_bucket = {} 
 
     print_count = 0
-    for root, peps, size in cluster_info:
+    for root, peps, size, _min_row in cluster_info:
         if print_count < 5:
             print(f"Assigning cluster with root '{root}' and {len(peps)} peptides "
                   f"({size} total samples) to a bucket...")
@@ -258,7 +350,7 @@ def verify_no_homology_leakage(df, peptide_col, fold_col, hamming_cutoff=1):
             set2 = fold_peptides[f2]
             for pep in fold_peptides[f1]:
                 for pos in range(len(pep)):
-                    for aa in AMINO_ACIDS:
+                    for aa in NEIGHBOR_ALPHABET:  # incl. X<->AA substitutions
                         if aa != pep[pos]:
                             neighbour = pep[:pos] + aa + pep[pos + 1:]
                             if neighbour in set2:
@@ -294,19 +386,21 @@ def verify_no_homology_leakage(df, peptide_col, fold_col, hamming_cutoff=1):
     return violations
 
 
-def verify_no_peptide_split(df, peptide_col, fold_col):
+def verify_no_peptide_split(df, peptide_col, fold_col, key_label="peptide"):
     """
-    Verify that every row with the same peptide sequence is in the same fold.
-    This catches the case where identical peptides from different proteins
+    Verify that every row with the same key sequence (peptide, or
+    full_context in context mode) is in the same fold.
+    This catches the case where identical keys from different proteins
     might have been accidentally split across folds.
     """
     peptide_folds = df.groupby(peptide_col)[fold_col].nunique()
     split_peptides = peptide_folds[peptide_folds > 1]
 
     if len(split_peptides) == 0:
-        print("No peptide split across folds (all duplicates in same fold).")
+        print(f"No {key_label} split across folds "
+              f"(all duplicates in same fold).")
     else:
-        print(f"WARNING: {len(split_peptides)} peptides split across folds!")
+        print(f"WARNING: {len(split_peptides)} {key_label}s split across folds!")
         for pep, n_folds in split_peptides.head(10).items():
             folds_in = df.loc[df[peptide_col] == pep, fold_col].unique()
             print(f"  {pep}: appears in folds {sorted(folds_in)}")
@@ -650,7 +744,8 @@ def print_bucket_statistics(df, peptide_col, label_col, fold_col,
 
 def inspect_bucket_clusters(df, clusters, peptide_to_bucket,
                             peptide_col, label_col, fold_col,
-                            n_cv_folds, held_out_index):
+                            n_cv_folds, held_out_index,
+                            key_label="peptide"):
     bucket_clusters = defaultdict(list)
 
     for root, peps in clusters.items():
@@ -685,12 +780,12 @@ def inspect_bucket_clusters(df, clusters, peptide_to_bucket,
 
         print(f"\n-- Bucket {i} ({role}) --")
         print(f"  Total clusters:      {n_clusters}")
-        print(f"  Total unique peps:   {total_peptides_in_bucket}")
+        print(f"  Total unique {key_label}s:   {total_peptides_in_bucket}")
         print(f"  Cluster size stats:  mean={mean_size:.1f}  "
               f"median={median_size:.1f}  max={max_size}")
         print(f"  Singletons:          {n_singletons:>6}  "
               f"({n_singletons / n_clusters * 100:.1f}% of clusters, "
-              f"{n_singletons / total_peptides_in_bucket * 100:.1f}% of peptides)")
+              f"{n_singletons / total_peptides_in_bucket * 100:.1f}% of {key_label}s)")
         print(f"  Small (2-5):         {n_small:>6}  "
               f"({n_small / n_clusters * 100:.1f}% of clusters)")
         print(f"  Medium (6-20):       {n_medium:>6}  "
@@ -708,7 +803,7 @@ def inspect_bucket_clusters(df, clusters, peptide_to_bucket,
             c_pos = (cluster_rows[label_col] == 1).sum()
             c_neg = (cluster_rows[label_col] == 0).sum()
             print(f"    #{rnk} size={size:>4}  (pos={c_pos}, neg={c_neg})  "
-                  f"peptides: {', '.join(shown)}{suffix}")
+                  f"{key_label}s: {', '.join(shown)}{suffix}")
 
     all_sizes = [len(peps) for peps in clusters.values()]
     print(f"\n{'=' * 80}")
@@ -719,7 +814,8 @@ def inspect_bucket_clusters(df, clusters, peptide_to_bucket,
             (6, 10, "6-10"), (11, 20, "11-20"), (21, 50, "21-50"),
             (51, 100, "51-100"), (101, float("inf"), ">100")]
 
-    print(f"  {'Size range':<15} {'Clusters':>10} {'%':>8} {'Peptides':>10} {'%':>8}")
+    print(f"  {'Size range':<15} {'Clusters':>10} {'%':>8} "
+          f"{key_label.capitalize() + 's':>10} {'%':>8}")
     print(f"  {'-' * 55}")
     total_clusters = len(all_sizes)
     total_peptides = sum(all_sizes)
@@ -745,26 +841,77 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(
         description="Homology-based data splitting for MHC-I processing prediction.")
     ap.add_argument("--hamming-cutoff", type=int, default=HAMMING_CUTOFF,
-                    help="cluster peptides at DIRECT Hamming distance <= this "
+                    help="cluster keys at DIRECT Hamming distance <= this "
                          "cutoff (1-3). Default: config HAMMING_CUTOFF (%(default)s).")
+    ap.add_argument("--sweep", default=None,
+                    help="comma-separated cutoffs to generate in one run, "
+                         "e.g. 1,2,3 — one marked split file per cutoff "
+                         "(overrides --hamming-cutoff; cannot be combined "
+                         "with --split-out).")
+    ap.add_argument("--group-by", choices=["peptide", "context"],
+                    default="peptide",
+                    help="cluster on 'peptide' (9-mer only, legacy behavior) "
+                         "or 'context' (ROBUST: window Hamming <= c union "
+                         "peptide Hamming <= 1 over full_context; width "
+                         "inferred from the data; both checks fail hard). "
+                         "Default: %(default)s.")
     ap.add_argument("--split-out", default=None,
-                    help="output split CSV path. Default: config SPLIT_DATA_PATH. "
-                         "Use a marked path (e.g. data/processed/"
-                         "df_all_with_folds_h3.csv) so the canonical split file "
-                         "is left untouched.")
+                    help="output split CSV path (single cutoff only). "
+                         "Default: auto marked path such as data/processed/"
+                         "df_all_with_folds_ctx-h2.csv; the canonical "
+                         "df_all_with_folds.csv is written only by the "
+                         "default invocation (peptide, config cutoff, no sweep).")
     args = ap.parse_args()
 
-    if args.hamming_cutoff not in (1, 2, 3):
-        ap.error("--hamming-cutoff must be 1, 2 or 3 "
-                 "(3-block pigeonhole index supports at most 3)")
+    if args.sweep is not None:
+        if args.split_out:
+            ap.error("--split-out cannot be combined with --sweep "
+                     "(sweep outputs are auto-named marked files)")
+        try:
+            cutoffs = [int(c) for c in args.sweep.split(",")]
+        except ValueError:
+            ap.error(f"--sweep must be a comma-separated list of ints, "
+                     f"got: {args.sweep}")
+        if not cutoffs or any(c not in (1, 2, 3) for c in cutoffs):
+            ap.error("--sweep cutoffs must be 1, 2 or 3 "
+                     "(3-block pigeonhole index supports at most 3)")
+        if len(set(cutoffs)) != len(cutoffs):
+            ap.error(f"--sweep contains duplicate cutoffs: {args.sweep}")
+    else:
+        if args.hamming_cutoff not in (1, 2, 3):
+            ap.error("--hamming-cutoff must be 1, 2 or 3 "
+                     "(3-block pigeonhole index supports at most 3)")
+        cutoffs = [args.hamming_cutoff]
 
-    hamming_cutoff = args.hamming_cutoff
-    split_out_path = Path(args.split_out) if args.split_out else Path(SPLIT_DATA_PATH)
+    group_by = args.group_by
+    key_col = PEPTIDE_COL if group_by == "peptide" else "full_context"
+    key_label = "peptide" if group_by == "peptide" else "window"
+    tag = "pep" if group_by == "peptide" else "rob"
+
+    def resolve_split_out(cutoff):
+        """Marked auto-name for every non-default run; the canonical
+        SPLIT_DATA_PATH is only touched by the legacy default
+        (peptide grouping, config cutoff, single run)."""
+        if args.split_out:
+            return Path(args.split_out)
+        marked = (group_by != "peptide" or cutoff != HAMMING_CUTOFF
+                  or args.sweep is not None)
+        if not marked:
+            return Path(SPLIT_DATA_PATH)
+        stem = Path(SPLIT_DATA_PATH).stem
+        return Path(SPLIT_DATA_PATH).with_name(
+            f"{stem}_{tag}-h{cutoff}{Path(SPLIT_DATA_PATH).suffix}")
 
     validate_config()
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_tag = f"_h{hamming_cutoff}" if hamming_cutoff != HAMMING_CUTOFF else ""
+    if group_by == "peptide" and args.sweep is None \
+            and cutoffs == [HAMMING_CUTOFF]:
+        log_tag = ""
+    elif len(cutoffs) == 1:
+        log_tag = f"_{tag}-h{cutoffs[0]}"
+    else:
+        log_tag = f"_{tag}-sweep"
     LOG_PATH = LOG_DIR / f"01_datasplit_log_{timestamp}{log_tag}.txt"
     os.makedirs(LOG_DIR, exist_ok=True)
     logger = Logger(str(LOG_PATH))
@@ -777,14 +924,21 @@ if __name__ == "__main__":
     print("=" * 80)
     print(f"  Timestamp:        {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"  Data path:        {RAW_DATA_PATH}")
-    print(f"  Output path:      {split_out_path}")
     print(f"  Log path:         {LOG_PATH}")
+    print(f"  Group-by:         {group_by}"
+          + ("" if group_by == "peptide"
+             else " (ROBUST: window-ham <= c  ∪  peptide-ham <= 1)"))
+    print(f"  Hamming cutoffs:  {', '.join(f'<= {c}' for c in cutoffs)}")
+    if group_by == "context":
+        print("  Guarantees:       no window pair at distance <= c and no")
+        print("                    peptide pair at distance <= 1 cross folds;")
+        print("                    peptide pairs 2..c with divergent flanks")
+        print("                    MAY split (canonical peptide-hc case).")
+        print("                    At c=1 robust == canonical peptide-h1.")
     print(f"  CV folds (k):     {N_CV_FOLDS}")
     print(f"  Held-out bucket:  {HELD_OUT_INDEX}")
     print(f"  Total buckets:    {N_BUCKETS}")
     print(f"  Random state:     {RANDOM_STATE}")
-    print(f"  Hamming cutoff:   <= {hamming_cutoff}"
-          f"{' (CLI override)' if hamming_cutoff != HAMMING_CUTOFF else ''}")
     print("=" * 80)
 
     # -- Load --
@@ -818,146 +972,296 @@ if __name__ == "__main__":
     if "uniprot_id" in df.columns:
         print(f"\nUnique source proteins (uniprot_id): {df['uniprot_id'].nunique()}")
 
+    # -- Context-mode checks (fail fast, before any clustering) --
+    win_len = None
+    if group_by == "context":
+        if "full_context" not in df.columns:
+            print("\nFATAL: --group-by context requires a 'full_context' "
+                  "column (not found in input)")
+            logger.close()
+            sys.exit(1)
+        if df["full_context"].isna().any():
+            n_na = int(df["full_context"].isna().sum())
+            print(f"\nFATAL: 'full_context' has {n_na} missing values")
+            logger.close()
+            sys.exit(1)
+        widths = sorted(df["full_context"].str.len().unique().tolist())
+        if widths not in ([19], [29]):
+            print(f"\nFATAL: full_context must be a single width of 19 or 29, "
+                  f"got widths {widths}")
+            logger.close()
+            sys.exit(1)
+        win_len = widths[0]
+        print(f"\nContext mode: full_context width = {win_len} "
+              f"({win_len}-mer window) — Hamming computed over the whole "
+              f"window including X flank padding")
+
+    # First row index per grouping key — canonical tie-break input for
+    # deterministic bucket ordering (greedy sorts by (-size, min row)).
+    key_min_row = {}
+    for _i, _k in enumerate(df[key_col].tolist()):
+        if _k not in key_min_row:
+            key_min_row[_k] = _i
+    print(f"Key -> first-row index map: {len(key_min_row)} keys")
+
+    # Context -> peptide (a function: the peptide sits inside
+    # full_context), input to the robust peptide-edge union.
+    ctx_to_peptide = dict(zip(df[key_col], df[PEPTIDE_COL]))
+
     # -- Duplicate peptide analysis --
     analyze_duplicate_peptides(df, PEPTIDE_COL, LABEL_COL)
 
-    # -- Phase 1: Cluster --
-    print("\n" + "=" * 80)
-    print("PHASE 1: HOMOLOGY CLUSTERING")
-    print("=" * 80)
-    unique_peptides = df[PEPTIDE_COL].unique().tolist()
-    print(f"Total rows:          {len(df)}")
-    print(f"Unique peptides:     {len(unique_peptides)}")
-    print(f"Duplicate rows:      {len(df) - len(unique_peptides)} "
-          f"(same peptide, different protein context)")
+    # ================== per-cutoff loop ==================
+    written = []
+    for cutoff in cutoffs:
+        split_out_path = resolve_split_out(cutoff)
 
-    t_cluster_start = time.time()
-    print(f"Clustering by Hamming distance <= {hamming_cutoff} ...")
-    clusters = cluster_by_hamming(unique_peptides, max_dist=hamming_cutoff)
-    t_cluster_end = time.time()
+        print("\n" + "=" * 80)
+        print(f"  SPLIT: group-by={group_by}  Hamming <= {cutoff}  ->  "
+              f"{split_out_path.name}")
+        print("=" * 80)
 
-    n_clusters = len(clusters)
-    largest_cluster_size = max(len(v) for v in clusters.values())
-    print(f"Clusters formed:     {n_clusters}")
-    print(f"Largest cluster:     {largest_cluster_size} peptides")
-    print(f"Clustering time:     {t_cluster_end - t_cluster_start:.2f}s")
+        # -- Phase 1: Cluster --
+        print("\n" + "=" * 80)
+        print("PHASE 1: HOMOLOGY CLUSTERING")
+        print("=" * 80)
+        unique_keys = df[key_col].unique().tolist()
+        print(f"Total rows:          {len(df)}")
+        print(f"Unique {key_label}s:     {len(unique_keys)}")
+        print(f"Duplicate rows:      {len(df) - len(unique_keys)} "
+              f"(same {key_label}, different context)")
 
-    if largest_cluster_size > len(unique_peptides) * 0.25:
-        msg = (f"Largest cluster = {largest_cluster_size} peptides "
-               f"({largest_cluster_size / len(unique_peptides) * 100:.1f}% "
-               f"of unique peptides) -- may cause imbalanced buckets.")
-        print(msg)
-        warnings.warn(msg)
+        t_cluster_start = time.time()
+        if group_by == "context":
+            print(f"Clustering ROBUST: window Hamming <= {cutoff}  ∪  "
+                  f"peptide Hamming <= 1 ...")
+            clusters, ctx_class = cluster_context_robust(
+                unique_keys, ctx_to_peptide, max_dist=cutoff)
+        else:
+            print(f"Clustering {key_label}s by Hamming distance <= {cutoff} ...")
+            clusters = cluster_by_hamming(unique_keys, max_dist=cutoff)
+            ctx_class = None
+        t_cluster_end = time.time()
 
-    # -- Phase 2: Assign --
-    print("\n" + "=" * 80)
-    print("PHASE 2: BUCKET ASSIGNMENT")
-    print("=" * 80)
+        # sample_counts counts ALL rows per key (duplicates from other
+        # proteins included) so balancing uses the true data volume.
+        sample_counts = df[key_col].value_counts().to_dict()
 
-    # sample_counts counts ALL rows per peptide, including duplicates
-    # from different proteins. This ensures balancing accounts for
-    # the true data volume, not just unique sequences.
-    sample_counts = df[PEPTIDE_COL].value_counts().to_dict()
-    print(f"Sample counts include all rows (duplicates from different proteins counted)")
+        n_clusters = len(clusters)
+        largest_cluster_size = max(len(v) for v in clusters.values())
+        cluster_rows = [
+            sum(sample_counts.get(k, 0) for k in members)
+            for members in clusters.values()
+        ]
+        largest_cluster_rows = max(cluster_rows)
+        largest_share = largest_cluster_rows / len(df)
+        print(f"Clusters formed:     {n_clusters}")
+        print(f"Largest cluster:     {largest_cluster_size} {key_label}s "
+              f"({largest_cluster_rows} rows = {largest_share * 100:.1f}% "
+              f"of rows)")
+        print(f"Clustering time:     {t_cluster_end - t_cluster_start:.2f}s")
 
-    np.random.seed(RANDOM_STATE)
+        if largest_share > 1 / 6:
+            msg = (f"Largest cluster = {largest_cluster_rows} rows "
+                   f"({largest_share * 100:.1f}% of rows) exceeds 1/6 — "
+                   f"perfect balance across {N_BUCKETS} buckets is "
+                   f"impossible.")
+            print(msg)
+            warnings.warn(msg)
 
-    t_assign_start = time.time()
-    peptide_to_bucket, bucket_totals = greedy_balanced_partition(
-        clusters, N_BUCKETS, sample_counts
-    )
-    t_assign_end = time.time()
+        # c=1 acceptance: robust components must match peptide-h1 classes
+        # one-to-one (window edges at c=1 cannot cross peptide-h1 classes).
+        if group_by == "context" and cutoff == 1:
+            comp_of_class = {}
+            for comp, members in clusters.items():
+                classes = {ctx_class[m] for m in members}
+                if len(classes) != 1:
+                    print(f"\nFATAL: component spans {len(classes)} "
+                          f"peptide-h1 classes — union logic broken")
+                    logger.close()
+                    sys.exit(1)
+                cls = next(iter(classes))
+                if cls in comp_of_class and comp_of_class[cls] != comp:
+                    print("\nFATAL: peptide-h1 class split across "
+                          "components — edge set B not applied")
+                    logger.close()
+                    sys.exit(1)
+                comp_of_class[cls] = comp
+            if len(comp_of_class) != n_clusters:
+                print(f"\nFATAL: bijection failed — {len(comp_of_class)} "
+                      f"peptide-h1 classes vs {n_clusters} components")
+                logger.close()
+                sys.exit(1)
+            print(f"c=1 cluster bijection OK: {n_clusters} components == "
+                  f"{n_clusters} peptide-h1 classes")
 
-    # Map fold to EVERY row via peptide sequence.
-    # All rows with the same peptide (regardless of source protein)
-    # get the same fold assignment.
-    df[FOLD_COL] = df[PEPTIDE_COL].map(peptide_to_bucket)
-    print(f"Assignment time:     {t_assign_end - t_assign_start:.2f}s")
-    print(f"Bucket totals:       {bucket_totals}")
+        # -- Phase 2: Assign --
+        print("\n" + "=" * 80)
+        print("PHASE 2: BUCKET ASSIGNMENT")
+        print("=" * 80)
+        print(f"Sample counts include all rows (duplicates from different "
+              f"proteins counted); clusters ordered by (-size, min row)")
 
-    # -- Verify: no homology leakage --
-    print("\n" + "=" * 80)
-    print("LEAKAGE VERIFICATION")
-    print("=" * 80)
+        np.random.seed(RANDOM_STATE)
 
-    # Verify 1: No Hamming-distance-1 neighbors across folds
-    t_verify_start = time.time()
-    n_violations = verify_no_homology_leakage(df, PEPTIDE_COL, FOLD_COL,
-                                              hamming_cutoff=hamming_cutoff)
-    t_verify_end = time.time()
-    print(f"Verification time: {t_verify_end - t_verify_start:.2f}s")
+        t_assign_start = time.time()
+        key_to_bucket, bucket_totals = greedy_balanced_partition(
+            clusters, N_BUCKETS, sample_counts, key_min_row
+        )
+        t_assign_end = time.time()
 
-    # Verify 2: No peptide sequence split across folds
-    # (confirms all duplicate rows stay together)
-    print()
-    n_splits = verify_no_peptide_split(df, PEPTIDE_COL, FOLD_COL)
+        # Map fold to EVERY row via the grouping key (peptide sequence,
+        # or full_context in context mode). All rows with the same key
+        # get the same fold assignment.
+        df[FOLD_COL] = df[key_col].map(key_to_bucket)
+        n_unmapped = int(df[FOLD_COL].isna().sum())
+        if n_unmapped:
+            print(f"\nFATAL: {n_unmapped} rows have no bucket assignment "
+                  f"(key not found in clusters)")
+            logger.close()
+            sys.exit(1)
+        print(f"Assignment time:     {t_assign_end - t_assign_start:.2f}s")
+        print(f"Bucket totals:       {bucket_totals}")
 
-    # -- Per-fold duplicate peptide report --
-    print("\n" + "=" * 80)
-    print("DUPLICATE PEPTIDES PER FOLD")
-    print("=" * 80)
-    print(f"  {'Fold':<10} {'Role':<22} {'Total':>7} {'Unique':>7} "
-          f"{'Duplicates':>11} {'Dup %':>7}")
-    print(f"  {'-' * 66}")
-    for i in sorted(df[FOLD_COL].unique()):
-        fold_df = df[df[FOLD_COL] == i]
-        n_total = len(fold_df)
-        n_unique = fold_df[PEPTIDE_COL].nunique()
-        n_dup = n_total - n_unique
-        role = "Held-out" if i == HELD_OUT_INDEX else f"CV fold {i}"
-        print(f"  {i:<10} {role:<22} {n_total:>7} {n_unique:>7} "
-              f"{n_dup:>11} {n_dup / n_total * 100 if n_total > 0 else 0:>6.1f}%")
+        # -- Verify: no homology leakage --
+        print("\n" + "=" * 80)
+        print("LEAKAGE VERIFICATION")
+        print("=" * 80)
 
-    # -- Statistics --
-    print_bucket_statistics(df, PEPTIDE_COL, LABEL_COL, FOLD_COL,
-                            N_CV_FOLDS, HELD_OUT_INDEX)
+        # Verify 1: no close key pairs across folds (window-c)
+        t_verify_start = time.time()
+        n_violations = verify_no_homology_leakage(df, key_col, FOLD_COL,
+                                                  hamming_cutoff=cutoff)
+        t_verify_end = time.time()
+        print(f"Verification time: {t_verify_end - t_verify_start:.2f}s")
 
-    inspect_bucket_clusters(df, clusters, peptide_to_bucket,
-                            PEPTIDE_COL, LABEL_COL, FOLD_COL,
-                            N_CV_FOLDS, HELD_OUT_INDEX)
+        # Verify 2: no identical key split across folds
+        # (confirms all duplicate rows stay together)
+        print()
+        n_splits = verify_no_peptide_split(df, key_col, FOLD_COL,
+                                           key_label=key_label)
 
-    # -- CV preview --
-    print("\n" + "=" * 80)
-    print("CV FOLD TRAIN/TEST SIZES")
-    print("=" * 80)
-    for fold_id in range(N_CV_FOLDS):
-        cv_df = df[df[FOLD_COL] != HELD_OUT_INDEX]
-        train = cv_df[cv_df[FOLD_COL] != fold_id]
-        test = cv_df[cv_df[FOLD_COL] == fold_id]
-        tr_pos = (train[LABEL_COL] == 1).sum()
-        tr_neg = (train[LABEL_COL] == 0).sum()
-        te_pos = (test[LABEL_COL] == 1).sum()
-        te_neg = (test[LABEL_COL] == 0).sum()
-        print(f"  Fold {fold_id}:  "
-              f"train={len(train):>6} (pos={tr_pos}, neg={tr_neg}, "
-              f"ratio={tr_neg / tr_pos:.3f})  "
-              f"test={len(test):>6} (pos={te_pos}, neg={te_neg}, "
-              f"ratio={te_neg / te_pos:.3f})")
+        # FAILSAFE (robust mode): no peptide pair at Hamming <= 1 may
+        # cross folds — this is edge set B's guarantee, HARD fail.
+        n_pep1_violations = 0
+        if group_by == "context":
+            print("\nFAILSAFE: peptide Hamming <= 1 across folds")
+            n_pep1_violations = verify_no_homology_leakage(
+                df, PEPTIDE_COL, FOLD_COL, hamming_cutoff=1)
+            if n_pep1_violations > 0:
+                print(f"\nFATAL: FAILSAFE violated — {n_pep1_violations} "
+                      f"peptide-ham<=1 pairs cross folds")
+                logger.close()
+                sys.exit(1)
+            if n_violations > 0:
+                print(f"\nFATAL: {n_violations} window-ham<={cutoff} pairs "
+                      f"cross folds")
+                logger.close()
+                sys.exit(1)
 
-    val_df = df[df[FOLD_COL] == HELD_OUT_INDEX]
-    v_pos = (val_df[LABEL_COL] == 1).sum()
-    v_neg = (val_df[LABEL_COL] == 0).sum()
-    print(f"  Held-out: samples={len(val_df):>6} "
-          f"(pos={v_pos}, neg={v_neg}, ratio={v_neg / v_pos:.3f})")
+        # Identical PEPTIDES split across folds — must be 0 in robust
+        # mode (implied by the pep-h1 failsafe; asserted anyway).
+        pep_fold_n = df.groupby(PEPTIDE_COL)[FOLD_COL].nunique()
+        n_pep_split = int((pep_fold_n > 1).sum())
+        if group_by == "context":
+            if n_pep_split > 0:
+                print(f"\nFATAL: {n_pep_split} identical peptides split "
+                      f"across folds (must be 0 under robust grouping)")
+                logger.close()
+                sys.exit(1)
+            print(f"\nOK: identical peptides split across folds: "
+                  f"{n_pep_split} (must be 0)")
+        else:
+            print(f"\nIdentical peptides split across folds: {n_pep_split}")
 
-    # -- Save --
-    split_out_path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(split_out_path, index=False)
-    print(f"\nSaved to: {split_out_path}")
+        # -- Per-fold duplicate peptide report --
+        print("\n" + "=" * 80)
+        print("DUPLICATE PEPTIDES PER FOLD")
+        print("=" * 80)
+        print(f"  {'Fold':<10} {'Role':<22} {'Total':>7} {'Unique':>7} "
+              f"{'Duplicates':>11} {'Dup %':>7}")
+        print(f"  {'-' * 66}")
+        for i in sorted(df[FOLD_COL].unique()):
+            fold_df = df[df[FOLD_COL] == i]
+            n_total = len(fold_df)
+            n_unique = fold_df[PEPTIDE_COL].nunique()
+            n_dup = n_total - n_unique
+            role = "Held-out" if i == HELD_OUT_INDEX else f"CV fold {i}"
+            print(f"  {i:<10} {role:<22} {n_total:>7} {n_unique:>7} "
+                  f"{n_dup:>11} {n_dup / n_total * 100 if n_total > 0 else 0:>6.1f}%")
 
+        # -- Statistics --
+        print_bucket_statistics(df, PEPTIDE_COL, LABEL_COL, FOLD_COL,
+                                N_CV_FOLDS, HELD_OUT_INDEX)
+
+        inspect_bucket_clusters(df, clusters, key_to_bucket,
+                                key_col, LABEL_COL, FOLD_COL,
+                                N_CV_FOLDS, HELD_OUT_INDEX,
+                                key_label=key_label)
+
+        # -- CV preview --
+        print("\n" + "=" * 80)
+        print("CV FOLD TRAIN/TEST SIZES")
+        print("=" * 80)
+        for fold_id in range(N_CV_FOLDS):
+            cv_df = df[df[FOLD_COL] != HELD_OUT_INDEX]
+            train = cv_df[cv_df[FOLD_COL] != fold_id]
+            test = cv_df[cv_df[FOLD_COL] == fold_id]
+            tr_pos = (train[LABEL_COL] == 1).sum()
+            tr_neg = (train[LABEL_COL] == 0).sum()
+            te_pos = (test[LABEL_COL] == 1).sum()
+            te_neg = (test[LABEL_COL] == 0).sum()
+            print(f"  Fold {fold_id}:  "
+                  f"train={len(train):>6} (pos={tr_pos}, neg={tr_neg}, "
+                  f"ratio={tr_neg / tr_pos:.3f})  "
+                  f"test={len(test):>6} (pos={te_pos}, neg={te_neg}, "
+                  f"ratio={te_neg / te_pos:.3f})")
+
+        val_df = df[df[FOLD_COL] == HELD_OUT_INDEX]
+        v_pos = (val_df[LABEL_COL] == 1).sum()
+        v_neg = (val_df[LABEL_COL] == 0).sum()
+        print(f"  Held-out: samples={len(val_df):>6} "
+              f"(pos={v_pos}, neg={v_neg}, ratio={v_neg / v_pos:.3f})")
+
+        # -- Save --
+        split_out_path.parent.mkdir(parents=True, exist_ok=True)
+        df.to_csv(split_out_path, index=False)
+        written.append(split_out_path)
+        print(f"\nSaved to: {split_out_path}")
+
+        t_end = time.time()
+        print("\n" + "=" * 80)
+        print(f"RUN SUMMARY: group-by={group_by}, Hamming <= {cutoff}")
+        print("=" * 80)
+        print(f"  Runtime so far:   {t_end - t_start:.2f}s")
+        print(f"  Input rows:       {len(df)}")
+        print(f"  Unique {key_label}s:  {len(unique_keys)}")
+        print(f"  Duplicate rows:   {len(df) - len(unique_keys)}")
+        print(f"  Clusters:         {n_clusters}")
+        print(f"  Largest cluster:  {largest_cluster_rows} rows "
+              f"({largest_share * 100:.1f}% of rows)"
+              f"{'  [>1/6: balance capped]' if largest_share > 1 / 6 else ''}")
+        print(f"  Bucket sizes:     {bucket_totals}")
+        print(f"  Buckets:          {N_BUCKETS} ({N_CV_FOLDS} CV + 1 held-out)")
+        print(f"  Homology leakage: {'NONE' if n_violations == 0 else f'{n_violations} violations'}")
+        print(f"  {key_label} splits:  {'NONE' if n_splits == 0 else f'{n_splits} {key_label}s split'}")
+        if group_by == "context":
+            print(f"  Pep-h1 failsafe:  PASSED (0 violations, hard-checked)")
+            print(f"  Identical peptides split: {n_pep_split} (must be 0)")
+        print(f"  Output:           {split_out_path}")
+        print("=" * 80)
+
+    # ================== final summary ==================
     t_end = time.time()
     print("\n" + "=" * 80)
-    print("RUN SUMMARY")
+    print("RUN COMPLETE")
     print("=" * 80)
     print(f"  Total runtime:    {t_end - t_start:.2f}s")
-    print(f"  Input rows:       {len(df)}")
-    print(f"  Unique peptides:  {len(unique_peptides)}")
-    print(f"  Duplicate rows:   {len(df) - len(unique_peptides)}")
-    print(f"  Clusters:         {n_clusters}")
-    print(f"  Buckets:          {N_BUCKETS} ({N_CV_FOLDS} CV + 1 held-out)")
-    print(f"  Homology leakage: {'NONE' if n_violations == 0 else f'{n_violations} violations'}")
-    print(f"  Peptide splits:   {'NONE' if n_splits == 0 else f'{n_splits} peptides split'}")
-    print(f"  Output:           {split_out_path}")
+    print(f"  Group-by:         {group_by}"
+          + (f" ({win_len}-mer window)" if win_len else ""))
+    print(f"  Splits written:   {len(written)}")
+    for p in written:
+        print(f"    {p}")
     print(f"  Log:              {LOG_PATH}")
     print(f"  Completed:        {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 80)
