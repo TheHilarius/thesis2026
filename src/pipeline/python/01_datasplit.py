@@ -14,19 +14,25 @@ Usage:
         --group-by context --sweep 1,2,3
 
 --group-by context is a ROBUST split: one union-find over the union of
-two edge sets —
+three edge sets —
     (A) window edges:     ham(full_context) <= c
     (B) peptide edges:    ham(peptide) <= 1  (fixed, independent of c)
+    (C) flank edges:      EITHER flank byte-identical (n_flank equal OR
+                          c_flank equal, X-padding included)
 GUARANTEES:
   - No window pair at distance <= c crosses folds.
   - No peptide pair at distance <= 1 crosses folds.
+  - No pair sharing an identical flank crosses folds (audit-41 rule).
   - NOT guaranteed: peptide pairs at distance 2..c with divergent flanks
     can still be split (that case is the canonical peptide-hc split).
-  Partition ladder: pure-window-hc <= robust-hc <= peptide-hc, and
-  peptide-h1 <= robust-hc. At c=1, robust == canonical peptide-h1.
-Both violations are checked HARD (FATAL + exit 1) after fold assignment.
+  Relations: pure-window-hc and peptide-h1 are both subsets of
+  robust-hc; robust-hc and peptide-hc are INCOMPARABLE (robust adds
+  flank-identity, peptide-hc adds far-flank pairs at distance 2..c).
+  At c=1, robust == peptide-h1 ∪ flank-identity.
+All three violations are checked HARD (FATAL + exit 1) after fold
+assignment.
 
-Outputs are additive marked files (e.g. df_all_with_folds_rob-h2.csv);
+Outputs are additive marked files (e.g. df_all_with_folds_updated_h2.csv);
 the canonical df_all_with_folds.csv is only written by the default
 invocation (peptide grouping, cutoff == config HAMMING_CUTOFF, no sweep).
 Pure-window baseline files df_all_with_folds*_ctx-h*.csv are never
@@ -234,22 +240,25 @@ def cluster_by_hamming(peptides, max_dist=1):
 
 def cluster_context_robust(contexts, ctx_to_peptide, max_dist):
     """
-    Robust context clustering: ONE union-find over the union of two edge
-    sets, taken as connected components of A ∪ B (never sequential —
-    neither phase's output is final on its own):
+    Robust context clustering: ONE union-find over the union of three
+    edge sets, taken as connected components of A ∪ B ∪ C (never
+    sequential — no phase's output is final on its own):
 
       (A) window edges:  ham(full_context) <= max_dist   (reuses
           cluster_by_hamming unchanged)
       (B) peptide edges: ham(peptide) <= 1, fixed at 1 and independent
           of max_dist — lifts to every context of those peptides
+      (C) flank edges:   two contexts are linked if EITHER flank is
+          byte-identical (n_flank equal OR c_flank equal, X-padding
+          included); flanks are sliced from the context string itself
 
     Returns (clusters, pep_class) where clusters maps root -> set of
     contexts, and pep_class maps each context -> its peptide-h1 class
     root (used for the c=1 bijection assertion).
 
     Guarantees (see module docstring): no window pair at distance
-    <= max_dist and no peptide pair at distance <= 1 crosses the
-    resulting groups.
+    <= max_dist, no peptide pair at distance <= 1, and no pair sharing
+    an identical flank crosses the resulting groups.
     """
     # Edge set A: components of window-ham <= max_dist
     win_clusters = cluster_by_hamming(contexts, max_dist=max_dist)
@@ -279,6 +288,21 @@ def cluster_context_robust(contexts, ctx_to_peptide, max_dist):
         ordered = sorted(members)
         for m in ordered[1:]:
             uf.union(ordered[0], m)
+
+    # Add C edges: EITHER flank byte-identical links the contexts.
+    # Flanks sliced from the string: (len - 9) / 2 per side (peptide = 9).
+    L = (len(contexts[0]) - 9) // 2
+    by_nflank, by_cflank = defaultdict(list), defaultdict(list)
+    for c in contexts:
+        by_nflank[c[:L]].append(c)
+        by_cflank[c[len(c) - L:]].append(c)
+    for groups in (by_nflank, by_cflank):
+        for members in groups.values():
+            if len(members) < 2:
+                continue
+            ordered = sorted(members)
+            for m in ordered[1:]:
+                uf.union(ordered[0], m)
 
     clusters = defaultdict(set)
     for c in contexts:
@@ -852,8 +876,9 @@ if __name__ == "__main__":
                     default="peptide",
                     help="cluster on 'peptide' (9-mer only, legacy behavior) "
                          "or 'context' (ROBUST: window Hamming <= c union "
-                         "peptide Hamming <= 1 over full_context; width "
-                         "inferred from the data; both checks fail hard). "
+                         "peptide Hamming <= 1 union identical-flank "
+                         "grouping over full_context; width inferred from "
+                         "the data; all checks fail hard). "
                          "Default: %(default)s.")
     ap.add_argument("--split-out", default=None,
                     help="output split CSV path (single cutoff only). "
@@ -886,7 +911,7 @@ if __name__ == "__main__":
     group_by = args.group_by
     key_col = PEPTIDE_COL if group_by == "peptide" else "full_context"
     key_label = "peptide" if group_by == "peptide" else "window"
-    tag = "pep" if group_by == "peptide" else "rob"
+    tag = "pep" if group_by == "peptide" else "updated"
 
     def resolve_split_out(cutoff):
         """Marked auto-name for every non-default run; the canonical
@@ -900,7 +925,7 @@ if __name__ == "__main__":
             return Path(SPLIT_DATA_PATH)
         stem = Path(SPLIT_DATA_PATH).stem
         return Path(SPLIT_DATA_PATH).with_name(
-            f"{stem}_{tag}-h{cutoff}{Path(SPLIT_DATA_PATH).suffix}")
+            f"{stem}_{tag}_h{cutoff}{Path(SPLIT_DATA_PATH).suffix}")
 
     validate_config()
 
@@ -909,9 +934,9 @@ if __name__ == "__main__":
             and cutoffs == [HAMMING_CUTOFF]:
         log_tag = ""
     elif len(cutoffs) == 1:
-        log_tag = f"_{tag}-h{cutoffs[0]}"
+        log_tag = f"_{tag}_h{cutoffs[0]}"
     else:
-        log_tag = f"_{tag}-sweep"
+        log_tag = f"_{tag}_sweep"
     LOG_PATH = LOG_DIR / f"01_datasplit_log_{timestamp}{log_tag}.txt"
     os.makedirs(LOG_DIR, exist_ok=True)
     logger = Logger(str(LOG_PATH))
@@ -927,14 +952,16 @@ if __name__ == "__main__":
     print(f"  Log path:         {LOG_PATH}")
     print(f"  Group-by:         {group_by}"
           + ("" if group_by == "peptide"
-             else " (ROBUST: window-ham <= c  ∪  peptide-ham <= 1)"))
+             else " (ROBUST: window-ham <= c  ∪  peptide-ham <= 1  "
+                  "∪  identical flank)"))
     print(f"  Hamming cutoffs:  {', '.join(f'<= {c}' for c in cutoffs)}")
     if group_by == "context":
-        print("  Guarantees:       no window pair at distance <= c and no")
-        print("                    peptide pair at distance <= 1 cross folds;")
-        print("                    peptide pairs 2..c with divergent flanks")
-        print("                    MAY split (canonical peptide-hc case).")
-        print("                    At c=1 robust == canonical peptide-h1.")
+        print("  Guarantees:       no window pair at distance <= c, no")
+        print("                    peptide pair at distance <= 1, and no")
+        print("                    pair sharing an identical flank cross")
+        print("                    folds; peptide pairs 2..c with divergent")
+        print("                    flanks MAY split (peptide-hc case).")
+        print("                    At c=1 robust == peptide-h1 ∪ flank-id.")
     print(f"  CV folds (k):     {N_CV_FOLDS}")
     print(f"  Held-out bucket:  {HELD_OUT_INDEX}")
     print(f"  Total buckets:    {N_BUCKETS}")
@@ -975,9 +1002,11 @@ if __name__ == "__main__":
     # -- Context-mode checks (fail fast, before any clustering) --
     win_len = None
     if group_by == "context":
-        if "full_context" not in df.columns:
-            print("\nFATAL: --group-by context requires a 'full_context' "
-                  "column (not found in input)")
+        missing = [c for c in ("full_context", "n_flank", "c_flank")
+                   if c not in df.columns]
+        if missing:
+            print(f"\nFATAL: --group-by context requires columns {missing} "
+                  f"(not found in input)")
             logger.close()
             sys.exit(1)
         if df["full_context"].isna().any():
@@ -1034,7 +1063,7 @@ if __name__ == "__main__":
         t_cluster_start = time.time()
         if group_by == "context":
             print(f"Clustering ROBUST: window Hamming <= {cutoff}  ∪  "
-                  f"peptide Hamming <= 1 ...")
+                  f"peptide Hamming <= 1  ∪  identical flank ...")
             clusters, ctx_class = cluster_context_robust(
                 unique_keys, ctx_to_peptide, max_dist=cutoff)
         else:
@@ -1069,31 +1098,57 @@ if __name__ == "__main__":
             print(msg)
             warnings.warn(msg)
 
-        # c=1 acceptance: robust components must match peptide-h1 classes
-        # one-to-one (window edges at c=1 cannot cross peptide-h1 classes).
+        # c=1 acceptance: robust components must match an INDEPENDENTLY
+        # constructed expectation (peptide-h1 ∪ flank-identity) one-to-one.
+        # The expectation is built row-based from the n_flank/c_flank
+        # COLUMNS + peptide clusters, while the wrapper slices flanks from
+        # the context STRING — two implementations must agree.
+        # (At c=1 window edges are redundant: win-1 ⊆ pep-1.)
         if group_by == "context" and cutoff == 1:
-            comp_of_class = {}
+            exp = UnionFind()
+            for k in unique_keys:
+                exp.find(k)
+            pep_clusters = cluster_by_hamming(
+                list(dict.fromkeys(ctx_to_peptide.values())), max_dist=1)
+            pep_cls = {}
+            for root, members in pep_clusters.items():
+                for pep in members:
+                    pep_cls[pep] = root
+            by_cls = defaultdict(list)
+            for k in unique_keys:
+                by_cls[pep_cls[ctx_to_peptide[k]]].append(k)
+            for members in by_cls.values():
+                for x in members[1:]:
+                    exp.union(members[0], x)
+            for col in ("n_flank", "c_flank"):
+                for _, idx in df.groupby(col).groups.items():
+                    ks = df.loc[idx, key_col].unique().tolist()
+                    for x in ks[1:]:
+                        exp.union(ks[0], x)
+            exp_root = {k: exp.find(k) for k in unique_keys}
+
+            comp_of_exp = {}
             for comp, members in clusters.items():
-                classes = {ctx_class[m] for m in members}
-                if len(classes) != 1:
-                    print(f"\nFATAL: component spans {len(classes)} "
-                          f"peptide-h1 classes — union logic broken")
+                roots = {exp_root[m] for m in members}
+                if len(roots) != 1:
+                    print(f"\nFATAL: component spans {len(roots)} expected "
+                          f"classes — union logic broken")
                     logger.close()
                     sys.exit(1)
-                cls = next(iter(classes))
-                if cls in comp_of_class and comp_of_class[cls] != comp:
-                    print("\nFATAL: peptide-h1 class split across "
-                          "components — edge set B not applied")
+                r = next(iter(roots))
+                if r in comp_of_exp and comp_of_exp[r] != comp:
+                    print("\nFATAL: expected class split across components "
+                          "— edge sets B/C not applied")
                     logger.close()
                     sys.exit(1)
-                comp_of_class[cls] = comp
-            if len(comp_of_class) != n_clusters:
-                print(f"\nFATAL: bijection failed — {len(comp_of_class)} "
-                      f"peptide-h1 classes vs {n_clusters} components")
+                comp_of_exp[r] = comp
+            if len(comp_of_exp) != n_clusters:
+                print(f"\nFATAL: bijection failed — {len(comp_of_exp)} "
+                      f"expected classes vs {n_clusters} components")
                 logger.close()
                 sys.exit(1)
             print(f"c=1 cluster bijection OK: {n_clusters} components == "
-                  f"{n_clusters} peptide-h1 classes")
+                  f"{n_clusters} (peptide-h1 ∪ flank-identity) classes")
 
         # -- Phase 2: Assign --
         print("\n" + "=" * 80)
@@ -1153,6 +1208,16 @@ if __name__ == "__main__":
                       f"peptide-ham<=1 pairs cross folds")
                 logger.close()
                 sys.exit(1)
+            # flank-identity failsafe (edge set C): every n_flank and
+            # c_flank value must live in exactly one fold
+            n_nf = int((df.groupby("n_flank")[FOLD_COL].nunique() > 1).sum())
+            n_cf = int((df.groupby("c_flank")[FOLD_COL].nunique() > 1).sum())
+            if n_nf or n_cf:
+                print(f"\nFATAL: FLANK FAILSAFE violated — {n_nf} n_flank "
+                      f"and {n_cf} c_flank values straddle folds")
+                logger.close()
+                sys.exit(1)
+            print("Flank-identity failsafe PASSED (0 straddling flanks)")
             if n_violations > 0:
                 print(f"\nFATAL: {n_violations} window-ham<={cutoff} pairs "
                       f"cross folds")
@@ -1247,6 +1312,7 @@ if __name__ == "__main__":
         print(f"  {key_label} splits:  {'NONE' if n_splits == 0 else f'{n_splits} {key_label}s split'}")
         if group_by == "context":
             print(f"  Pep-h1 failsafe:  PASSED (0 violations, hard-checked)")
+            print(f"  Flank failsafe:   PASSED (0 straddling flanks, hard-checked)")
             print(f"  Identical peptides split: {n_pep_split} (must be 0)")
         print(f"  Output:           {split_out_path}")
         print("=" * 80)

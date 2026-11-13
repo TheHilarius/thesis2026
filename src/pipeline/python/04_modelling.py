@@ -1456,7 +1456,7 @@ def parse_args():
     parser.add_argument(
         "--split", type=str, default=None,
         help="Split CSV path providing the fold column (e.g. "
-             "data/processed/df_all_with_folds_rob-h2.csv). Default: config "
+             "data/processed/df_all_with_folds_updated_h2.csv). Default: config "
              "SPLIT_DATA_PATH. Feature CSVs join positionally, so the file "
              "must have the same rows/order as the canonical split.",
     )
