@@ -15,10 +15,18 @@ set_working_directory()
 #         Negative -> 0  (agreed with user 2026-11-09).
 # ============================================================================
 
+# Window width from FLANK_SIZE (5 = 19-mer default, 10 = legacy 29-mer);
+# Assarsson is HLA-A*02:01 only -> flat 0201 paths, no pp() needed.
+FLANK_SIZE <- as.integer(Sys.getenv("FLANK_SIZE", "5"))
+if (!FLANK_SIZE %in% c(5L, 10L)) {
+  stop("FLANK_SIZE must be 5 or 10, got: ", Sys.getenv("FLANK_SIZE"))
+}
+cat("FLANK_SIZE =", FLANK_SIZE, "->", 2 * FLANK_SIZE + 9, "-mer window\n\n")
+
 POSITION_COLS <- c(
-  paste0("N", 10:1),    # N10..N1
-  paste0("P", 1:9),     # P1..P9
-  paste0("C", 1:10)     # C1..C10
+  paste0("N", FLANK_SIZE:1),   # N{L}..N1
+  paste0("P", 1:9),            # P1..P9
+  paste0("C", 1:FLANK_SIZE)    # C1..C{L}
 )
 
 # ----------------------------------------------------------------------------
@@ -127,8 +135,8 @@ stopifnot("unexpected row loss in position validation" = nrow(df_pos) >= 100)
 
 cat("\n=== STEP 4: Extract flanking regions ===\n")
 
-N_FLANK_SIZE <- 10
-C_FLANK_SIZE <- 10
+N_FLANK_SIZE <- FLANK_SIZE
+C_FLANK_SIZE <- FLANK_SIZE
 
 df_with_flanks <- df_pos |>
   extract_flanking_regions(
@@ -154,8 +162,9 @@ df_with_flanks <- df_pos |>
 cat("Row count:", nrow(df_with_flanks), "\n")
 stopifnot("peptide lengths must be 9 or 10" =
             all(nchar(df_with_flanks$peptide) %in% c(9, 10)))
-stopifnot("full_context must be 29 (9mers) or 30 (10mers) chars" =
-            all(nchar(df_with_flanks$full_context) %in% c(29, 30)))
+stopifnot("full_context must be 2*L+9 (9mers) or 2*L+10 (10mers) chars" =
+            all(nchar(df_with_flanks$full_context) %in%
+                  c(2 * FLANK_SIZE + 9, 2 * FLANK_SIZE + 10)))
 stopifnot("n_flank_raw must contain no X" =
             !any(grepl("X", df_with_flanks$n_flank_raw)))
 stopifnot("c_flank_raw must contain no X" =
