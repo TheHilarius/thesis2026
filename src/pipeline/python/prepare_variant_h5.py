@@ -172,6 +172,11 @@ def main() -> None:
     ap.add_argument("--variant", required=True, help="variant name")
     ap.add_argument("--only", action="append", default=None,
                     help="subset only these prepared stems (repeatable)")
+    ap.add_argument("--source-tag", default=None,
+                    help="subset DERIVED prepared files *_prepared_<tag>.h5 "
+                         "(e.g. flank5) instead of the base files. Output "
+                         "drops the tag prefix: variant flank5_rmdup from "
+                         "*_prepared_flank5.h5 -> *_prepared_flank5_rmdup.h5.")
     ap.add_argument("--chunk", type=int, default=512)
     args = ap.parse_args()
 
@@ -183,18 +188,30 @@ def main() -> None:
           f"base rows {base_n}, mask covers {base_idx.min()}..{base_idx.max()} "
           f"(ordered: {np.all(np.diff(base_idx) > 0)})")
 
-    base_files = sorted(
-        p for p in PREPARED_DIR.glob("*_prepared.h5")
-        if not any(m in p.name for m in DERIVED_MARKERS)
-    )
+    if args.source_tag:
+        # derived source (e.g. flank5 prepared, 19-slot): dst = source stem
+        # + variant minus the tag prefix (flank5_rmdup -> "_rmdup")
+        suffix = args.variant
+        pre = args.source_tag + "_"
+        if suffix.startswith(pre):
+            suffix = suffix[len(pre):]
+        base_files = sorted(
+            PREPARED_DIR.glob(f"*_prepared_{args.source_tag}.h5"))
+        dst_for = lambda src: src.with_name(f"{src.stem}_{suffix}.h5")
+    else:
+        base_files = sorted(
+            p for p in PREPARED_DIR.glob("*_prepared.h5")
+            if not any(m in p.name for m in DERIVED_MARKERS)
+        )
+        dst_for = lambda src: Path(variant_name(str(src), args.variant))
     if args.only:
         base_files = [p for p in base_files
                       if any(o in p.name for o in args.only)]
     if not base_files:
-        sys.exit("FATAL: no base prepared files matched")
+        sys.exit("FATAL: no prepared files matched")
 
     for src in base_files:
-        dst = Path(variant_name(str(src), args.variant))
+        dst = dst_for(src)
         print(f"\n{src.name} -> {dst.name}")
         subset_file(src, dst, base_idx, vdf, args.chunk, base_n)
         print(f"  wrote {dst.name} ({dst.stat().st_size / 1e9:.2f} GB)")

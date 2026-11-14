@@ -14,6 +14,13 @@ Rules (selected by --variant):
                         Same peptide with DIFFERENT flanks is allowed and
                         kept.
 
+    flank5_rmdup       remove_dup_windows rule applied at 19-mer width,
+                        sourced from df_all_flank5.csv. Drops 1,339 rows
+                        (46,617 -> 45,278): byte-identical 19-mer model
+                        inputs collapse; a strict subset of the 29-mer
+                        remove_dup_windows row set, and free of duplicate
+                        29-mers as well.
+
 Also filters every per-peptide encoding CSV with the identical row mask
 (same order) so load_alternate_csv()'s strict row-alignment check in
 04_modelling stays satisfied.
@@ -65,9 +72,12 @@ def dup_window_mask(df: pd.DataFrame) -> pd.Series:
 
 
 RULES = {
-    "remove715negonly": (orphan_mask, 2271),
-    "remove_dup_windows": (dup_window_mask, 1107),
+    "remove715negonly": (orphan_mask, 2271, "df_all.csv"),
+    "remove_dup_windows": (dup_window_mask, 1107, "df_all.csv"),
+    "flank5_rmdup": (dup_window_mask, 1339, "df_all_flank5.csv"),
 }
+# variants whose source (and encoding CSVs) are the flank5/19-mer set
+FLANK5_SRC = {"flank5_rmdup"}
 
 
 def main() -> None:
@@ -80,10 +90,10 @@ def main() -> None:
                          "guards against upstream drift)")
     args = ap.parse_args()
 
-    mask_fn, default_expect = RULES[args.variant]
+    mask_fn, default_expect, src_name = RULES[args.variant]
     expect = args.expect_dropped if args.expect_dropped is not None else default_expect
 
-    src = DATA_DIR / "df_all.csv"
+    src = DATA_DIR / src_name
     df = pd.read_csv(src)
     print(f"Loaded {src.name}: {len(df)} rows, {df['uniprot_id'].nunique()} proteins, rule={args.variant}")
 
@@ -130,8 +140,10 @@ def main() -> None:
     # Encoding CSVs: identical mask, strict peptide+label alignment to df_all
     for name in ENCODING_CSVS:
         enc_path = DATA_DIR / name
+        if args.variant in FLANK5_SRC:
+            enc_path = DATA_DIR / name.replace(".csv", "_flank5.csv")
         if not enc_path.exists():
-            print(f"  skip {name} (not found)")
+            print(f"  skip {enc_path.name} (not found)")
             continue
         enc = pd.read_csv(enc_path)
         assert len(enc) == len(df), f"{name}: row count {len(enc)} != {len(df)}"
