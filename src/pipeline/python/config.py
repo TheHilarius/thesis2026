@@ -624,7 +624,10 @@ _EXCLUDE_COLS = set(METADATA_COLS) | set(POSITION_AA_COLS)
 # ──────────────────────────────────────────────
 # CLUSTERING
 # ──────────────────────────────────────────────
-HAMMING_CUTOFF = 1
+HAMMING_CUTOFF = 1   # peptide-mode default (legacy; also canonical-vs-marked
+                     # naming discriminator — NEVER point this at window c)
+WINDOW_CUTOFF = 5    # context-mode default: chosen window cutoff (sweep c=5,
+                     # pepcut1 rule; indistinguishable from c1-4 after Holm)
 
 # ──────────────────────────────────────────────
 # FEATURE COMPONENTS (atomic building blocks)
@@ -1260,6 +1263,7 @@ def validate_config():
     assert N_CV_FOLDS >= 2, f"Need at least 2 CV folds, got {N_CV_FOLDS}"
     assert HELD_OUT_INDEX == N_CV_FOLDS, "HELD_OUT_INDEX must equal N_CV_FOLDS"
     assert HAMMING_CUTOFF >= 0, "HAMMING_CUTOFF must be non-negative"
+    assert WINDOW_CUTOFF in range(1, 10), "WINDOW_CUTOFF must be 1..9"
 
     if not RAW_DATA_PATH.exists():
         print(f"WARNING: Data file not found: {RAW_DATA_PATH}")

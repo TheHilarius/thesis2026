@@ -14,18 +14,15 @@
   }
 
   IEDB_RAW <- if (ALLELE_TAG == "hla0201")
-    "data/raw/iedb_200K_EL_epitopes.csv"
-  else
+    "data/raw/iedb_200K_EL_epitopes.csv" else
     "data/raw/mhc_ligand_table_export_HLA-A0101.csv"
 
   OUT_POS <- if (ALLELE_TAG == "hla0201")
-    "data/processed/pos_EL_all_epitopes_hla0201.csv"
-  else
+    "data/processed/pos_EL_all_epitopes_hla0201.csv" else
     "data/processed/hla_a0101/pos_EL_all_epitopes_hla_a0101.csv"
 
   OUT_STAGES <- if (ALLELE_TAG == "hla0201")
-    "data/processed/iedb_stage_counts.csv"
-  else
+    "data/processed/iedb_stage_counts.csv" else
     "data/processed/hla_a0101/iedb_stage_counts.csv"
 
   if (ALLELE_TAG == "hla_a0101") dir.create("data/processed/hla_a0101", recursive = TRUE, showWarnings = FALSE)

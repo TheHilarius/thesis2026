@@ -60,7 +60,7 @@ import time
 from config import (
     DATA_DIR, RAW_DATA_PATH, SPLIT_DATA_PATH, LOG_DIR,
     N_CV_FOLDS, HELD_OUT_INDEX, N_BUCKETS, RANDOM_STATE,
-    PEPTIDE_COL, LABEL_COL, FOLD_COL, HAMMING_CUTOFF,
+    PEPTIDE_COL, LABEL_COL, FOLD_COL, HAMMING_CUTOFF, WINDOW_CUTOFF,
     validate_config,
 )
 
@@ -875,9 +875,11 @@ if __name__ == "__main__":
 
     ap = argparse.ArgumentParser(
         description="Homology-based data splitting for MHC-I processing prediction.")
-    ap.add_argument("--hamming-cutoff", type=int, default=HAMMING_CUTOFF,
+    ap.add_argument("--hamming-cutoff", type=int, default=None,
                     help="cluster keys at DIRECT Hamming distance <= this "
-                         "cutoff (1-9). Default: config HAMMING_CUTOFF (%(default)s).")
+                         "cutoff (1-9). Default: config HAMMING_CUTOFF (1) "
+                         "in peptide mode, config WINDOW_CUTOFF (5) in "
+                         "context mode (chosen setting).")
     ap.add_argument("--sweep", default=None,
                     help="comma-separated cutoffs to generate in one run, "
                          "e.g. 1,2,3 — one marked split file per cutoff "
@@ -905,6 +907,12 @@ if __name__ == "__main__":
                          "default invocation (peptide, config cutoff, no sweep).")
     args = ap.parse_args()
 
+    group_by = args.group_by
+    if args.hamming_cutoff is None:
+        # mode-dependent default: legacy peptide cutoff vs chosen window cutoff
+        args.hamming_cutoff = (HAMMING_CUTOFF if group_by == "peptide"
+                               else WINDOW_CUTOFF)
+
     if args.sweep is not None:
         if args.split_out:
             ap.error("--split-out cannot be combined with --sweep "
@@ -925,7 +933,6 @@ if __name__ == "__main__":
                      "(growing-block pigeonhole index is complete up to 9)")
         cutoffs = [args.hamming_cutoff]
 
-    group_by = args.group_by
     pep_cutoff = args.pep_cutoff
     key_col = PEPTIDE_COL if group_by == "peptide" else "full_context"
     key_label = "peptide" if group_by == "peptide" else "window"

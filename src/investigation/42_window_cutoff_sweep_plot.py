@@ -128,7 +128,8 @@ def main() -> None:
     footnote = ("flank5_rmdup (19aa dedup, n=45,278); XGB+BLOSUM50 nested CV, 6 folds; "
                 "pepcut1 fixed (pep-ham<=1 ∪ identical-flank ∪ window-c); paired DeLong "
                 "c1-vs-c4..c8 on identical rows, Holm over 5 displayed pairs; "
-                "no significant AUC change up to c=8 (p_adj printed per bracket).")
+                "no significant AUC change up to c=8 (p_adj printed per bracket); "
+                "chosen setting c=5 (last point before any downward drift).")
     d18._finish_padmode(
         fig, ax,
         "Window-Hamming sweep at 19aa: does the full-context cutoff matter?",

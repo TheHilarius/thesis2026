@@ -646,7 +646,8 @@ extract_nsp3_windows <- function(uniprot_id,
                                  nflank_start, nflank_end,
                                  pep_start,    pep_end,
                                  cflank_start, cflank_end,
-                                 nsp3_split) {
+                                 nsp3_split,
+                                 flank_size = as.integer(Sys.getenv("FLANK_SIZE", "5"))) {
   
   na_row <- tibble(
     mean_rsa_peptide = NA_real_, mean_disorder_peptide = NA_real_,
@@ -670,11 +671,11 @@ extract_nsp3_windows <- function(uniprot_id,
     res[0, ]
   }
   
-  # Aggregate each window (impute flanks to 10; peptide always 9 real)
-  pep_feats    <- aggregate_nsp3_window(pep_rows,    target_len = 9,  pad_side = "none")
-  nflank_feats <- aggregate_nsp3_window(nflank_rows, target_len = 10, pad_side = "left",
+  # Aggregate each window (impute flanks to FLANK_SIZE; peptide always 9 real)
+  pep_feats    <- aggregate_nsp3_window(pep_rows,    target_len = 9, pad_side = "none")
+  nflank_feats <- aggregate_nsp3_window(nflank_rows, target_len = flank_size, pad_side = "left",
                                         fallback = if (nrow(pep_rows) > 0) pep_rows[1, ] else NULL)
-  cflank_feats <- aggregate_nsp3_window(cflank_rows, target_len = 10, pad_side = "right",
+  cflank_feats <- aggregate_nsp3_window(cflank_rows, target_len = flank_size, pad_side = "right",
                                         fallback = if (nrow(pep_rows) > 0) pep_rows[nrow(pep_rows), ] else NULL)
   
   # Add suffix so columns don't clash
@@ -1166,7 +1167,8 @@ extract_nsp3_q8_features <- function(uniprot_id,
                                      nflank_start, nflank_end,
                                      pep_start, pep_end,
                                      cflank_start, cflank_end,
-                                     nsp3_split) {
+                                     nsp3_split,
+                                     flank_size = as.integer(Sys.getenv("FLANK_SIZE", "5"))) {
   
   nsp3_prot <- nsp3_split[[uniprot_id]]
   if (is.null(nsp3_prot)) return(make_na_result())
@@ -1178,15 +1180,16 @@ extract_nsp3_q8_features <- function(uniprot_id,
   
   nflank_block <- impute_q8_block(
     extract_q8_matrix(nsp3_prot, nflank_start, nflank_end),
-    target_rows = 10, pad_side = "left",
+    target_rows = flank_size, pad_side = "left",
     fallback_row = pep_mat[1, ])
   cflank_block <- impute_q8_block(
     extract_q8_matrix(nsp3_prot, cflank_start, cflank_end),
-    target_rows = 10, pad_side = "right",
+    target_rows = flank_size, pad_side = "right",
     fallback_row = pep_mat[nrow(pep_mat), ])
   
   mat_full <- rbind(nflank_block, pep_mat, cflank_block)
-  compute_q8_full_context(mat_full, n_nflank = 10, n_peptide = nrow(pep_mat), n_cflank = 10)
+  compute_q8_full_context(mat_full, n_nflank = flank_size, n_peptide = nrow(pep_mat),
+                          n_cflank = flank_size)
 }
 
 #  Cliff's Delta (overflow-safe, chunked computation) 
