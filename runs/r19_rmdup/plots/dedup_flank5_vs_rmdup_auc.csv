@@ -1,0 +1,4 @@
+dataset,auc_full,auc_common_subset,n_rows,json
+flank5,0.767663,0.770094,46617,cv_results_xgb_blosum50_flat_20261113_152049.json
+flank5_rmdup,0.770618,0.770623,45278,cv_results_xgb_blosum50_flat_20261113_225654.json
+de_long_common,-0.000529,z=-0.5846,p=0.558807,p_adj=0.558807

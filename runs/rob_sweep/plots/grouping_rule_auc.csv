@@ -1,0 +1,10 @@
+rule,dataset,auc_mean,auc_std
+"canonical pep-ham≤1 only",base 29aa,0.763271,0.004409
+"canonical pep-ham≤1 only",flank5 19aa,,
+"canonical pep-ham≤1 only",dedup 29aa,0.764657,0.006486
+"updated (pepcut1) pep≤1 ∪ flank-id ∪ win-c",base 29aa,0.761497,0.005875
+"updated (pepcut1) pep≤1 ∪ flank-id ∪ win-c",flank5 19aa,0.767663,0.002367
+"updated (pepcut1) pep≤1 ∪ flank-id ∪ win-c",dedup 29aa,0.766559,0.004163
+"ablation (pepcut2) pep≤2 ∪ flank-id ∪ win-c",base 29aa,0.759512,0.004582
+"ablation (pepcut2) pep≤2 ∪ flank-id ∪ win-c",flank5 19aa,0.766340,0.004038
+"ablation (pepcut2) pep≤2 ∪ flank-id ∪ win-c",dedup 29aa,0.761474,0.003755

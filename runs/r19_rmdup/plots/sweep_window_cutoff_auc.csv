@@ -1,0 +1,14 @@
+window_cutoff,auc_mean,auc_std,run,json
+1,0.770618,0.006768,pc1,cv_results_xgb_blosum50_flat_20261113_225654.json
+2,0.770618,0.006768,pc1,cv_results_xgb_blosum50_flat_20261113_225654.json
+3,0.770618,0.006768,pc1,cv_results_xgb_blosum50_flat_20261113_225654.json
+4,0.770925,0.005440,h4,cv_results_xgb_blosum50_flat_20261114_000733.json
+5,0.770168,0.004769,h5,cv_results_xgb_blosum50_flat_20261114_001939.json
+6,0.768816,0.006517,h6,cv_results_xgb_blosum50_flat_20261114_004521.json
+7,0.769868,0.005265,h7,cv_results_xgb_blosum50_flat_20261114_005329.json
+8,0.768497,0.004649,h8,cv_results_xgb_blosum50_flat_20261114_010452.json
+de_long_c1_vs_c4,,,p=0.748438,p_adj=1.000000
+de_long_c1_vs_c5,,,p=0.601708,p_adj=1.000000
+de_long_c1_vs_c6,,,p=0.043380,p_adj=0.173521
+de_long_c1_vs_c7,,,p=0.398898,p_adj=1.000000
+de_long_c1_vs_c8,,,p=0.019726,p_adj=0.098630

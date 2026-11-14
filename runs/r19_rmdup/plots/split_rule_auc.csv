@@ -1,0 +1,4 @@
+rule,auc_mean,auc_std,split_file,json
+"canonical pep-ham<=1 only",0.772674,0.007246,df_all_with_folds_flank5_rmdup.csv,cv_results_xgb_blosum50_flat_20261113_224901.json
+"updated pepcut1",0.770618,0.006768,df_all_with_folds_flank5_rmdup_updated_h1_pepcut1.csv,cv_results_xgb_blosum50_flat_20261113_225654.json
+de_long,-0.002007,z=-2.1992,p=0.027862,p_adj=0.027862
