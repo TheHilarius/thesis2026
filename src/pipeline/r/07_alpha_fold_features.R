@@ -2,13 +2,23 @@ library(tidyverse)
 source("src/pipeline/r/functions.R")
 set_working_directory()
 
+# ── Allele + window-width switch (paths/params only; logic untouched) ─────────
+# Usage: Rscript src/pipeline/r/07_alpha_fold_features.R [hla0201|hla_a0101]
+ALLELE_TAG <- parse_allele_arg()
+FLANK_SIZE <- as.integer(Sys.getenv("FLANK_SIZE", "5"))
+if (!FLANK_SIZE %in% c(5L, 10L)) {
+  stop("FLANK_SIZE must be 5 or 10, got: ", Sys.getenv("FLANK_SIZE"))
+}
+cat("=== Allele:", ALLELE_TAG, "| FLANK_SIZE:", FLANK_SIZE, "->",
+    2 * FLANK_SIZE + 9, "-mer window ===\n")
+
 # ── 0. Config ─────────────────────────────────────────────────────────────────
 # During development, point at the single test file folder
 # Later just change this path to the full alphafold directory
 af_dirs <- "data/processed/structures/alphafold/"
 
 # ── 1. Load peptide table ─────────────────────────────────────────────────────
-df_raw <- read_csv("data/processed/epitopes_pos_and_neg_features_with_nsp3.csv")
+df_raw <- read_csv(pp("epitopes_pos_and_neg_features_with_nsp3.csv", ALLELE_TAG))
 
 df_peptides <- df_raw |>
   select(peptide, n_flank, c_flank, full_context, uniprot_id, start, end,
@@ -140,11 +150,11 @@ alphafold_features <- df_af_clean |>
     ),
     plddt_vec_nflank = pmap(
       list(uniprot_id, nflank_start, nflank_end, plddt_p1),
-      \(uid, s, e, fb) extract_plddt_imputed(uid, s, e, plddt_lookup_split, 10, "left", fb)
+      \(uid, s, e, fb) extract_plddt_imputed(uid, s, e, plddt_lookup_split, FLANK_SIZE, "left", fb)
     ),
     plddt_vec_cflank = pmap(
       list(uniprot_id, cflank_start, cflank_end, plddt_p9),
-      \(uid, s, e, fb) extract_plddt_imputed(uid, s, e, plddt_lookup_split, 10, "right", fb)
+      \(uid, s, e, fb) extract_plddt_imputed(uid, s, e, plddt_lookup_split, FLANK_SIZE, "right", fb)
     ),
 
     # ── Scalar summaries: mean per region ──────────────────────────
@@ -212,11 +222,56 @@ cat("Rows with pLDDT data:", sum(!is.na(df_all$mean_plddt_peptide)), "\n")
 cat("Rows without pLDDT (removed proteins or no AF file):",
     sum(is.na(df_all$mean_plddt_peptide)), "\n")
 
-write_csv(df_all, "data/processed/df_all.csv")
-saveRDS(alphafold_features,
-        "data/processed/alphafold_plddt_features_with_vectors.rds")
+# ── Dedup identical context windows (one row per window) ──
+# Window carries both labels -> keep the positive; else keep first row.
+# Same peptide with DIFFERENT flanks is kept. Rule == make_variant_dataset.py
+# --variant remove_dup_windows (row-identical to the Python reference).
+n_before_dedup <- nrow(df_all)
+ctx <- df_all$full_context
+is_pos <- df_all$label == 1
 
-cat("\nSaved:\n  data/processed/df_all.csv (all features, scalar only)\n  data/processed/alphafold_plddt_features_with_vectors.rds (full vectors)\n")
+first_any <- !duplicated(ctx)
+first_pos <- rep(FALSE, n_before_dedup)
+first_pos[which(is_pos)[!duplicated(ctx[is_pos])]] <- TRUE
+has_pos <- ctx %in% unique(ctx[is_pos])
+keep <- ifelse(has_pos, first_pos, first_any)
+
+df_all <- df_all[keep, ]
+
+n_dropped <- n_before_dedup - nrow(df_all)
+cat("Context-window dedup: dropped", n_dropped, "rows (",
+    n_before_dedup, "->", nrow(df_all), ")\n")
+cat("  label balance:", sum(df_all$label == 1), "pos /",
+    sum(df_all$label == 0), "neg\n")
+
+# Hard guards (any allele):
+stopifnot("duplicate context windows remain" =
+            !any(duplicated(df_all$full_context)))
+win_len <- 2 * FLANK_SIZE + 9
+if (!all(nchar(df_all$full_context) == win_len)) {
+  stop("full_context must be ", win_len, " chars after dedup — got widths: ",
+       paste(sort(unique(nchar(df_all$full_context))), collapse = ", "))
+}
+# 0201 row pins (Python references: df_all_remove_dup_windows @29,
+# flank5_rmdup @19)
+if (ALLELE_TAG == "hla0201") {
+  if (FLANK_SIZE == 10L) {
+    stopifnot("0201/29mer rows" = n_before_dedup == 46617L &&
+                nrow(df_all) == 45510L && n_dropped == 1107L)
+  } else {
+    stopifnot("0201/19mer rows" = n_before_dedup == 46617L &&
+                nrow(df_all) == 45278L && n_dropped == 1339L)
+  }
+}
+
+write_csv(df_all, pp("df_all.csv", ALLELE_TAG))
+saveRDS(alphafold_features,
+        pp("alphafold_plddt_features_with_vectors.rds", ALLELE_TAG))
+
+cat("\nSaved:\n  ", pp("df_all.csv", ALLELE_TAG),
+    " (all features, scalar only)\n  ",
+    pp("alphafold_plddt_features_with_vectors.rds", ALLELE_TAG),
+    " (full vectors)\n", sep = "")
 
 # ============================================================================
 # MISSINGNESS REPORT: Final dataset quality summary
@@ -281,7 +336,7 @@ df_missingness <- tibble(
   missing_pct = round(missing_n / total * 100, 1)
 )
 
-write_csv(df_missingness, "data/processed/missingness_report.csv")
-cat("\nSaved: data/processed/missingness_report.csv\n")
+write_csv(df_missingness, pp("missingness_report.csv", ALLELE_TAG))
+cat("\nSaved: ", pp("missingness_report.csv", ALLELE_TAG), "\n", sep = "")
 print(df_missingness, n = Inf)
 

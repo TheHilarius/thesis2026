@@ -2,15 +2,35 @@ library(tidyverse)
 source("src/pipeline/r/functions.R")
 set_working_directory()
 
+# ── Allele + window-width switch (paths/params only; logic untouched) ─────────
+# Usage: Rscript src/pipeline/r/08_aa_encoding.R [hla0201|hla_a0101]
+ALLELE_TAG <- parse_allele_arg()
+FLANK_SIZE <- as.integer(Sys.getenv("FLANK_SIZE", "5"))
+if (!FLANK_SIZE %in% c(5L, 10L)) {
+  stop("FLANK_SIZE must be 5 or 10, got: ", Sys.getenv("FLANK_SIZE"))
+}
+cat("=== Allele:", ALLELE_TAG, "| FLANK_SIZE:", FLANK_SIZE, "->",
+    2 * FLANK_SIZE + 9, "-mer window ===\n")
+
 POSITION_COLS <- c(
-  paste0("N", 10:1),    # N10, N9, ..., N2, N1   (left → right toward the cut)
-  paste0("P", 1:9),     # P1..P9
-  paste0("C", 1:10)     # C1..C10
+  paste0("N", FLANK_SIZE:1),   # N{L}..N1   (left → right toward the cut)
+  paste0("P", 1:9),            # P1..P9
+  paste0("C", 1:FLANK_SIZE)    # C1..C{L}
 )
+
+# Allele anchor residues for the sanity checks (P2-P9 anchor map):
+#   0201: P2 L/M, P9 V/L   |   0101: P2 V/I/T/M, P9 D/E/Y
+ANCHOR_MAP <- list(
+  hla0201   = list(label = "HLA-A*02:01",
+                   p2 = c("L", "M"), p9 = c("V", "L")),
+  hla_a0101 = list(label = "HLA-A*01:01",
+                   p2 = c("V", "I", "T", "M"), p9 = c("D", "E", "Y"))
+)
+ANCH <- ANCHOR_MAP[[ALLELE_TAG]]
 
 # AA_ORDER (with X) comes from functions.R
 
-df_raw <- read_csv("data/processed/df_all.csv", show_col_types = FALSE)
+df_raw <- read_csv(pp("df_all.csv", ALLELE_TAG), show_col_types = FALSE)
 
 cat("Input dimensions:", nrow(df_raw), "x", ncol(df_raw), "\n")
 
@@ -112,10 +132,10 @@ for (enc in names(ENCODINGS)) {
     features
   )
   
-  write_csv(df_solo, paste0("data/processed/df_", enc, ".csv"))
-  cat("Saved: data/processed/df_", enc, ".csv\n", sep = "")
-  write_csv(df_all, paste0("data/processed/df_all_", enc, ".csv"))
-  cat("Saved: data/processed/df_all_", enc, ".csv\n", sep = "")
+  write_csv(df_solo, pp(paste0("df_", enc, ".csv"), ALLELE_TAG))
+  cat("Saved: ", pp(paste0("df_", enc, ".csv"), ALLELE_TAG), "\n", sep = "")
+  write_csv(df_all, pp(paste0("df_all_", enc, ".csv"), ALLELE_TAG))
+  cat("Saved: ", pp(paste0("df_all_", enc, ".csv"), ALLELE_TAG), "\n", sep = "")
 }
 
 # =============================================================================
@@ -149,8 +169,8 @@ df_all_comp <- bind_cols(
   df_raw |> select(all_of(non_position_cols)),
   comp_features
 )
-write_csv(df_all_comp, "data/processed/df_all_compositional.csv")
-cat("Saved: data/processed/df_all_compositional.csv\n")
+write_csv(df_all_comp, pp("df_all_compositional.csv", ALLELE_TAG))
+cat("Saved: ", pp("df_all_compositional.csv", ALLELE_TAG), "\n", sep = "")
 
 # Solo CSV: frac_* + peptide/label keys (keys enable 04_modelling's
 # row-alignment check; they are not model features)
@@ -158,23 +178,25 @@ df_comp_solo <- bind_cols(
   df_raw |> select(peptide, label),
   comp_features
 )
-write_csv(df_comp_solo, "data/processed/df_compositional.csv")
-cat("Saved: data/processed/df_compositional.csv\n")
+write_csv(df_comp_solo, pp("df_compositional.csv", ALLELE_TAG))
+cat("Saved: ", pp("df_compositional.csv", ALLELE_TAG), "\n", sep = "")
 
 # =============================================================================
 # SANITY CHECK — Anchor positions (HLA-A*02:01)
 # =============================================================================
 
-cat("\n--- Anchor Position Sanity Check (HLA-A*02:01) ---\n")
+cat("\n--- Anchor Position Sanity Check (", ANCH$label, ") ---\n", sep = "")
 
 anchor_check <- df_raw |>
   mutate(label_str = if_else(label == 1, "positive", "negative")) |>
   group_by(label_str) |>
   summarise(
-    P2_L = mean(P2 == "L", na.rm = TRUE),
-    P2_M = mean(P2 == "M", na.rm = TRUE),
-    P9_V = mean(P9 == "V", na.rm = TRUE),
-    P9_L = mean(P9 == "L", na.rm = TRUE),
+    !!!set_names(
+      lapply(ANCH$p2, \(a) rlang::expr(mean(P2 == !!a, na.rm = TRUE))),
+      paste0("P2_", ANCH$p2)),
+    !!!set_names(
+      lapply(ANCH$p9, \(a) rlang::expr(mean(P9 == !!a, na.rm = TRUE))),
+      paste0("P9_", ANCH$p9)),
     .groups = "drop"
   ) |>
   mutate(across(where(is.numeric), \(x) round(x, 3)))
@@ -188,9 +210,14 @@ blosum_anchor <- dfs_all[["blosum50"]] |>
   mutate(label_str = if_else(label == 1, "positive", "negative")) |>
   group_by(label_str) |>
   summarise(
-    P2_self = mean(P2_L, na.rm = TRUE),
-    P9_self_V = mean(P9_V, na.rm = TRUE),
-    P9_self_L = mean(P9_L, na.rm = TRUE),
+    !!!set_names(
+      lapply(paste0("P2_", ANCH$p2),
+             function(cn) rlang::expr(mean(.data[[!!cn]], na.rm = TRUE))),
+      paste0("P2_self_", ANCH$p2)),
+    !!!set_names(
+      lapply(paste0("P9_", ANCH$p9),
+             function(cn) rlang::expr(mean(.data[[!!cn]], na.rm = TRUE))),
+      paste0("P9_self_", ANCH$p9)),
     .groups = "drop"
   ) |>
   mutate(across(where(is.numeric), \(x) round(x, 3)))
@@ -223,5 +250,6 @@ cat("df_all_<enc>.csv: encoded columns + all non-position columns.\n")
 cat("Column naming: {position}_{aa} for sparse/BLOSUMs, {position}_KF*/AF* for\n")
 cat("kidera/atchley, e.g. P2_L, N4_A, P2_KF1, C1_AF3.\n")
 cat("NAs encoded as all-zero vectors; X is a real token (own column/row).\n")
-cat("compositional: frac_<aa> = count of aa across 29 positions / 29\n")
+cat("compositional: frac_<aa> = count of aa across",
+    length(POSITION_COLS), "positions /", length(POSITION_COLS), "\n")
 cat("(X = flank pad, so frac_X is the pad fraction).\n")

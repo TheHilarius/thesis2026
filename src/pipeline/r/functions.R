@@ -480,7 +480,8 @@ extract_flanking_regions <- function(data,
 extract_cleavage_positions <- function(data,
                                        peptide_col = "peptide",
                                        n_flank_col = "n_flank",
-                                       c_flank_col = "c_flank") {
+                                       c_flank_col = "c_flank",
+                                       flank_size = as.integer(Sys.getenv("FLANK_SIZE", "5"))) {
   #' Extract specific amino acid positions at N-terminal and C-terminal cleavage sites
   #'
   #' Uses Schechter-Berger nomenclature to extract the amino acids at key
@@ -501,7 +502,24 @@ extract_cleavage_positions <- function(data,
               NA_character_)
     )
   }
-  
+  # Helper to build C-position columns (left-to-right away from the cut)
+  make_c_pos <- function(i) {
+    rlang::expr(
+      if_else(c_flank_len >= !!i,
+              substr(.data[[c_flank_col]], !!i, !!i),
+              NA_character_)
+    )
+  }
+  if (!flank_size %in% c(5L, 10L)) {
+    stop("extract_cleavage_positions: flank_size must be 5 or 10, got ",
+         flank_size)
+  }
+  # N{L}..N1 (left -> right toward the cut) and C1..C{L}
+  n_pos_exprs <- rlang::set_names(
+    lapply(seq(flank_size, 1), make_n_pos), paste0("N", seq(flank_size, 1)))
+  c_pos_exprs <- rlang::set_names(
+    lapply(seq_len(flank_size), make_c_pos), paste0("C", seq_len(flank_size)))
+
   data |>
     mutate(
       # Store lengths for indexing
@@ -509,19 +527,8 @@ extract_cleavage_positions <- function(data,
       n_flank_len = nchar(.data[[n_flank_col]]),
       c_flank_len = nchar(.data[[c_flank_col]])
     ) |>
-    # N-flank positions: N10, N9, ..., N2, N1 (reading left to right toward the cut)
-    mutate(
-      N10 = if_else(n_flank_len >= 10, substr(.data[[n_flank_col]], n_flank_len - 9, n_flank_len - 9), NA_character_),
-      N9  = if_else(n_flank_len >= 9,  substr(.data[[n_flank_col]], n_flank_len - 8, n_flank_len - 8), NA_character_),
-      N8  = if_else(n_flank_len >= 8,  substr(.data[[n_flank_col]], n_flank_len - 7, n_flank_len - 7), NA_character_),
-      N7  = if_else(n_flank_len >= 7,  substr(.data[[n_flank_col]], n_flank_len - 6, n_flank_len - 6), NA_character_),
-      N6  = if_else(n_flank_len >= 6,  substr(.data[[n_flank_col]], n_flank_len - 5, n_flank_len - 5), NA_character_),
-      N5  = if_else(n_flank_len >= 5,  substr(.data[[n_flank_col]], n_flank_len - 4, n_flank_len - 4), NA_character_),
-      N4  = if_else(n_flank_len >= 4,  substr(.data[[n_flank_col]], n_flank_len - 3, n_flank_len - 3), NA_character_),
-      N3  = if_else(n_flank_len >= 3,  substr(.data[[n_flank_col]], n_flank_len - 2, n_flank_len - 2), NA_character_),
-      N2  = if_else(n_flank_len >= 2,  substr(.data[[n_flank_col]], n_flank_len - 1, n_flank_len - 1), NA_character_),
-      N1  = if_else(n_flank_len >= 1,  substr(.data[[n_flank_col]], n_flank_len,     n_flank_len),     NA_character_)
-    ) |>
+    # N-flank positions: N{L}..N1 (left -> right toward the cut)
+    mutate(!!!n_pos_exprs) |>
     # Peptide positions: P1 through P9
     mutate(
       P1 = substr(.data[[peptide_col]], 1, 1),
@@ -534,19 +541,8 @@ extract_cleavage_positions <- function(data,
       P8 = substr(.data[[peptide_col]], 8, 8),
       P9 = substr(.data[[peptide_col]], 9, 9)
     ) |>
-    # C-flank positions: C1, C2, ..., C10
-    mutate(
-      C1  = if_else(c_flank_len >= 1,  substr(.data[[c_flank_col]], 1,  1),  NA_character_),
-      C2  = if_else(c_flank_len >= 2,  substr(.data[[c_flank_col]], 2,  2),  NA_character_),
-      C3  = if_else(c_flank_len >= 3,  substr(.data[[c_flank_col]], 3,  3),  NA_character_),
-      C4  = if_else(c_flank_len >= 4,  substr(.data[[c_flank_col]], 4,  4),  NA_character_),
-      C5  = if_else(c_flank_len >= 5,  substr(.data[[c_flank_col]], 5,  5),  NA_character_),
-      C6  = if_else(c_flank_len >= 6,  substr(.data[[c_flank_col]], 6,  6),  NA_character_),
-      C7  = if_else(c_flank_len >= 7,  substr(.data[[c_flank_col]], 7,  7),  NA_character_),
-      C8  = if_else(c_flank_len >= 8,  substr(.data[[c_flank_col]], 8,  8),  NA_character_),
-      C9  = if_else(c_flank_len >= 9,  substr(.data[[c_flank_col]], 9,  9),  NA_character_),
-      C10 = if_else(c_flank_len >= 10, substr(.data[[c_flank_col]], 10, 10), NA_character_)
-    ) |>
+    # C-flank positions: C1..C{L}
+    mutate(!!!c_pos_exprs) |>
     # Remove temporary length columns
     select(-pep_len, -n_flank_len, -c_flank_len)
 }
@@ -1532,6 +1528,10 @@ matrix_encode_position <- function(df, pos_col, mat) {
 ALLELE_TAGS <- c("hla0201", "hla_a0101")
 
 parse_allele_arg <- function() {
+  # Runners (run_pipeline.R) set ALLELE_TAG for sourced steps; direct
+  # Rscript <script> [allele] keeps working (CLI -> env unset -> default).
+  env <- Sys.getenv("ALLELE_TAG")
+  if (nzchar(env)) return(match.arg(env, ALLELE_TAGS))
   args <- commandArgs(trailingOnly = TRUE)
   if (length(args) == 0) "hla0201" else match.arg(args[1], ALLELE_TAGS)
 }

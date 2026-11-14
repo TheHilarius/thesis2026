@@ -50,8 +50,13 @@ cat("Total epitopes perfectly matched to proteins:", nrow(df_merged), "\n")
 
 cat("\n=== EXTRACTING FLANKING REGIONS ===\n\n")
 
-N_FLANK_SIZE <- 10
-C_FLANK_SIZE <- 10
+FLANK_SIZE <- as.integer(Sys.getenv("FLANK_SIZE", "5"))
+if (!FLANK_SIZE %in% c(5L, 10L)) {
+  stop("FLANK_SIZE must be 5 or 10, got: ", Sys.getenv("FLANK_SIZE"))
+}
+N_FLANK_SIZE <- FLANK_SIZE
+C_FLANK_SIZE <- FLANK_SIZE
+cat("\nFLANK_SIZE =", FLANK_SIZE, "->", 2 * FLANK_SIZE + 9, "-mer window\n\n")
 
 df_with_flanks <- df_merged %>%
   extract_flanking_regions(
@@ -85,14 +90,17 @@ df_with_flanks <- df_with_flanks |>
 # --- Validations (zero row-dropping) ---
 cat("Row count:", nrow(df_with_flanks), "\n")
 
-stopifnot("full_context must be 29 chars" =
-            all(nchar(df_with_flanks$full_context) == 29))
+win_len <- 2 * FLANK_SIZE + 9
+if (!all(nchar(df_with_flanks$full_context) == win_len)) {
+  stop("full_context must be ", win_len, " chars — got widths: ",
+       paste(sort(unique(nchar(df_with_flanks$full_context))), collapse = ", "))
+}
 stopifnot("n_flank_raw must contain no X" =
             !any(grepl("X", df_with_flanks$n_flank_raw)))
 stopifnot("c_flank_raw must contain no X" =
             !any(grepl("X", df_with_flanks$c_flank_raw)))
 
-cat("  full_context length: 29 (all rows)\n")
+cat("  full_context length:", win_len, "(all rows)\n")
 cat("  n_flank_raw X-free: TRUE\n")
 cat("  c_flank_raw X-free: TRUE\n")
 cat("  n_pad_len range:", range(df_with_flanks$n_pad_len), "\n")
