@@ -15,28 +15,29 @@ Usage:
 
 --group-by context is a ROBUST split: one union-find over the union of
 three edge sets —
-    (A) window edges:     ham(full_context) <= c
-    (B) peptide edges:    ham(peptide) <= 1  (fixed, independent of c)
+    (A) window edges:     ham(full_context) <= c  (c up to 9: the
+                          pigeonhole index grows its block count with c)
+    (B) peptide edges:    ham(peptide) <= pep-cutoff (--pep-cutoff,
+                          default 1; independent of c)
     (C) flank edges:      EITHER flank byte-identical (n_flank equal OR
                           c_flank equal, X-padding included)
 GUARANTEES:
   - No window pair at distance <= c crosses folds.
-  - No peptide pair at distance <= 1 crosses folds.
+  - No peptide pair at distance <= pep-cutoff crosses folds.
   - No pair sharing an identical flank crosses folds (audit-41 rule).
-  - NOT guaranteed: peptide pairs at distance 2..c with divergent flanks
-    can still be split (that case is the canonical peptide-hc split).
-  Relations: pure-window-hc and peptide-h1 are both subsets of
+  - NOT guaranteed: peptide pairs beyond the cutoff with divergent flanks
+    can still be split.
+  Relations: pure-window-hc and peptide-pepcut are both subsets of
   robust-hc; robust-hc and peptide-hc are INCOMPARABLE (robust adds
-  flank-identity, peptide-hc adds far-flank pairs at distance 2..c).
-  At c=1, robust == peptide-h1 ∪ flank-identity.
+  flank-identity, peptide-hc adds far-flank pairs beyond the cutoff).
+  At c=1, robust == peptide-pepcut ∪ flank-identity.
 All three violations are checked HARD (FATAL + exit 1) after fold
 assignment.
 
-Outputs are additive marked files (e.g. df_all_with_folds_updated_h2.csv);
-the canonical df_all_with_folds.csv is only written by the default
-invocation (peptide grouping, cutoff == config HAMMING_CUTOFF, no sweep).
-Pure-window baseline files df_all_with_folds*_ctx-h*.csv are never
-overwritten (produced by src/pipeline/python/01_datasplit.py.ctx_baseline.bak).
+Outputs are additive marked files (e.g.
+df_all_with_folds_updated_h2_pepcut1.csv); the canonical
+df_all_with_folds.csv is only written by the default invocation
+(peptide grouping, cutoff == config HAMMING_CUTOFF, no sweep).
 """
 
 import argparse
@@ -136,20 +137,22 @@ NEIGHBOR_ALPHABET = AMINO_ACIDS + ["X"]
 def iter_close_pairs(peps, max_dist):
     """
     Yield (i, j) index pairs (i < j; a pair can be yielded more than
-    once when it shares several bucket keys) of peptides at DIRECT
-    Hamming distance <= max_dist, for max_dist in {2, 3}.
+    once when it shares several bucket keys) of strings at DIRECT
+    Hamming distance <= max_dist, for max_dist in {2..9}.
 
-    Pigeonhole candidate index: positions are split into 3 contiguous
-    blocks. Two strings at Hamming distance <= 3 mismatch in at most 3
-    positions, so at least one block has <= 1 mismatch. Indexing each
-    peptide per block by its exact block string plus every
-    single-position wildcard variant ('*') collects a superset of all
-    close pairs into shared buckets; every candidate pair is verified
-    with the true Hamming distance before being yielded.
+    Pigeonhole candidate index: positions are split into k contiguous
+    blocks, k = max(3, ceil((max_dist+1)/2)). Two strings at Hamming
+    distance <= max_dist = 2k-1 mismatch in at most 2k-1 positions, so
+    at least one block has <= 1 mismatch. Indexing each string per block
+    by its exact block string plus every single-position wildcard
+    variant ('*') collects a superset of all close pairs into shared
+    buckets; every candidate pair is verified with the true Hamming
+    distance before being yielded. (For max_dist <= 5 this reduces to
+    the original 3-block scheme, so existing cutoffs are unaffected.)
     """
-    if max_dist not in (2, 3):
+    if max_dist not in range(2, 10):
         raise ValueError(
-            f"iter_close_pairs supports max_dist 2 or 3, got {max_dist}")
+            f"iter_close_pairs supports max_dist 2..9, got {max_dist}")
     L = len(peps[0])
     if any(len(p) != L for p in peps):
         raise ValueError(
@@ -157,14 +160,15 @@ def iter_close_pairs(peps, max_dist):
     if L < 3:
         raise ValueError("Pigeonhole index needs at least 3 positions")
 
-    bounds = [0, L // 3, (2 * L) // 3, L]
+    k_blocks = max(3, (max_dist + 2) // 2)   # smallest k with 2k-1 >= d
+    bounds = [i * L // k_blocks for i in range(k_blocks)] + [L]
 
     # Bucket key -> peptide indices. Exact keys are (block, string)
     # 2-tuples, wildcard keys (block, wildcard position, string) with a
     # '*' that cannot collide with a real residue.
     buckets = defaultdict(list)
     for i, pep in enumerate(peps):
-        for b in range(3):
+        for b in range(k_blocks):
             s, e = bounds[b], bounds[b + 1]
             block = pep[s:e]
             buckets[(b, block)].append(i)          # exact block
@@ -200,8 +204,12 @@ def cluster_by_hamming(peptides, max_dist=1):
     in the same cluster.
 
     max_dist = 1     : exhaustive single-substitution neighbour enumeration.
-    max_dist = 2 or 3: pigeonhole candidate index (iter_close_pairs).
-    max_dist > 3     : not supported (3-block pigeonhole bound fails).
+    max_dist = 2..9  : pigeonhole candidate index (iter_close_pairs) —
+                       k = max(3, ceil((max_dist+1)/2)) blocks with
+                       exact/1-wildcard keys are complete while
+                       max_dist <= 2k-1 (block count grows with the
+                       cutoff: 3 blocks -> <=5, 4 -> <=7, 5 -> <=9).
+    max_dist > 9     : not supported (needs 2-wildcard keys).
 
     Note: union-find merges transitively, so a cluster can contain pairs
     farther apart than max_dist that are connected through bridging
@@ -222,14 +230,15 @@ def cluster_by_hamming(peptides, max_dist=1):
                         neighbour = pep[:pos] + aa + pep[pos + 1:]
                         if neighbour in peptide_set:  # Neighbour exists -> homologous, same cluster
                             uf.union(pep, neighbour)
-    elif max_dist in (2, 3):
+    elif 2 <= max_dist <= 9:
         peps = sorted(peptide_set)  # deterministic order for the index
         for i, j in iter_close_pairs(peps, max_dist):
             uf.union(peps[i], peps[j])
     else:
         raise NotImplementedError(
-            f"HAMMING_CUTOFF {max_dist} not supported: use 1, 2 or 3 "
-            f"(pigeonhole index requires <= 3 mismatches over 3 blocks)")
+            f"HAMMING_CUTOFF {max_dist} not supported: use 1..9 "
+            f"(growing-block + 1-wildcard pigeonhole is complete up to "
+            f"9; >= 10 needs 2-wildcard keys)")
 
     clusters = defaultdict(set) # initialize a dictionary to hold clusters, where each key is a cluster representative (root) and the value is a set of peptides in that cluster
     for pep in peptides: # For each peptide
@@ -238,7 +247,8 @@ def cluster_by_hamming(peptides, max_dist=1):
     return dict(clusters)
 
 
-def cluster_context_robust(contexts, ctx_to_peptide, max_dist):
+def cluster_context_robust(contexts, ctx_to_peptide, max_dist,
+                           pep_cutoff=1):
     """
     Robust context clustering: ONE union-find over the union of three
     edge sets, taken as connected components of A ∪ B ∪ C (never
@@ -246,25 +256,25 @@ def cluster_context_robust(contexts, ctx_to_peptide, max_dist):
 
       (A) window edges:  ham(full_context) <= max_dist   (reuses
           cluster_by_hamming unchanged)
-      (B) peptide edges: ham(peptide) <= 1, fixed at 1 and independent
-          of max_dist — lifts to every context of those peptides
+      (B) peptide edges: ham(peptide) <= pep_cutoff, independent of
+          max_dist — lifts to every context of those peptides
       (C) flank edges:   two contexts are linked if EITHER flank is
           byte-identical (n_flank equal OR c_flank equal, X-padding
           included); flanks are sliced from the context string itself
 
     Returns (clusters, pep_class) where clusters maps root -> set of
-    contexts, and pep_class maps each context -> its peptide-h1 class
-    root (used for the c=1 bijection assertion).
+    contexts, and pep_class maps each context -> its peptide-cluster
+    class root (used for the c=1 bijection assertion).
 
     Guarantees (see module docstring): no window pair at distance
-    <= max_dist, no peptide pair at distance <= 1, and no pair sharing
-    an identical flank crosses the resulting groups.
+    <= max_dist, no peptide pair at distance <= pep_cutoff, and no pair
+    sharing an identical flank crosses the resulting groups.
     """
     # Edge set A: components of window-ham <= max_dist
     win_clusters = cluster_by_hamming(contexts, max_dist=max_dist)
     # Edge set B: components of peptide-ham <= 1
     unique_peptides = list(dict.fromkeys(ctx_to_peptide[c] for c in contexts))
-    pep_clusters = cluster_by_hamming(unique_peptides, max_dist=1)
+    pep_clusters = cluster_by_hamming(unique_peptides, max_dist=pep_cutoff)
 
     pep_class = {}
     for root, peps in pep_clusters.items():
@@ -280,7 +290,7 @@ def cluster_context_robust(contexts, ctx_to_peptide, max_dist):
         ordered = sorted(members)
         for m in ordered[1:]:
             uf.union(ordered[0], m)
-    # Add B edges: all contexts whose peptides share a peptide-h1 class
+    # Add B edges: all contexts whose peptides share a peptide class
     by_class = defaultdict(list)
     for c in contexts:
         by_class[pep_class[ctx_to_peptide[c]]].append(c)
@@ -379,7 +389,7 @@ def verify_no_homology_leakage(df, peptide_col, fold_col, hamming_cutoff=1):
                             neighbour = pep[:pos] + aa + pep[pos + 1:]
                             if neighbour in set2:
                                 violations += 1
-    elif hamming_cutoff in (2, 3):
+    elif 2 <= hamming_cutoff <= 9:
         pep_to_fold = {}
         for f, peps in fold_peptides.items():
             for p in peps:
@@ -398,7 +408,8 @@ def verify_no_homology_leakage(df, peptide_col, fold_col, hamming_cutoff=1):
                           f"{peps[j]} (fold {fj})")
     else:
         raise NotImplementedError(
-            f"Leakage verification not implemented for cutoff {hamming_cutoff}")
+            f"Leakage verification not implemented for cutoff "
+            f"{hamming_cutoff} (supported: 1..9)")
 
     if violations == 0:
         print(f"No homology leakage detected across folds "
@@ -866,7 +877,7 @@ if __name__ == "__main__":
         description="Homology-based data splitting for MHC-I processing prediction.")
     ap.add_argument("--hamming-cutoff", type=int, default=HAMMING_CUTOFF,
                     help="cluster keys at DIRECT Hamming distance <= this "
-                         "cutoff (1-3). Default: config HAMMING_CUTOFF (%(default)s).")
+                         "cutoff (1-9). Default: config HAMMING_CUTOFF (%(default)s).")
     ap.add_argument("--sweep", default=None,
                     help="comma-separated cutoffs to generate in one run, "
                          "e.g. 1,2,3 — one marked split file per cutoff "
@@ -876,14 +887,20 @@ if __name__ == "__main__":
                     default="peptide",
                     help="cluster on 'peptide' (9-mer only, legacy behavior) "
                          "or 'context' (ROBUST: window Hamming <= c union "
-                         "peptide Hamming <= 1 union identical-flank "
-                         "grouping over full_context; width inferred from "
-                         "the data; all checks fail hard). "
+                         "peptide Hamming <= --pep-cutoff union "
+                         "identical-flank grouping over full_context; width "
+                         "inferred from the data; all checks fail hard). "
                          "Default: %(default)s.")
+    ap.add_argument("--pep-cutoff", type=int, choices=[1, 2], default=1,
+                    help="peptide edge-set cutoff (edge set B) for "
+                         "--group-by context: peptides at Hamming <= this "
+                         "are grouped. 1 = proven rule, 2 = stronger "
+                         "homology arm. Ignored in peptide mode. Context "
+                         "outputs carry _pepcut{N}.")
     ap.add_argument("--split-out", default=None,
                     help="output split CSV path (single cutoff only). "
                          "Default: auto marked path such as data/processed/"
-                         "df_all_with_folds_ctx-h2.csv; the canonical "
+                         "df_all_with_folds_updated_h2_pepcut1.csv; the canonical "
                          "df_all_with_folds.csv is written only by the "
                          "default invocation (peptide, config cutoff, no sweep).")
     args = ap.parse_args()
@@ -897,21 +914,23 @@ if __name__ == "__main__":
         except ValueError:
             ap.error(f"--sweep must be a comma-separated list of ints, "
                      f"got: {args.sweep}")
-        if not cutoffs or any(c not in (1, 2, 3) for c in cutoffs):
-            ap.error("--sweep cutoffs must be 1, 2 or 3 "
-                     "(3-block pigeonhole index supports at most 3)")
+        if not cutoffs or any(c not in range(1, 10) for c in cutoffs):
+            ap.error("--sweep cutoffs must be 1..9 "
+                     "(growing-block pigeonhole index is complete up to 9)")
         if len(set(cutoffs)) != len(cutoffs):
             ap.error(f"--sweep contains duplicate cutoffs: {args.sweep}")
     else:
-        if args.hamming_cutoff not in (1, 2, 3):
-            ap.error("--hamming-cutoff must be 1, 2 or 3 "
-                     "(3-block pigeonhole index supports at most 3)")
+        if args.hamming_cutoff not in range(1, 10):
+            ap.error("--hamming-cutoff must be 1..9 "
+                     "(growing-block pigeonhole index is complete up to 9)")
         cutoffs = [args.hamming_cutoff]
 
     group_by = args.group_by
+    pep_cutoff = args.pep_cutoff
     key_col = PEPTIDE_COL if group_by == "peptide" else "full_context"
     key_label = "peptide" if group_by == "peptide" else "window"
     tag = "pep" if group_by == "peptide" else "updated"
+    pepcut_tag = f"_pepcut{pep_cutoff}" if group_by == "context" else ""
 
     def resolve_split_out(cutoff):
         """Marked auto-name for every non-default run; the canonical
@@ -925,7 +944,7 @@ if __name__ == "__main__":
             return Path(SPLIT_DATA_PATH)
         stem = Path(SPLIT_DATA_PATH).stem
         return Path(SPLIT_DATA_PATH).with_name(
-            f"{stem}_{tag}_h{cutoff}{Path(SPLIT_DATA_PATH).suffix}")
+            f"{stem}_{tag}_h{cutoff}{pepcut_tag}{Path(SPLIT_DATA_PATH).suffix}")
 
     validate_config()
 
@@ -934,9 +953,9 @@ if __name__ == "__main__":
             and cutoffs == [HAMMING_CUTOFF]:
         log_tag = ""
     elif len(cutoffs) == 1:
-        log_tag = f"_{tag}_h{cutoffs[0]}"
+        log_tag = f"_{tag}_h{cutoffs[0]}{pepcut_tag}"
     else:
-        log_tag = f"_{tag}_sweep"
+        log_tag = f"_{tag}_sweep{pepcut_tag}"
     LOG_PATH = LOG_DIR / f"01_datasplit_log_{timestamp}{log_tag}.txt"
     os.makedirs(LOG_DIR, exist_ok=True)
     logger = Logger(str(LOG_PATH))
@@ -952,16 +971,16 @@ if __name__ == "__main__":
     print(f"  Log path:         {LOG_PATH}")
     print(f"  Group-by:         {group_by}"
           + ("" if group_by == "peptide"
-             else " (ROBUST: window-ham <= c  ∪  peptide-ham <= 1  "
-                  "∪  identical flank)"))
+             else f" (ROBUST: window-ham <= c  ∪  peptide-ham <= {pep_cutoff}"
+                  "  ∪  identical flank)"))
     print(f"  Hamming cutoffs:  {', '.join(f'<= {c}' for c in cutoffs)}")
     if group_by == "context":
         print("  Guarantees:       no window pair at distance <= c, no")
-        print("                    peptide pair at distance <= 1, and no")
-        print("                    pair sharing an identical flank cross")
-        print("                    folds; peptide pairs 2..c with divergent")
-        print("                    flanks MAY split (peptide-hc case).")
-        print("                    At c=1 robust == peptide-h1 ∪ flank-id.")
+        print(f"                    peptide pair at distance <= {pep_cutoff},")
+        print("                    and no pair sharing an identical flank")
+        print("                    cross folds; peptide pairs beyond the")
+        print("                    cutoff with divergent flanks MAY split.")
+        print(f"                    At c=1 robust == pep-h{pep_cutoff} ∪ flank-id.")
     print(f"  CV folds (k):     {N_CV_FOLDS}")
     print(f"  Held-out bucket:  {HELD_OUT_INDEX}")
     print(f"  Total buckets:    {N_BUCKETS}")
@@ -1063,9 +1082,10 @@ if __name__ == "__main__":
         t_cluster_start = time.time()
         if group_by == "context":
             print(f"Clustering ROBUST: window Hamming <= {cutoff}  ∪  "
-                  f"peptide Hamming <= 1  ∪  identical flank ...")
+                  f"peptide Hamming <= {pep_cutoff}  ∪  identical flank ...")
             clusters, ctx_class = cluster_context_robust(
-                unique_keys, ctx_to_peptide, max_dist=cutoff)
+                unique_keys, ctx_to_peptide, max_dist=cutoff,
+                pep_cutoff=pep_cutoff)
         else:
             print(f"Clustering {key_label}s by Hamming distance <= {cutoff} ...")
             clusters = cluster_by_hamming(unique_keys, max_dist=cutoff)
@@ -1099,7 +1119,7 @@ if __name__ == "__main__":
             warnings.warn(msg)
 
         # c=1 acceptance: robust components must match an INDEPENDENTLY
-        # constructed expectation (peptide-h1 ∪ flank-identity) one-to-one.
+        # constructed expectation (peptide-pepcut ∪ flank-identity) one-to-one.
         # The expectation is built row-based from the n_flank/c_flank
         # COLUMNS + peptide clusters, while the wrapper slices flanks from
         # the context STRING — two implementations must agree.
@@ -1109,7 +1129,8 @@ if __name__ == "__main__":
             for k in unique_keys:
                 exp.find(k)
             pep_clusters = cluster_by_hamming(
-                list(dict.fromkeys(ctx_to_peptide.values())), max_dist=1)
+                list(dict.fromkeys(ctx_to_peptide.values())),
+                max_dist=pep_cutoff)
             pep_cls = {}
             for root, members in pep_clusters.items():
                 for pep in members:
@@ -1148,7 +1169,7 @@ if __name__ == "__main__":
                 logger.close()
                 sys.exit(1)
             print(f"c=1 cluster bijection OK: {n_clusters} components == "
-                  f"{n_clusters} (peptide-h1 ∪ flank-identity) classes")
+                  f"{n_clusters} (pep-h{pep_cutoff} ∪ flank-identity) classes")
 
         # -- Phase 2: Assign --
         print("\n" + "=" * 80)
@@ -1196,16 +1217,16 @@ if __name__ == "__main__":
         n_splits = verify_no_peptide_split(df, key_col, FOLD_COL,
                                            key_label=key_label)
 
-        # FAILSAFE (robust mode): no peptide pair at Hamming <= 1 may
-        # cross folds — this is edge set B's guarantee, HARD fail.
+        # FAILSAFE (robust mode): no peptide pair at Hamming <= pep_cutoff
+        # may cross folds — this is edge set B's guarantee, HARD fail.
         n_pep1_violations = 0
         if group_by == "context":
-            print("\nFAILSAFE: peptide Hamming <= 1 across folds")
+            print(f"\nFAILSAFE: peptide Hamming <= {pep_cutoff} across folds")
             n_pep1_violations = verify_no_homology_leakage(
-                df, PEPTIDE_COL, FOLD_COL, hamming_cutoff=1)
+                df, PEPTIDE_COL, FOLD_COL, hamming_cutoff=pep_cutoff)
             if n_pep1_violations > 0:
                 print(f"\nFATAL: FAILSAFE violated — {n_pep1_violations} "
-                      f"peptide-ham<=1 pairs cross folds")
+                      f"peptide-ham<={pep_cutoff} pairs cross folds")
                 logger.close()
                 sys.exit(1)
             # flank-identity failsafe (edge set C): every n_flank and
@@ -1225,7 +1246,7 @@ if __name__ == "__main__":
                 sys.exit(1)
 
         # Identical PEPTIDES split across folds — must be 0 in robust
-        # mode (implied by the pep-h1 failsafe; asserted anyway).
+        # mode (implied by the peptide failsafe; asserted anyway).
         pep_fold_n = df.groupby(PEPTIDE_COL)[FOLD_COL].nunique()
         n_pep_split = int((pep_fold_n > 1).sum())
         if group_by == "context":
@@ -1311,7 +1332,7 @@ if __name__ == "__main__":
         print(f"  Homology leakage: {'NONE' if n_violations == 0 else f'{n_violations} violations'}")
         print(f"  {key_label} splits:  {'NONE' if n_splits == 0 else f'{n_splits} {key_label}s split'}")
         if group_by == "context":
-            print(f"  Pep-h1 failsafe:  PASSED (0 violations, hard-checked)")
+            print(f"  Pep-h{pep_cutoff} failsafe:  PASSED (0 violations, hard-checked)")
             print(f"  Flank failsafe:   PASSED (0 straddling flanks, hard-checked)")
             print(f"  Identical peptides split: {n_pep_split} (must be 0)")
         print(f"  Output:           {split_out_path}")
