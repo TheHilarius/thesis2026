@@ -88,7 +88,9 @@ cd "$REPO"
 export PYTHONUNBUFFERED=1
 mkdir -p "$OUT_ROOT"/{models/dimselect,logs/slurm,results,screening}
 TIME_FILE="$OUT_ROOT/logs/mem_${FEATURE}_n${TOPN}_${SCREEN}.time"
-echo "feature=$FEATURE topn=$TOPN screen=$SCREEN out=$OUT_ROOT variant=${THESIS_VARIANT:-29mer}  ($(date))"
+echo "feature=$FEATURE topn=$TOPN screen=$SCREEN out=$OUT_ROOT variant=${THESIS_VARIANT:-29mer} split=${SPLIT:-config-default}  ($(date))"
+SPLIT_ARG=()
+if [ -n "${SPLIT:-}" ]; then SPLIT_ARG=(--split "$SPLIT"); fi
 
 # Peak RSS per run + cgroup peak (JobAcctGather=none on this cluster).
 # NOTE: sacct exit codes lie here — trust the 'Success:' line python prints.
@@ -98,7 +100,7 @@ echo "feature=$FEATURE topn=$TOPN screen=$SCREEN out=$OUT_ROOT variant=${THESIS_
         --pca-mode dimselect --top-n "$TOPN" --screen-model "$SCREEN" \
         --screen-cache-dir "$OUT_ROOT/screening" \
         --screen-jobs "${SLURM_CPUS_PER_TASK:-12}" \
-        --out-root "$OUT_ROOT"
+        --out-root "$OUT_ROOT" "${SPLIT_ARG[@]}"
 
 cg=$(awk -F: '$1=="0"{print $3}' /proc/self/cgroup)
 cgroup_peak=$(cat "/sys/fs/cgroup${cg}/memory.peak" 2>/dev/null || echo NA)
