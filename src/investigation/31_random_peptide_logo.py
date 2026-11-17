@@ -46,10 +46,22 @@ if str(PIPELINE_DIR) not in sys.path:
 from config import PROJECT_ROOT
 
 OUT = PROJECT_ROOT / "runs" / "random_peptide_logo"
-MODEL_DIR = PROJECT_ROOT / "runs" / "encodings_sweep" / "models" / "flat"
-FEATURE_NAMES_JSON = MODEL_DIR / "xgb_blosum50_flat_feature_names.json"
-TRAIN_CSV = PROJECT_ROOT / "data" / "processed" / "df_all.csv"
-BLOSUM_CSV = PROJECT_ROOT / "data" / "processed" / "df_blosum50.csv"
+
+# Two model regimes:
+#   29mer : baseline encodings_sweep blosum50 flat (lr=0.1), N10..C10 window
+#   flank5_rmdup : runs/r19_rmdup/canonical blosum50 flat (lr=0.1), N5..C5 window
+MODEL_REGIMES = {
+    "29mer": {
+        "model_dir": PROJECT_ROOT / "runs" / "encodings_sweep" / "models" / "flat",
+        "train_csv": PROJECT_ROOT / "data" / "processed" / "df_all.csv",
+        "out_base": "random_peptide_logo",
+    },
+    "flank5_rmdup": {
+        "model_dir": PROJECT_ROOT / "runs" / "r19_rmdup" / "canonical" / "models" / "flat",
+        "train_csv": PROJECT_ROOT / "data" / "processed" / "df_all_flank5_rmdup.csv",
+        "out_base": "random_peptide_logo_rmdup",
+    },
+}
 
 N_SEQS = 1_000_000
 SEED = 20261108
@@ -89,23 +101,34 @@ _BLOSUM50_ROWS = [
 BLOSUM50 = np.asarray(_BLOSUM50_ROWS, dtype=np.float32)  # rows = AA_ORDER
 
 
-def load_feature_names() -> list[str]:
-    fn = json.loads(FEATURE_NAMES_JSON.read_text())
-    expected = [f"{p}_{a}" for p in POSITIONS for a in AA_ORDER]
+def parse_positions(feature_names: list[str]) -> list[str]:
+    pos = []
+    for c in feature_names:
+        p = c.rsplit("_", 1)[0]
+        if not pos or pos[-1] != p:
+            pos.append(p)
+    return pos
+
+
+def load_feature_names(regime: dict) -> tuple[list[str], list[str]]:
+    fn = json.loads((regime["model_dir"] / "xgb_blosum50_flat_feature_names.json").read_text())
+    positions = parse_positions(fn)
+    expected = [f"{p}_{a}" for p in positions for a in AA_ORDER]
     assert fn == expected, "feature_names.json does not match expected order"
-    return fn
+    return fn, positions
 
 
-def generate_sequences(n: int, anchors: dict[int, list[str]] | None = None
+def generate_sequences(n: int, n_positions: int, train_csv: Path,
+                       anchors: dict[int, list[str]] | None = None
                        ) -> list[str]:
-    """Unique random 29-mers over 20 canonical AAs; training windows excluded.
+    """Unique random context windows over 20 canonical AAs; training excluded.
 
     anchors: optional {position index -> allowed AAs} forced at those
     positions (run 2: HLA-A*02:01 anchors at P2/P9).
     """
     rng = np.random.default_rng(SEED)
     train = set()
-    with open(TRAIN_CSV, newline="") as fh:
+    with open(train_csv, newline="") as fh:
         for row in csv.DictReader(fh):
             train.add(row["full_context"])
     print(f"training windows to exclude: {len(train)}")
@@ -115,7 +138,8 @@ def generate_sequences(n: int, anchors: dict[int, list[str]] | None = None
     seqs: set[str] = set()
     while len(seqs) < n:
         need = n - len(seqs)
-        idx = rng.integers(0, 20, size=(need + need // 10, 29), dtype=np.int8)
+        idx = rng.integers(0, 20, size=(need + need // 10, n_positions),
+                           dtype=np.int8)
         for pos, allowed in anchors.items():
             pool = np.array([AA_ORDER.index(a) for a in allowed], dtype=np.int8)
             idx[:, pos] = pool[rng.integers(0, len(pool), size=len(idx))]
@@ -130,15 +154,17 @@ def generate_sequences(n: int, anchors: dict[int, list[str]] | None = None
 
 
 def encode(seqs: list[str]) -> np.ndarray:
-    """(n, 609) BLOSUM50 features, column order = feature_names.json."""
+    """(n, n_positions*21) BLOSUM50 features, column order = feature_names."""
     aa_idx = {a: i for i, a in enumerate(AA_ORDER)}
     idx = np.array([[aa_idx[c] for c in s] for s in seqs], dtype=np.int8)
-    feats = BLOSUM50[idx]                 # (n, 29, 21)
+    feats = BLOSUM50[idx]                 # (n, positions, 21)
     return feats.reshape(len(seqs), -1)   # pos-major, matches feature order
 
 
-def load_models() -> list:
-    paths = sorted(glob.glob(str(MODEL_DIR / "xgb_blosum50_flat_outer*_inner*.pkl")))
+def load_models(regime: dict) -> list:
+    paths = sorted(glob.glob(str(regime["model_dir"] /
+                                "xgb_blosum50_flat_outer*_inner*.pkl")))
+    paths = [p for p in paths if not p.endswith("_artifacts.pkl")]
     if len(paths) != 30:
         raise SystemExit(f"expected 30 pickles, found {len(paths)}")
     models = []
@@ -162,8 +188,9 @@ def score(models: list, seqs: list[str]) -> np.ndarray:
     return probs
 
 
-def score_training(models: list, feature_names: list[str]) -> np.ndarray:
-    df = pd.read_csv(BLOSUM_CSV, usecols=feature_names)
+def score_training(models: list, feature_names: list[str],
+                   blosum_csv: Path) -> np.ndarray:
+    df = pd.read_csv(blosum_csv, usecols=feature_names)
     X = df[feature_names].to_numpy(dtype=np.float32)
     acc = np.zeros(len(X), dtype=np.float64)
     for m in models:
@@ -171,16 +198,16 @@ def score_training(models: list, feature_names: list[str]) -> np.ndarray:
     return acc / len(models)
 
 
-def ppm(seqs: list[str]) -> pd.DataFrame:
-    """Per-position probability matrix, 20 AAs x 29 positions."""
+def ppm(seqs: list[str], positions: list[str]) -> pd.DataFrame:
+    """Per-position probability matrix, 20 AAs x positions."""
     alphabet = [a for a in AA_ORDER if a != "X"]
-    counts = np.zeros((20, 29), dtype=np.int64)
+    counts = np.zeros((20, len(positions)), dtype=np.int64)
     aa_idx = {a: i for i, a in enumerate(alphabet)}
     for s in seqs:
         for j, c in enumerate(s):
             counts[aa_idx[c], j] += 1
     ppm_mat = counts / counts.sum(axis=0, keepdims=True)
-    return pd.DataFrame(ppm_mat, index=alphabet, columns=POSITIONS)
+    return pd.DataFrame(ppm_mat, index=alphabet, columns=positions)
 
 
 def main() -> None:
@@ -188,24 +215,36 @@ def main() -> None:
     ap.add_argument("--a02", action="store_true",
                     help="run 2: force HLA-A*02:01 anchors "
                          "P2 in {L,I,V,M,Q}, P9 in {V,L,I,A}")
+    ap.add_argument("--flank5-rmdup", action="store_true",
+                    help="use the r19_rmdup/canonical model (19-mer windows, "
+                         "df_blosum50_flank5_rmdup) instead of the 29mer "
+                         "baseline")
     args = ap.parse_args()
 
-    out_dir = OUT.parent / ("random_peptide_logo_a02" if args.a02 else
-                            "random_peptide_logo")
+    regime_key = "flank5_rmdup" if args.flank5_rmdup else "29mer"
+    regime = MODEL_REGIMES[regime_key]
+
+    out_dir = OUT.parent / (
+        regime["out_base"] + ("_a02" if args.a02 else ""))
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # POSITIONS: N10..N1 = 0..9, P1..P9 = 10..18, C1..C10 = 19..28
+    feature_names, positions = load_feature_names(regime)
+    print(f"regime={regime_key}  window={len(positions)}  "
+          f"n_features={len(feature_names)}")
+
     anchors = None
     if args.a02:
-        anchors = {POSITIONS.index("P2"): ["L", "I", "V", "M", "Q"],
-                   POSITIONS.index("P9"): ["V", "L", "I", "A"]}
-        print(f"A*02:01 anchors: P2 in {anchors[11]}, P9 in {anchors[18]}")
+        # run 2: force the A*02:01 anchors read off the presented-class logo
+        anchors = {positions.index("P2"): ["L", "I", "V", "M", "Q"],
+                   positions.index("P9"): ["V", "L", "I", "A"]}
+        print(f"A*02:01 anchors: P2 in {anchors[positions.index('P2')]}, "
+              f"P9 in {anchors[positions.index('P9')]}")
 
-    feature_names = load_feature_names()
-    models = load_models()
+    models = load_models(regime)
 
     print("generating sequences ...")
-    seqs = generate_sequences(N_SEQS, anchors)
+    seqs = generate_sequences(N_SEQS, len(positions), regime["train_csv"],
+                              anchors)
 
     print("scoring random sequences ...")
     probs = score(models, seqs)
@@ -215,7 +254,10 @@ def main() -> None:
         w.writerows(zip(seqs, probs))
 
     print("scoring training set (sanity) ...")
-    train_probs = score_training(models, feature_names)
+    train_probs = score_training(models, feature_names,
+                                 PROJECT_ROOT / "data" / "processed" /
+                                 ("df_blosum50.csv" if regime_key == "29mer"
+                                  else "df_blosum50_flank5_rmdup.csv"))
     with gzip.open(out_dir / "train_scores.csv.gz", "wt", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["prob"])
@@ -232,15 +274,16 @@ def main() -> None:
     pd.DataFrame({"sequence": bot_seqs, "prob": probs[bottom_idx]}) \
         .to_csv(out_dir / "bottom10.csv", index=False)
 
-    ppm(top_seqs).to_csv(out_dir / "ppm_top10.csv")
-    ppm(bot_seqs).to_csv(out_dir / "ppm_bottom10.csv")
+    ppm(top_seqs, positions).to_csv(out_dir / "ppm_top10.csv")
+    ppm(bot_seqs, positions).to_csv(out_dir / "ppm_bottom10.csv")
 
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(figsize=(8, 5))
     ax.hist(probs, bins=100, density=True, alpha=0.6, label="random (1M)")
-    ax.hist(train_probs, bins=100, density=True, alpha=0.6, label="training (46,617)")
+    ax.hist(train_probs, bins=100, density=True, alpha=0.6,
+            label=f"training ({len(train_probs):,})")
     ax.axvline(probs[top_idx[0]], color="k", ls="--", lw=1,
                label=f"top10% cutoff = {probs[top_idx[0]]:.3f}")
     ax.axvline(probs[bottom_idx[-1]], color="k", ls=":", lw=1,
@@ -249,7 +292,7 @@ def main() -> None:
     ax.set_ylabel("Density")
     title = "XGB BLOSUM50 ensemble — "
     title += ("A*02:01-anchored random" if args.a02 else "random")
-    title += " vs training score distributions"
+    title += f" ({regime_key}) vs training score distributions"
     ax.set_title(title)
     ax.legend()
     fig.tight_layout()

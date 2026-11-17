@@ -34,10 +34,12 @@ stopifnot(file.exists(file.path(OUT, "top10.csv")),
 
 aa_alphabet <- c("A","C","D","E","F","G","H","I","K","L",
                  "M","N","P","Q","R","S","T","V","W","Y")
-n_flank_features  <- paste0("N", 10:1)
-peptide_features  <- paste0("P", 1:9)
-c_flank_features  <- paste0("C", 1:10)
-all_pos_features  <- c(n_flank_features, peptide_features, c_flank_features)
+
+# Positions come from the PPM CSV the Python step wrote (19-mer rmdup or
+# 29-mer baseline); sequences in top10/bottom10.csv must match it.
+ppm_ref <- read_csv(file.path(OUT, "ppm_top10.csv"),
+                    col_types = cols(.default = col_double(), ...1 = col_character()))
+all_pos_features <- tail(names(ppm_ref), -1)
 
 # (ASN row-order guard lives in sec. 3, after library(DiffLogo))
 
@@ -49,14 +51,16 @@ read_seqs <- function(fname) {
   df <- read_csv(file.path(OUT, fname),
                  col_types = cols(sequence = col_character(),
                                   prob = col_double()))
-  stopifnot(all(nchar(df$sequence) == 29))
+  stopifnot(all(nchar(df$sequence) == length(all_pos_features)))
   df$sequence
 }
 
 seqs_top <- read_seqs("top10.csv")
 seqs_bot <- read_seqs("bottom10.csv")
 n1 <- length(seqs_top); n2 <- length(seqs_bot)
-cat("n1 (top10):", n1, "| n2 (bottom10):", n2, "\n")
+n_chars <- unique(nchar(seqs_top))
+stopifnot(length(n_chars) == 1, n_chars == length(all_pos_features))
+cat("n1 (top10):", n1, "| n2 (bottom10):", n2, "| window:", n_chars, "\n")
 
 ppm_from_seqs <- function(seqs) {
   ppm <- sapply(all_pos_features, function(pos) {
@@ -75,6 +79,9 @@ ppm_bot <- ppm_from_seqs(seqs_bot)
 # -----------------------------------------------------------------------------
 # 2. ggseqlogo figures (scaffolding verbatim from 12_)
 # -----------------------------------------------------------------------------
+n_flank <- sum(startsWith(all_pos_features, "N"))
+pep_len <- sum(startsWith(all_pos_features, "P"))
+n_pos   <- length(all_pos_features)          # 19 (rmdup) or 29 (baseline)
 theme_logo_slide <- theme_logo() +
   theme(
     plot.title = element_text(face = "bold", size = 16, hjust = 0.5),
@@ -85,9 +92,9 @@ theme_logo_slide <- theme_logo() +
 
 pos_dividers <- list(
   geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5),
-  geom_vline(xintercept = 10.5, linetype = "dashed", color = "grey50"),
-  geom_vline(xintercept = 19.5, linetype = "dashed", color = "grey50"),
-  scale_x_continuous(breaks = 1:29, labels = all_pos_features)
+  geom_vline(xintercept = n_flank + 0.5, linetype = "dashed", color = "grey50"),
+  geom_vline(xintercept = n_flank + pep_len + 0.5, linetype = "dashed", color = "grey50"),
+  scale_x_continuous(breaks = 1:n_pos, labels = all_pos_features)
 )
 
 lab_rand <- function(title, subtitle, y) {
@@ -111,7 +118,7 @@ bits_ylim <- function(m, plot) {
 p_top <- ggseqlogo(ppm_top, method = "bits") +
   pos_dividers + theme_logo_slide +
   lab_rand("Random windows the model calls PRESENTED (top 10%)",
-           "1M random 29-mers scored by the XGB BLOSUM50 ensemble (lr = 0.1)",
+           "1M random windows scored by the XGB BLOSUM50 ensemble (lr = 0.1)",
            "Bits")
 p_top <- bits_ylim(ppm_top, p_top)
 ggsave(file.path(OUT, "logo_random_top10.png"), plot = p_top,
@@ -121,7 +128,7 @@ cat("Saved: logo_random_top10.png\n")
 p_bot <- ggseqlogo(ppm_bot, method = "bits") +
   pos_dividers + theme_logo_slide +
   lab_rand("Random windows the model calls NOT PRESENTED (bottom 10%)",
-           "1M random 29-mers scored by the XGB BLOSUM50 ensemble (lr = 0.1)",
+           "1M random windows scored by the XGB BLOSUM50 ensemble (lr = 0.1)",
            "Bits")
 p_bot <- bits_ylim(ppm_bot, p_bot)
 ggsave(file.path(OUT, "logo_random_bottom10.png"), plot = p_bot,
@@ -186,7 +193,9 @@ render_logo <- function(obj, out_png, scale_note, main_title) {
   diffLogo(obj, sparse = TRUE, ymin = obj$ylim.negMax, ymax = obj$ylim.posMax)
   axis(1, at = seq_along(all_pos_features), labels = all_pos_features,
        tick = FALSE, cex.axis = 0.8, font = 2, line = -1)
-  axis(1, at = c(5.5, 15, 24.5),
+  n_cf <- n_pos - n_flank - pep_len
+  axis(1, at = c(n_flank / 2, n_flank + pep_len / 2,
+                 n_flank + pep_len + n_cf / 2),
        labels = c("N-Flank", "Peptide", "C-Flank"),
        tick = FALSE, cex.axis = 0.8, line = 3.5, col.ticks = NA,
        col.axis = "grey30")
@@ -199,7 +208,7 @@ render_logo <- function(obj, out_png, scale_note, main_title) {
                 format(n1, big.mark = ","), format(n2, big.mark = ","),
                 scale_note),
         side = 3, line = 1.0, cex = 0.7, col = "grey30")
-  abline(v = c(10.5, 19.5), lty = 2, col = "grey50")
+  abline(v = c(n_flank + 0.5, n_flank + pep_len + 0.5), lty = 2, col = "grey50")
   legend("topleft",
          legend = c("Acidic", "Basic", "Hydrophobic", "Neutral", "Polar"),
          fill = c("#D62839", "#255C99", "#221E22", "#5E239D", "#109648"),
