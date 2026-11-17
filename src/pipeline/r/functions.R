@@ -1198,7 +1198,7 @@ cliff_delta_sampled <- function(x, y, n_sample = 50000, seed = 42) {
   if (length(x) > n_sample) x <- sample(x, n_sample)
   if (length(y) > n_sample) y <- sample(y, n_sample)
   
-  x_chunks <- split(x, ceiling(seq_along(x) / 5000))
+  x_chunks <- split(x, ceiling(seq_along(x) / 1000)) # small chunks: outer() makes chunk*length(y) doubles; 5000*50k = 2 GB -> OOM risk
   total_greater <- 0; total_less <- 0; total_pairs <- 0
   
   for (chunk in x_chunks) {

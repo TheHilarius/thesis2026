@@ -850,6 +850,7 @@ wilcox_before <- wilcox.test(df_positives$rank, df_netmhcpan_only$rank)
 wilcox_after  <- wilcox.test(df_positives$rank, df_negatives$rank)
 cliff_after   <- cliff_delta_sampled(df_positives$rank, df_negatives$rank)
 cles_after    <- (1 - cliff_after$estimate) / 2
+gc()  # drop earlier-stage garbage before the memory-heavy bootstrap loops
 
 # Bootstrap 95% CI for KS D (resample within each group, manual ECDF gap).
 # Equivalence test: H0 rejected in favour of "practically identical" when the
@@ -865,6 +866,7 @@ bootstrap_ks_D <- function(x, y, n_boot = 1000, seed = 42) {
   quantile(ds, c(0.025, 0.975))
 }
 cat("Bootstrapping KS D CIs (1000 reps, before and after)...\n")
+gc()
 ci_before <- bootstrap_ks_D(df_positives$rank, df_netmhcpan_only$rank)
 ci_after  <- bootstrap_ks_D(df_positives$rank, df_negatives$rank)
 
