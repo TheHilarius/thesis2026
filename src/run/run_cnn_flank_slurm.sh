@@ -45,7 +45,7 @@ run_one() {
     if [ -n "$VARIANT" ]; then
         export THESIS_VARIANT="$VARIANT"
     else
-        unset THESIS_VARIANT || true
+        export THESIS_VARIANT=none   # empty $VARIANT = base 29mer (config default is flank5_rmdup)
     fi
     # Log resolved paths (variant redirect visible here)
     python -c "

@@ -12,17 +12,27 @@ import os
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 # ──────────────────────────────────────────────
-# DATASET VARIANT (A/B testing; unset = current behavior)
+# DATASET VARIANT
+# DEFAULT: flank5_rmdup (19mer, 5-aa flanks + duplicate-window removal;
+# N=45,278) as of 2026-11-17 — flank5 beat 29mer on all 4 model families
+# (DeLong ***, see runs/flank5_compare/README.md).
 # THESIS_VARIANT=<name> redirects every per-dataset path
 # (raw/split/encoding CSVs, prepared embedding H5s) to *_<variant> files.
-# Existing variants: remove715negonly, remove_dup_windows.
-# Raw embedding H5s stay base-only (N=46,617). Variant PREPARED H5s are
-# built by prepare_variant_h5.py (positional subset of the base prepared
-# file) — do NOT run 03_prepare_embeddings against a row-dropped variant:
+# Opt out to the BASE 29mer paths (N=46,617) with THESIS_VARIANT=none
+# or THESIS_VARIANT="" (e.g. legacy campaigns; reduce_29mer_to_19mer.py
+# and prepare_variant_h5.py force-read the base files).
+# Existing variants: flank5, flank5_rmdup, remove715negonly,
+# remove_dup_windows.
+# Variant PREPARED H5s exist only for pad-token windows (esmc300m/esmc6b)
+# — esmif/mpnn/other pad-mode runs need THESIS_VARIANT=none. Variant
+# prepared files are built by prepare_variant_h5.py (positional subset of
+# the source prepared file; --source-tag flank5 chains flank5→rmdup) —
+# do NOT run 03_prepare_embeddings against a row-dropped variant:
 # align_window_by_row_indices maps old row_indices into the shorter df
 # and silently misaligns.
 # ──────────────────────────────────────────────
-VARIANT = os.environ.get("THESIS_VARIANT") or None
+_v = os.environ.get("THESIS_VARIANT", "flank5_rmdup")
+VARIANT = None if _v in ("", "none") else _v
 
 
 def _variant(path: Path) -> Path:

@@ -55,10 +55,11 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 # This script always READS the base 29mer artifacts and WRITES _flank5 ones.
-# config.py applies the THESIS_VARIANT path redirect at import time, so drop
-# the env var before importing config or we'd read (nonexistent) flank5 inputs.
+# config.py applies the THESIS_VARIANT path redirect at import time and its
+# DEFAULT is flank5_rmdup (2026-11-17) — force "none" explicitly or the
+# import would resolve flank5_rmdup inputs and fail the len==10 asserts.
 import os
-os.environ.pop("THESIS_VARIANT", None)
+os.environ["THESIS_VARIANT"] = "none"
 
 from config import PROJECT_ROOT, DATA_DIR, get_embedding_source
 
