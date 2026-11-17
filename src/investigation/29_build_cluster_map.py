@@ -50,7 +50,7 @@ import pandas as pd
 from config import (
     DATA_DIR, SPLIT_DATA_PATH, LOG_DIR,
     N_CV_FOLDS, HELD_OUT_INDEX,
-    PEPTIDE_COL, LABEL_COL, FOLD_COL, HAMMING_CUTOFF,
+    PEPTIDE_COL, LABEL_COL, FOLD_COL, HAMMING_CUTOFF, WINDOW_CUTOFF,
     validate_config,
 )
 
@@ -64,16 +64,41 @@ def main():
     ap.add_argument("--split", default=None,
                     help="split CSV path (default: config SPLIT_DATA_PATH), "
                          "e.g. data/processed/df_all_with_folds_h2.csv")
-    ap.add_argument("--hamming-cutoff", type=int, default=HAMMING_CUTOFF,
-                    help="DIRECT Hamming cutoff for clustering (1-3); must "
-                         "match the cutoff used to build --split. "
-                         "Default: config HAMMING_CUTOFF (%(default)s)")
+    ap.add_argument("--group-by", choices=["peptide", "context"],
+                    default="peptide",
+                    help="'peptide' = legacy direct Hamming clusters; "
+                         "'context' = robust 3-rule clusters (window-ham<=c "
+                         "U pep-ham<=1 U identical-flank) via "
+                         "01_datasplit.cluster_context_robust. "
+                         "Default: %(default)s.")
+    ap.add_argument("--hamming-cutoff", type=int, default=None,
+                    help="peptide mode: DIRECT Hamming cutoff for "
+                         "clustering (must match --split). "
+                         "Default: config HAMMING_CUTOFF (1).")
+    ap.add_argument("--window-cutoff", type=int, default=WINDOW_CUTOFF,
+                    help="context mode: window-Hamming edge-set cutoff "
+                         "(must match --split). Default: config "
+                         "WINDOW_CUTOFF (%(default)s)")
+    ap.add_argument("--pep-cutoff", type=int, default=1,
+                    help="context mode: peptide edge-set cutoff (must "
+                         "match --split). Default: 1")
     ap.add_argument("--n-show", type=int, default=10,
                     help="how many largest clusters to print")
     a = ap.parse_args()
 
-    if a.hamming_cutoff not in (1, 2, 3):
-        ap.error("--hamming-cutoff must be 1, 2 or 3")
+    if a.group_by == "peptide":
+        if a.hamming_cutoff is None:
+            a.hamming_cutoff = HAMMING_CUTOFF
+        if a.hamming_cutoff not in (1, 2, 3):
+            ap.error("--hamming-cutoff must be 1, 2 or 3")
+    else:
+        if a.window_cutoff not in range(1, 10):
+            ap.error("--window-cutoff must be 1..9")
+        if a.pep_cutoff not in (1, 2):
+            ap.error("--pep-cutoff must be 1 or 2")
+        if a.hamming_cutoff is not None:
+            ap.error("--hamming-cutoff is peptide-mode only "
+                     "(use --window-cutoff for context mode)")
 
     split_path = Path(a.split) if a.split else Path(SPLIT_DATA_PATH)
 
@@ -85,12 +110,18 @@ def main():
     print(f"  Timestamp:    {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"  Data path:    {split_path}")
     print(f"  Output path:  {a.out}")
-    print(f"  Hamming cutoff: <= {a.hamming_cutoff}"
-          f"{' (CLI override)' if a.hamming_cutoff != HAMMING_CUTOFF else ''}")
+    if a.group_by == "peptide":
+        print(f"  Hamming cutoff: <= {a.hamming_cutoff}"
+              f"{' (CLI override)' if a.hamming_cutoff != HAMMING_CUTOFF else ''}")
+    else:
+        print(f"  Context mode:   window-ham <= {a.window_cutoff}  ∪  "
+              f"pep-ham <= {a.pep_cutoff}  ∪  identical flank (robust rule)")
 
     # -- Load --
     print(f"\nLoading {split_path} ...")
-    df = pd.read_csv(split_path, usecols=[PEPTIDE_COL, LABEL_COL, FOLD_COL])
+    cols = [PEPTIDE_COL, LABEL_COL, FOLD_COL, "full_context"] \
+        if a.group_by == "context" else [PEPTIDE_COL, LABEL_COL, FOLD_COL]
+    df = pd.read_csv(split_path, usecols=cols)
     print(f"  {len(df)} rows, {df[PEPTIDE_COL].nunique()} unique peptides")
 
     # -- Sanity 1: no peptide split across folds --
@@ -106,12 +137,38 @@ def main():
     datasplit = importlib.import_module("01_datasplit")
     unique_peptides = df[PEPTIDE_COL].unique().tolist()
     t0 = time.time()
-    print(f"\nClustering {len(unique_peptides)} peptides by Hamming <= {a.hamming_cutoff} ...")
-    clusters = datasplit.cluster_by_hamming(unique_peptides, max_dist=a.hamming_cutoff)
-    print(f"  done in {time.time() - t0:.1f}s: {len(clusters)} clusters")
-
-    # -- Stable IDs: largest first, ties by alphabetically-first peptide --
-    items = sorted(clusters.values(), key=lambda s: (-len(s), min(s)))
+    if a.group_by == "peptide":
+        print(f"\nClustering {len(unique_peptides)} peptides by Hamming <= {a.hamming_cutoff} ...")
+        clusters = datasplit.cluster_by_hamming(unique_peptides, max_dist=a.hamming_cutoff)
+        print(f"  done in {time.time() - t0:.1f}s: {len(clusters)} clusters")
+        items = sorted(clusters.values(), key=lambda s: (-len(s), min(s)))
+    else:
+        # Robust 3-rule clusters over unique full_context windows (same
+        # code path as the split). Every peptide maps to exactly one
+        # cluster: edge set B lifts all contexts of a peptide together.
+        ctx_pep = df.drop_duplicates("full_context").set_index("full_context")[PEPTIDE_COL]
+        unique_contexts = ctx_pep.index.tolist()
+        ctx_to_peptide = {c: ctx_pep[c] for c in unique_contexts}
+        print(f"\nClustering {len(unique_contexts)} unique context windows "
+              f"(robust rule, window c={a.window_cutoff}, pepcut={a.pep_cutoff}) ...")
+        clusters, _ = datasplit.cluster_context_robust(
+            unique_contexts, ctx_to_peptide,
+            max_dist=a.window_cutoff, pep_cutoff=a.pep_cutoff)
+        print(f"  done in {time.time() - t0:.1f}s: {len(clusters)} clusters")
+        ctx_to_cid = {}
+        for cid, ctxs in enumerate(
+                sorted(clusters.values(),
+                       key=lambda s: (-len({ctx_to_peptide[c] for c in s}),
+                                      min({ctx_to_peptide[c] for c in s})))):
+            for c in ctxs:
+                ctx_to_cid[c] = cid
+        # peptide-level clusters (peptides -> their single robust cluster)
+        pep_ctxs = df.drop_duplicates(PEPTIDE_COL).set_index(PEPTIDE_COL)["full_context"]
+        pep_cluster = {p: ctx_to_cid[c] for p, c in pep_ctxs.items()}
+        items = [[] for _ in clusters]
+        for p, cid in pep_cluster.items():
+            items[cid].append(p)
+        items = [sorted(p) for p in items]
 
     pep_fold = df.drop_duplicates(PEPTIDE_COL).set_index(PEPTIDE_COL)[FOLD_COL]
     row_counts = df[PEPTIDE_COL].value_counts()

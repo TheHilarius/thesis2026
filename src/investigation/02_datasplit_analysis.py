@@ -169,7 +169,8 @@ def identify_features(df):
     for i, col in enumerate(feature_cols):
         print(f"  [{i:>3}] {col:<40} dtype: {df[col].dtype}")
 
-    non_numeric = [c for c in feature_cols if not np.issubdtype(df[c].dtype, np.number)]
+    # pandas 3 StringDtype breaks np.issubdtype — use pandas' own test
+    non_numeric = [c for c in feature_cols if not pd.api.types.is_numeric_dtype(df[c])]
     if non_numeric:
         print(f"\nWARNING: Non-numeric feature columns ({len(non_numeric)}):")
         for c in non_numeric:
