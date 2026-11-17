@@ -175,3 +175,9 @@ runs/esmc300m_pca_sweep/
 # Run artifacts: models/ hold multi-GB OOF dumps; plots/ + results/ stay tracked
 runs/*/models/
 runs/*/logs/
+
+# Hub2 server backup + dimselect run scratch
+docs_hub2_backup_*/
+runs/dimselect_flank5/
+runs/dimselect_flank5_6b/
+runs/dimselect_flank5_6b_rmdup/
