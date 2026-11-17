@@ -1,0 +1,3 @@
+Comparison,KS D,KS D CI low,KS D CI high,Equivalent (CI < D0=0.05),Cliff's Δ,Δ Magnitude,CLES
+Pos vs Neg (before),0.554,0.5491,0.5604,FALSE,-0.6991,large,0.8495
+"Pos vs Neg (after, 25 bins)",0.0975,0.0906,0.1048,FALSE,-0.0613,negligible,0.5307
