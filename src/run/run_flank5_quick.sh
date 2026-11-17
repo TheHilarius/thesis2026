@@ -9,9 +9,9 @@
 set -euo pipefail
 cd /home/projects/thesis_s204692_s204581/thesis2026
 source env_esmc_server/bin/activate
-mkdir -p logs results/tables_flank5
+mkdir -p logs results/tables_flank5_rmdup
 export PYTHONUNBUFFERED=1
-export THESIS_VARIANT=flank5
+export THESIS_VARIANT=flank5_rmdup
 
 python src/pipeline/python/04_modelling.py \
   --model xgb --features blosum50 \

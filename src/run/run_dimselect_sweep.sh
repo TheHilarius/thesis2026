@@ -1,11 +1,13 @@
 #!/bin/bash
 # run_dimselect_sweep.sh — per-dim supervised screening arms (dimselect).
 #
-# DATASET VARIANT: defaults to flank5 (19mer, 5aa flanks) from 2026-11-11
-# via config's THESIS_VARIANT mechanism. Pass --variant none for the
-# original 29mer. Screening caches are per-out-root, so a flank5 campaign
-# MUST use its own --out dir (e.g. runs/dimselect_flank5) — the cache
-# filename has no variant in it and would collide with 29mer rankings.
+# DATASET VARIANT: defaults to flank5_rmdup (19mer, 5aa flanks +
+# duplicate-window removal, N=45,278) from 2026-11-17 via config's
+# THESIS_VARIANT mechanism. Pass --variant none for the original 29mer,
+# --variant flank5 for the non-dedup 19mer. Screening caches are
+# per-out-root, so each variant campaign MUST use its own --out dir
+# (e.g. runs/dimselect_flank5) — the cache filename has no variant in it
+# and would collide across variants.
 #
 # Supervisor's "50 rows" idea: fold-nested per-dim screening (12_dim_screening),
 # keep top-N dims RAW (29 x N, no PCA), final XGB. Arms:
@@ -47,7 +49,7 @@ REPO=/home/projects/thesis_s204692_s204581/thesis2026
 if [[ "${1:-}" == "--submit" ]]; then
     shift
     OUT_ROOT=""
-    VARIANT="flank5"   # default: 19mer (5aa flanks); --variant none = 29mer
+    VARIANT="flank5_rmdup"   # default: 19mer dedup; --variant none = 29mer, flank5 = non-dedup 19mer
     ARM_SPECS=()
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -60,7 +62,7 @@ if [[ "${1:-}" == "--submit" ]]; then
     done
     [[ "$VARIANT" == "none" || "$VARIANT" == "off" ]] && VARIANT=""
     [[ -n "$OUT_ROOT" && ${#ARM_SPECS[@]} -gt 0 ]] || {
-        echo "usage: --submit --out DIR [--variant flank5|none] --arm feature:topn:screen:cpus:memGB:hours ..." >&2
+        echo "usage: --submit --out DIR [--variant flank5_rmdup|flank5|none] --arm feature:topn:screen:cpus:memGB:hours ..." >&2
         exit 1; }
     if [[ -z "$VARIANT" ]]; then
         echo "WARNING: --variant none (29mer) — ensure --out is a 29mer campaign dir" >&2
@@ -73,7 +75,7 @@ if [[ "${1:-}" == "--submit" ]]; then
             --cpus-per-task="$cpus" --mem="${mem}G" --time="${hrs}:00:00" \
             --output="$OUT_ROOT/logs/slurm/${feature}_n${topn}_${screen}_%j.out" \
             --error="$OUT_ROOT/logs/slurm/${feature}_n${topn}_${screen}_%j.err" \
-            --export=ALL,FEATURE="$feature",TOPN="$topn",SCREEN="$screen",OUT_ROOT="$OUT_ROOT",THESIS_VARIANT="$VARIANT" \
+            --export=ALL,FEATURE="$feature",TOPN="$topn",SCREEN="$screen",OUT_ROOT="$OUT_ROOT",THESIS_VARIANT="${VARIANT:-none}" \
             "$0"
     done
     echo "submitted ${#ARM_SPECS[@]} jobs (variant=${VARIANT:-29mer}); squeue -u \$USER -n dim_ to monitor"

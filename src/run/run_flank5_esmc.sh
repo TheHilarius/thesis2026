@@ -9,17 +9,18 @@
 set -euo pipefail
 cd /home/projects/thesis_s204692_s204581/thesis2026
 source env_esmc_server/bin/activate
-mkdir -p logs results/tables_flank5
+mkdir -p logs results/tables_flank5_rmdup
 export PYTHONUNBUFFERED=1
-export THESIS_VARIANT=flank5
+export THESIS_VARIANT=flank5_rmdup
 
+# rmdup dim ranking -> its own dir (tables_flank5/ holds non-dedup flank5)
 python src/investigation/10_dim_variance.py \
   --keys esmc300m_win_padtoken --ev 80 \
-  --out-dir results/tables_flank5 --out-root runs/flank5_compare
+  --out-dir results/tables_flank5_rmdup --out-root runs/flank5_compare
 
 python src/pipeline/python/04_modelling.py \
   --model xgb --features handcrafted_esmc300m_win_padtoken \
-  --vardims results/tables_flank5/dim_variance_esmc300m_win_padtoken_ev80.json \
+  --vardims results/tables_flank5_rmdup/dim_variance_esmc300m_win_padtoken_ev80.json \
   --out-root runs/flank5_compare
 
 echo "FLANK5 ESMC DONE"
