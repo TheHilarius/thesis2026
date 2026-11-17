@@ -1027,6 +1027,10 @@ df_effect_sizes <- tibble(
 write_csv(df_effect_sizes, file.path(EFFECT_DIR, "effect_sizes_summary.csv"))
 cat("Saved: ", file.path(EFFECT_DIR, "effect_sizes_summary.csv"), "\n", sep = "")
 
+# Margin line on the KS D axis: reference only (sweep tier "Very good" < 0.05).
+# The equivalence verdict itself is delta-based (|delta| < 0.147) - see CSV.
+D0 <- 0.05
+
 df_ci_plot <- tibble(
   Stage = c("Before matching", "After matching (25 bins)"),
   D     = c(ks_before$statistic, ks_after$statistic),
@@ -1037,7 +1041,7 @@ df_ci_plot <- tibble(
 df_ci_labels <- tibble(
   Stage = factor(c("After matching (25 bins)", "Before matching"),
                  levels = levels(df_ci_plot$Stage)),
-  x     = c(ci_after[2], ci_before[2]) + 0.03,
+  x     = c(ci_after[2], ci_before[2]) - 0.015,
   lab   = paste0("CLES = ", round(100 * c(cles_after, cles_before), 1), "%")
 )
 
@@ -1051,11 +1055,11 @@ p_ci <- ggplot(df_ci_plot, aes(x = D, y = Stage)) +
   geom_point(size = 3.5, colour = "#3498db") +
   geom_text(data = df_ci_labels, inherit.aes = FALSE,
             aes(x = x, y = Stage, label = lab),
-            size = 3.2, fontface = "bold", hjust = 0, colour = "grey25") +
+            size = 3.2, fontface = "bold", hjust = 1, colour = "grey25") +
   coord_cartesian(xlim = c(0, max(df_ci_plot$hi, D0) * 1.15)) +
   labs(
     title    = "KS D Between Rank Distributions, With Bootstrap 95% CI",
-    subtitle = paste0(HLA_PLOT_FOR(ALLELE_TAG), " 9-mers  |  below the margin \u2192 distributions practically identical"),
+    subtitle = paste0(HLA_PLOT_FOR(ALLELE_TAG), " 9-mers  |  equivalence judged on Cliff's \u0394 (95% CI within \u00b10.147) - see effect_sizes_summary.csv"),
     x = "KS D (max ECDF gap)", y = NULL
   ) +
   theme_bw(base_size = 13) +
