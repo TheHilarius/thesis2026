@@ -60,7 +60,12 @@ AE_ARMS = [
     ("ae512e30", "cv_results_xgb_emb_esmc300m_win_padtoken_autoencoder_lat512_20261108_025159.json"),
     ("ae768",    "cv_results_xgb_emb_esmc300m_win_padtoken_autoencoder_lat768_20261107_211430.json"),
     ("ae768e30", "cv_results_xgb_emb_esmc300m_win_padtoken_autoencoder_lat768_20261108_043730.json"),
+    ("ae768e45", "cv_results_xgb_emb_esmc300m_win_padtoken_autoencoder_lat768_20261112_220031.json"),
     ("ae960",    "cv_results_xgb_emb_esmc300m_win_padtoken_autoencoder_lat960_20261108_214006.json"),
+    ("ae960e30", "cv_results_xgb_emb_esmc300m_win_padtoken_autoencoder_lat960_20261114_014006.json"),
+    # e60/e90 (20261113_200309, 20261114_013446) byte-identical to e45:
+    # early stop (patience 3) converges at the same epoch regardless of cap,
+    # deterministic seed -> same weights. Excluded as duplicates.
 ]
 REF_ARMS = [
     ("var643", R / "is_encodings_helping_v2/models/vardims/"
