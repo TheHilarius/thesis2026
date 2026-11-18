@@ -13,8 +13,10 @@
 #   logo_random_top10.png            bits logo, top decile
 #   logo_random_bottom10.png         bits logo, bottom decile
 #   differential_logo_random.png     custom PPM: top - bottom (ggseqlogo)
-#   differential_logo_random_difflogo.png     DiffLogo, letters = p1 - p2
-#   differential_logo_random_difflogo_js.png  DiffLogo, letters = JS divergence
+#   differential_logo_random_difflogo.png     ggseqlogo, letters = p_top - p_bot
+#   differential_logo_random_difflogo_js.png  ggseqlogo, letters = JS divergence
+#   (DiffLogo supplies only the '*' p-values; its renderer flips negative
+#   letters upside-down, so letters use ggseqlogo to stay upright)
 #   difflogo_random_pvalues.tsv      DiffLogo permutation p-values
 #
 # ggseqlogo scaffolding from 12_sequence_logos.R; DiffLogo block copied from
@@ -146,7 +148,8 @@ ggsave(file.path(OUT, "differential_logo_random.png"), plot = p_diff,
 cat("Saved: differential_logo_random.png\n")
 
 # -----------------------------------------------------------------------------
-# 3. DiffLogo + permutation test (block verbatim from 13_difflogo_significance.R)
+# 3. DiffLogo permutation test only (letters drawn with ggseqlogo below, so
+#    negative stacks stay UPRIGHT; DiffLogo's addLetter flips ht < 0 by design)
 # -----------------------------------------------------------------------------
 if (!requireNamespace("DiffLogo", quietly = TRUE)) {
   stop("DiffLogo not installed. Run: install.packages('BiocManager'); ",
@@ -187,45 +190,70 @@ cat("  done in", round(as.numeric(difftime(Sys.time(), t0, units = "secs")), 1),
     "s\n")
 obj_js$pvals <- obj_ppm$pvals   # p-value depends only on n1/n2/p1/p2, not scale
 
-render_logo <- function(obj, out_png, scale_note, main_title) {
-  png(out_png, width = 20, height = 5.5, units = "in", res = 300)
-  op <- par(mar = c(6, 5.5, 6.5, 1.5))
-  diffLogo(obj, sparse = TRUE, ymin = obj$ylim.negMax, ymax = obj$ylim.posMax)
-  axis(1, at = seq_along(all_pos_features), labels = all_pos_features,
-       tick = FALSE, cex.axis = 0.8, font = 2, line = -1)
-  n_cf <- n_pos - n_flank - pep_len
-  axis(1, at = c(n_flank / 2, n_flank + pep_len / 2,
-                 n_flank + pep_len + n_cf / 2),
-       labels = c("N-Flank", "Peptide", "C-Flank"),
-       tick = FALSE, cex.axis = 0.8, line = 3.5, col.ticks = NA,
-       col.axis = "grey30")
-  title(ylab = obj$ylab)
-  title(main = main_title, font.main = 2)
-  mtext("Top (Positive) = enriched in model-PRESENTED random windows",
-        side = 3, line = 2.0, cex = 0.75, col = "grey30")
-  mtext(sprintf(paste0("* = DiffLogo permutation p < 0.05 (1000 shuffles; ",
-                       "n1 = %s, n2 = %s) | %s"),
-                format(n1, big.mark = ","), format(n2, big.mark = ","),
-                scale_note),
-        side = 3, line = 1.0, cex = 0.7, col = "grey30")
-  abline(v = c(n_flank + 0.5, n_flank + pep_len + 0.5), lty = 2, col = "grey50")
-  legend("topleft",
-         legend = c("Acidic", "Basic", "Hydrophobic", "Neutral", "Polar"),
-         fill = c("#D62839", "#255C99", "#221E22", "#5E239D", "#109648"),
-         border = NA, bty = "n", cex = 0.7)
-  par(op)
-  dev.off()
+# Letter matrices reproducing DiffLogo's two display scales exactly (upright):
+#   diff: p_top - p_bot;  js: (p_top - p_bot)/sum|..| * JS height
+# (merge of 46419d5 + 5ebb687: dynamic window layout + upright ggseqlogo letters)
+m_top <- as.matrix(ppm_top)
+m_bot <- as.matrix(ppm_bot)
+rownames(m_top) <- aa_alphabet
+rownames(m_bot) <- aa_alphabet
+diff_rand <- m_top - m_bot
+js_h_rand <- vapply(seq_along(all_pos_features), function(j)
+  shannonDivergence(m_top[, j], m_bot[, j])$height, numeric(1))
+js_rand <- sapply(seq_along(all_pos_features), function(j) {
+  d <- m_top[, j] - m_bot[, j]
+  s <- sum(abs(d))
+  if (s == 0 || js_h_rand[j] == 0) rep(0, length(d)) else d / s * js_h_rand[j]
+})
+rownames(js_rand) <- aa_alphabet
+colnames(js_rand) <- all_pos_features
+
+# Region labels under the axis — positions dynamic (from 46419d5)
+n_cf <- n_pos - n_flank - pep_len
+region_labs <- data.frame(
+  x     = c(n_flank / 2, n_flank + pep_len / 2, n_flank + pep_len + n_cf / 2),
+  label = c("N-Flank", "Peptide", "C-Flank")
+)
+
+render_ggdiff <- function(mat, y_label, out_png, scale_note, main_title) {
+  pvals <- obj_ppm$pvals
+  sig_x <- which(pvals < 0.05)
+  y_lo <- min(mat)
+  y_hi <- max(mat)
+  span <- y_hi - y_lo
+  if (span == 0) span <- 1
+  y_star   <- y_lo - 0.15 * span
+  y_region <- y_star - 0.10 * span   # region labels sit below the stars
+  star_df <- tibble(x = sig_x, y = y_star, label = "*")
+  p <- ggseqlogo(mat, method = "custom") +
+    pos_dividers + theme_logo_slide +
+    geom_text(data = star_df, aes(x = x, y = y, label = label),
+              inherit.aes = FALSE, size = 6) +
+    geom_text(data = region_labs, aes(x = x, y = y_region, label = label),
+              inherit.aes = FALSE, size = 4, color = "grey30") +
+    coord_cartesian(ylim = c(y_region - 0.05 * span, y_hi + 0.06 * span),
+                    clip = "off") +
+    lab_rand(main_title,
+             paste0("Top (Positive) = enriched in model-PRESENTED random windows\n",
+                    sprintf(paste0("* = DiffLogo permutation p < 0.05 (1000 shuffles; ",
+                                   "n1 = %s, n2 = %s) | %s | Colours: ggseqlogo ",
+                                   "chemistry scheme (Acidic=#D62839, Basic=#255C99, ",
+                                   "Hydrophobic=#221E22, Polar=#5E239D, Neutral=#109648)"),
+                            format(n1, big.mark = ","), format(n2, big.mark = ","),
+                            scale_note)),
+             y_label)
+  ggsave(out_png, plot = p, width = 20, height = 5.5, dpi = 300)
   cat("Saved:", out_png, "\n")
 }
 
-render_logo(obj_ppm,
-            file.path(OUT, "differential_logo_random_difflogo.png"),
-            "letters = difference in probability",
-            "DiffLogo: top 10% vs bottom 10% (random windows)")
-render_logo(obj_js,
-            file.path(OUT, "differential_logo_random_difflogo_js.png"),
-            "letters = JS divergence",
-            "DiffLogo (JS): top 10% vs bottom 10% (random windows)")
+render_ggdiff(diff_rand, "Difference in Probability",
+              file.path(OUT, "differential_logo_random_difflogo.png"),
+              "letters = difference in probability",
+              "DiffLogo: top 10% vs bottom 10% (random windows)")
+render_ggdiff(js_rand, "JS divergence",
+              file.path(OUT, "differential_logo_random_difflogo_js.png"),
+              "letters = JS divergence",
+              "DiffLogo (JS): top 10% vs bottom 10% (random windows)")
 
 # -----------------------------------------------------------------------------
 # 4. Per-position table (pattern from 13_)

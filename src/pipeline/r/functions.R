@@ -9,6 +9,10 @@ set_working_directory <- function() {
     setwd("//wsl$/Ubuntu/home/hilarius/projects/thesis2026")
   } else if (current_user == "hilarius") {
     setwd("/home/hilarius/projects/thesis2026")
+  } else if (file.exists("src/pipeline/r/functions.R")) {
+    # Unknown machine/user, but cwd already looks like the project root
+    # (e.g. WSL/conda runs) — stay where we are instead of stopping.
+    message("Unknown user '", current_user, "'; staying in ", getwd())
   } else {
     stop("Unknown user. Please set working directory manually.")
   }

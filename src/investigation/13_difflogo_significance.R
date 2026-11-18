@@ -25,15 +25,23 @@
 #   results/figures/logo/differential_logo_29mer_difflogo.png    letters = p1 - p0
 #   results/figures/logo/differential_logo_29mer_difflogo_js.png letters = JS div.
 #   results/figures/logo/difflogo_pvalues.tsv
-# Both figures use ggseqlogo's "chemistry" colour scheme so they match
-# differential_logo_29mer.png.
+# Letters are drawn with ggseqlogo (method = "custom"), so negative (depleted)
+# stacks stay UPRIGHT below zero like differential_logo_29mer.png. DiffLogo is
+# used only for its permutation p-values ('*'), never for letter polygons
+# (DiffLogo's addLetter flips ht < 0 letters upside-down by design).
 #
 # Data + PPM math copied verbatim from 12_sequence_logos.R (sec. 1-2):
 # per-column NA drop so terminus gaps don't skew probabilities; X residues are
 # outside the 20-letter alphabet and are dropped by factor(v, levels = aa).
 #
 # Requires: DiffLogo (BiocManager::install("DiffLogo"))
-# Run from repo root:  Rscript src/investigation/13_difflogo_significance.R
+# Run from repo root:
+#   Rscript src/investigation/13_difflogo_significance.R [OUT] [IN_CSV]
+#   OUT    output folder (default results/figures/logo)
+#   IN_CSV input data (default data/processed/df_all_with_folds.csv)
+# Example:
+#   Rscript src/investigation/13_difflogo_significance.R \
+#     results/figures/logo/flank10_pre_remove
 # =============================================================================
 
 if (!requireNamespace("DiffLogo", quietly = TRUE)) {
@@ -42,16 +50,21 @@ if (!requireNamespace("DiffLogo", quietly = TRUE)) {
 }
 
 library(tidyverse)
+library(ggseqlogo)
 library(DiffLogo)
 source("src/pipeline/r/functions.R")
 set_working_directory()
 
-dir.create("results/figures/logo", showWarnings = FALSE, recursive = TRUE)
+args <- commandArgs(trailingOnly = TRUE)
+OUT <- if (length(args) >= 1) args[1] else "results/figures/logo"
+IN_CSV <- if (length(args) >= 2) args[2] else "data/processed/df_all_with_folds.csv"
+
+dir.create(OUT, showWarnings = FALSE, recursive = TRUE)
 
 # -----------------------------------------------------------------------------
 # 1. Data (verbatim from 12_sequence_logos.R)
 # -----------------------------------------------------------------------------
-df_folds <- read_csv("data/processed/df_all_with_folds.csv", show_col_types = FALSE)
+df_folds <- read_csv(IN_CSV, show_col_types = FALSE)
 
 n_flank_features  <- paste0("N", 10:1)
 peptide_features  <- paste0("P", 1:9)
@@ -140,52 +153,79 @@ cat("  done in", round(as.numeric(difftime(Sys.time(), t0, units = "secs")), 1),
 obj_js$pvals <- obj_ppm$pvals
 
 # -----------------------------------------------------------------------------
-# 4. Figures (DiffLogo draws base graphics; sparse = blank x tick labels so we
-#    can put the real N/P/C feature names on the axis instead of 1..29)
+# 4. Figures — ggseqlogo draws the letters (upright below zero, same style as
+#    12_sequence_logos.R); DiffLogo supplies only the '*' significance marks.
 # -----------------------------------------------------------------------------
-render_logo <- function(obj, out_png, scale_note) {
-  png(out_png, width = 20, height = 5.5, units = "in", res = 300)
-  op <- par(mar = c(6, 5.5, 6.5, 1.5))
+theme_logo_slide <- function() {
+  theme_logo() +
+    theme(
+      plot.title = element_text(face = "bold", size = 16, hjust = 0.5),
+      plot.subtitle = element_text(size = 11, hjust = 0.5, color = "grey30"),
+      axis.text.x = element_text(size = 11, face = "bold", angle = 0),
+      panel.grid.major.y = element_line(color = "grey90")
+    )
+}
 
-  # diffLogo() defaults ymin/ymax to c(posMax, negMax), which reverses the
-  # y-axis (positive/enriched would point down) — pass them in normal order.
-  diffLogo(obj, sparse = TRUE, ymin = obj$ylim.negMax, ymax = obj$ylim.posMax)
-  axis(1, at = seq_along(all_pos_features), labels = all_pos_features,
-       tick = FALSE, cex.axis = 0.8, font = 2, line = -1)
-  # region names at the real column centres (N=1-10, P=11-19, C=20-29)
-  axis(1, at = c(5.5, 15, 24.5),
-       labels = c("N-Flank", "Peptide", "C-Flank"),
-       tick = FALSE, cex.axis = 0.8, line = 3.5, col.ticks = NA,
-       col.axis = "grey30")
-  title(ylab = obj$ylab)
-  title(main = "Differential Sequence Logo: Presented vs. Not Presented",
-        font.main = 2)
-  mtext("Top (Positive) = Enriched in Presented | Bottom (Negative) = Depleted in Presented",
-        side = 3, line = 2.0, cex = 0.75, col = "grey30")
-  mtext(sprintf(paste0("* = DiffLogo permutation p < 0.05 (1000 shuffles; ",
-                       "n1 = %s, n2 = %s) | %s"),
+pos_dividers <- list(
+  geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5),
+  geom_vline(xintercept = 10.5, linetype = "dashed", color = "grey50"),
+  geom_vline(xintercept = 19.5, linetype = "dashed", color = "grey50"),
+  scale_x_continuous(breaks = 1:29, labels = all_pos_features)
+)
+
+# Letter matrices reproducing DiffLogo's two display scales exactly:
+#   diff_mat: p1 - p0 (== sumOfAbsProbDiffs x normalized-difference)
+#   js_mat:   (p1 - p0)/sum|p1 - p0| * JS height (== DiffLogo JS default)
+m1 <- as.matrix(ppm_1)
+m0 <- as.matrix(ppm_0)
+rownames(m1) <- aa_alphabet
+rownames(m0) <- aa_alphabet
+diff_mat <- m1 - m0
+js_h <- vapply(seq_along(all_pos_features), function(j)
+  shannonDivergence(m1[, j], m0[, j])$height, numeric(1))
+js_mat <- sapply(seq_along(all_pos_features), function(j) {
+  d <- m1[, j] - m0[, j]
+  s <- sum(abs(d))
+  if (s == 0 || js_h[j] == 0) rep(0, length(d)) else d / s * js_h[j]
+})
+rownames(js_mat) <- aa_alphabet
+colnames(js_mat) <- all_pos_features
+
+render_ggdiff <- function(mat, y_label, out_png, scale_note) {
+  pvals <- obj_ppm$pvals
+  sig_x <- which(pvals < 0.05)
+  y_lo <- min(mat)
+  y_hi <- max(mat)
+  span <- y_hi - y_lo
+  if (span == 0) span <- 1
+  y_star <- y_lo - 0.15 * span
+  star_df <- tibble(x = sig_x, y = y_star, label = "*")
+  p <- ggseqlogo(mat, method = "custom") +
+    pos_dividers +
+    geom_text(data = star_df, aes(x = x, y = y, label = label),
+              inherit.aes = FALSE, size = 6) +
+    coord_cartesian(ylim = c(y_star - 0.08 * span, y_hi + 0.06 * span),
+                    clip = "off") +
+    theme_logo_slide() +
+    labs(
+      title = "Differential Sequence Logo: Presented vs. Not Presented",
+      subtitle = paste0(
+        "Top (Positive) = Enriched in Presented | Bottom (Negative) = Depleted in Presented\n",
+        sprintf("* = DiffLogo permutation p < 0.05 (1000 shuffles; n1 = %s, n2 = %s) | %s",
                 format(n1, big.mark = ","), format(n2, big.mark = ","),
-                scale_note),
-        side = 3, line = 1.0, cex = 0.7, col = "grey30")
-  abline(v = c(10.5, 19.5), lty = 2, col = "grey50")
-  # chemistry legend (ggseqlogo drew this below the axis; bottom row here is
-  # taken by the region names, so it goes into the empty top-left corner)
-  legend("topleft",
-         legend = c("Acidic", "Basic", "Hydrophobic", "Neutral", "Polar"),
-         fill = c("#D62839", "#255C99", "#221E22", "#5E239D", "#109648"),
-         border = NA, bty = "n", cex = 0.7)
-
-  par(op)
-  dev.off()
+                scale_note)),
+      x = "Sequence Position (N-Flank \u2192 Peptide \u2192 C-Flank)",
+      y = y_label)
+  ggsave(out_png, plot = p, width = 20, height = 5.5, dpi = 300)
   cat("Saved:", out_png, "\n")
 }
 
-render_logo(obj_ppm,
-            "results/figures/logo/differential_logo_29mer_difflogo.png",
-            "letters = difference in probability")
-render_logo(obj_js,
-            "results/figures/logo/differential_logo_29mer_difflogo_js.png",
-            "letters = JS divergence")
+render_ggdiff(diff_mat, "Difference in Probability",
+              file.path(OUT, "differential_logo_29mer_difflogo.png"),
+              "letters = difference in probability")
+render_ggdiff(js_mat, "JS divergence",
+              file.path(OUT, "differential_logo_29mer_difflogo_js.png"),
+              "letters = JS divergence")
 
 # -----------------------------------------------------------------------------
 # 5. Per-position table — DiffLogo's own p-values + effect sizes
@@ -211,7 +251,7 @@ tib <- tibble(
   significant_05 = pvals < 0.05
 )
 
-out_tsv <- "results/figures/logo/difflogo_pvalues.tsv"
+out_tsv <- file.path(OUT, "difflogo_pvalues.tsv")
 write_tsv(tib, out_tsv)
 cat("Saved:", out_tsv, "\n")
 
