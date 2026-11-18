@@ -38,9 +38,9 @@ import pandas as pd
 
 from config import DATA_DIR, N_CV_FOLDS, HELD_OUT_INDEX
 
-DEFAULT_AUDIT = Path("results/tables/fold_audit_cluster.csv")
+DEFAULT_AUDIT = Path("runs/r19_rmdup/results/fold_audit_cluster.csv")
 DEFAULT_CMAP = DATA_DIR / "cluster_map_peptide.csv"
-DEFAULT_OUTDIR = Path("results/figures/fold_audit")
+DEFAULT_RUN_ROOT = Path("runs/r19_rmdup")
 
 STAT_ORDER = ["rows", "pos_pct", "dup_frac", "n_clusters",
               "mean_cl_size", "largest_share"]
@@ -135,13 +135,23 @@ def main():
     ap = argparse.ArgumentParser(description="Plot fold-difficulty audit results.")
     ap.add_argument("--audit", default=str(DEFAULT_AUDIT))
     ap.add_argument("--cmap", default=str(DEFAULT_CMAP))
-    ap.add_argument("--outdir", default=str(DEFAULT_OUTDIR))
+    ap.add_argument("--run-root", default=str(DEFAULT_RUN_ROOT),
+                    help="run tree the audit belongs to; outdir defaults "
+                         "to <run-root>/plots/<audit-stem-minus-fold_audit_>")
+    ap.add_argument("--outdir", default=None,
+                    help="override the derived output directory")
     a = ap.parse_args()
 
     audit_df = pd.read_csv(a.audit)
     cmap_df = pd.read_csv(a.cmap)
 
-    outdir = Path(a.outdir)
+    if a.outdir:
+        outdir = Path(a.outdir)
+    else:
+        stem = Path(a.audit if a.audit else DEFAULT_AUDIT).stem
+        suffix = stem.replace("fold_audit_", "", 1) if stem.startswith("fold_audit_") else stem
+        outdir = Path(a.run_root) / "plots" / f"fold_audit_{suffix}" if suffix != "cluster" \
+            else Path(a.run_root) / "plots" / "fold_audit"
     outdir.mkdir(parents=True, exist_ok=True)
 
     p1 = plot_intervals(audit_df, outdir / "fold_audit_intervals.png")
