@@ -604,7 +604,7 @@ p2 <- ggplot(df_rank_pre, aes(x = rank, fill = label)) +
     title    = "Affinity Bias Check: NetMHCpan EL Rank Distribution",
     subtitle = paste0("9-mers  |  ", HLA_PLOT_FOR(ALLELE_TAG), "  |  CLES = ",
                       round(100 * cles_before, 1),
-                      "% (positives rank better than negatives this often)"),
+                      "% (positives rank better)"),
     x = "NetMHCpan EL Rank (%)", y = "Density", fill = NULL
   ) +
   theme_bw(base_size = 13) +
@@ -1041,7 +1041,9 @@ df_ci_plot <- tibble(
 df_ci_labels <- tibble(
   Stage = factor(c("After matching (25 bins)", "Before matching"),
                  levels = levels(df_ci_plot$Stage)),
-  x     = c(ci_after[2], ci_before[2]) - 0.015,
+  x     = ifelse(c(ks_after$statistic, ks_before$statistic) > 0.3,
+                 c(ci_after[1], ci_before[1]) - 0.03,   # room to the left
+                 c(ci_after[2], ci_before[2]) + 0.03),  # little room: label right
   lab   = paste0("CLES = ", round(100 * c(cles_after, cles_before), 1), "%")
 )
 
@@ -1055,11 +1057,13 @@ p_ci <- ggplot(df_ci_plot, aes(x = D, y = Stage)) +
   geom_point(size = 3.5, colour = "#3498db") +
   geom_text(data = df_ci_labels, inherit.aes = FALSE,
             aes(x = x, y = Stage, label = lab),
-            size = 3.2, fontface = "bold", hjust = 1, colour = "grey25") +
+            size = 3.2, fontface = "bold",
+            hjust = ifelse(c(ks_after$statistic, ks_before$statistic) > 0.3, 1, 0),
+            colour = "grey25") +
   coord_cartesian(xlim = c(0, max(df_ci_plot$hi, D0) * 1.15)) +
   labs(
     title    = "KS D Between Rank Distributions, With Bootstrap 95% CI",
-    subtitle = paste0(HLA_PLOT_FOR(ALLELE_TAG), " 9-mers  |  equivalence judged on Cliff's \u0394 (95% CI within \u00b10.147) - see effect_sizes_summary.csv"),
+    subtitle = paste0(HLA_PLOT_FOR(ALLELE_TAG), " 9-mers  |  equivalence: Cliff's \u0394 95% CI within \u00b10.147"),
     x = "KS D (max ECDF gap)", y = NULL
   ) +
   theme_bw(base_size = 13) +
