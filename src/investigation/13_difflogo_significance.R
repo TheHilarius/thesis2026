@@ -226,11 +226,14 @@ render_ggdiff <- function(mat, y_label, out_png, scale_note) {
   cat("Saved:", out_png, "\n")
 }
 
+# output names derive from the actual position count (29-mer flank10, 19-mer flank5)
+logo_mer <- paste0(length(all_pos_features), "mer")
+
 render_ggdiff(diff_mat, "Difference in Probability",
-              file.path(OUT, "differential_logo_29mer_difflogo.png"),
+              file.path(OUT, sprintf("differential_logo_%s_difflogo.png", logo_mer)),
               "letters = difference in probability")
 render_ggdiff(js_mat, "JS divergence",
-              file.path(OUT, "differential_logo_29mer_difflogo_js.png"),
+              file.path(OUT, sprintf("differential_logo_%s_difflogo_js.png", logo_mer)),
               "letters = JS divergence")
 
 # -----------------------------------------------------------------------------
