@@ -158,7 +158,11 @@ def main() -> None:
                 + ("; chosen setting c=5 (last point before any downward drift)."
                    if VARIANT == "flank5_rmdup" else
                    "; dedup decision does not alter the sweep conclusion "
-                   "(orthogonality check)."))
+                   "(orthogonality check)."
+                ) + "  Chosen setting c=6: pepcut1 covers pep-diff<=1, "
+                    "identical-flank covers pep-diff>=2 with same flanks; "
+                    "c=6 closes the gap (pep-diff 2 + 4 cleavage-proximal "
+                    "flank positions).")
     d18._finish_padmode(
         fig, ax,
         TITLE,

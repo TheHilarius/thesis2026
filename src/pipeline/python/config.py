@@ -636,8 +636,13 @@ _EXCLUDE_COLS = set(METADATA_COLS) | set(POSITION_AA_COLS)
 # ──────────────────────────────────────────────
 HAMMING_CUTOFF = 1   # peptide-mode default (legacy; also canonical-vs-marked
                      # naming discriminator — NEVER point this at window c)
-WINDOW_CUTOFF = 5    # context-mode default: chosen window cutoff (sweep c=5,
-                     # pepcut1 rule; indistinguishable from c1-4 after Holm)
+WINDOW_CUTOFF = 6    # context-mode default: chosen window cutoff. Mechanistic
+                     # rationale: pepcut1 covers peptide-diff <=1, identical-flank
+                     # covers peptide-diff >=2 with identical flanks; the uncovered
+                     # worst case is peptide-diff 2 + flanks differing only in the
+                     # four cleavage-proximal positions (N5,N4 / C4,C5) -> d=6.
+                     # Supporting: AUC flat (c6 dip raw p=.043, ns after Holm),
+                     # fold-audit clean at c6, marginal-capture knee at 5.
 
 # ──────────────────────────────────────────────
 # FEATURE COMPONENTS (atomic building blocks)
