@@ -37,7 +37,7 @@ import pickle
 from pathlib import Path
 
 from config import (
-    SPLIT_DATA_PATH, LOG_DIR, MODEL_DIR, PROJECT_ROOT,
+    SPLIT_DATA_PATH, DEFAULT_SPLIT_PATH, LOG_DIR, MODEL_DIR, PROJECT_ROOT,
     N_CV_FOLDS, HELD_OUT_INDEX,
     PEPTIDE_COL, LABEL_COL, FOLD_COL,
     POSITION_AA_COLS, EMBEDDING_REGIONS, EMBEDDING_SOURCES,
@@ -1770,7 +1770,7 @@ if __name__ == "__main__":
     print(f"  Pool:            {pool if pool is not None else '-'}"
           + (f" ({pool_mask})" if pool is not None else ""))
     print(f"  Components:      {feat_cfg['components']}")
-    split_path = Path(args.split) if args.split else Path(SPLIT_DATA_PATH)
+    split_path = Path(args.split) if args.split else Path(DEFAULT_SPLIT_PATH)
     print(f"  Data path:       {split_path}"
           + ("  (CLI override)" if args.split else ""))
     print(f"  Log path:        {LOG_PATH}")

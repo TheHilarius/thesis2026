@@ -644,6 +644,13 @@ WINDOW_CUTOFF = 6    # context-mode default: chosen window cutoff. Mechanistic
                      # Supporting: AUC flat (c6 dip raw p=.043, ns after Holm),
                      # fold-audit clean at c6, marginal-capture knee at 5.
 
+# Read default for modelling: the CHOSEN robust split (pepcut1 + window
+# WINDOW_CUTOFF). SPLIT_DATA_PATH stays the 01_datasplit write target and
+# naming stem; THESIS_SPLIT env overrides.
+THESIS_SPLIT = os.environ.get("THESIS_SPLIT") or None
+DEFAULT_SPLIT_PATH = THESIS_SPLIT or SPLIT_DATA_PATH.with_name(
+    f"{SPLIT_DATA_PATH.stem}_updated_h{WINDOW_CUTOFF}_pepcut1.csv")
+
 # ──────────────────────────────────────────────
 # FEATURE COMPONENTS (atomic building blocks)
 # ──────────────────────────────────────────────

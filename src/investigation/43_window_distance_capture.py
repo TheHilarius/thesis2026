@@ -9,7 +9,7 @@ captured all homologous window pairs, so that raising c further prevents
 almost no additional leakage while coarsening the folds?
 
 Pool: all unique full_context windows of the THESIS split
-(df_all_with_folds_flank5_rmdup_updated_h5_pepcut1.csv), all pairs at
+(df_all_with_folds_flank5_rmdup_updated_h6_pepcut1.csv), all pairs at
 window-Hamming distance d <= 9 (pigeonhole index, provably complete).
 
 Per cutoff c = 1..9:
@@ -45,7 +45,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "src" / "pipeline" / "python"))
 
 RUN_ROOT = PROJECT_ROOT / "runs" / "r19_rmdup"
 THESIS_SPLIT = (PROJECT_ROOT / "data" / "processed" /
-                "df_all_with_folds_flank5_rmdup_updated_h5_pepcut1.csv")
+                "df_all_with_folds_flank5_rmdup_updated_h6_pepcut1.csv")
 CANON_SPLIT = (PROJECT_ROOT / "data" / "processed" /
                "df_all_with_folds_flank5_rmdup.csv")
 MAX_D = 9
