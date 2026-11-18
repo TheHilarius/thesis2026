@@ -66,9 +66,11 @@ dir.create(OUT, showWarnings = FALSE, recursive = TRUE)
 # -----------------------------------------------------------------------------
 df_folds <- read_csv(IN_CSV, show_col_types = FALSE)
 
-n_flank_features  <- paste0("N", 10:1)
+# Flank length adapts to the input CSV (29-mer default, 19-mer for flank5):
+# keep N10..N1 / C1..C10 that actually exist in the file.
+n_flank_features  <- intersect(paste0("N", 10:1), names(df_folds))
 peptide_features  <- paste0("P", 1:9)
-c_flank_features  <- paste0("C", 1:10)
+c_flank_features  <- intersect(paste0("C", 1:10),  names(df_folds))
 all_pos_features  <- c(n_flank_features, peptide_features, c_flank_features)
 
 # Same order as DiffLogo's built-in 20-letter protein alphabet (ASN).
@@ -166,11 +168,14 @@ theme_logo_slide <- function() {
     )
 }
 
+# region dividers between N-flank / peptide / C-flank (flank-length aware)
+n_len <- length(n_flank_features)
 pos_dividers <- list(
   geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5),
-  geom_vline(xintercept = 10.5, linetype = "dashed", color = "grey50"),
-  geom_vline(xintercept = 19.5, linetype = "dashed", color = "grey50"),
-  scale_x_continuous(breaks = 1:29, labels = all_pos_features)
+  geom_vline(xintercept = n_len + 0.5, linetype = "dashed", color = "grey50"),
+  geom_vline(xintercept = n_len + 9.5, linetype = "dashed", color = "grey50"),
+  scale_x_continuous(breaks = seq_along(all_pos_features),
+                     labels = all_pos_features)
 )
 
 # Letter matrices reproducing DiffLogo's two display scales exactly:
@@ -194,8 +199,10 @@ colnames(js_mat) <- all_pos_features
 render_ggdiff <- function(mat, y_label, out_png, scale_note) {
   pvals <- obj_ppm$pvals
   sig_x <- which(pvals < 0.05)
-  y_lo <- min(mat)
-  y_hi <- max(mat)
+  # ggseqlogo stacks letters cumulatively per column, so the real top/bottom
+  # is the sum of the positive / negative values, not max(mat) / min(mat)
+  y_hi <- max(apply(mat, 2, function(v) sum(pmax(v, 0))))
+  y_lo <- min(apply(mat, 2, function(v) sum(pmin(v, 0))))
   span <- y_hi - y_lo
   if (span == 0) span <- 1
   y_star <- y_lo - 0.15 * span
@@ -204,8 +211,7 @@ render_ggdiff <- function(mat, y_label, out_png, scale_note) {
     pos_dividers +
     geom_text(data = star_df, aes(x = x, y = y, label = label),
               inherit.aes = FALSE, size = 6) +
-    coord_cartesian(ylim = c(y_star - 0.08 * span, y_hi + 0.06 * span),
-                    clip = "off") +
+    coord_cartesian(ylim = c(y_star - 0.08 * span, y_hi + 0.06 * span)) +
     theme_logo_slide() +
     labs(
       title = "Differential Sequence Logo: Presented vs. Not Presented",
