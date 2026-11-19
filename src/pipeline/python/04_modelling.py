@@ -322,8 +322,8 @@ def load_all_components(df_split, feat_cfg, pca_mode="flat",
     # alternate CSVs (df_all_sparse.csv / df_all_blosum50.csv / ...) and are
     # only used when an AA-encoding component is selected.
     AA_ENCODING_COMPONENTS = {
-        "sparse", "blosum50", "blosum62", "blosum80", "kidera", "atchley",
-        "compositional"
+        "sparse", "blosum45", "blosum50", "blosum62", "blosum80", "blosum90",
+        "kidera", "atchley", "compositional"
     }
     csv_feature_cols = []
     if csv_components:

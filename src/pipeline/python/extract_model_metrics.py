@@ -41,7 +41,7 @@ def infer_embedding_mode(results):
     n_features = int(results.get("config", {}).get("n_features", -1))
 
     # "blosum"/"handcrafted_blosum" = legacy names, pre-rename to blosum50
-    if feature_set in ("sparse", "blosum", "blosum50",
+    if feature_set in ("sparse", "blosum", "blosum45", "blosum50", "blosum90",
                        "handcrafted_sparse", "handcrafted_blosum", "handcrafted_blosum50"):
         return "none"
 
