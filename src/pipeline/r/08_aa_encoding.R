@@ -55,9 +55,11 @@ non_position_cols <- setdiff(colnames(df_raw), POSITION_COLS)
 
 ENCODINGS <- list(
   sparse   = NULL,          # special-cased: one-hot
+  blosum45 = BLOSUM45,
   blosum50 = BLOSUM50,
   blosum62 = BLOSUM62,
   blosum80 = BLOSUM80,
+  blosum90 = BLOSUM90,
   kidera   = KIDERA,
   atchley  = ATCHLEY
 )

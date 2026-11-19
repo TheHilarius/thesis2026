@@ -199,9 +199,14 @@ def read_mem(features_key, campaign):
 
 
 # ── arms ────────────────────────────────────────────────────────────────
-ENCODINGS = ["sparse", "blosum50", "blosum62", "blosum80", "kidera", "atchley"]
-ENC_LABEL = {"sparse": "One-hot", "blosum50": "BLOSUM50", "blosum62": "BLOSUM62",
-             "blosum80": "BLOSUM80", "kidera": "Kidera", "atchley": "Atchley"}
+# blosum45/blosum90 arms exist only in is_encodings_helping_v2; the strict
+# missing-arm check below therefore refuses a rerun on the older 6-arm
+# encodings_sweep campaign (superseded; figures already final).
+ENCODINGS = ["sparse", "blosum45", "blosum50", "blosum62", "blosum80", "blosum90",
+             "kidera", "atchley"]
+ENC_LABEL = {"sparse": "One-hot", "blosum45": "BLOSUM45", "blosum50": "BLOSUM50",
+             "blosum62": "BLOSUM62", "blosum80": "BLOSUM80", "blosum90": "BLOSUM90",
+             "kidera": "Kidera", "atchley": "Atchley"}
 # padmode_choice palette (plot_padmode_data_compare.GROUP_COLORS)
 C_SOLO = "#BBBBBB"          # AA encoding (Tol grey)
 C_C    = "#EE6677"          # ESM-C  (Tol red)

@@ -56,8 +56,10 @@ SPLIT_DATA_PATH = _variant(DATA_DIR / "df_all_with_folds.csv")
 # df_all_<enc>.csv: encoded + all non-position cols (for R/analyses)
 SPARSE_DATA_PATH = _variant(DATA_DIR / "df_sparse.csv")
 BLOSUM50_DATA_PATH = _variant(DATA_DIR / "df_blosum50.csv")
+BLOSUM45_DATA_PATH = _variant(DATA_DIR / "df_blosum45.csv")
 BLOSUM62_DATA_PATH = _variant(DATA_DIR / "df_blosum62.csv")
 BLOSUM80_DATA_PATH = _variant(DATA_DIR / "df_blosum80.csv")
+BLOSUM90_DATA_PATH = _variant(DATA_DIR / "df_blosum90.csv")
 KIDERA_DATA_PATH = _variant(DATA_DIR / "df_kidera.csv")
 ATCHLEY_DATA_PATH = _variant(DATA_DIR / "df_atchley.csv")
 # Compositional: frac_<aa> = aa count across the 29 positions / 29
@@ -665,6 +667,11 @@ FEATURE_COMPONENTS = {
         "type": "csv",
         "csv_path": SPARSE_DATA_PATH,
     },
+    "blosum45": {
+        "display_name": "BLOSUM45 AA encoding",
+        "type": "csv",
+        "csv_path": BLOSUM45_DATA_PATH,
+    },
     "blosum50": {
         "display_name": "BLOSUM50 AA encoding",
         "type": "csv",
@@ -679,6 +686,11 @@ FEATURE_COMPONENTS = {
         "display_name": "BLOSUM80 AA encoding",
         "type": "csv",
         "csv_path": BLOSUM80_DATA_PATH,
+    },
+    "blosum90": {
+        "display_name": "BLOSUM90 AA encoding",
+        "type": "csv",
+        "csv_path": BLOSUM90_DATA_PATH,
     },
     "kidera": {
         "display_name": "Kidera factors AA encoding",
@@ -867,6 +879,10 @@ FEATURE_SETS = {
         "display_name": "Sparse one-hot AA only",
         "components": ["sparse"],
     },
+    "blosum45": {
+        "display_name": "BLOSUM45 AA only",
+        "components": ["blosum45"],
+    },
     "blosum50": {
         "display_name": "BLOSUM50 AA only",
         "components": ["blosum50"],
@@ -878,6 +894,10 @@ FEATURE_SETS = {
     "blosum80": {
         "display_name": "BLOSUM80 AA only",
         "components": ["blosum80"],
+    },
+    "blosum90": {
+        "display_name": "BLOSUM90 AA only",
+        "components": ["blosum90"],
     },
     "kidera": {
         "display_name": "Kidera factors AA only",
@@ -1092,11 +1112,12 @@ FEATURE_SETS = {
 # <enc>_<emb> (encoding + embedding, no structural) and
 # handcrafted_<enc>_<emb> (all three).
 # Existing entries are kept as-is.
-_AA_ENCODINGS = ["sparse", "blosum50", "blosum62", "blosum80", "kidera", "atchley",
-                 "compositional"]
+_AA_ENCODINGS = ["sparse", "blosum45", "blosum50", "blosum62", "blosum80", "blosum90",
+                 "kidera", "atchley", "compositional"]
 _AA_DISPLAY = {
-    "sparse": "one-hot", "blosum50": "BLOSUM50", "blosum62": "BLOSUM62",
-    "blosum80": "BLOSUM80", "kidera": "Kidera factors", "atchley": "Atchley factors",
+    "sparse": "one-hot", "blosum45": "BLOSUM45", "blosum50": "BLOSUM50",
+    "blosum62": "BLOSUM62", "blosum80": "BLOSUM80", "blosum90": "BLOSUM90",
+    "kidera": "Kidera factors", "atchley": "Atchley factors",
     "compositional": "AA composition",
 }
 _AA_EMB_PAIRS = [
