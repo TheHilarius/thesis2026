@@ -48,19 +48,28 @@ try:
 except ImportError:
     sys.exit("optuna not installed locally — pip install optuna")
 
-RUN_DIR = PROJECT_ROOT / "runs" / "xgb_optuna"
-PLOTS = RUN_DIR / "plots"
+RUN_DIR = PROJECT_ROOT / "runs" / "xgb_optuna"     # blosum50 arm default;
+PLOTS = RUN_DIR / "plots"                          # overridden per --study-name
 STUDY_NAME = "xgb_blosum50"
+LABEL = "XGB blosum50"                             # figure title prefix
 PARAMS = ["max_depth", "min_child_weight", "gamma", "subsample",
           "colsample_bytree", "reg_alpha", "reg_lambda"]
 
 
-def load_study(db_name: str) -> optuna.Study:
+def arm_dir(study_name: str) -> Path:
+    """Mirror 46_xgb_optuna_tune.arm_paths: xgb_blosum50 stays the original
+    runs/xgb_optuna/, any other arm lives in runs/xgb_optuna_<features>/."""
+    if study_name == "xgb_blosum50":
+        return PROJECT_ROOT / "runs" / "xgb_optuna"
+    return PROJECT_ROOT / "runs" / f"xgb_optuna_{study_name.removeprefix('xgb_')}"
+
+
+def load_study(db_name: str, study_name: str) -> optuna.Study:
     study = optuna.load_study(
-        study_name=STUDY_NAME,
-        storage=f"sqlite:///{RUN_DIR / db_name}")
+        study_name=study_name,
+        storage=f"sqlite:///{arm_dir(study_name) / db_name}")
     done = [t for t in study.trials if t.state.name == "COMPLETE"]
-    print(f"Study '{STUDY_NAME}': {len(study.trials)} trials, "
+    print(f"Study '{study_name}': {len(study.trials)} trials, "
           f"{len(done)} complete, best AUC={study.best_value:.4f}")
     return study
 
@@ -80,7 +89,7 @@ def fig_history(study):
             label="best so far")
     ax.set_xlabel("Trial number")
     ax.set_ylabel("Mean CV AUC-ROC (6 buckets)")
-    ax.set_title("XGB blosum50 — Optuna optimization history "
+    ax.set_title(f"{LABEL} — Optuna optimization history "
                  f"(TPE, {len(ts)} trials)")
     ax.legend(frameon=False)
     ax.grid(alpha=0.3)
@@ -96,7 +105,7 @@ def fig_importance(study):
     fig, ax = plt.subplots(figsize=(7, 4))
     ax.barh(names[::-1], vals[::-1], color="tab:blue")
     ax.set_xlabel("Importance (fraction)")
-    ax.set_title("XGB blosum50 — hyperparameter importance "
+    ax.set_title(f"{LABEL} — hyperparameter importance "
                  "(fANOVA on completed trials)")
     ax.grid(alpha=0.3, axis="x")
     fig.tight_layout()
@@ -123,7 +132,7 @@ def fig_parallel(study):
     ax.set_xticks(range(len(PARAMS)))
     ax.set_xticklabels(PARAMS, rotation=30, ha="right")
     ax.set_ylabel("normalized value")
-    ax.set_title("XGB blosum50 — parallel coordinates "
+    ax.set_title(f"{LABEL} — parallel coordinates "
                  "(line color = trial AUC, dark = low, bright = high)")
     ax.grid(alpha=0.3)
     fig.tight_layout()
@@ -157,11 +166,22 @@ def fig_auc_vs_logloss(study):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     ap.add_argument("--study", default="study.db",
-                    help="study db filename under runs/xgb_optuna/ "
+                    help="study db filename under the arm's runs dir "
                          "(default study.db; use study_smoke.db for smoke)")
+    ap.add_argument("--study-name", default="xgb_blosum50",
+                    help="study name (default xgb_blosum50; e.g. "
+                         "xgb_handcrafted_blosum50 for the hc arm — "
+                         "figures land in that arm's runs dir)")
     args = ap.parse_args()
+
+    global RUN_DIR, PLOTS, STUDY_NAME, LABEL
+    STUDY_NAME = args.study_name
+    RUN_DIR = arm_dir(STUDY_NAME)
+    PLOTS = RUN_DIR / "plots"
+    LABEL = f"XGB {STUDY_NAME.removeprefix('xgb_')}"
+
     PLOTS.mkdir(parents=True, exist_ok=True)
-    study = load_study(args.study)
+    study = load_study(args.study, STUDY_NAME)
     fig_history(study)
     fig_importance(study)
     fig_parallel(study)
