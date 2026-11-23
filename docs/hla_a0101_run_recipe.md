@@ -50,10 +50,20 @@ python3 src/fetch/fetch_uniprot_fastas.py \
 python3 src/util/batch_fasta.py data/raw/fasta/hla_a0101_positives_only.fasta \
   data/raw/fasta/a0101_batches 50
 
-# 4. netMHCpan (9-mers only, HLA-A01:01) — sbatch/srun, not login shell
+# 4. netMHCpan (9-mers only, HLA-A01:01) — compute node, NOT login shell.
+#    Slurm wrapper with receipts (recommended):
+NMPAN_DIR=$(dirname "$(which netMHCpan)") \
+  sbatch --export=ALL src/run/run_netmhcpan_a0101_slurm.sh
+#    (NMPAN_DIR only needed if netMHCpan is missing from the batch shell PATH)
+#    Direct runner call, e.g. inside srun --pty:
 bash src/tools/netmhcpan/run_netmhcpan_parallel.sh \
   data/raw/fasta/a0101_batches data/processed/hla_a0101/netmhcpan \
   hla_a0101 10 HLA-A01:01 9
+#    Receipts: logs/netmhcpan/a0101_nmpan_<jobid>.out/.err +
+#    per-batch .txt (each carries the binary version banner).
+#    Resume-safe: completed batches (csv+txt non-empty) are skipped on
+#    resubmit. Runner itself exits 0 even on batch failures — the sbatch
+#    wrapper cross-checks output counts and exits 1 if incomplete.
 #    Installed binary is 4.2e vs legacy 4.2b (same family; note in thesis
 #    methods). Footer rows of length 7 in the csvs are harmless (04 filters).
 
