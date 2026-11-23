@@ -106,5 +106,8 @@
   if (ALLELE_TAG == "hla0201") {
     cat("Next step: run python src/fetch/fetch_uniprot_fastas.py\n")
   } else {
-    cat("Next step: run python src/pipeline_a0101/fetch/fetch_a0101_fastas.py\n")
+    cat("Next step: python3 src/fetch/fetch_uniprot_fastas.py \\\n",
+        "  --input-csv data/processed/hla_a0101/pos_EL_all_epitopes_hla_a0101.csv \\\n",
+        "  --output-fasta data/raw/fasta/hla_a0101_full_length.fasta \\\n",
+        "  --positives-fasta data/raw/fasta/hla_a0101_positives_only.fasta\n")
   }

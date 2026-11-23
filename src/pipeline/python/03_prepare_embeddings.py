@@ -29,6 +29,7 @@ from config import (
     SPLIT_DATA_PATH, LOG_DIR, PREPARED_EMBEDDING_DIR,
     N_CV_FOLDS, HELD_OUT_INDEX,
     PEPTIDE_COL, LABEL_COL, FOLD_COL,
+    ALLELE,
     get_embedding_source, validate_config,
 )
 
@@ -682,7 +683,9 @@ if __name__ == "__main__":
     emb_source = get_embedding_source(embedding_key)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    LOG_PATH = LOG_DIR / f"03_prepare_embeddings_{embedding_key}_log_{timestamp}.txt"
+    # Allele suffix keeps external-allele logs separate from legacy runs
+    _allele_tag = "" if ALLELE == "hla0201" else f"{ALLELE}_"
+    LOG_PATH = LOG_DIR / f"03_prepare_embeddings_{_allele_tag}{embedding_key}_log_{timestamp}.txt"
     os.makedirs(LOG_DIR, exist_ok=True)
     logger = Logger(str(LOG_PATH))
     sys.stdout = logger
@@ -720,6 +723,16 @@ if __name__ == "__main__":
     print(f"\nLoading split data: {SPLIT_DATA_PATH}")
     df = pd.read_csv(SPLIT_DATA_PATH)
     print(f"  Shape: {df.shape[0]} rows x {df.shape[1]} columns")
+
+    # External-validation allele (THESIS_ALLELE=hla_a0101) has no CV
+    # folds — dummy fold column purely for schema compatibility with the
+    # prepared-H5 format (labels/folds arrays). The external set is never
+    # split; 14_predict_external scores all rows.
+    if FOLD_COL not in df.columns:
+        df[FOLD_COL] = 0
+        print("  No fold column found — added dummy fold=0 "
+              "(external-validation set is never split)")
+
     print(f"  Folds: {sorted(df[FOLD_COL].unique())}")
 
     n_pos = int((df[LABEL_COL] == 1).sum())

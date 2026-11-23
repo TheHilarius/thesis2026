@@ -46,11 +46,13 @@ src/
 
 ## Run order
 
-1. **Data prep** — `util/` + `pipeline/python/01*.py` + `pipeline/r/02_load_iedb_data.R`
-2. **External tool features** — `tools/` (NetMHCpan, NetSurfP, AlphaFold, ESM)
-3. **Feature engineering** — `pipeline/r/run_pipeline.R` (steps 04–07)
-4. **Modelling** — `pipeline/python/04_modelling.py` (or `run/run_all_models.sh`)
+1. **Data prep** — `util/` + `pipeline/python/01*.py` + `pipeline/r/02_load_iedb_data.R [hla0201|hla_a0101]`
+2. **External tool features** — `tools/` (NetMHCpan, NetSurfP, AlphaFold, ESM); allele args where per-allele inputs apply
+3. **Feature engineering** — `pipeline/r/run_pipeline.R [hla0201|hla_a0101]` (steps 04–08; NSP3/AlphaFold tool runs sit between 05/06 and 06/07)
+4. **Modelling** — `pipeline/python/04_modelling.py` (or `run/run_all_models.sh`); external-allele scoring: `THESIS_ALLELE=hla_a0101` + `pipeline/python/14_predict_external.py`
 5. **Analysis** — `pipeline/python/05_model_analysis.py`, `06_feature_importance.py`, `07_compare_heldout_roc.py`, `pipeline/r/08–11`
+
+Full per-allele recipe (incl. server commands): `docs/hla_a0101_run_recipe.md`.
 
 ## Notes
 

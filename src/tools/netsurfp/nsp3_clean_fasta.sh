@@ -1,15 +1,49 @@
 #!/bin/bash
 # Filters FASTA by length AND shortens headers to UniProt ID only
-# Usage: bash src/tools/netsurfp/nsp3_clean_fasta.sh
+# (prepares the NSP3 input: NetSurfP output dirs are named after headers,
+# so full UniProt headers exceed the 255-char filename limit).
+#
+# Usage: bash src/tools/netsurfp/nsp3_clean_fasta.sh [hla0201|hla_a0101]
+# No arg = hla0201 (legacy call preserved).
+# Logic identical per allele — only IN/OUT paths switch.
+#
+# hla0201  (legacy): data/raw/fasta/combined_positives_only.fasta
+#                 -> data/raw/fasta/combined_positives_only_nsp3_clean.fasta
+# hla_a0101       : data/raw/fasta/hla_a0101_positives_only.fasta
+#                 -> data/raw/fasta/hla_a0101_positives_only_nsp3_clean.fasta
 
-INPUT="data/raw/fasta/combined_8_to_14mer.fasta"
-OUTPUT="data/raw/fasta/combined_8_to_14mer_nsp3_clean.fasta"
+set -uo pipefail
 
-python3 - <<'EOF'
+ALLELE="${1:-hla0201}"
+
+case "$ALLELE" in
+  hla0201)
+    INPUT="data/raw/fasta/combined_positives_only.fasta"
+    OUTPUT="data/raw/fasta/combined_positives_only_nsp3_clean.fasta" ;;
+  hla_a0101)
+    INPUT="data/raw/fasta/hla_a0101_positives_only.fasta"
+    OUTPUT="data/raw/fasta/hla_a0101_positives_only_nsp3_clean.fasta" ;;
+  *)
+    echo "Usage: bash src/tools/netsurfp/nsp3_clean_fasta.sh [hla0201|hla_a0101]"
+    echo "  Got: '$ALLELE'"
+    exit 1 ;;
+esac
+
+if [[ ! -f "$INPUT" ]]; then
+    echo "ERROR: $INPUT not found — run the UniProt FASTA fetch first"
+    exit 1
+fi
+
+echo "Allele:  $ALLELE"
+echo "Input:   $INPUT"
+echo "Output:  $OUTPUT"
+
+python3 - "$INPUT" "$OUTPUT" <<'EOF'
 from Bio import SeqIO
+import sys
 
-input_fasta  = "data/raw/fasta/combined_8_to_14mer.fasta"
-output_clean = "data/raw/fasta/combined_8_to_14mer_nsp3_clean.fasta"
+input_fasta  = sys.argv[1]
+output_clean = sys.argv[2]
 
 MIN_LEN = 130
 MAX_LEN = 5000

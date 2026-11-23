@@ -1,37 +1,49 @@
 """
-14_predict_external.py (a0101)
-Score the HLA-A*01:01 external-validation set with models trained on the
-legacy HLA-A*02:01 pipeline — NO retraining.
+14_predict_external.py
+Score an external-validation allele dataset (default: HLA-A*01:01,
+THESIS_ALLELE=hla_a0101) with models trained on the legacy HLA-A*02:01
+pipeline — NO retraining.
 
 Loads the saved nested-CV inner models ({run_tag}_outer{i}_inner{j}.pkl in
 models/) together with their preprocessing artifacts
 ({run_tag}_outer{i}_inner{j}_artifacts.pkl — scaler, fold PCA objects,
 column medians, dimselect dims), rebuilds the exact feature matrix from the
-a0101 data (encoded CSVs and/or prepared embedding H5s), transforms it
-through each fold's pipeline, predicts, and averages the probabilities
-across all inner models (same ensemble logic as 04_modelling's
-predict_with_averaging).
+external-allele data (encoded CSVs and/or prepared embedding H5s),
+transforms it through each fold's pipeline, predicts, and averages the
+probabilities across all inner models (same ensemble logic as
+04_modelling's predict_with_averaging).
+
+Allele switch (env, same pattern as THESIS_VARIANT):
+  THESIS_ALLELE=hla_a0101 python 14_predict_external.py ...   # external set
+  unset / hla0201                                            # legacy data
 
 Prerequisites:
-  - a0101 R chain done (data/processed/hla_a0101/df_all.csv + df_<enc>.csv)
-  - for embedding feature sets: raw H5s generated (GPU) + this folder's
-    03_prepare_embeddings.py run for the a0101 data
-  - trained models SAVED WITH ARTIFACTS. Legacy 04_modelling.py now saves
-    fold artifacts alongside each model .pkl (additive change); models
+  - external-allele R chain done
+    (Rscript src/pipeline/r/run_pipeline.R hla_a0101 →
+     data/processed/hla_a0101/df_all.csv + df_<enc>.csv)
+  - for embedding feature sets: raw H5s generated (GPU, legacy
+    src/tools/esm|proteinmpnn/embed_peptides_*.py with --csv/--out-dir
+    pointed at the external-allele data) + THESIS_ALLELE=<allele>
+    03_prepare_embeddings.py run
+  - trained models SAVED WITH ARTIFACTS. 04_modelling.py saves fold
+    artifacts alongside each model .pkl (additive change); models
     trained before that change have no artifacts and must be re-run once
     with identical settings to regenerate them deterministically.
 
-Usage:
+Usage (THESIS_ALLELE=hla_a0101):
     # encodings-only feature set (no GPU stage needed):
-    python 14_predict_external.py --run-tag xgb_blosum50 --model xgb --features blosum50
+    THESIS_ALLELE=hla_a0101 python 14_predict_external.py \\
+        --run-tag xgb_blosum50 --model xgb --features blosum50
 
     # embedding feature set (flat PCA, 4 components):
-    python 14_predict_external.py --run-tag xgb_sparse_esmc_win_padtoken_pca4_flat \\
-        --model xgb --features sparse_esmc_win_padtoken --pca 4 --pca-mode flat
+    THESIS_ALLELE=hla_a0101 python 14_predict_external.py \\
+        --run-tag xgb_sparse_esmc_win_padtoken_pca4_flat --model xgb \\
+        --features sparse_esmc_win_padtoken --pca 4 --pca-mode flat
 
     # simple21 dim-gather run:
-    python 14_predict_external.py --run-tag <tag> --model xgb \\
-        --features <set> --pca-mode simple21 --dims 0,1,2,20
+    THESIS_ALLELE=hla_a0101 python 14_predict_external.py \\
+        --run-tag <tag> --model xgb --features <set> \\
+        --pca-mode simple21 --dims 0,1,2,20
 """
 
 import sys
@@ -47,29 +59,36 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-# ── A0101 config (this folder's config.py — a0101 paths, legacy logic) ──────
+# ── Config: same folder's config.py (allele-aware via THESIS_ALLELE) ─────────
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 if SRC_DIR not in sys.path:
     sys.path.insert(0, SRC_DIR)
 
-import config  # noqa: E402  (a0101 edition)
+import config  # noqa: E402  (allele-aware edition)
 
-# ── Re-use the legacy 04_modelling functions (import binds OUR config via
-#    sys.modules["config"], so every path lookup inside them is a0101) ────────
-LEGACY_MODELLING = (
-    config.PROJECT_ROOT / "src" / "pipeline" / "python" / "04_modelling.py"
-)
-_spec = importlib.util.spec_from_file_location("modelling_legacy",
-                                               LEGACY_MODELLING)
+if config.ALLELE == "hla0201":
+    sys.exit(
+        "FATAL: THESIS_ALLELE is unset/hla0201 — 14_predict_external scores "
+        "an EXTERNAL allele. Re-run with THESIS_ALLELE=hla_a0101 (the "
+        "external set must never be scored with models trained on it)."
+    )
+
+# ── Re-use the 04_modelling functions (import binds OUR config via
+#    sys.modules["config"], so every path lookup inside them follows the
+#    THESIS_ALLELE edition) ───────────────────────────────────────────────────
+_MODELLING_PATH = Path(SRC_DIR) / "04_modelling.py"
+_spec = importlib.util.spec_from_file_location("modelling_pipeline",
+                                               _MODELLING_PATH)
 M = importlib.util.module_from_spec(_spec)
-sys.modules["modelling_legacy"] = M
+sys.modules["modelling_pipeline"] = M
 _spec.loader.exec_module(M)
 
 
 def parse_args():
     p = argparse.ArgumentParser(
-        description="14_predict_external (a0101): score the HLA-A*01:01 "
-                    "external set with trained legacy models (no retraining)")
+        description="14_predict_external: score the external-allele "
+                    f"({config.ALLELE}) set with trained legacy models "
+                    "(no retraining)")
     p.add_argument("--run-tag", required=True,
                    help="Exact run-tag prefix of the saved models, e.g. "
                         "'xgb_handcrafted' — files "
@@ -96,7 +115,7 @@ def parse_args():
                    help="Pool mask mode (default: masked)")
     p.add_argument("--out-dir", default=None,
                    help="Output dir (default: "
-                        "data/processed/hla_a0101/predictions)")
+                        "data/processed/<allele>/predictions)")
     return p.parse_args()
 
 
@@ -116,10 +135,10 @@ def discover_models(model_dir, run_tag):
                     raise FileNotFoundError(
                         f"Model {m.name} has no artifacts file.\n"
                         f"  Expected: {a.name}\n"
-                        f"  The legacy 04_modelling.py now saves fold "
-                        f"artifacts next to each model .pkl. Models trained "
-                        f"before that change must be re-run once with "
-                        f"identical settings to regenerate artifacts "
+                        f"  04_modelling.py saves fold artifacts next to "
+                        f"each model .pkl. Models trained before that "
+                        f"change must be re-run once with identical "
+                        f"settings to regenerate artifacts "
                         f"(deterministic: same data, folds, seed)."
                     )
                 pairs.append((outer, inner, m, a))
@@ -140,8 +159,8 @@ def discover_models(model_dir, run_tag):
 def prepare_external(df, csv_feature_cols, emb_data_dict, fold_artifacts):
     """
     Build the external-set feature matrix through ONE fold's pipeline.
-    Mirrors legacy prepare_validation(), but scores ALL rows (the external
-    set is never split).
+    Mirrors 04_modelling prepare_validation(), but scores ALL rows (the
+    external set is never split).
     """
     indices = np.arange(len(df))
     parts = []
@@ -188,7 +207,7 @@ def main():
     config.validate_feature_set(feat_cfg)
 
     print("=" * 80)
-    print("  14_PREDICT_EXTERNAL — HLA-A*01:01 EXTERNAL VALIDATION")
+    print(f"  14_PREDICT_EXTERNAL — {config.ALLELE} EXTERNAL VALIDATION")
     print("=" * 80)
     print(f"  Timestamp:    {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"  Run tag:      {args.run_tag}")
@@ -204,9 +223,10 @@ def main():
 
     # ── Load external data ──
     if not config.RAW_DATA_PATH.exists():
-        sys.exit(f"FATAL: a0101 dataset not found: {config.RAW_DATA_PATH}\n"
-                 f"Run the a0101 R chain first "
-                 f"(src/pipeline_a0101/r/run_pipeline.R).")
+        sys.exit(f"FATAL: external-allele dataset not found: "
+                 f"{config.RAW_DATA_PATH}\n"
+                 f"Run the R chain first: "
+                 f"Rscript src/pipeline/r/run_pipeline.R {config.ALLELE}")
     df = pd.read_csv(config.RAW_DATA_PATH)
     print(f"\nExternal data: {df.shape[0]} rows x {df.shape[1]} columns")
     n_pos = int((df[config.LABEL_COL] == 1).sum())
@@ -226,7 +246,7 @@ def main():
         df[config.FOLD_COL] = 0
 
     # ── Build features exactly as training did ──
-    print(f"\nLoading feature components (a0101 paths)...")
+    print(f"\nLoading feature components ({config.ALLELE} paths)...")
     pca_override = M.parse_pca_value(args.pca) if args.pca is not None else None
     dims = M.parse_dims_value(args.dims) if args.dims is not None else None
 
@@ -301,20 +321,20 @@ def main():
     # ── Metrics ──
     metrics = M.compute_metrics(y_true, avg_probs)
     print(f"\n{'=' * 80}")
-    print("EXTERNAL VALIDATION (HLA-A*01:01) — ensemble of "
+    print(f"EXTERNAL VALIDATION ({config.ALLELE}) — ensemble of "
           f"{len(all_probs)} inner models")
     print("=" * 80)
     M.print_metrics(metrics, prefix="  ")
 
     # ── Save ──
     out_dir = (Path(args.out_dir) if args.out_dir
-               else config.DATA_DIR / "predictions")
+               else config.ALLELE_DATA_DIR / "predictions")
     out_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     pred_path = out_dir / f"{args.run_tag}_external_predictions.csv"
     out = df[[c for c in ("peptide", "uniprot_id", "start", "end",
-                          config.LABEL_COL) if c in df.columns]].copy()
+                           config.LABEL_COL) if c in df.columns]].copy()
     out["prob_avg"] = avg_probs
     for name, probs in per_model.items():
         out[name] = probs
@@ -323,7 +343,7 @@ def main():
 
     metrics_path = out_dir / f"{args.run_tag}_external_metrics.json"
     payload = {
-        "edition": "hla_a0101",
+        "edition": config.ALLELE,
         "run_tag": args.run_tag,
         "model": args.model,
         "features": args.features,

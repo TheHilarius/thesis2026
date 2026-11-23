@@ -31,6 +31,35 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 # align_window_by_row_indices maps old row_indices into the shorter df
 # and silently misaligns.
 # ──────────────────────────────────────────────
+# ──────────────────────────────────────────────
+# HLA ALLELE
+# ──────────────────────────────────────────────
+# THESIS_ALLELE=hla_a0101 redirects every per-dataset path (raw/split/
+# encoding CSVs, embedding H5 dirs, figures) to data/processed/hla_a0101/
+# (spec: docs/python_allele_support_plan.md). Unset/"" = hla0201 legacy
+# flat paths — byte-identical behavior (same guard pattern as
+# THESIS_VARIANT). hla_a0101 is the external-validation allele:
+#   - it has NO CV folds (SPLIT_DATA_PATH aliases RAW_DATA_PATH;
+#     03_prepare_embeddings adds a dummy fold column for schema compat)
+#   - it must never combine with THESIS_VARIANT filename suffixes — the
+#     env var is forced off below (the external allele is its own
+#     dataset dimension)
+# Shared, allele-independent (never redirected): models/, logs/,
+# data/processed/structures/, data/processed/nsp3/.
+ALLELE = os.environ.get("THESIS_ALLELE") or "hla0201"
+if ALLELE not in ("hla0201", "hla_a0101"):
+    raise ValueError(f"Unknown THESIS_ALLELE '{ALLELE}' "
+                     f"(expected hla0201 or hla_a0101)")
+if ALLELE == "hla_a0101":
+    os.environ["THESIS_VARIANT"] = ""
+
+
+def _allele(path: Path) -> Path:
+    """Per-dataset path prefix (allele dir first, variant suffix after)."""
+    if ALLELE == "hla0201":
+        return path
+    return path.parent / ALLELE / path.name
+
 _v = os.environ.get("THESIS_VARIANT", "flank5_rmdup")
 VARIANT = None if _v in ("", "none") else _v
 
@@ -44,32 +73,41 @@ def _variant(path: Path) -> Path:
 # PATHS
 # ──────────────────────────────────────────────
 DATA_DIR = PROJECT_ROOT / "data" / "processed"
-LOG_DIR = PROJECT_ROOT / "logs"
-MODEL_DIR = PROJECT_ROOT / "models"
-FIGURES_DIR = PROJECT_ROOT / "results" / "figures" / "models"
+# Per-dataset dir: flat data/processed/ for hla0201, subdir for the
+# external allele (built here — DATA_DIR is defined above).
+ALLELE_DATA_DIR = DATA_DIR if ALLELE == "hla0201" else DATA_DIR / ALLELE
 
-RAW_DATA_PATH = _variant(DATA_DIR / "df_all.csv")
-SPLIT_DATA_PATH = _variant(DATA_DIR / "df_all_with_folds.csv")
+LOG_DIR = PROJECT_ROOT / "logs"        # shared (read-only for the external allele)
+MODEL_DIR = PROJECT_ROOT / "models"   # shared (read-only for the external allele)
+FIGURES_DIR = (PROJECT_ROOT / "results" / "figures" / "models_hla_a0101"
+               if ALLELE == "hla_a0101" else
+               PROJECT_ROOT / "results" / "figures" / "models")
+
+RAW_DATA_PATH = _variant(_allele(DATA_DIR / "df_all.csv"))
+# External-validation allele has no CV folds — split aliases the raw file
+# (03_prepare_embeddings inserts a dummy fold column for schema compat).
+SPLIT_DATA_PATH = (RAW_DATA_PATH if ALLELE == "hla_a0101"
+                   else _variant(_allele(DATA_DIR / "df_all_with_folds.csv")))
 
 # Alternate CSVs with encoded positional AA columns
 # df_<enc>.csv: peptide+label keys + encoded cols only (used by modelling)
 # df_all_<enc>.csv: encoded + all non-position cols (for R/analyses)
-SPARSE_DATA_PATH = _variant(DATA_DIR / "df_sparse.csv")
-BLOSUM50_DATA_PATH = _variant(DATA_DIR / "df_blosum50.csv")
-BLOSUM45_DATA_PATH = _variant(DATA_DIR / "df_blosum45.csv")
-BLOSUM62_DATA_PATH = _variant(DATA_DIR / "df_blosum62.csv")
-BLOSUM80_DATA_PATH = _variant(DATA_DIR / "df_blosum80.csv")
-BLOSUM90_DATA_PATH = _variant(DATA_DIR / "df_blosum90.csv")
-KIDERA_DATA_PATH = _variant(DATA_DIR / "df_kidera.csv")
-ATCHLEY_DATA_PATH = _variant(DATA_DIR / "df_atchley.csv")
+SPARSE_DATA_PATH = _variant(_allele(DATA_DIR / "df_sparse.csv"))
+BLOSUM50_DATA_PATH = _variant(_allele(DATA_DIR / "df_blosum50.csv"))
+BLOSUM45_DATA_PATH = _variant(_allele(DATA_DIR / "df_blosum45.csv"))
+BLOSUM62_DATA_PATH = _variant(_allele(DATA_DIR / "df_blosum62.csv"))
+BLOSUM80_DATA_PATH = _variant(_allele(DATA_DIR / "df_blosum80.csv"))
+BLOSUM90_DATA_PATH = _variant(_allele(DATA_DIR / "df_blosum90.csv"))
+KIDERA_DATA_PATH = _variant(_allele(DATA_DIR / "df_kidera.csv"))
+ATCHLEY_DATA_PATH = _variant(_allele(DATA_DIR / "df_atchley.csv"))
 # Compositional: frac_<aa> = aa count across the 29 positions / 29
-COMPOSITIONAL_DATA_PATH = _variant(DATA_DIR / "df_compositional.csv")
+COMPOSITIONAL_DATA_PATH = _variant(_allele(DATA_DIR / "df_compositional.csv"))
 
 # ──────────────────────────────────────────────
 # EMBEDDING PATHS & SCHEMAS
 # ──────────────────────────────────────────────
-EMBEDDING_DIR = PROJECT_ROOT / "data" / "processed" / "embeddings"
-PREPARED_EMBEDDING_DIR = DATA_DIR / "embeddings_prepared"
+EMBEDDING_DIR = _allele(PROJECT_ROOT / "data" / "processed" / "embeddings")
+PREPARED_EMBEDDING_DIR = _allele(DATA_DIR / "embeddings_prepared")
 
 # Default homemade (top-variance) reduction rung per embedding feature
 # key — used by --vardims (04_modelling / 04b_run_matrix) when no explicit
@@ -1219,6 +1257,10 @@ MODEL_REGISTRY = {
 
 DEFAULT_MODEL = "rf"
 
+# Marker so downstream tools can assert they got the allele edition they
+# expect (14_predict_external checks this).
+CONFIG_EDITION = ALLELE
+
 # ──────────────────────────────────────────────
 # HELPERS
 # ──────────────────────────────────────────────
@@ -1314,6 +1356,8 @@ def validate_config():
         print(f"[OK] Data file found: {RAW_DATA_PATH}")
 
     print(f"[OK] Config validated: {N_CV_FOLDS}-fold CV + 1 held-out = {N_BUCKETS} buckets")
+    print(f"     Allele:        {ALLELE} "
+          f"({'external-validation edition — no CV folds' if ALLELE == 'hla_a0101' else 'legacy'})")
     print(f"     Project root:  {PROJECT_ROOT}")
     print(f"     Data dir:      {DATA_DIR}")
     print(f"     Embedding dir: {EMBEDDING_DIR}")

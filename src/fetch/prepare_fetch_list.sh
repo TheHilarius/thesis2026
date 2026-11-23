@@ -2,21 +2,29 @@
 ###### prepare_fetch_list.sh
 ###### Usage: bash src/fetch/prepare_fetch_list.sh \
 ######           data/processed/pos_EL_all_epitopes_hla0201.csv \
-######           data/processed/structures
+######           data/processed/structures [list_tag]
+######   list_tag: optional suffix for the fetch-list files so per-allele
+######   lists do not overwrite each other (e.g. "a0101" →
+######   fetch_list_canonical_a0101.tsv). Empty/omitted = legacy names
+######   (fetch_list_canonical.tsv) — legacy call preserved byte-identical.
+######   Pass the SAME tag to fetch_structures.sh.
 
 set -euo pipefail
 
 INPUT_CSV="${1}"
 OUT_DIR="${2}"
+TAG="${3:-}"
 
 mkdir -p "${OUT_DIR}/logs"
 
-python3 - <<'PYEOF' "${INPUT_CSV}" "${OUT_DIR}"
+python3 - <<'PYEOF' "${INPUT_CSV}" "${OUT_DIR}" "${TAG}"
 import sys
 import pandas as pd
 
 csv_path = sys.argv[1]
 out_dir  = sys.argv[2]
+tag      = sys.argv[3] if len(sys.argv) > 3 else ""
+suffix   = f"_{tag}" if tag else ""
 
 df = pd.read_csv(csv_path)
 
@@ -85,15 +93,15 @@ print(canonical_grouped.head(5).to_string())
 print("\n--- Isoform sample ---")
 print(isoform_grouped.head(5).to_string())
 
-###### Save 
+###### Save
 ###### Columns: uniprot_id | start | end | n_peptides | base_id
-canonical_grouped.to_csv(f"{out_dir}/logs/fetch_list_canonical.tsv",
+canonical_grouped.to_csv(f"{out_dir}/logs/fetch_list_canonical{suffix}.tsv",
                          sep='\t', index=False, header=False)
-isoform_grouped.to_csv(f"{out_dir}/logs/fetch_list_isoforms.tsv",
+isoform_grouped.to_csv(f"{out_dir}/logs/fetch_list_isoforms{suffix}.tsv",
                        sep='\t', index=False, header=False)
 
 print(f"\nSaved:")
-print(f"  {out_dir}/logs/fetch_list_canonical.tsv  ({len(canonical_grouped)} entries)")
-print(f"  {out_dir}/logs/fetch_list_isoforms.tsv   ({len(isoform_grouped)} entries)")
+print(f"  {out_dir}/logs/fetch_list_canonical{suffix}.tsv  ({len(canonical_grouped)} entries)")
+print(f"  {out_dir}/logs/fetch_list_isoforms{suffix}.tsv   ({len(isoform_grouped)} entries)")
 print(f"\nTotal proteins to fetch structures for: {len(canonical_grouped) + len(isoform_grouped)}")
 PYEOF

@@ -2111,9 +2111,10 @@ if __name__ == "__main__":
             # Save fold preprocessing artifacts (scaler, fold PCA objects,
             # column medians, dimselect/varfold dims) alongside the model.
             # Purely additive: enables external-set replay (e.g. the
-            # a0101 external validation in src/pipeline_a0101/python/
-            # 14_predict_external.py). Without these, a loaded .pkl alone
-            # cannot reproduce the feature pipeline it was trained on.
+            # HLA-A*01:01 external validation via THESIS_ALLELE=hla_a0101
+            # and src/pipeline/python/14_predict_external.py). Without
+            # these, a loaded .pkl alone cannot reproduce the feature
+            # pipeline it was trained on.
             inner_artifacts_path = (
                 model_dir /
                 f"{run_tag}_outer{outer_fold}_inner{inner_idx}_artifacts.pkl"

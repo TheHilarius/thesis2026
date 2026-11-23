@@ -3,11 +3,24 @@
 Companion docs: `docs/r_pipeline_dedup_plan.md` (Task 1, Oliver),
 `docs/r_pipeline_flank_flag_plan.md` (Task 2, Oliver).
 
-## Part A — allele support in the Python pipeline (spec now, build later)
+## Part A — allele support in the Python pipeline
 
-**Gate: do NOT implement until `data/processed/hla_a0101/df_all.csv`
-exists** (0101 FASTA fetch pending; Oliver's R steps 04→08 must run first).
-Spec so the eventual change is mechanical:
+**IMPLEMENTED 2026-11-23** in `src/pipeline/python/config.py` (plus
+`03_prepare_embeddings.py` dummy-fold support and
+`14_predict_external.py`). Differences from the original spec below:
+
+- `hla_a0101` forces `THESIS_VARIANT` OFF (the external allele is its own
+  dataset dimension — fork-era decision, kept), instead of composing
+  allele prefix + variant suffix.
+- `SPLIT_DATA_PATH` **aliases** `RAW_DATA_PATH` for `hla_a0101` (the
+  external set has no CV folds; 03 adds a dummy fold column).
+- Log names in 03 carry a `hla_a0101_` prefix; figures go to
+  `results/figures/models_hla_a0101/`.
+- Unset `THESIS_ALLELE` verified byte-identical to HEAD config on every
+  path (path/embedding/component parity check, 2026-11-23).
+- Run recipe: `docs/hla_a0101_run_recipe.md`.
+
+Original spec (kept for reference):
 
 - `config.py`: new env `THESIS_ALLELE` (unset = `hla0201`, legacy flat
   paths, byte-identical behavior — same pattern as `THESIS_VARIANT`):

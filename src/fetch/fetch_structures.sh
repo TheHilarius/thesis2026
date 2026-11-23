@@ -1,18 +1,48 @@
 #!/usr/bin/env bash
 # fetch_structures.sh
-# Usage: bash src/fetch/fetch_structures.sh <out_dir>
+# Usage: bash src/fetch/fetch_structures.sh <out_dir> [allele] [list_tag]
+#   out_dir:   shared structures dir (data/processed/structures)
+#   allele:    hla0201 (default — legacy call preserved) or hla_a0101.
+#              Selects the positives-only FASTA used for length
+#              validation; PDBs and logs stay in the SHARED out_dir.
+#   list_tag:  optional suffix used by prepare_fetch_list.sh (e.g.
+#              "a0101"). Empty/omitted = legacy list names. Must match
+#              the tag the fetch lists were prepared with.
+#
+# Example (a0101):
+#   bash src/fetch/prepare_fetch_list.sh \
+#       data/processed/hla_a0101/pos_EL_all_epitopes_hla_a0101.csv \
+#       data/processed/structures a0101
+#   bash src/fetch/fetch_structures.sh data/processed/structures hla_a0101 a0101
 set -uo pipefail
 
-# Arguments 
-if [[ $# -ne 1 ]]; then
-    echo "Usage: bash src/fetch/fetch_structures.sh <out_dir>"
-    echo "Example: bash src/fetch/fetch_structures.sh data/processed/structures"
+# Arguments
+if [[ $# -lt 1 || $# -gt 3 ]]; then
+    echo "Usage: bash src/fetch/fetch_structures.sh <out_dir> [hla0201|hla_a0101] [list_tag]"
+    echo "  Example (legacy):  bash src/fetch/fetch_structures.sh data/processed/structures"
+    echo "  Example (a0101):   bash src/fetch/fetch_structures.sh data/processed/structures hla_a0101 a0101"
     exit 1
 fi
 
 OUT_DIR="${1}"
-CANONICAL_LIST="${OUT_DIR}/logs/fetch_list_canonical.tsv"
-ISOFORM_LIST="${OUT_DIR}/logs/fetch_list_isoforms.tsv"
+ALLELE="${2:-hla0201}"
+TAG="${3:-}"
+
+case "${ALLELE}" in
+  hla0201)
+    FASTA_PATH="data/raw/fasta/combined_positives_only.fasta" ;;
+  hla_a0101)
+    FASTA_PATH="data/raw/fasta/hla_a0101_positives_only.fasta" ;;
+  *)
+    echo "ERROR: unknown allele '${ALLELE}' (expected hla0201 or hla_a0101)"
+    exit 1 ;;
+esac
+
+_LIST_SUFFIX=""
+if [[ -n "${TAG}" ]]; then _LIST_SUFFIX="_${TAG}"; fi
+
+CANONICAL_LIST="${OUT_DIR}/logs/fetch_list_canonical${_LIST_SUFFIX}.tsv"
+ISOFORM_LIST="${OUT_DIR}/logs/fetch_list_isoforms${_LIST_SUFFIX}.tsv"
 
 if [[ ! -f "${CANONICAL_LIST}" ]]; then
     echo "ERROR: ${CANONICAL_LIST} not found — run prepare_fetch_list.sh first"
@@ -25,7 +55,7 @@ fi
 
 # Config
 AF2_BASE="https://alphafold.ebi.ac.uk/files"
-FASTA_PATH="data/raw/fasta/combined_positives_only.fasta"
+# FASTA_PATH set per-allele in the case block above
 mkdir -p "${OUT_DIR}/alphafold"
 LOG="${OUT_DIR}/logs/fetch_log.tsv"
 MISSING="${OUT_DIR}/logs/missing_structures.tsv"
