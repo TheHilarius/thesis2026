@@ -13,12 +13,21 @@
 #   bash src/tools/netsurfp/run_netsurfp3.sh data/raw/fasta/a0101_nsp3_batches
 #
 # No args = legacy call, byte-identical.
+#
+# hub1 locations (verified 2026-11-24 — Sep 2026 nsp3_h100_* jobs used
+# these): NetSurfP checkout + model live in the PROJECT dir (a ctools
+# copy also exists); the nsp3_gpu conda env lives in the project
+# partner's ENTER install and is readable/executable by s204692.
+# Override via env vars on other machines.
 
-source ~/miniforge3/etc/profile.d/conda.sh
-conda activate nsp3_gpu
+# Conda env with torch (GPU build)
+NSP3_CONDA_SH="${NSP3_CONDA_SH:-/home/people/s204581/ENTER/etc/profile.d/conda.sh}"
+NSP3_ENV="${NSP3_ENV:-nsp3_gpu}"
+source "$NSP3_CONDA_SH"
+conda activate "$NSP3_ENV"
 
 BATCH_DIR="${1:-data/raw/fasta/batches}"
-NSP3_DIR="/home/hilarius/NetSurfP-3.0_standalone"
+NSP3_DIR="${NSP3_DIR:-/home/projects1/thesis_s204692_s204581/NetSurfP-3.0_standalone}"
 OUTPUT_BASE="${2:-data/processed/nsp3}"
 
 mkdir -p "$OUTPUT_BASE"

@@ -89,8 +89,18 @@ bash src/tools/netsurfp/nsp3_clean_fasta.sh hla_a0101
 bash src/tools/netsurfp/prepare_nsp3_batches.sh hla_a0101
 #    OUT data/raw/fasta/a0101_nsp3_batches/ (a0101_batch_*.fasta;
 #    first file is a0101_batch_.fasta — legacy awk quirk, kept)
+#    GPU run — sbatch receipt wrapper (recommended):
+sbatch src/run/run_nsp3_a0101_slurm.sh
+#    Direct runner call, e.g. inside srun --pty:
 bash src/tools/netsurfp/run_netsurfp3.sh data/raw/fasta/a0101_nsp3_batches
 #    OUT data/processed/nsp3/a0101_batch_*/ (shared root, prefixed batch dirs)
+#    hub1 facts (verified 2026-11-24): NetSurfP checkout + 3.3 GB model in
+#    /home/projects1/thesis_s204692_s204581/NetSurfP-3.0_standalone (ctools
+#    copy also exists); conda env nsp3_gpu = torch 2.5.1+cu121 in the
+#    project partner's /home/people/s204581/ENTER — usable by s204692.
+#    ~0.2 s/seq on L40S (Sep 2026 legacy jobs) → ~30 batches ≈ 40 min.
+#    GPU type PINNED to L40S in the wrapper: cu121 has NO kernels for the
+#    Blackwell nodes (compute07-08). Receipts: logs/netsurfp/*.out/.err.
 
 # 8. NSP3 feature join
 Rscript src/pipeline/r/06_netsurfp_protein_features.R hla_a0101
