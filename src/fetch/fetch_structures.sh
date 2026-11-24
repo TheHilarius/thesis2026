@@ -57,8 +57,15 @@ fi
 AF2_BASE="https://alphafold.ebi.ac.uk/files"
 # FASTA_PATH set per-allele in the case block above
 mkdir -p "${OUT_DIR}/alphafold"
-LOG="${OUT_DIR}/logs/fetch_log.tsv"
-MISSING="${OUT_DIR}/logs/missing_structures.tsv"
+# Hybrid shared-pool design: the resume READS the shared legacy fetch_log
+# (proteins already fetched for another allele are skipped — AlphaFold PDBs
+# are per-UNIPROT, allele-independent), but all NEW entries append to the
+# per-allele TAGGED log. The shared files are owned by the legacy run
+# (mode 644) and must never be written to. Empty tag = legacy call:
+# LOG == LOG_READ, byte-identical legacy behavior.
+LOG_READ="${OUT_DIR}/logs/fetch_log.tsv"
+LOG="${OUT_DIR}/logs/fetch_log${_LIST_SUFFIX}.tsv"
+MISSING="${OUT_DIR}/logs/missing_structures${_LIST_SUFFIX}.tsv"
 
 # Parse FASTA for ground-truth sequence lengths 
 declare -A FASTA_LENGTHS
@@ -86,19 +93,26 @@ else
     echo "WARNING: ${FASTA_PATH} not found — length validation disabled"
 fi
 
-# Resume logic 
+# Resume logic: union of the shared legacy log (read-only) and this
+# allele's own tagged log — identical for the legacy call (same file).
 declare -A ALREADY_DONE
 
-if [[ -f "${LOG}" ]]; then
-    echo "Existing log found — collecting already-processed entries..."
-    while IFS=$'\t' read -r uid _rest; do
-        ALREADY_DONE["${uid}"]=1
-    done < <(tail -n +2 "${LOG}")
-    echo "Already processed: ${#ALREADY_DONE[@]} entries"
-else
+for _resume_log in "${LOG_READ}" "${LOG}"; do
+    if [[ -f "${_resume_log}" ]]; then
+        echo "Existing log found (${_resume_log}) — collecting already-processed entries..."
+        while IFS=$'\t' read -r uid _rest; do
+            ALREADY_DONE["${uid}"]=1
+        done < <(tail -n +2 "${_resume_log}")
+    fi
+done
+echo "Already processed: ${#ALREADY_DONE[@]} entries"
+
+if [[ ! -f "${LOG}" ]]; then
     echo -e "uniprot_id\tstart\tend\tsource\tfile\tcoverage" > "${LOG}"
+    echo "Fresh run — tagged log initialized: ${LOG}"
+fi
+if [[ ! -f "${MISSING}" ]]; then
     echo -e "uniprot_id\treason" > "${MISSING}"
-    echo "Fresh run — logs initialized"
 fi
 
 # Helper: strip .0 from pandas float coords 

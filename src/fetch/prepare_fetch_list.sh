@@ -53,9 +53,11 @@ print(f"Truly invalid         : {other_mask.sum()} rows")
 if other_mask.sum() > 0:
     print("\nTruly invalid examples:")
     print(df[other_mask]['uniprot_id'].head(10).tolist())
-    df[other_mask].to_csv(f"{out_dir}/logs/truly_invalid_ids.tsv",
-                          sep='\t', index=False)
-    print(f"Saved to {out_dir}/logs/truly_invalid_ids.tsv")
+    # Tagged so per-allele runs never collide with the legacy file in the
+    # shared logs dir (owned by the legacy run, mode 644 — unwritable).
+    out = f"{out_dir}/logs/truly_invalid_ids{suffix}.tsv"
+    df[other_mask].to_csv(out, sep='\t', index=False)
+    print(f"Saved to {out}")
 
 ###### Split canonical and isoform 
 df_canonical = df[canonical_mask].copy()

@@ -158,12 +158,26 @@ df_ledger <- df_ledger |>
 no_pdb_ids <- df_ledger$uniprot_id[df_ledger$no_pdb & !df_ledger$length_excluded]
 
 if (length(no_pdb_ids) > 0) {
-  missing_log <- read_tsv("data/processed/structures/logs/missing_structures.tsv",
-                          show_col_types = FALSE)
-  invalid_log <- read_tsv("data/processed/structures/logs/invalid_uniprot_ids.tsv",
-                          show_col_types = FALSE)
-  truly_invalid <- read_tsv("data/processed/structures/logs/truly_invalid_ids.tsv",
-                            show_col_types = FALSE)
+  # Fetch logs: legacy (hla0201) reads the shared logs dir; other alleles
+  # read their OWN fetch workspace (prepare_fetch_list.sh writes the
+  # tagged lists + truly_invalid_ids_<tag>.tsv into
+  # data/processed/<allele>/structures/logs/). The shared structures tree
+  # is owned by the legacy run and never written to. Files not (yet)
+  # written degrade to empty tibbles so the breakdown still runs.
+  .fetch_log <- function(name) {
+    if (ALLELE_TAG == "hla0201") {
+      path <- file.path("data/processed/structures/logs", name)
+    } else {
+      tag  <- sub("^hla_", "", ALLELE_TAG)   # hla_a0101 -> a0101 (fetch tag)
+      path <- file.path("data/processed", ALLELE_TAG, "structures", "logs",
+                        sub("(\\.[a-z]+)$", paste0("_", tag, "\\1"), name))
+    }
+    if (file.exists(path)) read_tsv(path, show_col_types = FALSE)
+    else tibble(uniprot_id = character(0))
+  }
+  missing_log   <- .fetch_log("missing_structures.tsv")
+  invalid_log   <- .fetch_log("invalid_uniprot_ids.tsv")
+  truly_invalid <- .fetch_log("truly_invalid_ids.tsv")
 
   n_no_af2    <- sum(no_pdb_ids %in% missing_log$uniprot_id)
   n_isoform   <- sum(grepl("-", no_pdb_ids) & no_pdb_ids %in% invalid_log$uniprot_id)
@@ -857,6 +871,9 @@ write_csv(df_combined_fixed,
 cat("Saved fixed dataset to ", pp("df_combined_pos_and_neg_remove715negonly.csv", ALLELE_TAG), "\n", sep = "")
 
 chosen_row <- bin_sweep |> filter(n_bins == CHOSEN_N_BINS)
+# Single source of truth for every "N bins" label below (printouts, saved
+# CSVs, plot stages) — was hardcoded "25 bins" before the CLES selection.
+chosen_label <- paste0(CHOSEN_N_BINS, " bins")
 cat("\n=== Chosen Configuration (CLES cutoff ", sprintf("%.1f%%", 100 * CUTOFF_CLES),
     " — legacy 0201 anchor) ===\n", sep = "")
 cat("Bins:      ", CHOSEN_N_BINS, "\n")
@@ -906,8 +923,9 @@ ci_before <- bootstrap_ks_D(df_positives$rank, df_netmhcpan_only$rank)
 ci_after  <- bootstrap_ks_D(df_positives$rank, df_negatives$rank)
 
 # Equivalence test on Cliff's delta instead of KS D: the residual KS D (~0.10)
-# after 25-bin matching is bin-boundary structure (deliberate trade: 25 bins
-# keep ALL negatives, ratio 1.16), not directional bias. Cliff's delta has a
+# after bin matching is bin-boundary structure (deliberate trade: fewer bins
+# keep more negatives; the chosen config meets CUTOFF_CLES), not directional
+# bias. Cliff's delta has a
 # standard "negligible" threshold (|delta| < 0.147, Romano et al. 2006), so the
 # margin is not arbitrary: equivalent iff the 95% CI lies fully inside it.
 bootstrap_delta <- function(x, y, n_boot = 1000, seed = 42) {
@@ -932,7 +950,7 @@ cat("  delta CI (after):  [", round(dci_after[1], 4), ",", round(dci_after[2], 4
     "] -> equivalent? ", equiv_after, " (|delta| < ", DELTA0, ")\n", sep = "")
 
 
-# ── Post-matching density plot (chosen config: 25 bins) ──────────────────────
+# ── Post-matching density plot (chosen config: dynamic CLES cutoff) ─────────
 df_rank_post <- bind_rows(
   df_positives |> transmute(rank, label = "Positive (TP)"),
   df_negatives |> transmute(rank, label = "Negative (matched)")
@@ -978,7 +996,7 @@ cat("  CLES:          ", round(cles_before, 3),
 cat("  Equivalent?    ", ifelse(equiv_before, "yes", "NO - biased"),
     " (delta CI within \u00b1", DELTA0, ")\n\n", sep = "")
 
-cat("Positives vs Negatives (AFTER matching, 25 bins)\n")
+cat("Positives vs Negatives (AFTER matching, ", chosen_label, ")\n", sep = "")
 cat("  KS D:          ", round(ks_after$statistic, 4), "  (95% CI ",
     round(ci_after[1], 4), "-", round(ci_after[2], 4), ")\n", sep = "")
 cat("  KS p-value:    ", format.pval(ks_after$p.value, digits = 3), "\n")
@@ -1015,7 +1033,8 @@ df_rank_summary <- bind_rows(
     summarise(n = n(), median = round(median(rank), 4), mean = round(mean(rank), 4),
               sd = round(sd(rank), 4), q25 = round(quantile(rank, 0.25), 4),
               q75 = round(quantile(rank, 0.75), 4)) |>
-    mutate(group = "Negatives (after matching, 25 bins)", stage = "After", .before = 1)
+    mutate(group = paste0("Negatives (after matching, ", chosen_label, ")"),
+            stage = "After", .before = 1)
 )
 
 cat("\n=== Complete Rank Distribution Comparison ===\n")
@@ -1023,7 +1042,8 @@ print(df_rank_summary)
 
 #  Statistical test summary table 
 df_test_summary <- tibble(
-  Comparison    = c("Pos vs Neg (before)", "Pos vs Neg (after, 25 bins)"),
+  Comparison    = c("Pos vs Neg (before)",
+                    paste0("Pos vs Neg (after, ", chosen_label, ")")),
   n_pos         = c(nrow(df_positives), nrow(df_positives)),
   n_neg         = c(nrow(df_netmhcpan_only), nrow(df_negatives)),
   `KS D`        = c(round(ks_before$statistic, 4), round(ks_after$statistic, 4)),
@@ -1048,7 +1068,8 @@ EFFECT_DIR <- paste0(FIGURE_DIR_FOR(ALLELE_TAG), "other_effect_sizes")
 dir.create(EFFECT_DIR, showWarnings = FALSE, recursive = TRUE)
 
 df_effect_sizes <- tibble(
-  Comparison = c("Pos vs Neg (before)", "Pos vs Neg (after, 25 bins)"),
+  Comparison = c("Pos vs Neg (before)",
+                 paste0("Pos vs Neg (after, ", chosen_label, ")")),
   `KS D`         = c(round(ks_before$statistic, 4), round(ks_after$statistic, 4)),
   `KS D CI low`  = c(round(ci_before[1], 4), round(ci_after[1], 4)),
   `KS D CI high` = c(round(ci_before[2], 4), round(ci_after[2], 4)),
@@ -1067,14 +1088,14 @@ cat("Saved: ", file.path(EFFECT_DIR, "effect_sizes_summary.csv"), "\n", sep = ""
 D0 <- 0.05
 
 df_ci_plot <- tibble(
-  Stage = c("Before matching", "After matching (25 bins)"),
+  Stage = c("Before matching", paste0("After matching (", chosen_label, ")")),
   D     = c(ks_before$statistic, ks_after$statistic),
   lo    = c(ci_before[1], ci_after[1]),
   hi    = c(ci_before[2], ci_after[2])
 ) |> mutate(Stage = factor(Stage, levels = rev(Stage)))
 
 df_ci_labels <- tibble(
-  Stage = factor(c("After matching (25 bins)", "Before matching"),
+  Stage = factor(c(paste0("After matching (", chosen_label, ")"), "Before matching"),
                  levels = levels(df_ci_plot$Stage)),
   x     = ifelse(c(ks_after$statistic, ks_before$statistic) > 0.3,
                  c(ci_after[1], ci_before[1]) - 0.03,   # room to the left
@@ -1169,7 +1190,7 @@ p6 <- ggplot(df_stat_compare, aes(x = group, y = rank, fill = group)) +
     subtitle = paste0(
       "Before matching: distributions clearly different (Cliff's \u0394 = ",
       round(cliff_before$estimate, 3), ", ", cliff_before$magnitude, ")\n",
-      "After matching (25 bins): distributions practically identical (Cliff's \u0394 = ",
+      "After matching (", chosen_label, "): distributions practically identical (Cliff's \u0394 = ",
       round(cliff_after$estimate, 3), ", ", cliff_after$magnitude, ")"
     ),
     x = NULL, y = "NetMHCpan EL Rank (%)"

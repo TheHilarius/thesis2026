@@ -106,12 +106,22 @@ bash src/tools/netsurfp/run_netsurfp3.sh data/raw/fasta/a0101_nsp3_batches
 Rscript src/pipeline/r/06_netsurfp_protein_features.R hla_a0101
 #    OUT data/processed/hla_a0101/epitopes_pos_and_neg_features_with_nsp3.csv
 
-# 9. AlphaFold structures (shared dir — fetch ONLY the missing proteins;
-#    shared fetch_log.tsv resume logic skips already-fetched ones)
+# 9. AlphaFold structures — per-allele fetch workspace, SHARED PDB pool.
+#    The shared tree (data/processed/structures/) is owned by the legacy
+#    run and read-only for us — and it already covers a0101 (04's ledger:
+#    2830/2830 needed PDBs present). So: build the per-allele fetch lists
+#    (documentation + invalid-ID record) in our OWN tree; the fetch itself
+#    is SKIPPED. 07 reads PDBs from the shared pool (allele-independent,
+#    per-UniProt AlphaFold models).
 bash src/fetch/prepare_fetch_list.sh \
   data/processed/hla_a0101/pos_EL_all_epitopes_hla_a0101.csv \
-  data/processed/structures a0101
-bash src/fetch/fetch_structures.sh data/processed/structures hla_a0101 a0101
+  data/processed/hla_a0101/structures a0101
+#    OUT data/processed/hla_a0101/structures/logs/
+#        fetch_list_canonical_a0101.tsv + fetch_list_isoforms_a0101.tsv +
+#        truly_invalid_ids_a0101.tsv
+# SKIP: bash src/fetch/fetch_structures.sh ...   (nothing missing; shared
+# tree not writable by us anyway — only run it, against a writable dir,
+# if a future audit finds genuinely missing PDBs)
 
 # 10. AlphaFold pLDDT features + window dedup
 Rscript src/pipeline/r/07_alpha_fold_features.R hla_a0101
@@ -158,11 +168,14 @@ folds, seed) before 14_predict_external can replay them.
   csvs in its dir — stale files pollute.
 - **netMHCpan lengths**: `-l 9` only (legacy used 8–14 for its own run);
   04 filters to 9-mers anyway.
-- **AlphaFold coverage caveat**: shared `fetch_log.tsv` skips proteins the
-  legacy run already fetched. Coverage was checked against the LEGACY
-  peptide regions — if an a0101 peptide extends beyond the recorded
-  region, 07's pLDDT extraction imputes the tail. Check the a0101
-  missingness report if pLDDT gaps appear.
+- **AlphaFold coverage caveat**: 07 reads PDBs from the SHARED legacy pool
+  (`data/processed/structures/alphafold/`, owned by the legacy run,
+  read-only). Coverage was recorded against the LEGACY peptide regions —
+  if an a0101 peptide extends beyond a recorded region, 07's pLDDT
+  extraction imputes the tail. Check the a0101 missingness report if
+  pLDDT gaps appear. Per-allele fetch LISTS live in our own tree
+  (`data/processed/hla_a0101/structures/logs/`); a fetch would only be
+  needed if an audit finds PDBs genuinely absent from the shared pool.
 - **NSP3 coverage**: proteins without an NSP3 run get NA features
   (imputed downstream).
 - **Cross-modelling (later)**: train a0101 models via
