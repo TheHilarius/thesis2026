@@ -702,9 +702,29 @@ load_netmhcpan_batches <- function(netmhcpan_dir = "data/processed/netmhcpan/",
   cat("NetMHCpan batch files found:", length(csv_files), "\n")
   
   real_colnames <- c("Pos", "Peptide", "ID", "core", "icore", "Score", "Rank", "Ave", "NB")
+  # Column types are FORCED. The hub1 ctools build (NetMHCpan 4.2f) writes
+  # a 3-line csv preamble (#command echo, HLA line, column header with
+  # EL_score/EL_rank) vs the old local build's 2 lines (HLA + header) —
+  # with skip=2 the 4.2f header row survives as a "data" row and its
+  # "EL_rank"/"NB" text tokens would make Rank/NB character columns
+  # (readr guesses types per file, BEFORE any filter runs). Forced types
+  # turn the junk row into NA rows, which the peptide-length / NB filters
+  # then drop; old-format files parse byte-identically. Verified on hub1:
+  # 189,120 9-mer binders before/after; 1 junk row per 4.2f file dropped.
+  real_coltypes <- cols(
+    Pos     = col_integer(),
+    Peptide = col_character(),
+    ID      = col_character(),
+    core    = col_character(),
+    icore   = col_character(),
+    Score   = col_double(),
+    Rank    = col_double(),
+    Ave     = col_double(),
+    NB      = col_integer()
+  )
   
   map(csv_files, function(f) {
-    df <- read_table(f, skip = 2, col_names = real_colnames, show_col_types = FALSE)
+    df <- read_table(f, skip = 2, col_names = real_colnames, col_types = real_coltypes, show_col_types = FALSE)
     if (!is.null(peptide_length)) df <- df |> filter(nchar(Peptide) == peptide_length)
     if (binders_only) df <- df |> filter(NB == 1)
     df
@@ -719,9 +739,22 @@ get_netmhcpan_total <- function(netmhcpan_dir = "data/processed/netmhcpan/",
   cat("Counting total peptides across", length(csv_files), "NetMHCpan files...\n")
   
   real_colnames <- c("Pos", "Peptide", "ID", "core", "icore", "Score", "Rank", "Ave", "NB")
+  # Same forced column types as load_netmhcpan_batches() — see the comment
+  # there for why (4.2f 3-line preamble vs legacy 2-line).
+  real_coltypes <- cols(
+    Pos     = col_integer(),
+    Peptide = col_character(),
+    ID      = col_character(),
+    core    = col_character(),
+    icore   = col_character(),
+    Score   = col_double(),
+    Rank    = col_double(),
+    Ave     = col_double(),
+    NB      = col_integer()
+  )
   
   total_peptides <- map_dbl(csv_files, function(f) {
-    df <- read_table(f, skip = 2, col_names = real_colnames, show_col_types = FALSE)
+    df <- read_table(f, skip = 2, col_names = real_colnames, col_types = real_coltypes, show_col_types = FALSE)
     if (!is.null(peptide_length)) df <- df |> filter(nchar(Peptide) == peptide_length)
     if (!is.null(valid_ids)) {
       df <- df |> 

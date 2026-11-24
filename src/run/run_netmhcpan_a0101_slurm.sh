@@ -13,8 +13,9 @@
 # Purpose: run the allele-aware netMHCpan batch runner on a compute node
 # and leave RECEIPTS: Slurm .out/.err log + per-batch netMHCpan .csv/.txt.
 # The version banner netMHCpan writes into every .txt doubles as the
-# binary-version record for the thesis methods section (server runs 4.2e
-# vs legacy 4.2b — same family, note the drift).
+# binary-version record for the thesis methods section (hub1 ctools
+# build = NetMHCpan 4.2f, verified via banner; legacy local build
+# differs — note the drift).
 #
 # Usage (submit from repo root, after step 3 batching):
 #   NMPAN_DIR=$(dirname "$(which netMHCpan)") \

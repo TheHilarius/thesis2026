@@ -64,8 +64,11 @@ bash src/tools/netmhcpan/run_netmhcpan_parallel.sh \
 #    Resume-safe: completed batches (csv+txt non-empty) are skipped on
 #    resubmit. Runner itself exits 0 even on batch failures — the sbatch
 #    wrapper cross-checks output counts and exits 1 if incomplete.
-#    Installed binary is 4.2e vs legacy 4.2b (same family; note in thesis
-#    methods). Footer rows of length 7 in the csvs are harmless (04 filters).
+#    hub1 ctools binary = NetMHCpan 4.2f (verified banner: "NetMHCpan
+#    version 4.2f"; writes a 3-line csv preamble, EL_score/EL_rank header)
+#    vs the legacy local build's 2-line preamble (Score/Rank) — note the
+#    build drift in thesis methods. functions.R loaders force column
+#    types, so both formats parse identically (legacy unaffected).
 
 # 5. netMHCpan sensitivity evaluation + pos/neg construction
 Rscript src/pipeline/r/04_evaluate_netmhcpan_sensitivity.R hla_a0101
