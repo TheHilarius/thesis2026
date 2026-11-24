@@ -724,7 +724,19 @@ load_netmhcpan_batches <- function(netmhcpan_dir = "data/processed/netmhcpan/",
   )
   
   map(csv_files, function(f) {
-    df <- read_table(f, skip = 2, col_names = real_colnames, col_types = real_coltypes, show_col_types = FALSE)
+    # The 4.2f junk header row (survives skip=2) produces exactly 5
+    # EXPECTED parsing problems (text tokens in Pos/Score/Rank/Ave/NB).
+    # Suppress the repetitive per-file warnings, but keep a hard guard:
+    # more than 5 problems means a genuine format break — fail loudly.
+    df <- suppressWarnings(
+      read_table(f, skip = 2, col_names = real_colnames, col_types = real_coltypes,
+                 show_col_types = FALSE)
+    )
+    n_problems <- nrow(readr::problems(df))
+    if (n_problems > 5) {
+      stop("netMHCpan csv format problem in ", f, ": ", n_problems,
+           " parsing failures (expected at most 5 junk-header values)")
+    }
     if (!is.null(peptide_length)) df <- df |> filter(nchar(Peptide) == peptide_length)
     if (binders_only) df <- df |> filter(NB == 1)
     df
@@ -754,7 +766,19 @@ get_netmhcpan_total <- function(netmhcpan_dir = "data/processed/netmhcpan/",
   )
   
   total_peptides <- map_dbl(csv_files, function(f) {
-    df <- read_table(f, skip = 2, col_names = real_colnames, col_types = real_coltypes, show_col_types = FALSE)
+    # The 4.2f junk header row (survives skip=2) produces exactly 5
+    # EXPECTED parsing problems (text tokens in Pos/Score/Rank/Ave/NB).
+    # Suppress the repetitive per-file warnings, but keep a hard guard:
+    # more than 5 problems means a genuine format break — fail loudly.
+    df <- suppressWarnings(
+      read_table(f, skip = 2, col_names = real_colnames, col_types = real_coltypes,
+                 show_col_types = FALSE)
+    )
+    n_problems <- nrow(readr::problems(df))
+    if (n_problems > 5) {
+      stop("netMHCpan csv format problem in ", f, ": ", n_problems,
+           " parsing failures (expected at most 5 junk-header values)")
+    }
     if (!is.null(peptide_length)) df <- df |> filter(nchar(Peptide) == peptide_length)
     if (!is.null(valid_ids)) {
       df <- df |> 

@@ -658,7 +658,14 @@ write_csv(oor_neg_proteins, pp("pre_filtered_out_of_range_proteins.csv", ALLELE_
 
 # Rank-matched negative sampling 
 RANDOM_SEED = 42
-CHOSEN_N_BINS = 25 # Use later when building df_negatives
+# CLES cutoff for choosing the bin count: the legacy HLA-A*02:01 run's
+# post-matching CLES was 53.1%. Every allele (a0101 here) must land AT
+# that number or slightly better (closer to the 50% coin-flip) so all
+# datasets share the same residual-bias budget. Selection: the FEWEST
+# bins whose post-matching CLES <= cutoff (fewest bins = most negatives
+# retained while still meeting the budget).
+CUTOFF_CLES <- 0.531
+CHOSEN_N_BINS <- NA_real_  # set dynamically after the sweep below
 
 #  Bin count sweep 
 test_bins <- c(seq(5, 20, by = 1), seq(25, 200, by = 5))
@@ -693,40 +700,50 @@ bin_sweep <- map_dfr(test_bins, function(nb) {
   
   ks <- ks.test(df_positives$rank, neg_sampled$rank)
   d <- round(unname(ks$statistic), 4)
-  
+  # CLES = P(a random positive ranks better than a random negative);
+  # 0.5 = perfect match. Primary match-quality metric (ks_D kept as a
+  # reference column but no longer drives selection).
+  cliff_res <- cliff_delta_sampled(df_positives$rank, neg_sampled$rank)
+  cles_val <- round((1 - cliff_res$estimate) / 2, 4)
+
   tibble(
     n_bins = nb,
     n_neg = nrow(neg_sampled),
     ratio = round(nrow(neg_sampled) / nrow(df_positives), 2),
     ks_D = d,
+    cles = cles_val,
     match_quality = case_when(
-      d < 0.02 ~ "★★★★★ excellent",
-      d < 0.05 ~ "★★★★ very good",
-      d < 0.10 ~ "★★★ decent",
-      d < 0.15 ~ "★★ acceptable",
-      d < 0.20 ~ "★ alright",
-      TRUE     ~ "⚠ marginal"
+      cles_val <= 0.510 ~ "★★★★★ excellent",
+      cles_val <= 0.520 ~ "★★★★ very good",
+      cles_val <= CUTOFF_CLES ~ "★★★ decent (≤ legacy anchor)",
+      cles_val <= 0.545 ~ "★★ acceptable",
+      cles_val <= 0.560 ~ "★ alright",
+      TRUE             ~ "⚠ marginal"
     ),
     bottleneck = as.character(plan$rank_bin[which.min(plan$max_total)])
   )
 })
 
 cat("\n=== Bin Count Sweep: Data vs Match Quality Tradeoff ===\n")
-print(bin_sweep, n = Inf)
+# Main sweep table reports CLES (selection metric); ks_D stays available
+# for the smaller reference tables below.
+print(bin_sweep |> select(n_bins, n_neg, ratio, cles, match_quality, bottleneck), n = Inf)
 
 #  Select representative configurations for comparison plots 
+# Tiers are CLES-based now (selection metric); ks_D rides along in the
+# small reference tables.
 configs <- bind_rows(
-  bin_sweep |> filter(ks_D < 0.02)               |> arrange(desc(n_neg)) |> slice_head(n = 1) |> mutate(tier = "A: Excellent (D<0.02)"),
-  bin_sweep |> filter(ks_D >= 0.02, ks_D < 0.05) |> arrange(desc(n_neg)) |> slice_head(n = 1) |> mutate(tier = "B: Very good (D<0.05)"),
-  bin_sweep |> filter(ks_D >= 0.05, ks_D < 0.10) |> arrange(desc(n_neg)) |> slice_head(n = 1) |> mutate(tier = "C: Decent (D<0.10)"),
-  bin_sweep |> filter(ks_D >= 0.10, ks_D < 0.15) |> arrange(desc(n_neg)) |> slice_head(n = 1) |> mutate(tier = "D: Acceptable (D<0.15)"),
-  bin_sweep |> filter(ks_D >= 0.15, ks_D < 0.20) |> arrange(desc(n_neg)) |> slice_head(n = 1) |> mutate(tier = "E: Alright (D<0.20)"),
-  bin_sweep |> filter(ks_D >= 0.20, ks_D < 0.25) |> arrange(desc(n_neg)) |> slice_head(n = 1) |> mutate(tier = "F: Marginal (D<0.25)")
+  bin_sweep |> filter(cles <= 0.510) |> arrange(desc(n_neg)) |> slice_head(n = 1) |> mutate(tier = "A: Excellent (CLES\u226451.0%)"),
+  bin_sweep |> filter(cles > 0.510, cles <= 0.520) |> arrange(desc(n_neg)) |> slice_head(n = 1) |> mutate(tier = "B: Very good (CLES\u226452.0%)"),
+  bin_sweep |> filter(cles > 0.520, cles <= CUTOFF_CLES) |> arrange(desc(n_neg)) |> slice_head(n = 1) |> mutate(tier = "C: Decent (CLES\u226453.1% anchor)"),
+  bin_sweep |> filter(cles > CUTOFF_CLES, cles <= 0.545) |> arrange(desc(n_neg)) |> slice_head(n = 1) |> mutate(tier = "D: Acceptable (CLES\u226454.5%)"),
+  bin_sweep |> filter(cles > 0.545, cles <= 0.560) |> arrange(desc(n_neg)) |> slice_head(n = 1) |> mutate(tier = "E: Alright (CLES\u226456.0%)"),
+  bin_sweep |> filter(cles > 0.560) |> arrange(desc(n_neg)) |> slice_head(n = 1) |> mutate(tier = "F: Marginal (CLES>56.0%)")
 ) |>
   filter(!is.na(n_bins))
 
 cat("\n=== Selected Configurations ===\n")
-configs |> select(tier, n_bins, n_neg, ratio, ks_D) |> print(n = Inf)
+configs |> select(tier, n_bins, n_neg, ratio, cles, ks_D) |> print(n = Inf)
 
 #  Generate matched sets for comparison plots 
 neg_sets <- map(configs$n_bins, function(nb) {
@@ -743,13 +760,13 @@ df_facet_density <- imap_dfr(neg_sets, function(df_neg, tier_name) {
     df_positives |> transmute(rank, label = "Positive (TP)"),
     df_neg       |> transmute(rank, label = "Negative")
   ) |> mutate(facet = paste0(tier_name, "\n", cfg$n_bins, " bins, n=",
-                             scales::comma(cfg$n_neg), ", D=", cfg$ks_D))
+                             scales::comma(cfg$n_neg), ", CLES=", sprintf("%.1f%%", 100 * cfg$cles)))
 })
 
 facet_order <- map_chr(rev(seq_len(nrow(configs))), function(i) {
   cfg <- configs[i, ]
   paste0(cfg$tier, "\n", cfg$n_bins, " bins, n=",
-         scales::comma(cfg$n_neg), ", D=", cfg$ks_D)
+         scales::comma(cfg$n_neg), ", CLES=", sprintf("%.1f%%", 100 * cfg$cles))
 })
 
 df_facet_density <- df_facet_density |>
@@ -762,7 +779,7 @@ p4 <- ggplot(df_facet_density, aes(x = rank, fill = label)) +
   facet_wrap(~facet, ncol = 3, scales = "free_y") +
   labs(
     title    = "Affinity Bias Correction: Matching Quality Across Options",
-    subtitle = "Each panel shows positives vs negatives at different bin-matching resolutions\nD < 0.02 excellent | D < 0.05 very good | D < 0.10 decent | D < 0.15 acceptable | D < 0.20 alright | D \u2265 0.20 marginal",
+    subtitle = "Each panel shows positives vs negatives at different bin-matching resolutions\nCLES \u2264 51.0% excellent | \u2264 52.0% very good | \u2264 53.1% decent (legacy anchor) | \u2264 54.5% acceptable | \u2264 56.0% alright | > 56.0% marginal",
     x = "NetMHCpan EL Rank (%)", y = "Density", fill = NULL
   ) +
   theme_bw(base_size = 16) +
@@ -805,11 +822,26 @@ bind_rows(
   tibble(option = "Before (no matching)", n_bins = NA_real_,
          n_neg = nrow(df_netmhcpan_only),
          ratio = round(nrow(df_netmhcpan_only) / nrow(df_positives), 2),
+         cles = round(cles_before, 4),
          ks_D = round(ks_pre$statistic, 4), quality = "\u2717 biased"),
-  configs |> transmute(option = tier, n_bins, n_neg, ratio, ks_D, quality = match_quality)
+  configs |> transmute(option = tier, n_bins, n_neg, ratio, cles, ks_D, quality = match_quality)
 ) |> print(n = Inf)
 
-# Build final dataset (Option C: 25 bins) 
+#  Choose the bin count: FEWEST bins whose post-matching CLES lands at
+#  the legacy anchor (53.1%) or slightly better. Fewest bins = the most
+#  negatives retained while still meeting the bias budget. (The old
+#  hardcoded CHOSEN_N_BINS = 25 landed at CLES 60.6% — well above the
+#  anchor — which is why the choice is now data-driven.)
+eligible <- bin_sweep |> filter(cles <= CUTOFF_CLES) |> arrange(n_bins)
+if (nrow(eligible) == 0) {
+  CHOSEN_N_BINS <- max(bin_sweep$n_bins)
+  warning("No bin count reached CLES <= ", sprintf("%.1f%%", 100 * CUTOFF_CLES),
+          " — falling back to the finest matching (", CHOSEN_N_BINS, " bins)")
+} else {
+  CHOSEN_N_BINS <- eligible$n_bins[1]
+}
+
+# Build final dataset 
 df_negatives <- sample_bin_matched(df_positives, df_netmhcpan_only, CHOSEN_N_BINS, seed = RANDOM_SEED)
 
 # Fixed variant: same rank-matched sampling from the positive-protein-only pool
@@ -824,10 +856,13 @@ write_csv(df_combined_fixed,
           pp("df_combined_pos_and_neg_remove715negonly.csv", ALLELE_TAG))
 cat("Saved fixed dataset to ", pp("df_combined_pos_and_neg_remove715negonly.csv", ALLELE_TAG), "\n", sep = "")
 
-cat("\n=== Chosen Configuration: Option C ===\n")
-cat("Bins:    ", CHOSEN_N_BINS, "\n")
-cat("Negatives:", scales::comma(nrow(df_negatives)), "\n")
-cat("Neg:Pos: ", round(nrow(df_negatives) / nrow(df_positives), 2), ":1\n")
+chosen_row <- bin_sweep |> filter(n_bins == CHOSEN_N_BINS)
+cat("\n=== Chosen Configuration (CLES cutoff ", sprintf("%.1f%%", 100 * CUTOFF_CLES),
+    " — legacy 0201 anchor) ===\n", sep = "")
+cat("Bins:      ", CHOSEN_N_BINS, "\n")
+cat("CLES:      ", sprintf("%.1f%%", 100 * chosen_row$cles[1]), "\n")
+cat("Negatives: ", scales::comma(nrow(df_negatives)), "\n")
+cat("Neg:Pos:   ", round(nrow(df_negatives) / nrow(df_positives), 2), ":1\n")
 
 df_combined <- bind_rows(df_positives, df_negatives) |>
   select(-any_of(c("hla", "binder", "rank_bin")))
