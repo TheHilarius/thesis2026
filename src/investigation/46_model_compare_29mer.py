@@ -142,7 +142,7 @@ def plot_bars(arms, delong_rows):
     ax.set_xticks([gi * STEP_G + (len(MODELS) - 1) / 2
                    for gi in range(len(ENCODINGS))])
     ax.set_xticklabels([ENC_LABEL[e] for e in ENCODINGS],
-                       rotation=30, ha="right", fontsize=9)
+                       rotation=0, ha="center", fontsize=9)
 
     legend = [(lbl, c) for _m, lbl, c in MODELS]
     d18._finish_padmode(

@@ -1,0 +1,9 @@
+encoding	model	pooled_auc	outer_mean	outer_std	n_features	runtime_s	json
+sparse	xgb	0.740906	0.740941	0.004273	609	359.2	cv_results_xgb_sparse_flat_20261014_154653.json
+sparse	rf	0.721537	0.721607	0.005423	609	1930.0	cv_results_rf_sparse_flat_20261119_010646.json
+sparse	lr_l2	0.704560	0.704566	0.005075	609	84.7	cv_results_lr_l2_sparse_flat_20261118_203334.json
+sparse	lr_elasticnet	0.704599	0.704607	0.005080	609	5504.9	cv_results_lr_elasticnet_sparse_flat_20261118_203900.json
+blosum50	xgb	0.763254	0.763271	0.004830	609	1025.2	cv_results_xgb_blosum50_flat_20261014_154653.json
+blosum50	rf	0.713908	0.714004	0.010461	609	2039.7	cv_results_rf_blosum50_flat_20261119_013903.json
+blosum50	lr_l2	0.704497	0.704511	0.005237	609	227.4	cv_results_lr_l2_blosum50_flat_20261118_203505.json
+blosum50	lr_elasticnet	0.704745	0.704755	0.005325	609	10546.9	cv_results_lr_elasticnet_blosum50_flat_20261118_221052.json
