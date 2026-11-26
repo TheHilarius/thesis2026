@@ -147,8 +147,8 @@ def eval_params(params: dict, X, folds, y, buckets, tag="trial") -> dict:
     return res
 
 
-def suggest(trial) -> dict:
-    return {
+def suggest(trial, full_space: bool = False) -> dict:
+    params = {
         "max_depth": trial.suggest_int("max_depth", 3, 10),
         "min_child_weight": trial.suggest_float("min_child_weight", 1.0, 30.0,
                                                 log=True),
@@ -158,6 +158,14 @@ def suggest(trial) -> dict:
         "reg_alpha": trial.suggest_float("reg_alpha", 1e-8, 10.0, log=True),
         "reg_lambda": trial.suggest_float("reg_lambda", 1e-3, 100.0, log=True),
     }
+    if full_space:
+        # joint search: budget params inside the study (vs the two-phase
+        # design where lr/n are held fixed here and re-scaled in --polish)
+        params["learning_rate"] = trial.suggest_float(
+            "learning_rate", 0.01, 0.3, log=True)
+        params["n_estimators"] = trial.suggest_int(
+            "n_estimators", 200, 5000, log=True)
+    return params
 
 
 def open_study(db_name: str, run_dir: Path, study_name: str,
@@ -197,19 +205,24 @@ def run_tune(args) -> None:
     features = args.features
     run_dir, study_name = arm_paths(features)
     df, csv_cols, X, folds, y, buckets = load_matrix(features)
+    # smoke always stays light (100 trees, 2 buckets) even with --full-space;
+    # real full-space runs search lr/n inside the study instead of the base
+    full = bool(getattr(args, "full_space", False)) and not args.smoke
+    sfx = "_full" if full else ""
     n_est = 100 if args.smoke else 1000
-    base = {"n_estimators": n_est}
+    base = {} if full else {"n_estimators": n_est}
 
     if args.smoke:
-        study = open_study("study_smoke.db", run_dir, study_name)
+        study = open_study(f"study_smoke{sfx}.db", run_dir, study_name)
         buckets = buckets[:2]          # 2 fits only — wiring check
         n_trials = args.trials or 2
     else:
-        study = open_study("study.db", run_dir, study_name, seed=args.seed)
+        study = open_study(f"study{sfx}.db", run_dir, study_name,
+                           seed=args.seed)
         n_trials = args.trials or 50
 
     def objective(trial):
-        params = {**base, **suggest(trial)}
+        params = {**base, **suggest(trial, full_space=full)}
         res = eval_params(params, X, folds, y, buckets)
         trial.set_user_attr("logloss_mean", res["logloss_mean"])
         trial.set_user_attr("auc_folds", res["auc_folds"])
@@ -218,7 +231,7 @@ def run_tune(args) -> None:
 
     study.optimize(objective, n_trials=n_trials)
 
-    tag = "smoke" if args.smoke else "tuned"
+    tag = ("smoke" if args.smoke else ("full" if full else "tuned"))
     out = run_dir / (f"best_params_{tag}.json")
     best = study.best_trial
     payload = {**base, **best.params}
@@ -231,6 +244,8 @@ def run_tune(args) -> None:
         "features": features,
         "split": str(DEFAULT_SPLIT_PATH),
         "mode": tag,
+        "search_space": ("full (lr, n_estimators included)"
+                         if full else "two-phase (fixed lr=0.1, n=1000)"),
     }
     out.write_text(json.dumps(payload_meta, indent=2))
     dump_trials(study, run_dir / f"trials_{tag}.csv")
@@ -238,17 +253,31 @@ def run_tune(args) -> None:
     print(f"Best params -> {out}")
 
 
-def run_polish(features: str) -> None:
-    """Low-LR phase 6: winner's structural params, lr x n_estimators grid."""
+def run_polish(features: str, full_space: bool = False) -> None:
+    """Low-LR phase 6: winner's structural params, lr x n_estimators grid.
+
+    two-phase: winner searched the 7 structural params at fixed lr=0.1/n=1000
+    -> combos try 4 (lr, n) budgets around them.
+    full_space: winner already searched lr/n too -> combos swap ONLY the
+    budget; the search winner competes with its own searched lr/n.
+    """
     run_dir, study_name = arm_paths(features)
     df, csv_cols, X, folds, y, buckets = load_matrix(features)
-    study = open_study("study.db", run_dir, study_name)
+    sfx = "_full" if full_space else ""
+    study = open_study(f"study{sfx}.db", run_dir, study_name)
     n_trials = len(study.trials)
     assert n_trials > 0, "no trials in study — run tuning first"
-    structural = dict(study.best_trial.params)
+    best_params = dict(study.best_trial.params)
+    if full_space:
+        structural = {k: v for k, v in best_params.items()
+                      if k not in ("learning_rate", "n_estimators")}
+        winner_params = best_params
+    else:
+        structural = best_params
+        winner_params = {"n_estimators": 1000, **best_params}
     tuned_auc = study.best_trial.value
     tuned_logloss = study.best_trial.user_attrs.get("logloss_mean")
-    print(f"Study winner: AUC={tuned_auc:.4f}  {structural}")
+    print(f"Study winner: AUC={tuned_auc:.4f}  {winner_params}")
 
     candidates = []
     for lr in (0.01, 0.02):
@@ -262,19 +291,21 @@ def run_polish(features: str) -> None:
         results.append({"params": params, **res})
 
     best = max(results, key=lambda r: r["auc_mean"])
-    fixed = {"params": {"n_estimators": 1000, **structural},
+    fixed = {"params": winner_params,
              "auc_mean": tuned_auc, "logloss_mean": tuned_logloss,
              "auc_std": study.best_trial.user_attrs.get("auc_folds") and
              float(np.std(study.best_trial.user_attrs["auc_folds"])) or None,
-             "source": "tune winner (lr=0.1, n=1000)"}
+             "source": ("full-space search winner (lr, n searched)"
+                        if full_space else
+                        "tune winner (lr=0.1, n=1000)")}
     final = fixed if fixed["auc_mean"] >= best["auc_mean"] else {
         **best, "source": "low-LR polish"}
-    out = run_dir / "polish_results.json"
+    out = run_dir / f"polish_results{sfx}.json"
     out.write_text(json.dumps({
         "tuned_winner": fixed, "polish_candidates": results,
         "final": final}, indent=2))
     # final model-ready params (for 04_modelling --xgb-params)
-    (run_dir / "best_params.json").write_text(
+    (run_dir / f"best_params{'_full' if full_space else ''}.json").write_text(
         json.dumps({"params": final["params"], "auc_mean": final["auc_mean"],
                     "source": final["source"]}, indent=2))
     print(f"\nFINAL AUC={final['auc_mean']:.4f}  ({final['source']})")
@@ -298,6 +329,13 @@ def parse_args():
                         "startup trials don't duplicate")
     p.add_argument("--polish", action="store_true",
                    help="run low-LR polish on finished study")
+    p.add_argument("--full-space", action="store_true", dest="full_space",
+                   help="search learning_rate (0.01-0.3, log) and "
+                        "n_estimators (200-5000, log) INSIDE the study "
+                        "(9 params, one search) instead of the two-phase "
+                        "fixed-budget design. Uses study_full.db and "
+                        "best_params_full.json; existing two-phase "
+                        "artifacts untouched.")
     p.add_argument("--smoke", action="store_true",
                    help="wiring check: 100 trees, 2 buckets, smoke study")
     return p.parse_args()
@@ -307,6 +345,7 @@ if __name__ == "__main__":
     optuna.logging.set_verbosity(optuna.logging.WARNING)
     args = parse_args()
     if args.polish:
-        run_polish(args.features)
+        run_polish(args.features, full_space=bool(
+            getattr(args, "full_space", False)))
     else:
         run_tune(args)
