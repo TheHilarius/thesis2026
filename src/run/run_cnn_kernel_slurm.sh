@@ -33,7 +33,8 @@ export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:T
 EPOCHS="${EPOCHS:-30}"
 PATIENCE="${PATIENCE:-5}"
 SEED_MODE="${SEED_MODE:-perfold}"
-VARIANT="${VARIANT:-flank5}"
+CV_MODE="${CV_MODE:-nested}"
+VARIANT="${VARIANT:-flank5_rmdup_updated_h6_pepcut1}"
 FEAT="${FEAT:-emb_esmc300m_win_padtoken}"
 OUT="${RUN:-runs/cnn_kernel}"
 mkdir -p "$OUT/models" "$OUT/logs/slurm" "$OUT/plots" "$OUT/results"
@@ -69,6 +70,7 @@ if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
             --epochs "$EPOCHS" \
             --patience "$PATIENCE" \
             --seed-mode "$SEED_MODE" \
+            --cv-mode "$CV_MODE" \
             --out-root "$OUT"
         echo "--- ${MODEL} done ---"
     done
@@ -87,6 +89,7 @@ else
         --epochs "$EPOCHS" \
         --patience "$PATIENCE" \
         --seed-mode "$SEED_MODE" \
+            --cv-mode "$CV_MODE" \
         --out-root "$OUT"
     echo "--- ${MODEL} done ---"
     nvidia-smi --query-gpu=memory.used,memory.free --format=csv || true
@@ -94,7 +97,11 @@ fi
 
 echo "CNN kernel sweep task completed."
 
-# Canonical k3-k19 on FLANK5-19mer (defaults: VARIANT=flank5, 30/5/perfold).
+# Canonical k3-k19 on flank5-19mer (defaults: 30/5/perfold, go-forward data
+# variant flank5_rmdup_updated_h6_pepcut1 — new homology split, folds-only
+# change; all pre-2026-11-26 kernel-curve numbers are OLD folds, not
+# comparable). Legacy variants via env: VARIANT=flank5 (old campaign),
+# VARIANT=flank5_rmdup (old canonical), VARIANT=none (full-29mer).
 # 9 tasks, ~1-2h each (19mer faster than full windows):
 #   OUT="runs/cnn_kernel3_19_flank5_$(date +%Y%m%d)"; mkdir -p "$OUT/logs/slurm" && sbatch --array=0-8 --output="$OUT/logs/slurm/%A_%a.out" --error="$OUT/logs/slurm/%A_%a.err" --export=RUN="$OUT",ALL src/run/run_cnn_kernel_slurm.sh
 # Full-29mer override (variant empty):

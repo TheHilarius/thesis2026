@@ -14,8 +14,11 @@
 # Same data as the CNN campaigns: emb_esmc300m_win_padtoken windows,
 # flattened (L,D)->(L*D) per row, 30 epochs / patience 5 / per-fold seeds.
 #
-# Default VARIANT=flank5_rmdup (config default, N=45,278). Set VARIANT=flank5
-# for byte-comparison against the legacy CNN flank5 campaign rows.
+# Default VARIANT=flank5_rmdup_updated_h6_pepcut1 = GO-FORWARD data
+# (new homology split; same 45,278 rows/windows as flank5_rmdup, only
+# folds rewritten). Legacy via env: VARIANT=flank5_rmdup (old canonical —
+# the 20261126 width sweep ran this), VARIANT=flank5 (old CNN campaign),
+# VARIANT=none (full-29mer).
 #
 # W=32 is included by default so the folder is self-contained (baseline
 # point under the same protocol); drop it via
@@ -52,7 +55,8 @@ export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:T
 EPOCHS="${EPOCHS:-30}"
 PATIENCE="${PATIENCE:-5}"
 SEED_MODE="${SEED_MODE:-perfold}"
-VARIANT="${VARIANT:-flank5_rmdup}"
+CV_MODE="${CV_MODE:-nested}"
+VARIANT="${VARIANT:-flank5_rmdup_updated_h6_pepcut1}"
 FEAT="${FEAT:-emb_esmc300m_win_padtoken}"
 OUT="${RUN:-runs/ffnn_width}"
 MODEL="${MODEL:-ffnn_simple}"
@@ -90,6 +94,7 @@ if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
             --epochs "$EPOCHS" \
             --patience "$PATIENCE" \
             --seed-mode "$SEED_MODE" \
+            --cv-mode "$CV_MODE" \
             --out-root "$OUT"
         echo "--- ${MODEL} w=${W} done ---"
     done
@@ -109,6 +114,7 @@ else
         --epochs "$EPOCHS" \
         --patience "$PATIENCE" \
         --seed-mode "$SEED_MODE" \
+            --cv-mode "$CV_MODE" \
         --out-root "$OUT"
     echo "--- ${MODEL} w=${W} done ---"
     nvidia-smi --query-gpu=memory.used,memory.free --format=csv || true

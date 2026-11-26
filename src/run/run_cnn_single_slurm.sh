@@ -28,17 +28,27 @@ mkdir -p logs
 export PYTHONUNBUFFERED=1
 
 MODEL="${MODEL:-cnn_simple}"
-FEAT="${FEAT:-emb_esmif_eos_bos_repeat}"
+FEAT="${FEAT:-emb_esmc300m_win_padtoken}"
 EPOCHS="${EPOCHS:-20}"
+PATIENCE="${PATIENCE:-3}"
+VARIANT="${VARIANT:-flank5_rmdup_updated_h6_pepcut1}"
+SEED_MODE="${SEED_MODE:-perfold}"
+CV_MODE="${CV_MODE:-nested}"
 OUT="${RUN:-runs/cnn_cv_if}"
 mkdir -p "$OUT/models" "$OUT/logs/slurm" "$OUT/plots"
 
-echo "model=${MODEL} features=${FEAT} epochs=${EPOCHS} out=${OUT}"
+echo "model=${MODEL} features=${FEAT} epochs=${EPOCHS} out=${OUT} variant='${VARIANT}'"
+if [ -n "$VARIANT" ]; then
+    export THESIS_VARIANT="$VARIANT"
+fi
 
 python src/pipeline/python/05a_cnn_modelling.py \
   --model "$MODEL" \
   --features "$FEAT" \
   --epochs "$EPOCHS" \
+  --patience "$PATIENCE" \
+  --seed-mode "$SEED_MODE" \
+  --cv-mode "$CV_MODE" \
   --out-root "$OUT"
 
 echo "CNN single run completed."
@@ -46,5 +56,7 @@ echo "CNN single run completed."
 # Submit into the fixed campaign folder (paste on hub1).
 # NOTE: create the slurm log dir first -- sbatch will not make it for you:
 #   mkdir -p runs/cnn_cv_if/logs/slurm && sbatch --export=RUN="runs/cnn_cv_if",EPOCHS=2,ALL src/run/run_cnn_single_slurm.sh
-# Full run (defaults: cnn_simple, emb_esmif_eos_bos_repeat, 20 epochs):
+# Full run (defaults: cnn_simple, emb_esmc300m_win_padtoken, go-forward
+# variant flank5_rmdup_updated_h6_pepcut1, 20 epochs / patience 3 — set
+# EPOCHS=30 PATIENCE=5 for the canonical protocol):
 #   mkdir -p runs/cnn_cv_if/logs/slurm && sbatch --export=RUN="runs/cnn_cv_if",ALL src/run/run_cnn_single_slurm.sh

@@ -14,9 +14,10 @@
 # (run_cnn_kernel_slurm.sh stays kernel-only, records untouched).
 #
 # One channel count per array task. MODEL has no default on purpose: set it
-# at submit time to the winning registry key (k3 baseline = cnn_simple,
-# k5-k19 = cnn_simple_kK). VARIANT defaults to flank5 (channel question is
-# asked on the winning 19mer data).
+# to the winning kernel registry key (k3 baseline = cnn_simple,
+# k5-k19 = cnn_simple_kK). VARIANT defaults to the go-forward data variant
+# flank5_rmdup_updated_h6_pepcut1 (new homology split; old channel-sweep
+# numbers are OLD folds, not comparable).
 #
 # Unified protocol: 30 epochs / patience 5 / per-fold seeds.
 # C=32 is included by default so the folder is self-contained (it duplicates
@@ -56,7 +57,8 @@ export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:T
 EPOCHS="${EPOCHS:-30}"
 PATIENCE="${PATIENCE:-5}"
 SEED_MODE="${SEED_MODE:-perfold}"
-VARIANT="${VARIANT:-flank5}"
+CV_MODE="${CV_MODE:-nested}"
+VARIANT="${VARIANT:-flank5_rmdup_updated_h6_pepcut1}"
 FEAT="${FEAT:-emb_esmc300m_win_padtoken}"
 OUT="${RUN:-runs/cnn_channels}"
 MODEL="${MODEL:-}"
@@ -101,6 +103,7 @@ if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
             --epochs "$EPOCHS" \
             --patience "$PATIENCE" \
             --seed-mode "$SEED_MODE" \
+            --cv-mode "$CV_MODE" \
             --out-root "$OUT"
         echo "--- ${MODEL} C=${CH} done ---"
     done
@@ -120,6 +123,7 @@ else
         --epochs "$EPOCHS" \
         --patience "$PATIENCE" \
         --seed-mode "$SEED_MODE" \
+            --cv-mode "$CV_MODE" \
         --out-root "$OUT"
     echo "--- ${MODEL} C=${CH} done ---"
     nvidia-smi --query-gpu=memory.used,memory.free --format=csv || true

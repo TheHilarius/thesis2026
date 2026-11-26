@@ -30,12 +30,12 @@ Outputs (default --runtag ffnn_width_curve):
     runs/ffnn_width_curve/results/ffnn_width_delong_allpairs.tsv (all pairs)
     runs/ffnn_width_curve/results/ffnn_width_overfit.tsv (per-fold epochs_run, best/final val AUC)
 
-Note on overfitting: this pipeline runs flat 6-fold CV (no nested split —
-`06a_ffnn_modelling.py` evaluates the early-stopped model on the same held-out
-bucket used for early stopping), so inner-val best and outer-test AUC are the
-same numbers by construction. The honest overfit signals are (1) train-loss
-vs val-AUC trajectories per epoch and (2) best-vs-final-epoch val-AUC
-degradation (post-peak overfitting inside the patience window).
+Note on overfitting: 06a defaults to NESTED CV (6 outer x 5 inner, mirrors
+04_modelling) — outer-test buckets are never used for training or early
+stopping, so pooled OOF AUC is honest also after hyperparameter selection.
+For nested JSONs the overfit panels flatten learning_curves to a
+per-outer mean over the 5 inner folds. --cv-mode flat reproduces the old
+6-model protocol (early-stop val == test; legacy runs only).
 
 Usage:
     python src/investigation/39_ffnn_width_performance.py --anchor 32
@@ -209,6 +209,13 @@ def find_jsons(run_dirs):
     return uniq
 
 
+def _mean_cols(lists):
+    """Column-wise mean over variable-length epoch lists (per-outer mean
+    over inner folds; epoch i averaged over folds that ran that long)."""
+    n_ep = max(len(v) for v in lists)
+    return [float(np.mean([v[i] for v in lists if len(v) > i])) for i in range(n_ep)]
+
+
 def load_width_json(path):
     with open(path) as fh:
         r = json.load(fh)
@@ -230,20 +237,37 @@ def load_width_json(path):
     else:  # fallback: per-fold AUC from pooled vectors
         from sklearn.metrics import roc_auc_score as _auc
         fold_aucs = [float(_auc(y_parts[i], p_parts[i])) for i in range(len(folds))]
-    # overfit diagnostics: per-fold train-loss / val-AUC curves (may be absent in old JSONs)
+    # overfit diagnostics: learning_curves may be flat {fold: hist} or
+    # nested {outer: {inner: hist}} (nested-CV runs); nested is flattened
+    # to a per-outer mean-over-inner-folds curve.
     curves = None
     lc = r.get("learning_curves") or {}
-    if isinstance(lc, dict) and len(lc) == len(folds):
+    if isinstance(lc, dict) and lc:
         try:
-            curves = {}
-            for b in folds:
-                e = lc[str(b)] if str(b) in lc else lc[b]
-                curves[int(b)] = {
-                    "train_loss": [float(v) for v in e["train_loss"]],
-                    "val_auc": [float(v) for v in e["val_auc"]],
-                    "best_val_auc": float(e["best_val_auc"]),
-                    "epochs_run": int(e["epochs_run"]),
-                }
+            first = next(iter(lc.values()))
+            if isinstance(first, dict) and "train_loss" not in first:
+                # nested: {outer: {inner: hist}}
+                curves = {}
+                for b in folds:
+                    inn = lc[str(b)] if str(b) in lc else lc[b]
+                    hists = list(inn.values())
+                    curves[int(b)] = {
+                        "train_loss": _mean_cols([h["train_loss"] for h in hists]),
+                        "val_auc": _mean_cols([h["val_auc"] for h in hists]),
+                        "best_val_auc": float(np.mean([h["best_val_auc"] for h in hists])),
+                        "epochs_run": float(np.mean([h["epochs_run"] for h in hists])),
+                    }
+            elif len(lc) == len(folds):
+                # flat: {fold: hist}
+                curves = {}
+                for b in folds:
+                    e = lc[str(b)] if str(b) in lc else lc[b]
+                    curves[int(b)] = {
+                        "train_loss": [float(v) for v in e["train_loss"]],
+                        "val_auc": [float(v) for v in e["val_auc"]],
+                        "best_val_auc": float(e["best_val_auc"]),
+                        "epochs_run": int(e["epochs_run"]),
+                    }
         except (KeyError, TypeError, ValueError):
             curves = None
     cfg = r.get("config") or {}

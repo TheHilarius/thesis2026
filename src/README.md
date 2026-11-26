@@ -64,6 +64,7 @@ Full per-allele recipe (incl. server commands): `docs/hla_a0101_run_recipe.md`.
 
 - Python pipeline scripts import `config.py` via a `sys.path` bootstrap — runnable from any cwd.
 - Nov 2026 rename: `05_cnn_modelling/05_cnn_models/05_plotting` → `05a/05c/05d`, `06_external_eval` → `07_external_eval`. Old `runs/` logs and READMEs keep the old names (history untouched).
+- Go-forward data (2026-11-26): all new CNN/FFNN runs default `THESIS_VARIANT=flank5_rmdup_updated_h6_pepcut1` (robust homology split, folds-only change). Pre-2026-11-26 numbers are old folds, not comparable. ESM-C 300M windows only; esmif/esmc6b/mpnn dropped. `rewrite_h5_folds.py` was a one-time migration tool (gitignored).
 - R scripts `source("src/pipeline/r/functions.R")` — run from repo root.
 - `run/` scripts `cd` to repo root internally; invoke as `bash src/run/<script>.sh`.
 - Rendered outputs go to `results/` (e.g. `logo_comparison.html`).

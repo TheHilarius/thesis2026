@@ -4,17 +4,24 @@ CNN counterpart of 04_modelling.py: same folds/labels/splits, same
 logs/<mode> + models/<mode>/cv_results JSON layout, but raw (N,L,D)
 windows + torch Conv1d instead of flat PCA + sklearn.
 
-CANONICAL PROTOCOL (from Nov 2026): flank5-19mer embeddings via
-THESIS_VARIANT=flank5 (L=19), 30 epochs / patience 5 / per-fold seeds.
-Proven better than full-29mer (k5 flank5 0.6674 > full 0.6536) and than
-short 20/3 budget (stops in flat noise). Full-29 (L=29) + 20/3 fixed-seed
-is legacy record only, not for new runs.
+CANONICAL PROTOCOL (from Nov 2026): flank5-19mer embeddings (L=19),
+30 epochs / patience 5 / per-fold seeds.
+GO-FORWARD DATA (2026-11-26): THESIS_VARIANT=flank5_rmdup_updated_h6_pepcut1
+— new robust homology split (window hamming c=6 + pepcut1); same 45,278
+rows/windows as flank5_rmdup, ONLY folds rewritten (built via a one-time
+folds-only H5 rewrite on hub1). All numbers from runs before 2026-11-26
+(kernel/channel sweeps pooled OOF ~0.68) are on OLD folds — not comparable.
+Set THESIS_VARIANT=flank5_rmdup or flank5 to reproduce legacy campaigns.
 
-SIMPLE 6-FOLD CV (experimentation): 6 buckets, 6 models.
-Each bucket serves once as validation, the other 5 as train.
-Seeds differ per fold by default (base seed + bucket id); --seed-mode fixed
-restores the legacy single-seed protocol.
-Per-epoch train-loss / val-AUC histories logged per bucket + one PNG.
+NESTED CV (default, mirrors 04_modelling.py): 6 outer iterations x 5 inner
+folds = 30 models. Each inner model trains on 4 buckets and early-stops on
+its inner-val bucket; the 5 inner models' probs are AVERAGED on the
+outer-test bucket, which is never used for training or early stopping.
+Per-epoch train-loss / val-AUC histories logged for every inner model +
+one combined PNG. Seeds: base + outer*10 + inner position (perfold
+default); --seed-mode fixed restores the legacy single-seed protocol.
+--cv-mode flat restores the old simple 6-fold loop (6 models, early-stop
+val == test) for legacy comparability and cheap smoke runs only.
 
 Usage:
     python 05a_cnn_modelling.py --model cnn_simple --features emb_esmc300m_win_padtoken
@@ -26,7 +33,7 @@ Pooling is naive GAP over all L slots (L=29 full, L=19 flank5; no pad mask).
 Outputs (mirrors 04):
     <out-root>/logs/cnn/05a_cnn_modelling_<run_tag>_log_<ts>.txt
     <out-root>/models/cnn/cv_results_<run_tag>_<ts>.json
-    <out-root>/models/cnn/<run_tag>_val<vb>.pt  (6 models)
+    <out-root>/models/cnn/<run_tag>_outer<o>_inner<p>.pt  (nested, 30; flat: _val<vb>.pt, 6)
     <out-root>/plots/learning_curves_<run_tag>_<ts>.png (+ .csv + _meta.json)
 
 Plotting lives in 05d_plotting.py (called via subprocess each run; also
@@ -191,18 +198,28 @@ def predict_probs(model, loader, device):
 
 
 def write_curves_csv(path, curves):
-    """Flat 6-fold format: {bucket: hist}. One row per bucket/epoch."""
+    """Format depends on cv_mode, detected from the value shape:
+    flat {bucket: hist} -> bucket,epoch,... | nested {outer: {inner: hist}}
+    -> outer,inner,epoch,... (05d_plotting supports both)."""
     with open(path, "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["bucket", "epoch", "train_loss", "val_auc"])
-        for b in sorted(curves, key=int):
-            h = curves[b]
-            for e, (tl, va) in enumerate(zip(h["train_loss"], h["val_auc"]), 1):
-                w.writerow([b, e, f"{tl:.6f}", f"{va:.6f}"])
+        first = next(iter(curves.values()), {})
+        if isinstance(first, dict) and first and "train_loss" not in first:
+            w.writerow(["outer", "inner", "epoch", "train_loss", "val_auc"])
+            for o, inners in sorted(curves.items(), key=lambda kv: int(kv[0])):
+                for i, h in sorted(inners.items(), key=lambda kv: int(kv[0])):
+                    for e, (tl, va) in enumerate(zip(h["train_loss"], h["val_auc"]), 1):
+                        w.writerow([o, i, e, f"{tl:.6f}", f"{va:.6f}"])
+        else:
+            w.writerow(["bucket", "epoch", "train_loss", "val_auc"])
+            for b in sorted(curves, key=int):
+                h = curves[b]
+                for e, (tl, va) in enumerate(zip(h["train_loss"], h["val_auc"]), 1):
+                    w.writerow([b, e, f"{tl:.6f}", f"{va:.6f}"])
 
 
 def parse_args():
-    p = argparse.ArgumentParser(description="05a_cnn_modelling: simple 6-fold CNN CV")
+    p = argparse.ArgumentParser(description="05a_cnn_modelling: nested 6x5 CNN CV (mirrors 04); flat legacy mode")
     p.add_argument("--model", default="cnn_simple", help="CNN key from 05c_cnn_models.CNN_REGISTRY")
     p.add_argument("--features", default="emb_esmc300m_win_padtoken",
                    help="Feature set key from FEATURE_SETS (one embedding_windows component)")
@@ -214,7 +231,11 @@ def parse_args():
     p.add_argument("--seed", type=int, default=RANDOM_STATE,
                      help="Base seed; per-fold seed = base + bucket unless --seed-mode fixed")
     p.add_argument("--seed-mode", choices=["perfold", "fixed"], default="perfold",
-                     help="perfold: seed 42+bucket per fold (default); fixed: same seed all folds (legacy)")
+                     help="perfold: per-model seeds (default); fixed: same seed all models (legacy)")
+    p.add_argument("--cv-mode", choices=["nested", "flat"], default="nested",
+                     help="nested (DEFAULT): 6 outer x 5 inner = 30 models, outer-test = avg of "
+                          "5 inner models (mirrors 04_modelling); flat: legacy 6-model loop, "
+                          "early-stop val == test (smoke/legacy only)")
     p.add_argument("--channels", type=int, default=None,
                    help="Override registry channels for channel sweeps; "
                         "recorded in run_tag as _cC and in the results JSON")
@@ -278,61 +299,118 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     if device == "cuda":
         torch.cuda.reset_peak_memory_stats()
-    print(f"  device={device} epochs={args.epochs} bs={args.batch_size} lr={args.lr} patience={args.patience}")
+    seed_desc = (f"fixed seed {args.seed}" if args.seed_mode == "fixed"
+                  else f"per-model seeds (base {args.seed})")
+    print(f"  device={device} epochs={args.epochs} bs={args.batch_size} lr={args.lr} "
+          f"patience={args.patience} cv_mode={args.cv_mode}")
     print(f"  params: {eff_params}" + ("  (channels override)" if args.channels is not None else ""))
     if device == "cuda":
         print(f"  gpu_mem_total={torch.cuda.get_device_properties(0).total_memory / 1e9:.1f}GB")
 
-    seed_desc = (f"fixed seed {args.seed}" if args.seed_mode == "fixed"
-                 else f"per-fold seeds (base {args.seed} + bucket id)")
-    print(f"\n{'=' * 80}\nSIMPLE 6-FOLD CV  6 buckets = 6 models ({seed_desc})\n{'=' * 80}")
+    if args.cv_mode == "nested":
+        print(f"\n{'=' * 80}\nNESTED CROSS-VALIDATION  6 outer x 5 inner = 30 models  ({seed_desc})\n{'=' * 80}")
+    else:
+        print(f"\n{'=' * 80}\nSIMPLE 6-FOLD CV (flat legacy)  6 buckets = 6 models  ({seed_desc})\n{'=' * 80}")
     buckets = list(range(N_CV_FOLDS + 1))
     outer_val_metrics, outer_val_predictions = [], {}
-    curves, bucket_stats = {}, {}
+    curves, bucket_stats, best_inner = {}, {}, {}
     fold_times, n_params = [], None
     t_cv_start = time.time()
 
-    for vb in buckets:
-        t1 = time.time()
-        seed_fold = args.seed if args.seed_mode == "fixed" else args.seed + int(vb)
-        print(f"\n  BUCKET {vb}/{N_CV_FOLDS} (validation bucket = {vb}, seed = {seed_fold})")
-        tr_idx = np.where(folds != vb)[0]
-        va_idx = np.where(folds == vb)[0]
-        tl = DataLoader(WindowDataset(h5_path, ds_name, tr_idx, labels[tr_idx]),
-                        batch_size=args.batch_size, shuffle=True)
-        vl = DataLoader(WindowDataset(h5_path, ds_name, va_idx, labels[va_idx]),
-                        batch_size=args.batch_size)
-        net = build_cnn(args.model, emb_dim, window, channels_override=args.channels)
-        if n_params is None:
-            n_params = sum(p.numel() for p in net.parameters())
-        net, hist, bauc = train_one_fold(net, tl, vl, device, args.lr, args.epochs,
-                                         args.patience, seed_fold)
-        curves[str(vb)] = {"train_loss": hist["train_loss"],
-                           "val_auc": hist["val_auc"],
-                           "best_val_auc": bauc,
-                           "epochs_run": len(hist["val_auc"]),
-                           "seed": seed_fold}
-        torch.save(net.state_dict(), model_dir / f"{run_tag}_val{vb}.pt")
-        y_va = labels[va_idx].astype(int)
-        bucket_stats[str(vb)] = {"n": int(len(y_va)),
-                                 "pos_pct": round(float(y_va.mean() * 100), 1)}
-        _, probs = predict_probs(net, vl, device)
-        del net
-        m = compute_metrics(y_va, probs)
-        outer_val_metrics.append(m)
-        outer_val_predictions[str(vb)] = {"y_true": y_va.tolist(), "y_prob": probs.tolist()}
-        fold_times.append(round(time.time() - t1, 1))
-        n_pos = int(y_va.sum())
-        print(f"  Bucket {vb} validation (n={len(y_va)}, pos={n_pos}, neg={len(y_va) - n_pos}) "
-              f"bestAUC={bauc:.4f} ep={len(hist['val_auc'])} ({fold_times[-1]}s):")
-        print_metrics(m, prefix="  ")
+    if args.cv_mode == "nested":
+        for outer in buckets:
+            print(f"\n  OUTER {outer}/{N_CV_FOLDS} (outer-test bucket = {outer})")
+            curves[str(outer)] = {}
+            inner_folds = [b for b in buckets if b != outer]
+            inner_probs = []
+            best_auc_o, best_i_o = -1.0, -1
+            for pos, inner in enumerate(inner_folds):
+                t1 = time.time()
+                seed_fold = args.seed if args.seed_mode == "fixed" else args.seed + outer * 10 + pos
+                print(f"    inner {pos + 1}/5 (val bucket {inner}, seed = {seed_fold})")
+                tr_idx = np.where((folds != outer) & (folds != inner))[0]
+                va_idx = np.where(folds == inner)[0]
+                tl = DataLoader(WindowDataset(h5_path, ds_name, tr_idx, labels[tr_idx]),
+                                batch_size=args.batch_size, shuffle=True)
+                vl = DataLoader(WindowDataset(h5_path, ds_name, va_idx, labels[va_idx]),
+                                batch_size=args.batch_size)
+                net = build_cnn(args.model, emb_dim, window, channels_override=args.channels)
+                if n_params is None:
+                    n_params = sum(p.numel() for p in net.parameters())
+                net, hist, bauc = train_one_fold(net, tl, vl, device, args.lr, args.epochs,
+                                                 args.patience, seed_fold)
+                curves[str(outer)][str(inner)] = {"train_loss": hist["train_loss"],
+                                                  "val_auc": hist["val_auc"],
+                                                  "best_val_auc": bauc,
+                                                  "epochs_run": len(hist["val_auc"]),
+                                                  "seed": seed_fold}
+                if bauc > best_auc_o:
+                    best_auc_o, best_i_o = bauc, inner
+                # predict outer-test bucket now (model in memory, then save + free)
+                ou_idx = np.where(folds == outer)[0]
+                ol = DataLoader(WindowDataset(h5_path, ds_name, ou_idx, labels[ou_idx]),
+                                batch_size=args.batch_size)
+                _, op = predict_probs(net, ol, device)
+                inner_probs.append(op)
+                torch.save(net.state_dict(), model_dir / f"{run_tag}_outer{outer}_inner{pos}.pt")
+                del net
+                fold_times.append(round(time.time() - t1, 1))
+                print(f"    inner {pos + 1}/5 (val bucket {inner}) bestAUC={bauc:.4f} "
+                      f"ep={len(hist['val_auc'])} ({fold_times[-1]}s)")
+            best_inner[str(outer)] = {"bucket": int(best_i_o), "best_val_auc": round(best_auc_o, 4)}
+            y_ou = labels[np.where(folds == outer)[0]].astype(int)
+            bucket_stats[str(outer)] = {"n": int(len(y_ou)),
+                                        "pos_pct": round(float(y_ou.mean() * 100), 1)}
+            avg = np.mean(inner_probs, axis=0)  # 5-inner average, mirrors 04 predict_with_averaging
+            m = compute_metrics(y_ou, avg)
+            outer_val_metrics.append(m)
+            outer_val_predictions[str(outer)] = {"y_true": y_ou.tolist(), "y_prob": avg.tolist()}
+            n_pos = int(y_ou.sum())
+            print(f"  Outer {outer} validation (n={len(y_ou)}, pos={n_pos}, neg={len(y_ou) - n_pos}) "
+                  f"[5-inner avg]:")
+            print_metrics(m, prefix="  ")
+    else:
+        for vb in buckets:
+            t1 = time.time()
+            seed_fold = args.seed if args.seed_mode == "fixed" else args.seed + int(vb)
+            print(f"\n  BUCKET {vb}/{N_CV_FOLDS} (validation bucket = {vb}, seed = {seed_fold})")
+            tr_idx = np.where(folds != vb)[0]
+            va_idx = np.where(folds == vb)[0]
+            tl = DataLoader(WindowDataset(h5_path, ds_name, tr_idx, labels[tr_idx]),
+                            batch_size=args.batch_size, shuffle=True)
+            vl = DataLoader(WindowDataset(h5_path, ds_name, va_idx, labels[va_idx]),
+                            batch_size=args.batch_size)
+            net = build_cnn(args.model, emb_dim, window, channels_override=args.channels)
+            if n_params is None:
+                n_params = sum(p.numel() for p in net.parameters())
+            net, hist, bauc = train_one_fold(net, tl, vl, device, args.lr, args.epochs,
+                                             args.patience, seed_fold)
+            curves[str(vb)] = {"train_loss": hist["train_loss"],
+                               "val_auc": hist["val_auc"],
+                               "best_val_auc": bauc,
+                               "epochs_run": len(hist["val_auc"]),
+                               "seed": seed_fold}
+            torch.save(net.state_dict(), model_dir / f"{run_tag}_val{vb}.pt")
+            y_va = labels[va_idx].astype(int)
+            bucket_stats[str(vb)] = {"n": int(len(y_va)),
+                                     "pos_pct": round(float(y_va.mean() * 100), 1)}
+            _, probs = predict_probs(net, vl, device)
+            del net
+            m = compute_metrics(y_va, probs)
+            outer_val_metrics.append(m)
+            outer_val_predictions[str(vb)] = {"y_true": y_va.tolist(), "y_prob": probs.tolist()}
+            fold_times.append(round(time.time() - t1, 1))
+            n_pos = int(y_va.sum())
+            print(f"  Bucket {vb} validation (n={len(y_va)}, pos={n_pos}, neg={len(y_va) - n_pos}) "
+                  f"bestAUC={bauc:.4f} ep={len(hist['val_auc'])} ({fold_times[-1]}s):")
+            print_metrics(m, prefix="  ")
 
     t_cv_end = time.time()
     summary = {k: {"mean": float(np.mean([f[k] for f in outer_val_metrics])),
                    "std": float(np.std([f[k] for f in outer_val_metrics])),
                    "values": [float(f[k]) for f in outer_val_metrics]}
                for k in outer_val_metrics[0]}
-    print(f"\n{'=' * 80}\nCV RESULTS (mean +/- std across 6 buckets)\n{'=' * 80}")
+    print(f"\n{'=' * 80}\nCV RESULTS (mean +/- std across 6 outer buckets)\n{'=' * 80}")
     for metric, s in summary.items():
         vals = "  ".join(f"{v:.4f}" for v in s["values"])
         print(f"  {metric:<15} {s['mean']:.4f} +/- {s['std']:.4f}    [{vals}]")
@@ -365,12 +443,16 @@ if __name__ == "__main__":
            "cv_seconds": round(t_cv_end - t_cv_start, 1),
            "fold_seconds": fold_times,
            "peak_gpu_mem_gb": round(peak_gpu_gb, 3),
-           "mode": "cnn_cv", "model_key": args.model,
+           "mode": "cnn_nested_cv" if args.cv_mode == "nested" else "cnn_cv",
+           "model_key": args.model,
            "model_type": cnn_cfg["display_name"], "features_key": args.features,
            "features_display": feat_cfg["display_name"],
            "components": feat_cfg["components"],
-           "config": {"n_folds": N_CV_FOLDS + 1,
-                      "total_models": N_CV_FOLDS + 1,
+           "config": {"cv_mode": args.cv_mode,
+                      "n_outer_folds": N_CV_FOLDS + 1,
+                      "n_inner_folds": N_CV_FOLDS if args.cv_mode == "nested" else 0,
+                      "total_models": (N_CV_FOLDS + 1) * N_CV_FOLDS
+                      if args.cv_mode == "nested" else N_CV_FOLDS + 1,
                       "mask": "naive GAP (no mask)", "epochs": args.epochs,
                       "batch_size": args.batch_size, "lr": args.lr, "patience": args.patience,
                       "hyperparameters": eff_params, "n_params": n_params,
@@ -379,6 +461,7 @@ if __name__ == "__main__":
                       "random_state": args.seed, "seed_mode": args.seed_mode},
            "cv_summary": summary, "outer_val_metrics": outer_val_metrics,
            "outer_val_predictions": outer_val_predictions,
+           "best_inner_per_outer": best_inner if args.cv_mode == "nested" else None,
            "learning_curves": curves,
            "curves_csv": str(curves_csv),
            "curves_png": str(curves_png) if curves_png else None,
@@ -391,14 +474,18 @@ if __name__ == "__main__":
     t_end = time.time()
     peak_gpu_gb = (torch.cuda.max_memory_allocated() / 1e9
                    if device == "cuda" else 0.0)
-    print(f"\n{'=' * 80}\nRUN SUMMARY (6-FOLD CV)\n{'=' * 80}")
+    print(f"\n{'=' * 80}\nRUN SUMMARY ({'NESTED CV' if args.cv_mode == 'nested' else '6-FOLD FLAT CV'})\n{'=' * 80}")
     print(f"  Total runtime:      {t_end - t_start:.1f}s ({(t_end - t_start) / 60:.1f} min)")
     print(f"  CV time:            {t_cv_end - t_cv_start:.1f}s "
           f"({(t_cv_end - t_cv_start) / 60:.1f} min)")
     print(f"  Peak GPU mem:       {peak_gpu_gb:.2f}GB")
     print(f"  Model:              {cnn_cfg['display_name']} ({args.model}, {n_params} params)")
     print(f"  Feature set:        {feat_cfg['display_name']} ({args.features})")
-    print(f"  Folds:              {N_CV_FOLDS + 1}  |  Total models: {N_CV_FOLDS + 1}")
+    if args.cv_mode == "nested":
+        print(f"  CV mode:            nested  |  6 outer x 5 inner = 30 models "
+              f"(outer-test = 5-inner avg)")
+    else:
+        print(f"  CV mode:            flat  |  Folds: {N_CV_FOLDS + 1}  |  Total models: {N_CV_FOLDS + 1}")
     print(f"  Val AUC-ROC:        {summary['auc_roc']['mean']:.4f} +/- {summary['auc_roc']['std']:.4f}")
     print(f"  Val MCC:            {summary['mcc']['mean']:.4f} +/- {summary['mcc']['std']:.4f}")
     print(f"  Models dir:         {model_dir}/")

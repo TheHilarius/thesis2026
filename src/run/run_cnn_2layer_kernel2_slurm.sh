@@ -51,7 +51,8 @@ export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:T
 EPOCHS="${EPOCHS:-30}"
 PATIENCE="${PATIENCE:-5}"
 SEED_MODE="${SEED_MODE:-perfold}"
-VARIANT="${VARIANT:-flank5}"
+CV_MODE="${CV_MODE:-nested}"
+VARIANT="${VARIANT:-flank5_rmdup_updated_h6_pepcut1}"
 FEAT="${FEAT:-emb_esmc300m_win_padtoken}"
 OUT="${RUN:-runs/cnn_2layer_k17_k2_$(date +%Y%m%d)}"
 CHANNELS="${CHANNELS:-32}"
@@ -91,6 +92,7 @@ if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
             --epochs "$EPOCHS" \
             --patience "$PATIENCE" \
             --seed-mode "$SEED_MODE" \
+            --cv-mode "$CV_MODE" \
             --out-root "$OUT"
         echo "--- ${MODEL} C=${CHANNELS} done ---"
     done
@@ -111,6 +113,7 @@ else
         --epochs "$EPOCHS" \
         --patience "$PATIENCE" \
         --seed-mode "$SEED_MODE" \
+            --cv-mode "$CV_MODE" \
         --out-root "$OUT"
     echo "--- ${MODEL} C=${CHANNELS} done ---"
     nvidia-smi --query-gpu=memory.used,memory.free --format=csv || true

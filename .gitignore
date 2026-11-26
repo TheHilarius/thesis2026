@@ -181,3 +181,7 @@ docs_hub2_backup_*/
 runs/dimselect_flank5/
 runs/dimselect_flank5_6b/
 runs/dimselect_flank5_6b_rmdup/
+
+# One-time folds-only H5 rewrite tool (ran once on hub1; kept locally for
+# reference only, not part of the pipeline)
+src/pipeline/python/rewrite_h5_folds.py
