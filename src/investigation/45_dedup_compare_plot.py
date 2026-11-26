@@ -16,6 +16,7 @@ Inputs:
 
 Outputs:
     runs/r19_rmdup/plots/dedup_flank5_vs_rmdup_auc.png / .csv
+    runs/r19_rmdup/plots/dedup_flank5_vs_rmdup_auc_caption.txt (thesis caption)
 
 Usage (repo root):
     python src/investigation/45_dedup_compare_plot.py
@@ -131,24 +132,30 @@ def main() -> None:
     print(f"paired rows: {len(pairs)}  DeLong dedup effect: "
           f"delta={delta:+.4f} z={z:+.2f} p={p:.4f} p_adj={p_adj:.4f}")
 
-    fig, ax = plt.subplots(figsize=(7.0, 5.4))
+    fig, ax = plt.subplots(figsize=(4.6, 4.8))
     d18._padmode_bars(ax, [0, 1], vals, errs,
                       [ARMS[0][3], ARMS[1][3]])
     d18._padmode_brackets(ax, [(0, 1, p, p_adj)], vals)
     ax.set_xticks([0, 1])
     ax.set_xticklabels(["flank5\n(with duplicate windows)\nn=46,617",
                         "flank5_rmdup\n(deduplicated)\nn=45,278"], fontsize=9.5)
+
+    # caption lives OUTSIDE the figure: printed + caption.txt (thesis-ready,
+    # same convention as 48_xgb_optuna_delong)
+    caption = ("XGB+BLOSUM50 nested CV, 6 folds; BOTH arms use the canonical "
+               "pep-ham<=1 split rule -- only the dedup differs. Paired DeLong "
+               f"on {len(pairs)} paired rows, Holm over displayed comparisons. "
+               f"delta={delta:+.4f} (z={z:+.2f}). The right bar is the same run "
+               "as the canonical bar in the split-rule figure.")
+    out_caption = RUN_ROOT / "plots" / "dedup_flank5_vs_rmdup_auc_caption.txt"
+    out_caption.write_text(caption + "\n")
+    print(f"  Caption -> {out_caption}")
+    print(f"  CAPTION: {caption}")
     d18._finish_padmode(
         fig, ax,
         "Does removing duplicate context windows change performance?",
         RUN_ROOT / "plots" / "dedup_flank5_vs_rmdup_auc.png",
-        [("flank5 (with dups)", ARMS[0][3]),
-         ("flank5_rmdup (canonical split)", ARMS[1][3])],
-        footnote=("XGB+BLOSUM50 nested CV, 6 folds; BOTH arms use the canonical "
-                  "pep-ham<=1 split rule -- only the dedup differs. Paired DeLong "
-                  f"on {len(pairs)} paired rows, Holm over displayed comparisons. "
-                  f"delta={delta:+.4f} (z={z:+.2f}). The right bar is the same run "
-                  "as the canonical bar in the split-rule figure."))
+        [])  # x-tick labels already name both bars; a legend would duplicate
 
     out_csv = RUN_ROOT / "plots" / "dedup_flank5_vs_rmdup_auc.csv"
     with open(out_csv, "w") as f:

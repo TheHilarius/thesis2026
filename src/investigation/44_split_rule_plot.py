@@ -5,8 +5,9 @@ Split-rule comparison figure: canonical pep-ham<=1 split vs the CHOSEN
 robust rule (pepcut1 fixed = pep-ham<=1 ∪ identical-flank ∪ window-ham<=
 WINDOW_CUTOFF, i.e. c=6), XGB+BLOSUM50 nested CV on flank5_rmdup.
 
-Regenerates runs/r19_rmdup/plots/split_rule_auc.{png,csv} (the earlier
-version compared against the c=1 arm; the chosen rule is c=6).
+Regenerates runs/r19_rmdup/plots/split_rule_auc.{png,csv} and the
+split_rule_auc_caption.txt thesis caption (the earlier version compared
+against the c=1 arm; the chosen rule is c=6).
 
 Usage (repo root):
     python src/investigation/44_split_rule_plot.py
@@ -32,11 +33,13 @@ spec = importlib.util.spec_from_file_location(
 d18 = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(d18)
 
+# stable dataset colors (same run = same color across storyline figures):
+# rmdup canonical = Tol blue (the run 45_'s blue right bar), h6 split = Tol indigo
 ARMS = [
     ("canonical pep-ham<=1 only", "canonical",
-     "df_all_with_folds_flank5_rmdup.csv", "#8c8c8c"),
+     "df_all_with_folds_flank5_rmdup.csv", "#4477AA"),
     ("robust pepcut1 (window c=6)", "h6",
-     "df_all_with_folds_flank5_rmdup_updated_h6_pepcut1.csv", "#4477AA"),
+     "df_all_with_folds_flank5_rmdup_updated_h6_pepcut1.csv", "#332288"),
 ]
 
 
@@ -89,7 +92,7 @@ def main() -> None:
     print(f"DeLong canonical vs c=6: delta={delta:+.4f} z={z:+.2f} p={p:.4f}")
 
     color0, color1 = ARMS[0][3], ARMS[1][3]
-    fig, ax = plt.subplots(figsize=(7.0, 5.4))
+    fig, ax = plt.subplots(figsize=(4.6, 4.8))
     d18._padmode_bars(ax, xs, vals, errs, [color0, color1])
     p_adj = d18.holm_adjust(np.array([p]))[0]
     print(f"  Holm (1 pair): p_adj={p_adj:.4f} {d18.stars(p_adj)}")
@@ -98,15 +101,21 @@ def main() -> None:
     ax.set_xticks(xs)
     ax.set_xticklabels(["canonical\npep-ham≤1 only", "robust (pepcut1)\n"
                         "pep≤1 ∪ flank-id ∪ win-6"], fontsize=9.5)
+
+    # caption lives OUTSIDE the figure: printed + caption.txt (thesis-ready,
+    # same convention as 48_xgb_optuna_delong)
+    caption = ("flank5_rmdup (19aa dedup, n=45,278); XGB+BLOSUM50 nested CV, "
+               "6 folds; paired DeLong on identical rows, Holm over displayed "
+               f"comparisons. Δ={delta:+.4f} (z={z:+.2f}).")
+    out_caption = RUN_ROOT / "plots" / "split_rule_auc_caption.txt"
+    out_caption.write_text(caption + "\n")
+    print(f"  Caption -> {out_caption}")
+    print(f"  CAPTION: {caption}")
     d18._finish_padmode(
         fig, ax,
-        "Does the chosen robust homology split change XGB+BLOSUM50 performance?",
+        "Does the updated homology split change performance?",
         RUN_ROOT / "plots" / "split_rule_auc.png",
-        [("canonical (no flank rule)", color0),
-         ("robust pepcut1 (window c=6)", color1)],
-        footnote=("flank5_rmdup (19aa dedup, n=45,278); XGB+BLOSUM50 nested CV, 6 folds; "
-                  "paired DeLong on identical rows, Holm over displayed comparisons. "
-                  f"Δ={delta:+.4f} (z={z:+.2f})."))
+        [])  # x-tick labels already name both bars; a legend would duplicate
 
     out_csv = RUN_ROOT / "plots" / "split_rule_auc.csv"
     with open(out_csv, "w") as f:

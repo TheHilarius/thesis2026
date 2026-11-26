@@ -1,0 +1,1 @@
+flank5_rmdup (19aa dedup, n=45,278); XGB+BLOSUM50 nested CV, 6 folds; paired DeLong on identical rows, Holm over displayed comparisons. Δ=+0.0038 (z=+4.12).

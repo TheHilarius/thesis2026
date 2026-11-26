@@ -1,0 +1,1 @@
+XGB+BLOSUM50 nested CV, 6 folds; BOTH arms use the canonical pep-ham<=1 split rule -- only the dedup differs. Paired DeLong on 45278 paired rows, Holm over displayed comparisons. delta=+0.0002 (z=+0.25). The right bar is the same run as the canonical bar in the split-rule figure.
