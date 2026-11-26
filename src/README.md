@@ -13,7 +13,8 @@ src/
 │   │                 # 04_modelling.py, 04b_run_matrix.py,
 │   │                 # 05a_cnn_modelling.py, 05b_run_cnn_matrix.py,
 │   │                 # 05c_cnn_models.py, 05d_plotting.py (shared),
-│   │                 # 06a_ffnn_modelling.py, 06c_ffnn_models.py,
+│   │                 # 06a_ffnn_modelling.py, 06b_run_ffnn_matrix.py,
+│   │                 # 06c_ffnn_models.py,
 │   │                 # 07_external_eval.py, 11–14 (window reduction/dim
 │   │                 # screening/autoencoder/external predict),
 │   │                 # baseline_model.py, extract_*.py, config.py
