@@ -138,8 +138,21 @@ ggsave(file.path(OUT, "logo_random_bottom10.png"), plot = p_bot,
 cat("Saved: logo_random_bottom10.png\n")
 
 diff_ppm <- ppm_top - ppm_bot
+
+# Explicit y-axis helper: human tick labels (never scientific notation),
+# breaks sized to the data range. Letters occupy [min(0, y_lo), y_hi].
+clean_axis <- function(y_lo, y_hi) {
+  lo <- min(y_lo, 0)
+  hi <- max(y_hi, 0)
+  step <- if (hi - lo > 0.4) 0.1 else if (hi - lo > 0.15) 0.05 else 0.02
+  brks <- seq(floor(lo / step) * step, ceiling(hi / step) * step, by = step)
+  list(breaks = brks, labels = sprintf("%.2f", brks))
+}
+
+ax_diff <- clean_axis(min(diff_ppm), max(diff_ppm))
 p_diff <- ggseqlogo(diff_ppm, method = "custom") +
   pos_dividers + theme_logo_slide +
+  scale_y_continuous(breaks = ax_diff$breaks, labels = ax_diff$labels) +
   lab_rand("Differential Logo: top 10% vs bottom 10% (random windows)",
            "Top (Positive) = enriched in model-PRESENTED random windows",
            "Difference in Probability")
@@ -181,13 +194,30 @@ obj_js <- createDiffLogoObject(pwm1 = ppm_top_df, pwm2 = ppm_bot_df,
                                alphabet = alphabet_chem,
                                try_reverse_complement = FALSE)
 
-cat("Running DiffLogo permutation test",
-    "(1000 permutations x", ncol(ppm_top_df), "positions) ...\n")
-t0 <- Sys.time()
-obj_ppm <- enrichDiffLogoObjectWithPvalues(obj_ppm, n1 = n1, n2 = n2,
-                                           numberOfPermutations = 1000)
-cat("  done in", round(as.numeric(difftime(Sys.time(), t0, units = "secs")), 1),
-    "s\n")
+# Permutation p-values: reuse the saved TSV when present (figure iterations
+# take seconds); delete difflogo_random_pvalues.tsv to force a recompute.
+pvals_tsv <- file.path(OUT, "difflogo_random_pvalues.tsv")
+pvals_cached <- NULL
+if (file.exists(pvals_tsv)) {
+  pv <- read_tsv(pvals_tsv, show_col_types = FALSE)
+  if (nrow(pv) == length(all_pos_features)) {
+    pvals_cached <- pv$p_raw
+  } else {
+    cat("stale pvalues TSV (n =", nrow(pv), ") — recomputing\n")
+  }
+}
+if (!is.null(pvals_cached)) {
+  obj_ppm$pvals <- pvals_cached
+  cat("Reusing permutation p-values from", pvals_tsv, "\n")
+} else {
+  cat("Running DiffLogo permutation test",
+      "(1000 permutations x", ncol(ppm_top_df), "positions) ...\n")
+  t0 <- Sys.time()
+  obj_ppm <- enrichDiffLogoObjectWithPvalues(obj_ppm, n1 = n1, n2 = n2,
+                                             numberOfPermutations = 1000)
+  cat("  done in",
+      round(as.numeric(difftime(Sys.time(), t0, units = "secs")), 1), "s\n")
+}
 obj_js$pvals <- obj_ppm$pvals   # p-value depends only on n1/n2/p1/p2, not scale
 
 # Letter matrices reproducing DiffLogo's two display scales exactly (upright):
@@ -208,31 +238,27 @@ js_rand <- sapply(seq_along(all_pos_features), function(j) {
 rownames(js_rand) <- aa_alphabet
 colnames(js_rand) <- all_pos_features
 
-# Region labels under the axis — positions dynamic (from 46419d5)
+# Region names live in the x-axis title (lab_rand, 12_ pattern) — no floating
+# geoms. n_cf kept for the divider line positions.
 n_cf <- n_pos - n_flank - pep_len
-region_labs <- data.frame(
-  x     = c(n_flank / 2, n_flank + pep_len / 2, n_flank + pep_len + n_cf / 2),
-  label = c("N-Flank", "Peptide", "C-Flank")
-)
 
 render_ggdiff <- function(mat, y_label, out_png, scale_note, main_title) {
+  # Proven 12_/13_ pattern: ggseqlogo auto-scale (never cuts glyphs),
+  # no coord_cartesian/ylim surgery, stars pinned at the panel top edge
+  # (13_ draws significance stars inside the plot the same way), region
+  # names live in the x-axis title (lab_rand).
   pvals <- obj_ppm$pvals
   sig_x <- which(pvals < 0.05)
-  y_lo <- min(mat)
-  y_hi <- max(mat)
-  span <- y_hi - y_lo
-  if (span == 0) span <- 1
-  y_star   <- y_lo - 0.15 * span
-  y_region <- y_star - 0.10 * span   # region labels sit below the stars
-  star_df <- tibble(x = sig_x, y = y_star, label = "*")
+  star_df <- tibble(x = sig_x, label = "*")
   p <- ggseqlogo(mat, method = "custom") +
-    pos_dividers + theme_logo_slide +
-    geom_text(data = star_df, aes(x = x, y = y, label = label),
-              inherit.aes = FALSE, size = 6) +
-    geom_text(data = region_labs, aes(x = x, y = y_region, label = label),
-              inherit.aes = FALSE, size = 4, color = "grey30") +
-    coord_cartesian(ylim = c(y_region - 0.05 * span, y_hi + 0.06 * span),
-                    clip = "off") +
+    geom_hline(yintercept = 0, linetype = "solid", color = "black", linewidth = 0.5) +
+    geom_vline(xintercept = n_flank + 0.5, linetype = "dashed", color = "grey50") +
+    geom_vline(xintercept = n_flank + pep_len + 0.5, linetype = "dashed", color = "grey50") +
+    scale_x_continuous(breaks = 1:n_pos, labels = all_pos_features) +
+    scale_y_continuous(labels = function(v) sprintf("%.2f", v)) +
+    theme_logo_slide +
+    geom_text(data = star_df, aes(x = x, y = Inf, label = label),
+              inherit.aes = FALSE, size = 6, vjust = 1.5) +
     lab_rand(main_title,
              paste0("Top (Positive) = enriched in model-PRESENTED random windows\n",
                     sprintf(paste0("* = DiffLogo permutation p < 0.05 (1000 shuffles; ",
@@ -255,81 +281,9 @@ render_ggdiff(js_rand, "JS divergence",
               "letters = JS divergence",
               "DiffLogo (JS): top 10% vs bottom 10% (random windows)")
 
-# ── 3b. Split-scale differential pair — readability fix ────────────────────
-# Peptide-core and flank columns differ ~10-70x in effect size, so a single
-# shared y-range squashes the flank signal (C1/N1/N2) into invisible slivers.
-# Two panels, independent y-scales, one PNG via grid viewports (base R).
-library(grid)
-
-pep_cols   <- which(startsWith(all_pos_features, "P"))
-flank_cols <- which(!startsWith(all_pos_features, "P"))
-
-ggdiff_panel <- function(mat, cols, panel_title, y_label, subtitle = NULL) {
-  sub       <- mat[, cols, drop = FALSE]
-  sub_names <- colnames(sub)
-  p_sub     <- obj_ppm$pvals[cols]
-  sig_x     <- which(p_sub < 0.05)
-  y_lo <- min(sub); y_hi <- max(sub)
-  span <- if (y_hi - y_lo == 0) 1 else y_hi - y_lo
-  y_star   <- y_lo - 0.15 * span
-  y_region <- y_star - 0.10 * span
-  star_df <- tibble(x = sig_x, y = y_star, label = "*")
-  n_in  <- length(cols)
-  is_pep <- all(startsWith(sub_names, "P"))
-  reg_df <- if (is_pep) {
-    tibble(x = n_in / 2, y = y_region, label = "Peptide")
-  } else {
-    tibble(x = c(n_flank / 2, n_flank + n_cf / 2), y = y_region,
-           label = c("N-Flank", "C-Flank"))
-  }
-  vline <- if (is_pep) geom_blank() else
-    geom_vline(xintercept = n_flank + 0.5, linetype = "dashed",
-               color = "grey50")
-  ggseqlogo(sub, method = "custom") +
-    geom_hline(yintercept = 0, linetype = "solid", color = "black",
-               linewidth = 0.5) +
-    vline +
-    scale_x_continuous(breaks = seq_len(n_in), labels = sub_names) +
-    theme_logo_slide +
-    geom_text(data = star_df, aes(x = x, y = y, label = label),
-              inherit.aes = FALSE, size = 6) +
-    geom_text(data = reg_df, aes(x = x, y = y, label = label),
-              inherit.aes = FALSE, size = 4, color = "grey30") +
-    coord_cartesian(ylim = c(y_region - 0.05 * span, y_hi + 0.06 * span),
-                    clip = "off") +
-    labs(title = panel_title, subtitle = subtitle, y = y_label,
-         x = if (is_pep) "Peptide positions" else "Flank positions")
-}
-
-split_pair <- function(mat, y_label, out_png, scale_note, main_title) {
-  note <- paste0("Top (Positive) = enriched in model-PRESENTED windows\n",
-                 sprintf(paste0("* = DiffLogo permutation p < 0.05 (1000 shuffles; ",
-                                "n1 = %s, n2 = %s) | %s"),
-                         format(n1, big.mark = ","),
-                         format(n2, big.mark = ","), scale_note))
-  p_pep <- ggdiff_panel(mat, pep_cols,
-                        paste0(main_title, " \u2014 peptide core"), y_label, note)
-  p_flank <- ggdiff_panel(mat, flank_cols,
-                          paste0(main_title, " \u2014 flanks (independent scale)"),
-                          y_label)
-  png(out_png, width = 20, height = 5.5, units = "in", res = 300)
-  grid.newpage()
-  pushViewport(viewport(layout = grid.layout(1, 2, widths = c(9, 10))))
-  print(p_pep,   vp = viewport(layout.pos.row = 1, layout.pos.col = 1))
-  print(p_flank, vp = viewport(layout.pos.row = 1, layout.pos.col = 2))
-  popViewport()
-  dev.off()
-  cat("Saved:", out_png, "\n")
-}
-
-split_pair(diff_rand, "Difference in Probability",
-           file.path(OUT, "differential_logo_random_difflogo_split.png"),
-           "letters = difference in probability",
-           "DiffLogo: top 10% vs bottom 10%")
-split_pair(js_rand, "JS divergence",
-           file.path(OUT, "differential_logo_random_difflogo_js_split.png"),
-           "letters = JS divergence",
-           "DiffLogo (JS): top 10% vs bottom 10%")
+# ── 3b/3c split-scale figures REMOVED (2026-11: user deleted the _peptide/
+#        _flanks outputs) — full-window figures with flank-driven y-range
+#        (y_cap) are the deliverable; see render_ggdiff calls above.
 
 # -----------------------------------------------------------------------------
 # 4. Per-position table (pattern from 13_)
