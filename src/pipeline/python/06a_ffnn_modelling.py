@@ -1,14 +1,15 @@
 """
-05_cnn_modelling.py
-CNN counterpart of 04_modelling.py: same folds/labels/splits, same
-logs/<mode> + models/<mode>/cv_results JSON layout, but raw (N,L,D)
-windows + torch Conv1d instead of flat PCA + sklearn.
+06a_ffnn_modelling.py
+FFNN counterpart of 05a_cnn_modelling.py: same folds/labels/splits, same
+logs/<mode> + models/<mode>/cv_results JSON layout, same prepared H5
+window embeddings — but each (L, D) window is FLATTENED to (L*D) and fed
+to a plain feed-forward net instead of a 1D-CNN over slots.
 
-CANONICAL PROTOCOL (from Nov 2026): flank5-19mer embeddings via
-THESIS_VARIANT=flank5 (L=19), 30 epochs / patience 5 / per-fold seeds.
-Proven better than full-29mer (k5 flank5 0.6674 > full 0.6536) and than
-short 20/3 budget (stops in flat noise). Full-29 (L=29) + 20/3 fixed-seed
-is legacy record only, not for new runs.
+CANONICAL PROTOCOL (matches CNN): same feature set as the CNN kernel/
+channel campaigns (emb_esmc300m_win_padtoken), THESIS_VARIANT default
+flank5_rmdup (19mer, N=45,278), 30 epochs / patience 5 / per-fold seeds.
+Set THESIS_VARIANT=flank5 to compare byte-for-byte against the legacy
+CNN flank5 campaign rows.
 
 SIMPLE 6-FOLD CV (experimentation): 6 buckets, 6 models.
 Each bucket serves once as validation, the other 5 as train.
@@ -17,20 +18,21 @@ restores the legacy single-seed protocol.
 Per-epoch train-loss / val-AUC histories logged per bucket + one PNG.
 
 Usage:
-    python 05_cnn_modelling.py --model cnn_simple --features emb_esmc300m_win_padtoken
-    python 05_cnn_modelling.py --model cnn_2layer --features emb_esmif_eos_bos_repeat
-    python 05_cnn_modelling.py --model cnn_simple_k7 --channels 64  (channel sweep override)
+    python 06a_ffnn_modelling.py --model ffnn_simple --features emb_esmc300m_win_padtoken
+    python 06a_ffnn_modelling.py --model ffnn_simple --width 64   (width sweep override)
+    python 06a_ffnn_modelling.py --model ffnn_2layer --features emb_esmc300m_win_padtoken
 
-Pooling is naive GAP over all L slots (L=29 full, L=19 flank5; no pad mask).
+Input per row: flatten (L, D) -> (L*D), slot-major, no pooling / no mask —
+the FFNN sees the same raw window the CNN sees, just reshaped.
 
-Outputs (mirrors 04):
-    <out-root>/logs/cnn/05_cnn_modelling_<run_tag>_log_<ts>.txt
-    <out-root>/models/cnn/cv_results_<run_tag>_<ts>.json
-    <out-root>/models/cnn/<run_tag>_val<vb>.pt  (6 models)
+Outputs (mirrors 05a):
+    <out-root>/logs/ffnn/06a_ffnn_modelling_<run_tag>_log_<ts>.txt
+    <out-root>/models/ffnn/cv_results_<run_tag>_<ts>.json
+    <out-root>/models/ffnn/<run_tag>_val<vb>.pt  (6 models)
     <out-root>/plots/learning_curves_<run_tag>_<ts>.png (+ .csv + _meta.json)
 
-Plotting lives in 05_plotting.py (called via subprocess each run; also
-runnable standalone to re-plot any old curves CSV).
+Plotting lives in 05d_plotting.py (shared with the CNN; same curves CSV
+format; called via subprocess each run, also runnable standalone).
 """
 import sys
 import os
@@ -55,10 +57,10 @@ from config import (LOG_DIR, N_CV_FOLDS,
                     RANDOM_STATE, get_feature_set_config, get_feature_component,
                     get_embedding_source, validate_feature_set, validate_config)
 import importlib.util as _ilu
-_spec = _ilu.spec_from_file_location("cnn_zoo", str(Path(SRC_DIR) / "05_cnn_models.py"))
-_cnn_zoo = _ilu.module_from_spec(_spec)
-_spec.loader.exec_module(_cnn_zoo)
-get_cnn_config, build_cnn = _cnn_zoo.get_cnn_config, _cnn_zoo.build_cnn
+_spec = _ilu.spec_from_file_location("ffnn_zoo", str(Path(SRC_DIR) / "06c_ffnn_models.py"))
+_ffnn_zoo = _ilu.module_from_spec(_spec)
+_spec.loader.exec_module(_ffnn_zoo)
+get_ffnn_config, build_ffnn = _ffnn_zoo.get_ffnn_config, _ffnn_zoo.build_ffnn
 
 try:
     import torch
@@ -121,8 +123,10 @@ def resolve_window_ds(h5, preferred):
     raise KeyError(f"No window dataset found. Tried {candidates}. Keys: {list(h5.keys())}")
 
 
-class WindowDataset(Dataset):
-    """On-demand H5 reads: rows streamed per batch, never full (N,29,D) in RAM."""
+class FlatDataset(Dataset):
+    """On-demand H5 reads: rows streamed per batch, never full (N,L,D) in RAM.
+    Same rows as the CNN WindowDataset, but each (L, D) window is
+    flattened to (L*D) slot-major for the feed-forward input."""
 
     def __init__(self, h5_path, ds_name, idx, labels):
         self.h5_path, self.ds_name = h5_path, ds_name
@@ -136,7 +140,7 @@ class WindowDataset(Dataset):
         if self._h5 is None:
             self._h5 = h5py.File(self.h5_path, "r")
         r = int(self.idx[i])
-        x = self._h5[self.ds_name][r].astype(np.float32).T  # (29,D)->(D,29)
+        x = self._h5[self.ds_name][r].astype(np.float32).reshape(-1)  # (L,D)->(L*D)
         return torch.from_numpy(x), torch.tensor(self.labels[i])
 
 
@@ -202,23 +206,23 @@ def write_curves_csv(path, curves):
 
 
 def parse_args():
-    p = argparse.ArgumentParser(description="05_cnn_modelling: simple 6-fold CNN CV")
-    p.add_argument("--model", default="cnn_simple", help="CNN key from 05_cnn_models.CNN_REGISTRY")
+    p = argparse.ArgumentParser(description="06a_ffnn_modelling: simple 6-fold FFNN CV on flattened windows")
+    p.add_argument("--model", default="ffnn_simple", help="FFNN key from 06c_ffnn_models.FFNN_REGISTRY")
     p.add_argument("--features", default="emb_esmc300m_win_padtoken",
                    help="Feature set key from FEATURE_SETS (one embedding_windows component)")
-    p.add_argument("--epochs", type=int, default=20)
+    p.add_argument("--epochs", type=int, default=30)
     p.add_argument("--batch-size", type=int, default=256)
     p.add_argument("--lr", type=float, default=1e-3)
-    p.add_argument("--patience", type=int, default=3,
+    p.add_argument("--patience", type=int, default=5,
                    help="Early-stop patience on val AUC (epochs without improvement)")
     p.add_argument("--seed", type=int, default=RANDOM_STATE,
                      help="Base seed; per-fold seed = base + bucket unless --seed-mode fixed")
     p.add_argument("--seed-mode", choices=["perfold", "fixed"], default="perfold",
                      help="perfold: seed 42+bucket per fold (default); fixed: same seed all folds (legacy)")
-    p.add_argument("--channels", type=int, default=None,
-                   help="Override registry channels for channel sweeps; "
-                        "recorded in run_tag as _cC and in the results JSON")
-    p.add_argument("--out-root", default=None, help="Campaign folder (mirrors 04 --out-root)")
+    p.add_argument("--width", type=int, default=None,
+                   help="Override registry hidden width for width sweeps; "
+                        "recorded in run_tag as _wW and in the results JSON")
+    p.add_argument("--out-root", default=None, help="Campaign folder (mirrors 05a --out-root)")
     return p.parse_args()
 
 
@@ -227,15 +231,15 @@ if __name__ == "__main__":
     validate_config()
     feat_cfg = get_feature_set_config(args.features)
     validate_feature_set(feat_cfg)
-    cnn_cfg = get_cnn_config(args.model)
-    eff_params = dict(cnn_cfg["params"])  # copy: registry dict stays untouched
-    if args.channels is not None:
-        eff_params["channels"] = args.channels
+    ffnn_cfg = get_ffnn_config(args.model)
+    eff_params = dict(ffnn_cfg["params"])  # copy: registry dict stays untouched
+    if args.width is not None:
+        eff_params["width"] = args.width
 
     # Emb-only v1: exactly one embedding_windows component
     emb_keys = [c for c in feat_cfg["components"]
                 if get_feature_component(c)["type"] == "embedding_windows"]
-    assert len(emb_keys) == 1, f"CNN v1 needs 1 embedding_windows component, got {feat_cfg['components']}"
+    assert len(emb_keys) == 1, f"FFNN v1 needs 1 embedding_windows component, got {feat_cfg['components']}"
     comp = get_feature_component(emb_keys[0])
     src = get_embedding_source(comp["embedding_key"])
     h5_path = str(src["prepared_path"])
@@ -253,33 +257,34 @@ if __name__ == "__main__":
         emb_dim = int(f.attrs.get("emb_dim", 0)) or int(f[ds_name].shape[2])
         window = int(f.attrs.get("window", 29))
 
-    run_tag = f"{args.model}_{args.features}_cnn"
-    if args.channels is not None:
-        run_tag = f"{args.model}_c{args.channels}_{args.features}_cnn"  # file separation per C
+    in_dim = emb_dim * window  # flattened (L, D) -> (L*D)
+    run_tag = f"{args.model}_{args.features}_ffnn"
+    if args.width is not None:
+        run_tag = f"{args.model}_w{args.width}_{args.features}_ffnn"  # file separation per W
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     if args.out_root and args.out_root != ".":
         out_base = Path(args.out_root)
     else:
         out_base = LOG_DIR.parent / "runs" / f"{run_tag}_{ts}"
-    log_dir, model_dir = out_base / "logs" / "cnn", out_base / "models" / "cnn"
+    log_dir, model_dir = out_base / "logs" / "ffnn", out_base / "models" / "ffnn"
     plot_dir = out_base / "plots"
     for d in (log_dir, model_dir, plot_dir):
         os.makedirs(d, exist_ok=True)
-    logger = Logger(str(log_dir / f"05_cnn_modelling_{run_tag}_log_{ts}.txt"))
+    logger = Logger(str(log_dir / f"06a_ffnn_modelling_{run_tag}_log_{ts}.txt"))
     sys.stdout = logger
 
     t_start = time.time()
     print("=" * 80)
-    print(f"  05_CNN_MODELLING -- {cnn_cfg['display_name'].upper()} + {args.features.upper()}")
+    print(f"  06_FFNN_MODELLING -- {ffnn_cfg['display_name'].upper()} + {args.features.upper()}")
     print("=" * 80)
     print(f"  Timestamp:       {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"  H5: {h5_path}\n  ds={ds_name} (naive GAP over all 29, no mask)")
-    print(f"  N={len(labels)} D={emb_dim} window={window} folds={sorted(map(int, np.unique(folds)))}")
+    print(f"  H5: {h5_path}\n  ds={ds_name} (raw flatten (L,D)->(L*D), no pooling / no mask)")
+    print(f"  N={len(labels)} D={emb_dim} window={window} in_dim={in_dim} folds={sorted(map(int, np.unique(folds)))}")
     device = "cuda" if torch.cuda.is_available() else "cpu"
     if device == "cuda":
         torch.cuda.reset_peak_memory_stats()
     print(f"  device={device} epochs={args.epochs} bs={args.batch_size} lr={args.lr} patience={args.patience}")
-    print(f"  params: {eff_params}" + ("  (channels override)" if args.channels is not None else ""))
+    print(f"  params: {eff_params}" + ("  (width override)" if args.width is not None else ""))
     if device == "cuda":
         print(f"  gpu_mem_total={torch.cuda.get_device_properties(0).total_memory / 1e9:.1f}GB")
 
@@ -298,11 +303,11 @@ if __name__ == "__main__":
         print(f"\n  BUCKET {vb}/{N_CV_FOLDS} (validation bucket = {vb}, seed = {seed_fold})")
         tr_idx = np.where(folds != vb)[0]
         va_idx = np.where(folds == vb)[0]
-        tl = DataLoader(WindowDataset(h5_path, ds_name, tr_idx, labels[tr_idx]),
+        tl = DataLoader(FlatDataset(h5_path, ds_name, tr_idx, labels[tr_idx]),
                         batch_size=args.batch_size, shuffle=True)
-        vl = DataLoader(WindowDataset(h5_path, ds_name, va_idx, labels[va_idx]),
+        vl = DataLoader(FlatDataset(h5_path, ds_name, va_idx, labels[va_idx]),
                         batch_size=args.batch_size)
-        net = build_cnn(args.model, emb_dim, window, channels_override=args.channels)
+        net = build_ffnn(args.model, in_dim, width_override=args.width)
         if n_params is None:
             n_params = sum(p.numel() for p in net.parameters())
         net, hist, bauc = train_one_fold(net, tl, vl, device, args.lr, args.epochs,
@@ -339,8 +344,8 @@ if __name__ == "__main__":
 
     curves_csv = plot_dir / f"learning_curves_{run_tag}_{ts}.csv"
     write_curves_csv(curves_csv, curves)
-    model_desc = args.model if args.channels is None else f"{args.model} C={args.channels}"
-    meta = {"title": f"{cnn_cfg['display_name']} + {feat_cfg['display_name']} "
+    model_desc = args.model if args.width is None else f"{args.model} w={args.width}"
+    meta = {"title": f"{ffnn_cfg['display_name']} + {feat_cfg['display_name']} "
                      f"({model_desc}, {args.features})",
             "buckets": bucket_stats}
     meta_path = plot_dir / f"learning_curves_{run_tag}_{ts}_meta.json"
@@ -348,14 +353,14 @@ if __name__ == "__main__":
         json.dump(meta, f, indent=2)
     curves_png = plot_dir / f"learning_curves_{run_tag}_{ts}.png"
     try:
-        subprocess.run([sys.executable, str(Path(SRC_DIR) / "05_plotting.py"),
+        subprocess.run([sys.executable, str(Path(SRC_DIR) / "05d_plotting.py"),
                         "--csv", str(curves_csv), "--png", str(curves_png),
                         "--meta", str(meta_path), "--title", meta["title"]],
                        check=True, capture_output=True, text=True)
         print(f"  curves: {curves_csv} + {curves_png}")
     except Exception as e:
         print(f"  WARNING: plotting failed ({e}); CSV + meta kept, re-plot standalone:")
-        print(f"    python 05_plotting.py --csv {curves_csv} --png {curves_png} --meta {meta_path}")
+        print(f"    python 05d_plotting.py --csv {curves_csv} --png {curves_png} --meta {meta_path}")
         curves_png = None
 
     t_results = time.time()
@@ -365,17 +370,18 @@ if __name__ == "__main__":
            "cv_seconds": round(t_cv_end - t_cv_start, 1),
            "fold_seconds": fold_times,
            "peak_gpu_mem_gb": round(peak_gpu_gb, 3),
-           "mode": "cnn_cv", "model_key": args.model,
-           "model_type": cnn_cfg["display_name"], "features_key": args.features,
+           "mode": "ffnn_cv", "model_key": args.model,
+           "model_type": ffnn_cfg["display_name"], "features_key": args.features,
            "features_display": feat_cfg["display_name"],
            "components": feat_cfg["components"],
            "config": {"n_folds": N_CV_FOLDS + 1,
                       "total_models": N_CV_FOLDS + 1,
-                      "mask": "naive GAP (no mask)", "epochs": args.epochs,
+                      "input": "raw flatten (L*D), no pooling", "epochs": args.epochs,
                       "batch_size": args.batch_size, "lr": args.lr, "patience": args.patience,
                       "hyperparameters": eff_params, "n_params": n_params,
-                      "channels_override": args.channels,
-                      "emb_dim": emb_dim, "window": window, "device": device,
+                      "width_override": args.width,
+                      "emb_dim": emb_dim, "window": window, "in_dim": in_dim,
+                      "device": device,
                       "random_state": args.seed, "seed_mode": args.seed_mode},
            "cv_summary": summary, "outer_val_metrics": outer_val_metrics,
            "outer_val_predictions": outer_val_predictions,
@@ -396,7 +402,7 @@ if __name__ == "__main__":
     print(f"  CV time:            {t_cv_end - t_cv_start:.1f}s "
           f"({(t_cv_end - t_cv_start) / 60:.1f} min)")
     print(f"  Peak GPU mem:       {peak_gpu_gb:.2f}GB")
-    print(f"  Model:              {cnn_cfg['display_name']} ({args.model}, {n_params} params)")
+    print(f"  Model:              {ffnn_cfg['display_name']} ({args.model}, {n_params} params)")
     print(f"  Feature set:        {feat_cfg['display_name']} ({args.features})")
     print(f"  Folds:              {N_CV_FOLDS + 1}  |  Total models: {N_CV_FOLDS + 1}")
     print(f"  Val AUC-ROC:        {summary['auc_roc']['mean']:.4f} +/- {summary['auc_roc']['std']:.4f}")

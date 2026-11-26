@@ -32,13 +32,13 @@ mkdir -p "$OUT/models" "$OUT/logs/slurm" "$OUT/plots" "$OUT/results"
 
 echo "model=cnn_2layer epochs=${EPOCHS} out=${OUT}"
 
-python src/pipeline/python/05_cnn_modelling.py \
+python src/pipeline/python/05a_cnn_modelling.py \
   --model cnn_2layer \
   --features emb_esmc300m_win_padtoken \
   --epochs "$EPOCHS" \
   --out-root "$OUT"
 
-python src/pipeline/python/05_cnn_modelling.py \
+python src/pipeline/python/05a_cnn_modelling.py \
   --model cnn_2layer \
   --features emb_esmif_eos_bos_repeat \
   --epochs "$EPOCHS" \

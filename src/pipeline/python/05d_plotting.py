@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
-05_plotting.py
-Learning-curve plots for 05 CNN runs. Used two ways:
+05d_plotting.py
+Learning-curve plots for 05 CNN runs (and 06 FFNN runs — same curves CSV
+format). Used two ways:
 
-  1. Automatic: 05_cnn_modelling.py calls plot_learning_curves() via
-     subprocess after every run (CSV + meta JSON in, PNG out).
+  1. Automatic: 05a_cnn_modelling.py / 06a_ffnn_modelling.py call
+     plot_learning_curves() via subprocess after every run
+     (CSV + meta JSON in, PNG out).
   2. Standalone: re-plot any old run from its curves CSV:
-       python 05_plotting.py --csv runs/cnn_cv/plots/learning_curves_<tag>.csv \\
+       python 05d_plotting.py --csv runs/cnn_cv/plots/learning_curves_<tag>.csv \\
            --png /tmp/curves.png [--meta ..._meta.json] [--title "..."]
 
 Plot spec (thesis decision, Oct 2026; simplified Nov 2026):
@@ -20,7 +22,7 @@ Plot spec (thesis decision, Oct 2026; simplified Nov 2026):
     one faint line per inner + solid mean per outer.
 
 Only dependency is matplotlib (guarded: missing mpl -> warning, no PNG).
-Reads the long-form CSV written by 05_cnn_modelling.py, never the H5.
+Reads the long-form CSV written by 05a_cnn_modelling.py, never the H5.
 """
 import argparse
 import csv

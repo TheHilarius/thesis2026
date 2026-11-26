@@ -28,7 +28,7 @@ Outputs (default --runtag cnn_kernel_curve):
     runs/cnn_kernel_curve/results/cnn_kernel_overfit.tsv (per-fold epochs_run, best/final val AUC)
 
 Note on overfitting: this pipeline runs flat 6-fold CV (no nested split —
-`05_cnn_modelling.py` evaluates the early-stopped model on the same held-out
+`05a_cnn_modelling.py` evaluates the early-stopped model on the same held-out
 bucket used for early stopping), so inner-val best and outer-test AUC are the
 same numbers by construction. The honest overfit signals are (1) train-loss
 vs val-AUC trajectories per epoch and (2) best-vs-final-epoch val-AUC

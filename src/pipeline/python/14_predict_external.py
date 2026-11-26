@@ -8,7 +8,7 @@ Datasets (--dataset):
             (THESIS_ALLELE=hla_a0101 edition). Reads
             data/processed/hla_a0101/df_all.csv + the per-encoding CSVs
             produced by the external-allele R chain.
-  assarsson           The Assarsson external set (06_external_eval's
+  assarsson           The Assarsson external set (07_external_eval's
             data, replayed through fold artifacts). Reads
             data/processed/df_assarsson.csv (meta) +
             data/processed/df_<enc>_assarsson.csv per CSV component.
@@ -237,7 +237,7 @@ def check_prereqs_assarsson(feat_cfg, model_dir, run_tag):
     if not meta_path.exists():
         missing.append(
             (str(meta_path),
-             "the Assarsson meta table (06_external_eval input) is "
+             "the Assarsson meta table (07_external_eval input) is "
              "missing — check data/processed/"))
     csv_comps, emb_comps = M.resolve_components(feat_cfg)
     for comp in emb_comps:
@@ -320,14 +320,14 @@ def load_data_a0101(feat_cfg, args):
 def load_data_assarsson(feat_cfg, saved_names):
     """
     Load the Assarsson set: per-component encoding CSVs joined 1:1 on
-    peptide, merged with the meta table (06_external_eval layout).
+    peptide, merged with the meta table (07_external_eval layout).
     Feature columns are taken verbatim from the training feature names,
     so the matrix matches training column-for-column.
     """
     csv_comps, emb_comps = M.resolve_components(feat_cfg)
     if emb_comps:
         sys.exit("FATAL: assarsson mode supports CSV-only feature sets "
-                 "(06_external_eval precedent).")
+                 "(07_external_eval precedent).")
     if not csv_comps:
         sys.exit("FATAL: feature set has no CSV components.")
 
@@ -467,7 +467,7 @@ def print_confusion(cm, prefix="  ", label=""):
 
 
 def classification_block(df, y_true, y_prob, threshold):
-    """Assarsson per-classification breakdown (06_external_eval logic)."""
+    """Assarsson per-classification breakdown (07_external_eval logic)."""
     y_pred = (np.asarray(y_prob) >= threshold).astype(int)
     work = pd.DataFrame({
         "classification": df["classification"].to_numpy(),
@@ -621,7 +621,7 @@ def main():
               f"± {spread['std']:.4f}  (min {spread['min']:.4f}, "
               f"max {spread['max']:.4f}, n={spread['n_models']})")
 
-    # ── Assarsson-only blocks (06_external_eval parity) ──
+    # ── Assarsson-only blocks (07_external_eval parity) ──
     niner = None
     by_class = None
     if args.dataset == "assarsson":
@@ -658,7 +658,7 @@ def main():
         out = df[[c for c in ("peptide", "uniprot_id", "start", "end",
                                config.LABEL_COL) if c in df.columns]].copy()
     else:
-        # timestamped: never clobbers 06_external_eval's legacy outputs
+        # timestamped: never clobbers 07_external_eval's legacy outputs
         pred_path = out_dir / (
             f"assarsson_{args.run_tag}_predictions_{timestamp}.csv")
         out = df[["peptide", "classification", "pep_length",

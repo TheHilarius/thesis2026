@@ -10,7 +10,7 @@ models rf and xgb). Embedding runs (PCA artifacts) and scaling runs
 (StandardScaler) were never persisted by 04_modelling.py and are refused.
 
 Usage:
-  python3 src/pipeline/python/06_external_eval.py \
+  python3 src/pipeline/python/07_external_eval.py \
       --run-dir runs/encodings_sweep/models/flat \
       --run-tag xgb_blosum50_flat
 """

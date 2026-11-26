@@ -84,7 +84,7 @@ if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
         MODEL="cnn_2layer_k17_k${K2}"
         echo "=== ${MODEL} C=${CHANNELS} x ${FEAT} (epochs=${EPOCHS} patience=${PATIENCE} seed_mode=${SEED_MODE}) ==="
         nvidia-smi --query-gpu=memory.used,memory.free --format=csv || true
-        python src/pipeline/python/05_cnn_modelling.py \
+        python src/pipeline/python/05a_cnn_modelling.py \
             --model "$MODEL" \
             --features "$FEAT" \
             --channels "$CHANNELS" \
@@ -104,7 +104,7 @@ else
     MODEL="cnn_2layer_k17_k${K2}"
     echo "Array task ${IDX}: model=${MODEL} channels=${CHANNELS} features=${FEAT} epochs=${EPOCHS} patience=${PATIENCE} seed_mode=${SEED_MODE} variant='${VARIANT}' out=${OUT}"
     nvidia-smi --query-gpu=memory.used,memory.free --format=csv
-    python src/pipeline/python/05_cnn_modelling.py \
+    python src/pipeline/python/05a_cnn_modelling.py \
         --model "$MODEL" \
         --features "$FEAT" \
         --channels "$CHANNELS" \

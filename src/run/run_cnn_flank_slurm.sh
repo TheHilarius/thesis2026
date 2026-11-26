@@ -57,7 +57,7 @@ print('h5   :', src['prepared_path']);
 import pathlib; assert pathlib.Path(src['prepared_path']).exists(), 'MISSING H5';
 "
     nvidia-smi --query-gpu=memory.used,memory.free --format=csv || true
-    python src/pipeline/python/05_cnn_modelling.py \
+    python src/pipeline/python/05a_cnn_modelling.py \
         --model "$MODEL" \
         --features "$FEAT" \
         --epochs "$EPOCHS" \

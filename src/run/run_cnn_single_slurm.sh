@@ -35,7 +35,7 @@ mkdir -p "$OUT/models" "$OUT/logs/slurm" "$OUT/plots"
 
 echo "model=${MODEL} features=${FEAT} epochs=${EPOCHS} out=${OUT}"
 
-python src/pipeline/python/05_cnn_modelling.py \
+python src/pipeline/python/05a_cnn_modelling.py \
   --model "$MODEL" \
   --features "$FEAT" \
   --epochs "$EPOCHS" \

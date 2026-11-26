@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 05b_run_cnn_matrix.py
-Mirror of 04b_run_matrix.py for CNN sweeps: runs 05_cnn_modelling.py across
+Mirror of 04b_run_matrix.py for CNN sweeps: runs 05a_cnn_modelling.py across
 (model, feature_set, epochs) combos and ranks cv_results JSONs.
 
 Usage:
@@ -18,7 +18,7 @@ from pathlib import Path
 
 SRC_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SRC_DIR.parent.parent.parent
-CNN_SCRIPT = SRC_DIR / "05_cnn_modelling.py"
+CNN_SCRIPT = SRC_DIR / "05a_cnn_modelling.py"
 
 DEFAULT_COMBOS = [
     ("cnn_simple", "emb_esmc300m_win_padtoken", 20),

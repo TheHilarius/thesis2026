@@ -83,7 +83,7 @@ Figure: `plots/flank5_vs_29mer_auc_roc.png` (brackets = stars + Δ).
 ```bash
 python src/pipeline/python/reduce_29mer_to_19mer.py   # derive flank5 data
 # sbatch src/run/run_flank5_quick.sh ; sbatch src/run/run_flank5_esmc.sh
-# CNN: sbatch (05_cnn_modelling, cnn_simple_k5) x {full, flank5} — see
+# CNN: sbatch (05a_cnn_modelling, cnn_simple_k5) x {full, flank5} — see
 #   cnn/*/logs/cnn/*.txt for the exact invocations
 python src/investigation/32_flank5_significance.py
 python src/investigation/plot_flank5_compare.py

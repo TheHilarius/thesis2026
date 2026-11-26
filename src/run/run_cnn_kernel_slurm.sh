@@ -63,7 +63,7 @@ if [ -z "${SLURM_ARRAY_TASK_ID:-}" ]; then
     for MODEL in "${MODELS_LIST[@]}"; do
         echo "=== ${MODEL} x ${FEAT} (epochs=${EPOCHS} patience=${PATIENCE} seed_mode=${SEED_MODE} variant='${VARIANT}') ==="
         nvidia-smi --query-gpu=memory.used,memory.free --format=csv || true
-        python src/pipeline/python/05_cnn_modelling.py \
+        python src/pipeline/python/05a_cnn_modelling.py \
             --model "$MODEL" \
             --features "$FEAT" \
             --epochs "$EPOCHS" \
@@ -81,7 +81,7 @@ else
     MODEL="${MODELS_LIST[$IDX]}"
     echo "Array task ${IDX}: model=${MODEL} features=${FEAT} epochs=${EPOCHS} patience=${PATIENCE} seed_mode=${SEED_MODE} variant='${VARIANT}' out=${OUT}"
     nvidia-smi --query-gpu=memory.used,memory.free --format=csv
-    python src/pipeline/python/05_cnn_modelling.py \
+    python src/pipeline/python/05a_cnn_modelling.py \
         --model "$MODEL" \
         --features "$FEAT" \
         --epochs "$EPOCHS" \
