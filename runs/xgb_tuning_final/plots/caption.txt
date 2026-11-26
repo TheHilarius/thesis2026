@@ -1,0 +1,1 @@
+flank5_rmdup (19aa dedup, n=45,278); h6+pepcut1 split; XGB nested CV, 6 outer buckets. Bars = pooled OOF AUC, error = SD of the 6 outer-fold AUCs; paired DeLong on pooled OOF, Holm over 3 comparisons; official nested-CV runs only (tuner-objective scores excluded). NS: tuned: hc vs blosum50 (delta=+0.0017, Holm p=0.055).
