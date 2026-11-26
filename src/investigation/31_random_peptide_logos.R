@@ -255,6 +255,82 @@ render_ggdiff(js_rand, "JS divergence",
               "letters = JS divergence",
               "DiffLogo (JS): top 10% vs bottom 10% (random windows)")
 
+# ── 3b. Split-scale differential pair — readability fix ────────────────────
+# Peptide-core and flank columns differ ~10-70x in effect size, so a single
+# shared y-range squashes the flank signal (C1/N1/N2) into invisible slivers.
+# Two panels, independent y-scales, one PNG via grid viewports (base R).
+library(grid)
+
+pep_cols   <- which(startsWith(all_pos_features, "P"))
+flank_cols <- which(!startsWith(all_pos_features, "P"))
+
+ggdiff_panel <- function(mat, cols, panel_title, y_label, subtitle = NULL) {
+  sub       <- mat[, cols, drop = FALSE]
+  sub_names <- colnames(sub)
+  p_sub     <- obj_ppm$pvals[cols]
+  sig_x     <- which(p_sub < 0.05)
+  y_lo <- min(sub); y_hi <- max(sub)
+  span <- if (y_hi - y_lo == 0) 1 else y_hi - y_lo
+  y_star   <- y_lo - 0.15 * span
+  y_region <- y_star - 0.10 * span
+  star_df <- tibble(x = sig_x, y = y_star, label = "*")
+  n_in  <- length(cols)
+  is_pep <- all(startsWith(sub_names, "P"))
+  reg_df <- if (is_pep) {
+    tibble(x = n_in / 2, y = y_region, label = "Peptide")
+  } else {
+    tibble(x = c(n_flank / 2, n_flank + n_cf / 2), y = y_region,
+           label = c("N-Flank", "C-Flank"))
+  }
+  vline <- if (is_pep) geom_blank() else
+    geom_vline(xintercept = n_flank + 0.5, linetype = "dashed",
+               color = "grey50")
+  ggseqlogo(sub, method = "custom") +
+    geom_hline(yintercept = 0, linetype = "solid", color = "black",
+               linewidth = 0.5) +
+    vline +
+    scale_x_continuous(breaks = seq_len(n_in), labels = sub_names) +
+    theme_logo_slide +
+    geom_text(data = star_df, aes(x = x, y = y, label = label),
+              inherit.aes = FALSE, size = 6) +
+    geom_text(data = reg_df, aes(x = x, y = y, label = label),
+              inherit.aes = FALSE, size = 4, color = "grey30") +
+    coord_cartesian(ylim = c(y_region - 0.05 * span, y_hi + 0.06 * span),
+                    clip = "off") +
+    labs(title = panel_title, subtitle = subtitle, y = y_label,
+         x = if (is_pep) "Peptide positions" else "Flank positions")
+}
+
+split_pair <- function(mat, y_label, out_png, scale_note, main_title) {
+  note <- paste0("Top (Positive) = enriched in model-PRESENTED windows\n",
+                 sprintf(paste0("* = DiffLogo permutation p < 0.05 (1000 shuffles; ",
+                                "n1 = %s, n2 = %s) | %s"),
+                         format(n1, big.mark = ","),
+                         format(n2, big.mark = ","), scale_note))
+  p_pep <- ggdiff_panel(mat, pep_cols,
+                        paste0(main_title, " \u2014 peptide core"), y_label, note)
+  p_flank <- ggdiff_panel(mat, flank_cols,
+                          paste0(main_title, " \u2014 flanks (independent scale)"),
+                          y_label)
+  png(out_png, width = 20, height = 5.5, units = "in", res = 300)
+  grid.newpage()
+  pushViewport(viewport(layout = grid.layout(1, 2, widths = c(9, 10))))
+  print(p_pep,   vp = viewport(layout.pos.row = 1, layout.pos.col = 1))
+  print(p_flank, vp = viewport(layout.pos.row = 1, layout.pos.col = 2))
+  popViewport()
+  dev.off()
+  cat("Saved:", out_png, "\n")
+}
+
+split_pair(diff_rand, "Difference in Probability",
+           file.path(OUT, "differential_logo_random_difflogo_split.png"),
+           "letters = difference in probability",
+           "DiffLogo: top 10% vs bottom 10%")
+split_pair(js_rand, "JS divergence",
+           file.path(OUT, "differential_logo_random_difflogo_js_split.png"),
+           "letters = JS divergence",
+           "DiffLogo (JS): top 10% vs bottom 10%")
+
 # -----------------------------------------------------------------------------
 # 4. Per-position table (pattern from 13_)
 # -----------------------------------------------------------------------------

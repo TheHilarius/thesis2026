@@ -205,7 +205,9 @@ def ppm(seqs: list[str], positions: list[str]) -> pd.DataFrame:
     aa_idx = {a: i for i, a in enumerate(alphabet)}
     for s in seqs:
         for j, c in enumerate(s):
-            counts[aa_idx[c], j] += 1
+            i = aa_idx.get(c)
+            if i is not None:      # X pads etc. dropped, same convention
+                counts[i, j] += 1  # as 12_/13_ R scripts
     ppm_mat = counts / counts.sum(axis=0, keepdims=True)
     return pd.DataFrame(ppm_mat, index=alphabet, columns=positions)
 
